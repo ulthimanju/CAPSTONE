@@ -1,0 +1,350 @@
+# identity-service
+
+> **`identity-service` is the reference implementation** for every other microservice. Once it's finalized, the same architecture can be copied almost unchanged for `workspace-service`, `document-service`, `ai-service`, `rag-service`, and `notification-service`
+
+The goal is:
+
+* Clean Architecture
+* Domain-Driven Design (lightweight)
+* FastAPI best practices
+* Feature-oriented organization
+* No dead folders
+* Consistent naming
+* Easy scalability
+
+---
+
+# identity-service
+
+```text
+identity-service/
+│
+├── app/
+│   │
+│   ├── api/
+│   │   │
+│   │   ├── dependencies/
+│   │   │   ├── auth.py
+│   │   │   ├── database.py
+│   │   │   ├── rate_limit.py
+│   │   │   ├── security.py
+│   │   │   └── __init__.py
+│   │   │
+│   │   ├── middlewares/
+│   │   │   ├── correlation_id.py
+│   │   │   ├── exception_handler.py
+│   │   │   ├── logging.py
+│   │   │   ├── request_context.py
+│   │   │   └── __init__.py
+│   │   │
+│   │   ├── routers/
+│   │   │   ├── auth.py
+│   │   │   ├── oauth.py
+│   │   │   ├── profile.py
+│   │   │   ├── session.py
+│   │   │   ├── health.py
+│   │   │   └── __init__.py
+│   │   │
+│   │   ├── responses/
+│   │   │   ├── success.py
+│   │   │   ├── error.py
+│   │   │   └── pagination.py
+│   │   │
+│   │   └── router.py
+│   │
+│   ├── application/
+│   │   │
+│   │   ├── dto/
+│   │   │
+│   │   ├── mappers/
+│   │   │
+│   │   ├── interfaces/
+│   │   │
+│   │   └── services/
+│   │       ├── auth_service.py
+│   │       ├── oauth_service.py
+│   │       ├── profile_service.py
+│   │       ├── session_service.py
+│   │       └── token_service.py
+│   │
+│   ├── domain/
+│   │   │
+│   │   ├── entities/
+│   │   │   ├── user.py
+│   │   │   ├── session.py
+│   │   │   ├── oauth_account.py
+│   │   │   └── refresh_token.py
+│   │   │
+│   │   ├── repositories/
+│   │   │   ├── user_repository.py
+│   │   │   ├── session_repository.py
+│   │   │   └── oauth_repository.py
+│   │   │
+│   │   ├── exceptions/
+│   │   │   ├── auth.py
+│   │   │   ├── oauth.py
+│   │   │   ├── profile.py
+│   │   │   └── session.py
+│   │   │
+│   │   ├── events/
+│   │   │   ├── user_registered.py
+│   │   │   ├── user_logged_in.py
+│   │   │   ├── user_logged_out.py
+│   │   │   ├── token_refreshed.py
+│   │   │   └── session_revoked.py
+│   │   │
+│   │   ├── value_objects/
+│   │   │
+│   │   └── constants/
+│   │       ├── auth.py
+│   │       ├── oauth.py
+│   │       ├── roles.py
+│   │       └── permissions.py
+│   │
+│   ├── infrastructure/
+│   │   │
+│   │   ├── database/
+│   │   │   ├── base.py
+│   │   │   ├── session.py
+│   │   │   ├── models/
+│   │   │   ├── migrations/
+│   │   │   └── seed.py
+│   │   │
+│   │   ├── repositories/
+│   │   │   ├── sqlalchemy_user_repository.py
+│   │   │   ├── sqlalchemy_session_repository.py
+│   │   │   └── sqlalchemy_oauth_repository.py
+│   │   │
+│   │   ├── clients/
+│   │   │   ├── google_oauth_client.py
+│   │   │   └── jwt_client.py
+│   │   │
+│   │   ├── messaging/
+│   │   │   ├── publisher.py
+│   │   │   └── events.py
+│   │   │
+│   │   ├── cache/
+│   │   │   ├── redis.py
+│   │   │   └── session_cache.py
+│   │   │
+│   │   └── security/
+│   │       ├── hashing.py
+│   │       ├── jwt.py
+│   │       └── password.py
+│   │
+│   ├── schemas/
+│   │   ├── auth.py
+│   │   ├── oauth.py
+│   │   ├── profile.py
+│   │   ├── session.py
+│   │   ├── token.py
+│   │   └── common.py
+│   │
+│   ├── config/
+│   │   ├── settings.py
+│   │   ├── logging.py
+│   │   ├── security.py
+│   │   └── cors.py
+│   │
+│   ├── utils/
+│   │   ├── datetime.py
+│   │   ├── ids.py
+│   │   ├── validators.py
+│   │   └── serialization.py
+│   │
+│   ├── lifespan.py
+│   ├── main.py
+│   └── __init__.py
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── conftest.py
+│
+├── scripts/
+│   ├── create_admin.py
+│   └── seed.py
+│
+├── .env
+├── alembic.ini
+├── Dockerfile
+├── pyproject.toml
+├── requirements.txt
+└── README.md
+```
+
+---
+
+# Responsibilities
+
+### `api/`
+
+Only HTTP.
+
+* Routers
+* Dependencies
+* Middleware
+* Response formatting
+
+Never business logic.
+
+---
+
+### `application/`
+
+Application use cases.
+
+Examples:
+
+```text
+Register User
+
+Login
+
+Refresh Token
+
+Logout
+
+Get Profile
+
+Update Profile
+```
+
+Coordinates domain + infrastructure.
+
+---
+
+### `domain/`
+
+Pure business rules.
+
+No:
+
+* FastAPI
+* SQLAlchemy
+* Redis
+* HTTP
+* JWT
+
+Contains only business concepts.
+
+---
+
+### `infrastructure/`
+
+Everything external.
+
+Examples:
+
+* PostgreSQL
+* Redis
+* RabbitMQ
+* Google OAuth
+* JWT
+* SQLAlchemy
+
+Replaceable.
+
+---
+
+### `schemas/`
+
+Only Pydantic models.
+
+No logic.
+
+---
+
+### `config/`
+
+One configuration profile.
+
+Exactly as you requested.
+
+```
+settings.py
+```
+
+No
+
+```
+development.py
+
+production.py
+```
+
+---
+
+# Naming Convention
+
+Everything should follow one convention.
+
+Files
+
+```text
+auth_service.py
+
+user_repository.py
+
+google_oauth_client.py
+
+token_service.py
+```
+
+Classes
+
+```text
+AuthService
+
+UserRepository
+
+GoogleOAuthClient
+
+TokenService
+```
+
+Endpoints
+
+```text
+/api/v1/auth/login
+
+/api/v1/auth/register
+
+/api/v1/auth/refresh
+
+/api/v1/profile
+
+/api/v1/sessions
+```
+
+---
+
+# Why this architecture?
+
+Notice there are **no generic folders** like:
+
+```text
+helpers/
+
+common/
+
+manager/
+
+misc/
+```
+
+Every folder has a single, well-defined responsibility.
+
+---
+
+## This becomes the template
+
+Once `identity-service` is finalized, the other services should follow the **same skeleton**, changing only the domain-specific parts.
+
+For example:
+
+* `workspace-service` replaces `auth_service.py` with `workspace_service.py`, `membership_service.py`, etc.
+* `document-service` replaces it with `upload_service.py`, `parser_service.py`, `processing_service.py`, etc.
+* `ai-service` contains `summary_service.py`, `quiz_service.py`, `flashcard_service.py`, etc.
+
+This consistency is far more valuable than allowing each microservice to evolve its own folder conventions. A developer should be able to switch between services and immediately know where routers, business logic, repositories, infrastructure, schemas, and configuration are located. That consistency will make the entire backend significantly easier to maintain as it grows.
