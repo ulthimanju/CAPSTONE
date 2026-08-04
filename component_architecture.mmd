@@ -1,0 +1,82 @@
+flowchart LR
+
+USER[User]
+
+WEB[web-app]
+
+GW[api-gateway]
+
+ID[identity-service]
+
+WS[workspace-service]
+
+DOC[document-service]
+
+RAG[rag-service]
+
+AI[ai-service]
+
+NOTIFY[notification-service]
+
+PG[(PostgreSQL)]
+
+MDB[(MongoDB)]
+
+VEC[(pgvector)]
+
+REDIS[(Redis)]
+
+RMQ[(RabbitMQ)]
+
+LLAMA[LlamaParse]
+
+GEMINI[Gemini]
+
+GOOGLE[Google OAuth]
+
+USER --> WEB
+
+WEB --> GW
+
+GW --> ID
+GW --> WS
+GW --> DOC
+GW --> RAG
+GW --> AI
+GW --> NOTIFY
+
+ID --> WS
+
+WS --> DOC
+
+DOC --> RAG
+
+RAG --> AI
+
+ID --> NOTIFY
+WS --> NOTIFY
+DOC --> NOTIFY
+RAG --> NOTIFY
+AI --> NOTIFY
+
+ID --> GOOGLE
+ID --> PG
+ID --> REDIS
+
+WS --> PG
+
+DOC --> PG
+DOC --> MDB
+DOC --> LLAMA
+DOC --> RMQ
+
+RAG --> PG
+RAG --> VEC
+RAG --> RMQ
+
+AI --> PG
+AI --> GEMINI
+AI --> RMQ
+
+NOTIFY --> PG
+NOTIFY --> RMQ
