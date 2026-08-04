@@ -12,3 +12,6 @@ class User:
     role: str
     created_at: datetime
     updated_at: datetime
+    last_login_at: datetime | None = None
+    last_login_ip: str | None = None
+    last_login_provider: str | None = None
