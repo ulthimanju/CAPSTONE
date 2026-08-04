@@ -1,0 +1,341 @@
+That changes the architecture significantly, and in a good way. If **Google OAuth is the only authentication method**, then the identity service becomes much smaller and more focused. We can eliminate a lot of unnecessary code.
+
+I would redesign it as an **Identity & Session Service**, not an authentication service.
+
+## Responsibilities
+
+The service should own only:
+
+* Google OAuth authentication
+* JWT access token generation
+* JWT refresh token generation
+* User profile
+* User sessions
+* Token validation (for internal services)
+* User lifecycle events
+
+It should **not** contain:
+
+* Username/password login
+* Registration
+* Password reset
+* Email verification
+* Forgot password
+* Change password
+* Local authentication
+* Password hashing
+* Credentials management
+
+---
+
+# Revised `identity-service` Skeleton
+
+```text
+identity-service/
+│
+├── app/
+│   │
+│   ├── api/
+│   │   ├── dependencies/
+│   │   ├── middlewares/
+│   │   ├── responses/
+│   │   ├── router.py
+│   │   └── routers/
+│   │       ├── oauth.py
+│   │       ├── profile.py
+│   │       ├── sessions.py
+│   │       ├── tokens.py
+│   │       └── health.py
+│   │
+│   ├── application/
+│   │   ├── dto/
+│   │   ├── interfaces/
+│   │   ├── mappers/
+│   │   └── services/
+│   │       ├── oauth_service.py
+│   │       ├── profile_service.py
+│   │       ├── session_service.py
+│   │       └── token_service.py
+│   │
+│   ├── domain/
+│   │   ├── entities/
+│   │   │   ├── user.py
+│   │   │   ├── session.py
+│   │   │   ├── oauth_identity.py
+│   │   │   └── refresh_token.py
+│   │   │
+│   │   ├── repositories/
+│   │   │   ├── user_repository.py
+│   │   │   ├── session_repository.py
+│   │   │   └── oauth_repository.py
+│   │   │
+│   │   ├── events/
+│   │   │   ├── user_authenticated.py
+│   │   │   ├── session_created.py
+│   │   │   ├── session_revoked.py
+│   │   │   └── token_refreshed.py
+│   │   │
+│   │   ├── exceptions/
+│   │   │   ├── oauth.py
+│   │   │   ├── profile.py
+│   │   │   └── session.py
+│   │   │
+│   │   └── constants/
+│   │       ├── oauth.py
+│   │       ├── roles.py
+│   │       └── permissions.py
+│   │
+│   ├── infrastructure/
+│   │   ├── clients/
+│   │   │   └── google_oauth_client.py
+│   │   │
+│   │   ├── database/
+│   │   │
+│   │   ├── repositories/
+│   │   │
+│   │   ├── cache/
+│   │   │
+│   │   ├── messaging/
+│   │   │
+│   │   └── security/
+│   │       └── jwt.py
+│   │
+│   ├── schemas/
+│   │   ├── oauth.py
+│   │   ├── profile.py
+│   │   ├── session.py
+│   │   ├── token.py
+│   │   └── common.py
+│   │
+│   ├── config/
+│   ├── utils/
+│   ├── lifespan.py
+│   └── main.py
+│
+├── tests/
+├── scripts/
+├── Dockerfile
+├── pyproject.toml
+├── requirements.txt
+└── README.md
+```
+
+---
+
+# Router Simplification
+
+Instead of:
+
+```text
+auth.py
+oauth.py
+profile.py
+session.py
+```
+
+we now have:
+
+```text
+oauth.py
+profile.py
+sessions.py
+tokens.py
+health.py
+```
+
+Because **OAuth is the authentication mechanism**.
+
+---
+
+# Service Simplification
+
+Old:
+
+```text
+auth_service.py
+
+oauth_service.py
+
+profile_service.py
+
+token_service.py
+```
+
+New:
+
+```text
+oauth_service.py
+
+profile_service.py
+
+session_service.py
+
+token_service.py
+```
+
+No generic `auth_service`.
+
+---
+
+# Infrastructure Simplification
+
+Remove
+
+```text
+password.py
+
+hashing.py
+
+bcrypt.py
+```
+
+Keep only
+
+```text
+jwt.py
+```
+
+because passwords no longer exist.
+
+---
+
+# Domain Simplification
+
+Instead of
+
+```text
+User
+
+Session
+
+OAuthAccount
+
+PasswordCredential
+
+RefreshToken
+```
+
+use
+
+```text
+User
+
+OAuthIdentity
+
+Session
+
+RefreshToken
+```
+
+`OAuthIdentity` stores information about the external provider.
+
+---
+
+# Database Tables
+
+You can simplify the schema to something like:
+
+```text
+users
+------------
+id
+email
+name
+picture_url
+role
+created_at
+updated_at
+```
+
+```text
+oauth_identities
+----------------
+id
+user_id
+provider          (google)
+provider_user_id
+email
+access_token      (optional, if needed)
+refresh_token     (optional)
+expires_at
+```
+
+```text
+sessions
+------------
+id
+user_id
+device
+ip_address
+user_agent
+last_activity
+expires_at
+```
+
+```text
+refresh_tokens
+----------------
+id
+session_id
+token_hash
+expires_at
+revoked_at
+```
+
+---
+
+# API Endpoints
+
+Instead of dozens of authentication endpoints, the service becomes very compact:
+
+```text
+GET    /api/v1/oauth/google/login
+
+GET    /api/v1/oauth/google/callback
+
+POST   /api/v1/tokens/refresh
+
+POST   /api/v1/sessions/logout
+
+POST   /api/v1/sessions/logout-all
+
+GET    /api/v1/profile
+
+PATCH  /api/v1/profile
+
+GET    /api/v1/sessions
+
+DELETE /api/v1/sessions/{session_id}
+
+GET    /api/v1/health
+```
+
+---
+
+## I would also simplify the `shared` package
+
+Since you've standardized on Google OAuth only, I'd remove password-related utilities from `shared` as well.
+
+Instead of:
+
+```text
+shared/auth/
+├── jwt.py
+├── password.py
+├── oauth.py
+├── permissions.py
+└── roles.py
+```
+
+I'd keep:
+
+```text
+shared/auth/
+├── jwt.py
+├── oauth.py
+├── permissions.py
+├── roles.py
+└── claims.py
+```
+
+No password hashing, bcrypt, or credential utilities are needed. This keeps the shared package aligned with your actual authentication strategy and avoids carrying abstractions you'll never use.
