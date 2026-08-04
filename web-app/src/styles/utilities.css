@@ -1,0 +1,5 @@
+@keyframes skeleton-wave {
+  100% {
+    transform: translateX(100%);
+  }
+}

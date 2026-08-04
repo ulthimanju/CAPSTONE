@@ -1,0 +1,8 @@
+# Files & Purpose
+
+| File                     | Purpose                                                 |
+| ------------------------ | ------------------------------------------------------- |
+| `Typography.jsx`         | Rendering logic                                         |
+| `Typography.variants.js` | CVA variants                                            |
+| `text-styles.js`         | Typography design tokens and reusable style definitions |
+| `index.js`               | Barrel export                                           |

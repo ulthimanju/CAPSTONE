@@ -1,0 +1,7 @@
+# Files & Purpose
+
+| File                 | Tool  | Purpose                   |
+| -------------------- | ----- | ------------------------- |
+| Checkbox.jsx         | React | Rendering & accessibility |
+| Checkbox.variants.js | CVA   | Sizes & visual states     |
+| index.js             | —     | Barrel export             |

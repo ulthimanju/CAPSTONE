@@ -1,0 +1,8 @@
+# Files & Purpose
+
+| File                | Tool Used    | Why                             |
+| ------------------- | ------------ | ------------------------------- |
+| `Badge.jsx`         | React        | Badge rendering                 |
+| `Badge.variants.js` | CVA          | Variants, sizes, rounded styles |
+| `Badge.test.jsx`    | Vitest + RTL | Component rendering tests       |
+| `index.js`          | —            | Barrel export                   |

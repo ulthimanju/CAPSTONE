@@ -1,0 +1,7 @@
+# Files & Purpose
+
+| File                 | Tool Used | Why                                              |
+| -------------------- | --------- | ------------------------------------------------ |
+| `Button.jsx`         | React     | Rendering logic, loading state, icon composition |
+| `Button.variants.js` | CVA       | All button variants and sizes                    |
+| `index.js`           | —         | Barrel export                                    |

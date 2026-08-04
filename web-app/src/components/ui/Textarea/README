@@ -1,0 +1,7 @@
+# Files & Purpose
+
+| File                   | Tool Used            | Why                                         |
+| ---------------------- | -------------------- | ------------------------------------------- |
+| `Textarea.jsx`         | React (`forwardRef`) | Rendering, accessibility, helper/error text |
+| `Textarea.variants.js` | CVA                  | Variants, sizes, resize behavior            |
+| `index.js`             | —                    | Barrel export                               |
