@@ -276,6 +276,50 @@ body {
   color: var(--accent);
 }
 
+/* Workspace item action icons */
+.ws-dropdown-item {
+  position: relative;
+}
+.ws-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+.ws-dropdown-item:hover .ws-item-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ws-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-4);
+  font-size: 12px;
+  padding: 0;
+  transition: background 0.1s, color 0.1s;
+}
+.ws-action-btn:hover {
+  background: var(--bg-3);
+  color: var(--text);
+}
+.ws-action-btn.ws-action-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+.dropdown-menu {
+  width: 240px;
+}
+
 .topbar-center {
   text-align: center;
   flex: 1;

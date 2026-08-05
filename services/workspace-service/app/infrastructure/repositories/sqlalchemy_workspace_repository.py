@@ -54,7 +54,8 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             .join(WorkspaceMemberModel, WorkspaceModel.id == WorkspaceMemberModel.workspace_id)
             .where(
                 WorkspaceMemberModel.user_id == user_id,
-                WorkspaceModel.status != WorkspaceStatus.DELETED.value
+                WorkspaceModel.status != WorkspaceStatus.DELETED.value,
+                WorkspaceModel.status != WorkspaceStatus.ARCHIVED.value,
             )
             .order_by(WorkspaceModel.updated_at.desc())
         )

@@ -39,6 +39,12 @@ export const WorkspaceDetailPage = () => {
   const [newWsDescription, setNewWsDescription] = useState('');
   const [creatingWs, setCreatingWs] = useState(false);
 
+  // Rename Modal
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState(null); // { id, name }
+  const [renameValue, setRenameValue] = useState('');
+  const [renamingWs, setRenamingWs] = useState(false);
+
   const fetchWorkspaceAndDocs = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
@@ -107,6 +113,73 @@ export const WorkspaceDetailPage = () => {
     }
   };
 
+
+  const openRenameModal = (ws, e) => {
+    e.stopPropagation();
+    setRenameTarget(ws);
+    setRenameValue(ws.name);
+    setIsRenameOpen(true);
+    setIsDropdownOpen(false);
+  };
+
+  const handleRenameSubmit = async (e) => {
+    e.preventDefault();
+    if (!renameValue.trim() || !renameTarget) return;
+    try {
+      setRenamingWs(true);
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.patch(`/api/v1/workspaces/${renameTarget.id}`, { name: renameValue.trim() }, { headers });
+      setIsRenameOpen(false);
+      setRenameTarget(null);
+      await fetchWorkspaceAndDocs(true);
+    } catch (err) {
+      console.error('Failed to rename workspace:', err);
+      alert('Failed to rename workspace');
+    } finally {
+      setRenamingWs(false);
+    }
+  };
+
+  const handleArchiveWorkspace = async (ws, e) => {
+    e.stopPropagation();
+    if (!confirm(`Archive "${ws.name}"? It will be hidden from your workspace list.`)) return;
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.post(`/api/v1/workspaces/${ws.id}/archive`, {}, { headers });
+      setIsDropdownOpen(false);
+      // If archiving the currently viewed workspace, navigate away
+      if (ws.id === workspaceId) {
+        const remaining = allWorkspaces.filter(w => w.id !== ws.id);
+        if (remaining.length > 0) navigate(`/workspaces/${remaining[0].id}`);
+        else navigate('/workspaces');
+      } else {
+        await fetchWorkspaceAndDocs(true);
+      }
+    } catch (err) {
+      console.error('Failed to archive workspace:', err);
+      alert('Failed to archive workspace');
+    }
+  };
+
+  const handleDeleteWorkspace = async (ws, e) => {
+    e.stopPropagation();
+    if (!confirm(`Permanently delete "${ws.name}"? This cannot be undone.`)) return;
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.delete(`/api/v1/workspaces/${ws.id}`, { headers });
+      setIsDropdownOpen(false);
+      if (ws.id === workspaceId) {
+        const remaining = allWorkspaces.filter(w => w.id !== ws.id);
+        if (remaining.length > 0) navigate(`/workspaces/${remaining[0].id}`);
+        else navigate('/workspaces');
+      } else {
+        await fetchWorkspaceAndDocs(true);
+      }
+    } catch (err) {
+      console.error('Failed to delete workspace:', err);
+      alert('Failed to delete workspace');
+    }
+  };
 
   useEffect(() => {
     fetchWorkspaceAndDocs();
@@ -333,13 +406,37 @@ export const WorkspaceDetailPage = () => {
               {allWorkspaces.map((ws) => (
                 <div
                   key={ws.id}
-                  className={`dropdown-item ${ws.id === workspaceId ? 'selected' : ''}`}
+                  className={`dropdown-item ws-dropdown-item ${ws.id === workspaceId ? 'selected' : ''}`}
                   onClick={() => {
                     setIsDropdownOpen(false);
                     navigate(`/workspaces/${ws.id}`);
                   }}
                 >
-                  <i className="ti ti-code"></i> {ws.name}
+                  <i className="ti ti-folder" style={{ flexShrink: 0 }}></i>
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ws.name}</span>
+                  <span className="ws-item-actions" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="ws-action-btn"
+                      title="Rename"
+                      onClick={(e) => openRenameModal(ws, e)}
+                    >
+                      <i className="ti ti-pencil"></i>
+                    </button>
+                    <button
+                      className="ws-action-btn"
+                      title="Archive"
+                      onClick={(e) => handleArchiveWorkspace(ws, e)}
+                    >
+                      <i className="ti ti-archive"></i>
+                    </button>
+                    <button
+                      className="ws-action-btn ws-action-danger"
+                      title="Delete"
+                      onClick={(e) => handleDeleteWorkspace(ws, e)}
+                    >
+                      <i className="ti ti-trash"></i>
+                    </button>
+                  </span>
                 </div>
               ))}
               <div
@@ -679,6 +776,40 @@ export const WorkspaceDetailPage = () => {
               </button>
               <button type="submit" className="btn btn-primary" disabled={creatingWs || !newWsName.trim()}>
                 {creatingWs ? 'Creating...' : 'Create Workspace'}
+              </button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
+
+      {/* Rename Workspace Modal */}
+      <Modal open={isRenameOpen} onOpenChange={(open) => { if (!open) { setIsRenameOpen(false); setRenameTarget(null); } }}>
+        <ModalContent size="sm" showCloseButton={false} style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)' }}>
+          <ModalHeader
+            title="Rename Workspace"
+            description="Enter a new name for this workspace."
+            style={{ padding: '20px 24px', borderBottom: '1px solid #2a2a2e' }}
+          />
+          <form onSubmit={handleRenameSubmit}>
+            <ModalBody style={{ padding: '20px 24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
+                  Workspace Name <span style={{ color: '#3ecf8e' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  required
+                  autoFocus
+                  style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+            </ModalBody>
+            <ModalFooter style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2e', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button type="button" className="btn" onClick={() => { setIsRenameOpen(false); setRenameTarget(null); }}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={renamingWs || !renameValue.trim()}>
+                {renamingWs ? 'Saving...' : 'Save'}
               </button>
             </ModalFooter>
           </form>
