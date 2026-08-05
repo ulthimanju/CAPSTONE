@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { apiConfig } from '../../config/api';
 import { tokenStorage } from '../../lib/storage';
+import { ApiError } from './errors';
 
 const API_BASE_URL = apiConfig.baseUrl;
 
@@ -35,9 +36,9 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         tokenStorage.removeAccessToken();
         window.location.href = '/login';
-        return Promise.reject(refreshError);
+        return Promise.reject(ApiError.fromAxiosError(refreshError));
       }
     }
-    return Promise.reject(error);
+    return Promise.reject(ApiError.fromAxiosError(error));
   }
 );

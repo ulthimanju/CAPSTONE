@@ -15,10 +15,10 @@ export class SessionManager {
       SessionManager.scheduleRefresh();
       return user;
     } catch (error) {
-      if (error.name === 'CanceledError' || error.name === 'AbortError') {
-        throw error;
+      if (error.name === 'CanceledError' || error.name === 'AbortError' || error.code === 'NETWORK_ERROR') {
+        if (error.code !== 'NETWORK_ERROR') throw error;
       }
-      if (error.response?.status === 401 || error.response?.status === 403) {
+      if (error.status === 401 || error.status === 403) {
         SessionManager.logout();
       } else {
         useAuthStore.setState({ isLoading: false, isInitialized: true });
