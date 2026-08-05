@@ -14,7 +14,7 @@ from app.domain.repositories.refresh_token_repository import RefreshTokenReposit
 from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 from app.constants.enums import Role, OAuthProvider
 from app.application.interfaces.oauth_client import OAuthClientInterface
-from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
+from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO, OAuthLoginResult
 from app.infrastructure.security.jwt import create_access_token, create_refresh_token_value
 from app.infrastructure.logging.audit_logger import auth_logger
 
@@ -36,11 +36,11 @@ class OAuthUseCase:
         self.uow = uow
         self.refresh_repo = refresh_repo
 
-    async def authenticate_google_user(self, request, device: str | None, ip_address: str | None, user_agent: str | None) -> tuple[User, Session, str, str]:
+    async def authenticate_google_user(self, request, device: str | None, ip_address: str | None, user_agent: str | None) -> OAuthLoginResult:
         user_dto, token_dto = await self.oauth_client.fetch_user_info_and_tokens(request)
         return await self.handle_google_callback(user_dto, token_dto, device, ip_address, user_agent)
 
-    async def handle_google_callback(self, user_dto: GoogleUserDTO, token_dto: GoogleTokenDTO, device: str | None, ip_address: str | None, user_agent: str | None) -> tuple[User, Session, str, str]:
+    async def handle_google_callback(self, user_dto: GoogleUserDTO, token_dto: GoogleTokenDTO, device: str | None, ip_address: str | None, user_agent: str | None) -> OAuthLoginResult:
         async with self.uow:
             provider_user_id = user_dto.sub
             email = user_dto.email
@@ -100,4 +100,9 @@ class OAuthUseCase:
             # 6. Commit atomic transaction
             await self.uow.commit()
 
-            return user, session, access_token, raw_refresh_token
+            return OAuthLoginResult(
+                user=user,
+                session=session,
+                access_token=access_token,
+                refresh_token=raw_refresh_token
+            )

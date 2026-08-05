@@ -41,12 +41,12 @@ async def google_callback(
     uow: UnitOfWorkInterface = Depends(get_unit_of_work),
 ):
     use_case = OAuthUseCase(user_repo, oauth_repo, session_repo, oauth_client, uow, refresh_repo)
-    user, session, access_token, refresh_token = await use_case.authenticate_google_user(
+    result = await use_case.authenticate_google_user(
         request=request,
         device=request.headers.get("user-agent"),
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
     )
 
-    redirect_url = f"{settings.frontend_url}/oauth/callback?access_token={access_token}&refresh_token={refresh_token}"
+    redirect_url = f"{settings.frontend_url}/oauth/callback?access_token={result.access_token}&refresh_token={result.refresh_token}"
     return RedirectResponse(url=redirect_url)
