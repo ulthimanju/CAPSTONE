@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, status
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.clients.google_oauth_client import google
-from app.api.dependencies.database import get_user_repository, get_oauth_repository, get_session_repository, get_refresh_token_repository
+from app.api.dependencies.database import (
+    get_user_repository,
+    get_oauth_repository,
+    get_session_repository,
+    get_refresh_token_repository,
+    get_oauth_client,
+)
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.oauth_repository import OAuthRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.refresh_token_repository import RefreshTokenRepository
-from app.domain.exceptions.oauth import GoogleOAuthError
+from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.use_cases.oauth_login import OAuthUseCase
 from app.config.settings import settings
 
@@ -16,9 +20,12 @@ router = APIRouter(prefix="/oauth/google", tags=["OAuth"])
 
 
 @router.get("/login")
-async def google_login(request: Request):
+async def google_login(
+    request: Request,
+    oauth_client: OAuthClientInterface = Depends(get_oauth_client),
+):
     redirect_uri = settings.google_redirect_uri
-    return await google.authorize_redirect(request, redirect_uri)
+    return await oauth_client._client.authorize_redirect(request, redirect_uri)
 
 
 @router.get("/callback")
@@ -28,23 +35,14 @@ async def google_callback(
     oauth_repo: OAuthRepository = Depends(get_oauth_repository),
     session_repo: SessionRepository = Depends(get_session_repository),
     refresh_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
+    oauth_client: OAuthClientInterface = Depends(get_oauth_client),
 ):
-    try:
-        token = await google.authorize_access_token(request)
-    except Exception as exc:
-        raise GoogleOAuthError(f"OAuth token authorization failed: {exc}") from exc
-
-    user_info = token.get("userinfo")
-    if not user_info:
-        raise GoogleOAuthError("Failed to retrieve user info from Google")
-    
-    use_case = OAuthUseCase(user_repo, oauth_repo, session_repo, refresh_repo)
-    user, session, access_token, refresh_token = await use_case.handle_google_callback(
-        user_info=user_info,
-        tokens=token,
+    use_case = OAuthUseCase(user_repo, oauth_repo, session_repo, oauth_client, refresh_repo)
+    user, session, access_token, refresh_token = await use_case.authenticate_google_user(
+        request=request,
         device=request.headers.get("user-agent"),
         ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent")
+        user_agent=request.headers.get("user-agent"),
     )
 
     redirect_url = f"{settings.frontend_url}/oauth/callback?access_token={access_token}&refresh_token={refresh_token}"

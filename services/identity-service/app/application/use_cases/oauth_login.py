@@ -12,6 +12,7 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.oauth_repository import OAuthRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.refresh_token_repository import RefreshTokenRepository
+from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.infrastructure.security.jwt import create_access_token, create_refresh_token_value
 
 
@@ -21,12 +22,18 @@ class OAuthUseCase:
         user_repo: UserRepository,
         oauth_repo: OAuthRepository,
         session_repo: SessionRepository,
+        oauth_client: OAuthClientInterface,
         refresh_repo: RefreshTokenRepository | None = None,
     ):
         self.user_repo = user_repo
         self.oauth_repo = oauth_repo
         self.session_repo = session_repo
+        self.oauth_client = oauth_client
         self.refresh_repo = refresh_repo
+
+    async def authenticate_google_user(self, request, device: str | None, ip_address: str | None, user_agent: str | None) -> tuple[User, Session, str, str]:
+        user_info, tokens = await self.oauth_client.fetch_user_info_and_tokens(request)
+        return await self.handle_google_callback(user_info, tokens, device, ip_address, user_agent)
 
     async def handle_google_callback(self, user_info: dict, tokens: dict, device: str | None, ip_address: str | None, user_agent: str | None) -> tuple[User, Session, str, str]:
         provider_user_id = user_info["sub"]

@@ -6,6 +6,11 @@ from app.infrastructure.repositories.sqlalchemy_user_repository import SQLAlchem
 from app.infrastructure.repositories.sqlalchemy_oauth_repository import SQLAlchemyOAuthRepository
 from app.infrastructure.repositories.sqlalchemy_session_repository import SQLAlchemySessionRepository
 from app.infrastructure.repositories.sqlalchemy_refresh_token_repository import SQLAlchemyRefreshTokenRepository
+from app.infrastructure.clients.google_oauth_client import GoogleOAuthClient
+
+
+def get_oauth_client() -> GoogleOAuthClient:
+    return GoogleOAuthClient()
 
 
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemyUserRepository:
