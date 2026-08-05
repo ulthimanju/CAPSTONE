@@ -48,5 +48,15 @@ async def google_callback(
         user_agent=request.headers.get("user-agent"),
     )
 
-    redirect_url = f"{settings.frontend_url}/oauth/callback?access_token={result.access_token}&refresh_token={result.refresh_token}"
-    return RedirectResponse(url=redirect_url)
+    # Secure OAuth Callback pattern: Set HTTP-only cookie for refresh token & redirect cleanly
+    redirect_url = f"{settings.frontend_url}/oauth/callback"
+    response = RedirectResponse(url=redirect_url)
+    response.set_cookie(
+        key="refresh_token",
+        value=result.refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=settings.refresh_token_expire_days * 86400,
+    )
+    return response
