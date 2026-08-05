@@ -1,8 +1,8 @@
-import { authService } from '../services/identity/auth';
-import { profileService } from '../services/identity/profile';
-import { sessionService } from '../services/identity/session';
-import { tokenStorage } from '../lib/storage';
-import { useAuthStore } from '../store/authStore';
+import { authService } from './auth';
+import { profileService } from './profile';
+import { sessionService } from './session';
+import { tokenStorage } from '../../lib/storage';
+import { useAuthStore } from '../../store/authStore';
 
 export class SessionManager {
   static refreshTimer = null;
