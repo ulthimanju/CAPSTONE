@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { apiConfig } from '../../config/api';
 import { API_ENDPOINTS } from '../../constants/api';
-import { tokenStorage } from '../identity/tokenStorage';
-import { ApiError } from './errors';
+import { tokenStorage } from '../../lib/tokenStorage';
+import { ApiError } from '../../lib/apiError';
 
 const API_BASE_URL = apiConfig.baseUrl;
 

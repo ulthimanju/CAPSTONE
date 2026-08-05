@@ -1,6 +1,6 @@
 import { apiClient } from '../api/client';
 import { API_ENDPOINTS } from '../../constants/api';
-import { tokenStorage } from '../../lib/storage';
+import { tokenStorage } from '../../lib/tokenStorage';
 
 export const sessionService = {
   getSessions: async (options = {}) => {
