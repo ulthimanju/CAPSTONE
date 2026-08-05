@@ -12,6 +12,7 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.oauth_repository import OAuthRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.refresh_token_repository import RefreshTokenRepository
+from app.constants.enums import Role, OAuthProvider
 from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
 from app.infrastructure.security.jwt import create_access_token, create_refresh_token_value
@@ -50,19 +51,19 @@ class OAuthUseCase:
                 email=email,
                 name=name,
                 picture_url=picture,
-                role="user",
+                role=Role.STUDENT,
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc)
             )
             user = await self.user_repo.create(user)
 
         # 2. Check or create OAuth Identity
-        identity = await self.oauth_repo.get_by_provider("google", provider_user_id)
+        identity = await self.oauth_repo.get_by_provider(OAuthProvider.GOOGLE, provider_user_id)
         if not identity:
             identity = OAuthIdentity(
                 id=uuid4(),
                 user_id=user.id,
-                provider="google",
+                provider=OAuthProvider.GOOGLE,
                 provider_user_id=provider_user_id,
                 email=email,
                 access_token=token_dto.access_token,
