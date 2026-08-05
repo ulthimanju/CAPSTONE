@@ -1,12 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import hashlib
-from uuid import UUID, uuid4
-
-from app.config.settings import settings
-from app.domain.entities.user import User
-from app.domain.entities.oauth_identity import OAuthIdentity
-from app.domain.entities.session import Session
-from app.domain.entities.refresh_token import RefreshToken
+from uuid import UUID
+from app.utils.ids import generate_uuid
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.oauth_repository import OAuthRepository
 from app.domain.repositories.session_repository import SessionRepository
@@ -51,7 +46,7 @@ class OAuthUseCase:
             user = await self.user_repo.get_by_email(email)
             if not user:
                 user = User(
-                    id=uuid4(),
+                    id=generate_uuid(),
                     email=email,
                     name=name,
                     picture_url=picture,
@@ -65,7 +60,7 @@ class OAuthUseCase:
             identity = await self.oauth_repo.get_by_provider(OAuthProvider.GOOGLE, provider_user_id)
             if not identity:
                 identity = OAuthIdentity(
-                    id=uuid4(),
+                    id=generate_uuid(),
                     user_id=user.id,
                     provider=OAuthProvider.GOOGLE,
                     provider_user_id=provider_user_id,
@@ -79,7 +74,7 @@ class OAuthUseCase:
             # 3. Create Session
             expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
             session = Session(
-                id=uuid4(),
+                id=generate_uuid(),
                 user_id=user.id,
                 device=device,
                 ip_address=ip_address,
