@@ -8,18 +8,25 @@ from app.domain.entities.user import User
 from app.domain.entities.oauth_identity import OAuthIdentity
 from app.domain.entities.session import Session
 from app.domain.entities.refresh_token import RefreshToken
-from app.infrastructure.repositories.sqlalchemy_user_repository import SQLAlchemyUserRepository
-from app.infrastructure.repositories.sqlalchemy_oauth_repository import SQLAlchemyOAuthRepository
-from app.infrastructure.repositories.sqlalchemy_session_repository import SQLAlchemySessionRepository
+from app.domain.repositories.user_repository import UserRepository
+from app.domain.repositories.oauth_repository import OAuthRepository
+from app.domain.repositories.session_repository import SessionRepository
+from app.domain.repositories.refresh_token_repository import RefreshTokenRepository
 from app.infrastructure.security.jwt import create_access_token, create_refresh_token_value
 
 
 class OAuthUseCase:
-    def __init__(self, db: AsyncSession):
-        self.db = db
-        self.user_repo = SQLAlchemyUserRepository(db)
-        self.oauth_repo = SQLAlchemyOAuthRepository(db)
-        self.session_repo = SQLAlchemySessionRepository(db)
+    def __init__(
+        self,
+        user_repo: UserRepository,
+        oauth_repo: OAuthRepository,
+        session_repo: SessionRepository,
+        refresh_repo: RefreshTokenRepository | None = None,
+    ):
+        self.user_repo = user_repo
+        self.oauth_repo = oauth_repo
+        self.session_repo = session_repo
+        self.refresh_repo = refresh_repo
 
     async def handle_google_callback(self, user_info: dict, tokens: dict, device: str | None, ip_address: str | None, user_agent: str | None) -> tuple[User, Session, str, str]:
         provider_user_id = user_info["sub"]

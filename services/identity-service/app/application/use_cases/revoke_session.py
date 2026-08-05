@@ -1,13 +1,9 @@
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.domain.entities.session import Session
-from app.infrastructure.repositories.sqlalchemy_session_repository import SQLAlchemySessionRepository
+from app.domain.repositories.session_repository import SessionRepository
 
 
 class SessionUseCase:
-    def __init__(self, db: AsyncSession):
-        self.db = db
-        self.session_repo = SQLAlchemySessionRepository(db)
+    def __init__(self, session_repo: SessionRepository):
+        self.session_repo = session_repo
 
     async def list_sessions(self, user_id: UUID) -> list[Session]:
         return await self.session_repo.list_by_user(user_id)

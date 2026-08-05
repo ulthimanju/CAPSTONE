@@ -1,13 +1,10 @@
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.domain.entities.user import User
-from app.infrastructure.repositories.sqlalchemy_user_repository import SQLAlchemyUserRepository
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.exceptions.profile import ProfileNotFoundError
 
 
 class ProfileUseCase:
-    def __init__(self, db: AsyncSession):
-        self.user_repo = SQLAlchemyUserRepository(db)
+    def __init__(self, user_repo: UserRepository):
+        self.user_repo = user_repo
 
     async def get_profile(self, user_id: UUID) -> User:
         user = await self.user_repo.get_by_id(user_id)
