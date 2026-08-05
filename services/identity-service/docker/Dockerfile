@@ -42,10 +42,9 @@ COPY --from=builder /build/.venv /app/.venv
 COPY --from=builder /build/shared /app/shared
 
 COPY services/identity-service/app/ /app/app/
-COPY services/identity-service/scripts/ /app/scripts/
 COPY services/identity-service/alembic.ini /app/
-COPY services/identity-service/docker/docker-entrypoint.sh /app/docker-entrypoint.sh
-COPY services/identity-service/docker/healthcheck.py /app/healthcheck.py
+COPY docker/docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY docker/healthcheck.py /app/healthcheck.py
 
 RUN chmod +x /app/docker-entrypoint.sh && \
     chown -R appuser:appgroup /app

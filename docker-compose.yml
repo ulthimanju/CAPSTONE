@@ -1,22 +1,28 @@
 version: '3.8'
 
+# ─────────────────────────────────────────────────────────────
+# Infrastructure
+# ─────────────────────────────────────────────────────────────
 services:
+
   postgres:
     image: postgres:16-alpine
     container_name: cpa_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: identity_db
-    ports:
-      - "5432:5432"
+      POSTGRES_MULTIPLE_DATABASES: identity_db,workspace_db,document_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -28,10 +34,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: cpa_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbit
+      RABBITMQ_DEFAULT_PASS: rabbitpassword
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -40,10 +50,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   mongodb:
     image: mongo:7.0
     container_name: cpa_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo
+      MONGO_INITDB_ROOT_PASSWORD: mongopassword
+    volumes:
+      - mongo_data:/data/db
     ports:
       - "27017:27017"
     healthcheck:
@@ -51,24 +67,160 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  pgvector:
+    image: pgvector/pgvector:pg16
+    container_name: cpa_pgvector
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: rag_db
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+# ─────────────────────────────────────────────────────────────
+# Microservices
+# Each service loads: .env.common (shared) + service .env (specific)
+# ─────────────────────────────────────────────────────────────
 
   identity-service:
     build:
-      context: ./services/identity-service
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: services/identity-service/docker/Dockerfile
     container_name: cpa_identity_service
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/identity_db
-      JWT_SECRET: dev-secret-key-change-in-production-32-bytes
-      GOOGLE_CLIENT_ID: dev-google-client-id
-      GOOGLE_CLIENT_SECRET: dev-google-client-secret
-      GOOGLE_REDIRECT_URI: http://localhost:8000/api/v1/oauth/google/callback
-      FRONTEND_URL: http://localhost:5173
+    env_file:
+      - .env.common
+      - services/identity-service/.env
     ports:
       - "8001:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
 
+  workspace-service:
+    build:
+      context: .
+      dockerfile: services/workspace-service/Dockerfile
+    container_name: cpa_workspace_service
+    env_file:
+      - .env.common
+      - services/workspace-service/.env
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  document-service:
+    build:
+      context: .
+      dockerfile: services/document-service/Dockerfile
+    container_name: cpa_document_service
+    env_file:
+      - .env.common
+      - services/document-service/.env
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rag-service:
+    build:
+      context: .
+      dockerfile: services/rag-service/Dockerfile
+    container_name: cpa_rag_service
+    env_file:
+      - .env.common
+      - services/rag-service/.env
+    ports:
+      - "8004:8000"
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: services/ai-service/Dockerfile
+    container_name: cpa_ai_service
+    env_file:
+      - .env.common
+      - services/ai-service/.env
+    ports:
+      - "8005:8000"
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: cpa_notification_service
+    env_file:
+      - .env.common
+      - services/notification-service/.env
+    ports:
+      - "8006:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: cpa_api_gateway
+    env_file:
+      - .env.common
+      - services/api-gateway/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - identity-service
+      - workspace-service
+      - document-service
+      - rag-service
+      - ai-service
+      - notification-service
+    restart: unless-stopped
+
+  web-app:
+    build:
+      context: .
+      dockerfile: web-app/Dockerfile
+    container_name: cpa_web_app
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+# ─────────────────────────────────────────────────────────────
+# Volumes
+# ─────────────────────────────────────────────────────────────
 volumes:
   postgres_data:
+  pgvector_data:
+  mongo_data:
