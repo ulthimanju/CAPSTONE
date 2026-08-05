@@ -17,9 +17,8 @@ class GoogleOAuthClient(OAuthClientInterface):
     def __init__(self):
         self._client = oauth.google
 
-    async def get_authorization_url(self, redirect_uri: str) -> str:
-        # Authlib authorization redirect URL generation helper
-        return redirect_uri
+    async def login_redirect(self, request, redirect_uri: str):
+        return await self._client.authorize_redirect(request, redirect_uri)
 
     async def fetch_user_info_and_tokens(self, request) -> tuple[dict, dict]:
         try:

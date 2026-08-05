@@ -25,7 +25,7 @@ async def google_login(
     oauth_client: OAuthClientInterface = Depends(get_oauth_client),
 ):
     redirect_uri = settings.google_redirect_uri
-    return await oauth_client._client.authorize_redirect(request, redirect_uri)
+    return await oauth_client.login_redirect(request, redirect_uri)
 
 
 @router.get("/callback")
