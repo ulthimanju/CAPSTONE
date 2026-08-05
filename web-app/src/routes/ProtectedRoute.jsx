@@ -4,9 +4,9 @@ import { useAuth } from '../hooks/useAuth';
 import { Spinner } from '../components/ui/Spinner';
 
 export const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isInitialized } = useAuth();
 
-  if (isLoading) {
+  if (!isInitialized || isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size="lg" />
@@ -20,9 +20,9 @@ export const ProtectedRoute = ({ children }) => {
 };
 
 export const PublicRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isInitialized } = useAuth();
 
-  if (isLoading) {
+  if (!isInitialized || isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size="lg" />

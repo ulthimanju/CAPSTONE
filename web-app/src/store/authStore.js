@@ -5,10 +5,11 @@ export const useAuthStore = create((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  isInitialized: false,
 
-  setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
+  setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false, isInitialized: true }),
   clearAuth: () => {
     tokenStorage.removeAccessToken();
-    set({ user: null, isAuthenticated: false, isLoading: false });
+    set({ user: null, isAuthenticated: false, isLoading: false, isInitialized: true });
   },
 }));
