@@ -1,0 +1,11 @@
+[tool.uv.workspace]
+members = [
+    "shared",
+    "services/identity-service",
+    "services/workspace-service",
+    "services/document-service",
+    "services/rag-service",
+    "services/ai-service",
+    "services/notification-service",
+    "services/api-gateway",
+]
