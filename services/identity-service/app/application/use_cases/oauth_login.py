@@ -16,6 +16,7 @@ from app.constants.enums import Role, OAuthProvider
 from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
 from app.infrastructure.security.jwt import create_access_token, create_refresh_token_value
+from app.infrastructure.logging.audit_logger import auth_logger
 
 
 class OAuthUseCase:
@@ -92,7 +93,11 @@ class OAuthUseCase:
             access_token = create_access_token(user.id, email, user.role, session.id)
             raw_refresh_token = create_refresh_token_value()
 
-            # 5. Commit atomic transaction
+            # 5. Log structured audit events (safe, non-sensitive metadata only)
+            auth_logger.oauth_completed(user_id=str(user.id), provider=OAuthProvider.GOOGLE)
+            auth_logger.session_created(session_id=str(session.id), user_id=str(user.id))
+
+            # 6. Commit atomic transaction
             await self.uow.commit()
 
             return user, session, access_token, raw_refresh_token
