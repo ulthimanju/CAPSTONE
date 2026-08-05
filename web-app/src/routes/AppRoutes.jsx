@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from '../pages/LoginPage';
-import { OAuthCallbackPage } from '../pages/OAuthCallbackPage';
+import { OAuthCallbackPage } from '../pages/auth/OAuthCallbackPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { SessionsPage } from '../pages/SessionsPage';
 import { AuthLayout } from '../layouts/AuthLayout';
