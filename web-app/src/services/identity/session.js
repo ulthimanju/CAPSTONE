@@ -2,8 +2,8 @@ import { apiClient } from '../api/client';
 import { tokenStorage } from '../../lib/storage';
 
 export const sessionService = {
-  getSessions: async () => {
-    const res = await apiClient.get('/sessions');
+  getSessions: async (options = {}) => {
+    const res = await apiClient.get('/sessions', options);
     return res.data;
   },
   logout: async () => {

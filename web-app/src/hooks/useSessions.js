@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { sessionService } from '../services/identity/session';
 import { useSessionStore } from '../store/sessionStore';
 
@@ -7,13 +8,16 @@ export const useSessions = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchSessions = async () => {
+  const fetchSessions = async (options = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await sessionService.getSessions();
+      const data = await sessionService.getSessions(options);
       setSessions(data);
     } catch (err) {
+      if (axios.isCancel(err) || err.name === 'CanceledError') {
+        return;
+      }
       setError(err);
     } finally {
       setLoading(false);
@@ -30,7 +34,11 @@ export const useSessions = () => {
   };
 
   useEffect(() => {
-    fetchSessions();
+    const controller = new AbortController();
+    fetchSessions({ signal: controller.signal });
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   return { sessions, loading, error, fetchSessions, revokeSession };
