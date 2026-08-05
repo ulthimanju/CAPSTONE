@@ -17,11 +17,7 @@ async def get_profile(
     user_repo: UserRepository = Depends(get_user_repository),
 ):
     use_case = ProfileUseCase(user_repo)
-    try:
-        user = await use_case.get_profile(user_id)
-        return user
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    return await use_case.get_profile(user_id)
 
 
 @router.patch("", response_model=UserResponse)
@@ -31,8 +27,4 @@ async def update_profile(
     user_repo: UserRepository = Depends(get_user_repository),
 ):
     use_case = ProfileUseCase(user_repo)
-    try:
-        user = await use_case.update_profile(user_id, name=data.name, picture_url=data.picture_url)
-        return user
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return await use_case.update_profile(user_id, name=data.name, picture_url=data.picture_url)

@@ -8,6 +8,7 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.oauth_repository import OAuthRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.refresh_token_repository import RefreshTokenRepository
+from app.domain.exceptions.oauth import GoogleOAuthError
 from app.application.use_cases.oauth_login import OAuthUseCase
 from app.config.settings import settings
 
@@ -30,20 +31,21 @@ async def google_callback(
 ):
     try:
         token = await google.authorize_access_token(request)
-        user_info = token.get("userinfo")
-        if not user_info:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to retrieve user info from Google")
-        
-        use_case = OAuthUseCase(user_repo, oauth_repo, session_repo, refresh_repo)
-        user, session, access_token, refresh_token = await use_case.handle_google_callback(
-            user_info=user_info,
-            tokens=token,
-            device=request.headers.get("user-agent"),
-            ip_address=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent")
-        )
+    except Exception as exc:
+        raise GoogleOAuthError(f"OAuth token authorization failed: {exc}") from exc
 
-        redirect_url = f"{settings.frontend_url}/oauth/callback?access_token={access_token}&refresh_token={refresh_token}"
-        return RedirectResponse(url=redirect_url)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    user_info = token.get("userinfo")
+    if not user_info:
+        raise GoogleOAuthError("Failed to retrieve user info from Google")
+    
+    use_case = OAuthUseCase(user_repo, oauth_repo, session_repo, refresh_repo)
+    user, session, access_token, refresh_token = await use_case.handle_google_callback(
+        user_info=user_info,
+        tokens=token,
+        device=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent")
+    )
+
+    redirect_url = f"{settings.frontend_url}/oauth/callback?access_token={access_token}&refresh_token={refresh_token}"
+    return RedirectResponse(url=redirect_url)
