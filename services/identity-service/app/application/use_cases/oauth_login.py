@@ -10,7 +10,7 @@ from app.domain.entities.session import Session
 from app.domain.entities.refresh_token import RefreshToken
 from app.infrastructure.repositories.sqlalchemy_user_repository import SQLAlchemyUserRepository
 from app.infrastructure.repositories.sqlalchemy_oauth_repository import SQLAlchemyOAuthRepository
-from app.infrastructure.repositories/sqlalchemy_session_repository import SQLAlchemySessionRepository
+from app.infrastructure.repositories.sqlalchemy_session_repository import SQLAlchemySessionRepository
 from app.infrastructure.security.jwt import create_access_token, create_refresh_token_value
 
 
