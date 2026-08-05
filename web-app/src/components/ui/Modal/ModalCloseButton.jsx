@@ -3,7 +3,6 @@ import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 
 export function ModalCloseButton({
-  icon = "close",
   "aria-label": ariaLabel = "Close dialog",
   className,
   ...props
@@ -12,21 +11,13 @@ export function ModalCloseButton({
     <Dialog.Close
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex items-center justify-center",
-        "rounded-[var(--radius-xs)]",
-        "p-1.5",
-        "text-[var(--color-text-muted)]",
-        "transition-colors",
-        "hover:bg-[var(--color-bg-secondary)]",
-        "hover:text-[var(--color-text-primary)]",
-        "focus:outline-none",
-        "focus-visible:ring-2",
-        "focus-visible:ring-[var(--color-primary)]",
+        "inline-flex items-center justify-center rounded-md p-1.5 text-[#71717a] transition-colors hover:bg-[#1f1f22] hover:text-[#e4e4e7] focus:outline-none",
         className
       )}
       {...props}
     >
-      <Icon name={icon} size="sm" />
+      <i className="ti ti-x text-lg"></i>
     </Dialog.Close>
   );
 }
+

@@ -4,8 +4,8 @@ export const modalOverlayVariants = cva([
   "fixed",
   "inset-0",
   "z-50",
-  "bg-black/60",
-  "backdrop-blur-xs",
+  "bg-black/80",
+  "backdrop-blur-sm",
   "animate-in",
   "fade-in-0",
   "data-[state=closed]:animate-out",
@@ -21,11 +21,12 @@ export const modalContentVariants = cva(
     "w-full",
     "flex-col",
     "overflow-hidden",
-    "rounded-[var(--radius-lg)]",
+    "rounded-xl",
     "border",
-    "border-[var(--color-border)]",
-    "bg-[var(--color-bg-surface)]",
-    "shadow-xl",
+    "border-[#2a2a2e]",
+    "bg-[#16161a]",
+    "text-[#e4e4e7]",
+    "shadow-2xl",
     "outline-none",
     "transition-all",
     "animate-in",
@@ -40,7 +41,7 @@ export const modalContentVariants = cva(
       size: {
         xs: "max-w-xs",
         sm: "max-w-sm",
-        md: "max-w-lg",
+        md: "max-w-md",
         lg: "max-w-2xl",
         xl: "max-w-4xl",
         full: "max-w-[95vw] h-[90vh]",
@@ -64,7 +65,7 @@ export const modalHeaderVariants = cva([
   "p-6",
   "pb-4",
   "border-b",
-  "border-[var(--color-border)]",
+  "border-[#2a2a2e]",
 ]);
 
 export const modalBodyVariants = cva([
@@ -82,5 +83,6 @@ export const modalFooterVariants = cva([
   "p-6",
   "pt-4",
   "border-t",
-  "border-[var(--color-border)]",
+  "border-[#2a2a2e]",
 ]);
+

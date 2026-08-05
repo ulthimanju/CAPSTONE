@@ -6,12 +6,12 @@ export function ModalHeader({ title, description, className, children, ...props 
   return (
     <div className={cn(modalHeaderVariants(), className)} {...props}>
       {title && (
-        <Dialog.Title className="text-base font-semibold leading-tight text-[var(--color-text-primary)] pr-8">
+        <Dialog.Title className="text-lg font-semibold text-[#e4e4e7] pr-8">
           {title}
         </Dialog.Title>
       )}
       {description && (
-        <Dialog.Description className="text-sm text-[var(--color-text-secondary)]">
+        <Dialog.Description className="text-xs text-[#a1a1aa] mt-1">
           {description}
         </Dialog.Description>
       )}
@@ -19,3 +19,4 @@ export function ModalHeader({ title, description, className, children, ...props 
     </div>
   );
 }
+
