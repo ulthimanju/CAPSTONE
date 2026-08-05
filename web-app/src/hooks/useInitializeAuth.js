@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import axios from 'axios';
 import { profileService } from '../services/identity/profile';
 import { useAuthStore } from '../store/authStore';
 
@@ -7,13 +8,16 @@ export const useInitializeAuth = () => {
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const initAuth = async () => {
       try {
-        const user = await profileService.getProfile();
+        const user = await profileService.getProfile({ signal: controller.signal });
         setUser(user);
       } catch (error) {
-        // Only clear auth and logout on 401/403 unauthenticated errors.
-        // Server (5xx) or network errors preserve offline/retry state without logging out.
+        if (axios.isCancel(error) || error.name === 'CanceledError') {
+          return; // Ignore canceled request errors on component unmount
+        }
         if (error.response?.status === 401 || error.response?.status === 403) {
           clearAuth();
         } else {
@@ -21,6 +25,11 @@ export const useInitializeAuth = () => {
         }
       }
     };
+
     initAuth();
+
+    return () => {
+      controller.abort();
+    };
   }, [setUser, clearAuth]);
 };
