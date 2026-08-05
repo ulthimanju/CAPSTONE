@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { tokenStorage } from '../lib/storage';
 
 export const useAuthStore = create((set) => ({
   user: null,
@@ -7,7 +8,7 @@ export const useAuthStore = create((set) => ({
 
   setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
   clearAuth: () => {
-    localStorage.removeItem('access_token');
+    tokenStorage.removeAccessToken();
     set({ user: null, isAuthenticated: false, isLoading: false });
   },
 }));

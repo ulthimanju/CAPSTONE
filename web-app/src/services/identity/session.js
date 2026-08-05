@@ -1,4 +1,5 @@
 import { apiClient } from '../api/client';
+import { tokenStorage } from '../../lib/storage';
 
 export const sessionService = {
   getSessions: async () => {
@@ -7,11 +8,11 @@ export const sessionService = {
   },
   logout: async () => {
     await apiClient.post('/sessions/logout');
-    localStorage.removeItem('access_token');
+    tokenStorage.removeAccessToken();
   },
   logoutAll: async () => {
     await apiClient.post('/sessions/logout-all');
-    localStorage.removeItem('access_token');
+    tokenStorage.removeAccessToken();
   },
   revokeSession: async (sessionId) => {
     await apiClient.delete(`/sessions/${sessionId}`);

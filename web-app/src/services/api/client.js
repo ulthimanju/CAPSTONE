@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { apiConfig } from '../../config/api';
+import { tokenStorage } from '../../lib/storage';
 
 const API_BASE_URL = apiConfig.baseUrl;
 
@@ -12,7 +13,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = tokenStorage.getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -28,11 +29,11 @@ apiClient.interceptors.response.use(
       try {
         const res = await axios.post(`${API_BASE_URL}/tokens/refresh`, {}, { withCredentials: true });
         const { access_token } = res.data;
-        localStorage.setItem('access_token', access_token);
+        tokenStorage.setAccessToken(access_token);
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem('access_token');
+        tokenStorage.removeAccessToken();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
