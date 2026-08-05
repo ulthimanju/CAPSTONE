@@ -1,6 +1,6 @@
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/identity/auth';
-import { sessionService } from '../services/identity/session';
+import { SessionManager } from '../services/identity/sessionManager';
 
 export const useAuth = () => {
   const { user, isAuthenticated, isLoading, isInitialized, setUser, clearAuth } = useAuthStore();
@@ -10,11 +10,7 @@ export const useAuth = () => {
   };
 
   const logout = async () => {
-    try {
-      await sessionService.logout();
-    } finally {
-      clearAuth();
-    }
+    await SessionManager.logout();
   };
 
   return {
