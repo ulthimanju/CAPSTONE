@@ -12,7 +12,13 @@ export const useInitializeAuth = () => {
         const user = await profileService.getProfile();
         setUser(user);
       } catch (error) {
-        clearAuth();
+        // Only clear auth and logout on 401/403 unauthenticated errors.
+        // Server (5xx) or network errors preserve offline/retry state without logging out.
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          clearAuth();
+        } else {
+          useAuthStore.setState({ isLoading: false });
+        }
       }
     };
     initAuth();
