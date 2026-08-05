@@ -1,3 +1,5 @@
+from uuid import UUID
+from app.domain.entities.session import Session
 from app.domain.repositories.session_repository import SessionRepository
 
 

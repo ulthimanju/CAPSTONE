@@ -7,25 +7,71 @@ import { useAuthStore } from '../../store/authStore';
 export class SessionManager {
   static refreshTimer = null;
 
+  static setAccessToken(token) {
+    tokenStorage.setAccessToken(token);
+  }
+
+  static getUser() {
+    return useAuthStore.getState().user;
+  }
+
   static async initialize(options = {}) {
+
     try {
-      // 1. Validate startup session / fetch profile
-      const user = await profileService.getProfile(options);
-      useAuthStore.getState().setUser(user);
-      SessionManager.scheduleRefresh();
-      return user;
-    } catch (error) {
-      if (error.name === 'CanceledError' || error.name === 'AbortError' || error.code === 'NETWORK_ERROR') {
-        if (error.code !== 'NETWORK_ERROR') throw error;
+      // 1. If access token is missing, attempt to obtain one using HTTP-only refresh cookie
+      if (!tokenStorage.getAccessToken()) {
+        try {
+          const tokenData = await authService.refreshToken();
+          if (tokenData?.access_token) {
+            tokenStorage.setAccessToken(tokenData.access_token);
+          }
+        } catch (refreshErr) {
+          // Ignore refresh error
+        }
       }
-      if (error.status === 401 || error.status === 403) {
-        SessionManager.logout();
+
+      const token = tokenStorage.getAccessToken();
+
+      // 2. Try fetching profile via profileService
+      if (token) {
+        try {
+          const user = await profileService.getProfile(options);
+          useAuthStore.getState().setUser(user);
+          SessionManager.scheduleRefresh();
+          return user;
+        } catch (profileErr) {
+          // Decode JWT payload for user info if getProfile fails or is unauthenticated
+          try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            const payload = JSON.parse(jsonPayload);
+            
+            const fallbackUser = {
+              id: payload.sub,
+              email: payload.email,
+              name: payload.email ? payload.email.split('@')[0] : 'User',
+              role: payload.role || 'student',
+            };
+            useAuthStore.getState().setUser(fallbackUser);
+            useAuthStore.setState({ isLoading: false, isInitialized: true });
+            return fallbackUser;
+          } catch (jwtErr) {
+            // Invalid token
+            SessionManager.logout();
+            throw profileErr;
+          }
+        }
       } else {
         useAuthStore.setState({ isLoading: false, isInitialized: true });
       }
+    } catch (error) {
+      useAuthStore.setState({ isLoading: false, isInitialized: true });
       throw error;
     }
   }
+
+
 
   static scheduleRefresh() {
     SessionManager.clearRefreshTimer();

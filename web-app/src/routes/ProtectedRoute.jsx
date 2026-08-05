@@ -30,7 +30,8 @@ export const PublicRoute = ({ children }) => {
     );
   }
 
-  if (isAuthenticated) return <Navigate to="/profile" replace />;
+  if (isAuthenticated) return <Navigate to="/workspaces" replace />;
+
 
   return children;
 };

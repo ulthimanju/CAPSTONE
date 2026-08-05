@@ -10,8 +10,13 @@ oauth.register(
     client_id=settings.google_client_id,
     client_secret=settings.google_client_secret,
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-    client_kwargs={"scope": "openid email profile"},
+    client_kwargs={
+        "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
+        "access_type": "offline",
+        "prompt": "consent",
+    },
 )
+
 
 
 class GoogleOAuthClient(OAuthClientInterface):
@@ -35,8 +40,9 @@ class GoogleOAuthClient(OAuthClientInterface):
             sub=user_info["sub"],
             email=user_info["email"],
             name=user_info.get("name", user_info["email"].split("@")[0]),
-            picture=user_info.get("picture"),
+            picture=None,
         )
+
         token_dto = GoogleTokenDTO(
             access_token=tokens.get("access_token", ""),
             refresh_token=tokens.get("refresh_token"),

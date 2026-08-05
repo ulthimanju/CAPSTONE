@@ -7,10 +7,11 @@ class UserResponse(BaseModel):
     id: UUID
     email: EmailStr
     name: str
-    picture_url: str | None
+    picture_url: str | None = None
     role: str
     created_at: datetime
     updated_at: datetime
+
 
 
 class UserUpdate(BaseModel):
@@ -35,4 +36,5 @@ class TokenResponse(BaseModel):
 
 
 class TokenRefreshRequest(BaseModel):
-    refresh_token: str
+    refresh_token: str | None = None
+

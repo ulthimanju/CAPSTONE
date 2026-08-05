@@ -1,0 +1,75 @@
+from uuid import UUID
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.domain.entities.processing_job import DocumentProcessingJob
+from app.domain.repositories.processing_job_repository import DocumentProcessingJobRepository
+from app.infrastructure.database.models import DocumentProcessingJobModel
+from app.constants.enums import ProcessingJobType, ProcessingStatus
+
+
+class SQLAlchemyProcessingJobRepository(DocumentProcessingJobRepository):
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    def _to_domain(self, model: DocumentProcessingJobModel) -> DocumentProcessingJob:
+        return DocumentProcessingJob(
+            id=model.id,
+            document_id=model.document_id,
+            job_type=ProcessingJobType(model.job_type),
+            status=ProcessingStatus(model.status),
+            priority=model.priority,
+            retry_count=model.retry_count,
+            error_message=model.error_message,
+            started_at=model.started_at,
+            completed_at=model.completed_at,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+        )
+
+    async def create(self, job: DocumentProcessingJob) -> DocumentProcessingJob:
+        model = DocumentProcessingJobModel(
+            id=job.id,
+            document_id=job.document_id,
+            job_type=job.job_type.value if hasattr(job.job_type, "value") else str(job.job_type),
+            status=job.status.value if hasattr(job.status, "value") else str(job.status),
+            priority=job.priority,
+            retry_count=job.retry_count,
+            error_message=job.error_message,
+            started_at=job.started_at,
+            completed_at=job.completed_at,
+            created_at=job.created_at,
+            updated_at=job.updated_at,
+        )
+        self.session.add(model)
+        await self.session.flush()
+        return job
+
+    async def get_by_id(self, job_id: UUID) -> DocumentProcessingJob | None:
+        stmt = select(DocumentProcessingJobModel).where(DocumentProcessingJobModel.id == job_id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_domain(model) if model else None
+
+    async def get_latest_by_document(self, document_id: UUID) -> DocumentProcessingJob | None:
+        stmt = (
+            select(DocumentProcessingJobModel)
+            .where(DocumentProcessingJobModel.document_id == document_id)
+            .order_by(DocumentProcessingJobModel.created_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalars().first()
+        return self._to_domain(model) if model else None
+
+    async def update(self, job: DocumentProcessingJob) -> DocumentProcessingJob:
+        stmt = select(DocumentProcessingJobModel).where(DocumentProcessingJobModel.id == job.id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model:
+            model.status = job.status.value if hasattr(job.status, "value") else str(job.status)
+            model.retry_count = job.retry_count
+            model.error_message = job.error_message
+            model.started_at = job.started_at
+            model.completed_at = job.completed_at
+            model.updated_at = job.updated_at
+            await self.session.flush()
+        return job

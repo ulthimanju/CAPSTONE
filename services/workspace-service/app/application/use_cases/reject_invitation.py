@@ -1,0 +1,26 @@
+from datetime import datetime, timezone
+from uuid import UUID
+from fastapi import HTTPException
+from app.domain.repositories.invitation_repository import InvitationRepository
+from app.constants.enums import InvitationStatus
+from app.schemas.invitation import InvitationResponse
+
+
+class RejectInvitationUseCase:
+    def __init__(self, invitation_repo: InvitationRepository):
+        self.invitation_repo = invitation_repo
+
+    async def execute(self, invitation_id: UUID, user_id: UUID) -> InvitationResponse:
+        invitation = await self.invitation_repo.get_by_id(invitation_id)
+        if not invitation:
+            raise HTTPException(status_code=404, detail="Invitation not found")
+
+        if invitation.invited_user_id != user_id:
+            raise HTTPException(status_code=403, detail="Invitation is for another user")
+
+        if invitation.status != InvitationStatus.PENDING:
+            raise HTTPException(status_code=400, detail=f"Invitation is already {invitation.status.value}")
+
+        invitation.status = InvitationStatus.REJECTED
+        updated = await self.invitation_repo.update(invitation)
+        return InvitationResponse.model_validate(updated)

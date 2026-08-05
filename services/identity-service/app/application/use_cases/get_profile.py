@@ -1,3 +1,5 @@
+from uuid import UUID
+from app.domain.entities.user import User
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.exceptions.profile import ProfileNotFoundError
 

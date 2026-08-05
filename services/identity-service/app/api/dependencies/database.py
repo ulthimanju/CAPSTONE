@@ -30,3 +30,8 @@ from app.infrastructure.repositories.sqlalchemy_unit_of_work import SQLAlchemyUn
 
 def get_unit_of_work(db: AsyncSession = Depends(get_db)) -> SQLAlchemyUnitOfWork:
     return SQLAlchemyUnitOfWork(db)
+
+
+def get_refresh_token_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemyRefreshTokenRepository:
+    return SQLAlchemyRefreshTokenRepository(db)
+

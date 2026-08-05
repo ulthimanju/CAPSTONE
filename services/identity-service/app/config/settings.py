@@ -1,24 +1,27 @@
-from pydantic_settings import BaseSettings
+from shared.config import PlatformSettings
 
 
-class Settings(BaseSettings):
+class IdentitySettings(PlatformSettings):
     app_name: str = "identity-service"
-    debug: bool = False
-
     database_url: str
-    jwt_secret: str
-    jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 15
-    refresh_token_expire_days: int = 30
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+    frontend_origin: str = "http://localhost"
 
-    google_client_id: str
-    google_client_secret: str
-    google_redirect_uri: str
+    @property
+    def debug(self) -> bool:
+        return self.app_env == "development"
 
-    frontend_url: str = "http://localhost:5173"
+    @property
+    def refresh_token_expire_days(self) -> int:
+        return self.jwt_refresh_expire_days
 
-    class Config:
-        env_file = ".env"
+    @property
+    def frontend_url(self) -> str:
+        return self.frontend_origin
 
 
-settings = Settings()
+settings = IdentitySettings()
+
+

@@ -36,10 +36,10 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         tokenStorage.removeAccessToken();
-        window.location.href = '/login';
         return Promise.reject(ApiError.fromAxiosError(refreshError));
       }
     }
     return Promise.reject(ApiError.fromAxiosError(error));
   }
 );
+

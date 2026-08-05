@@ -51,3 +51,16 @@ class SQLAlchemyOAuthRepository(OAuthRepository):
         await self._db.flush()
         await self._db.refresh(m)
         return _to_entity(m)
+
+    async def get_by_user_id(self, user_id: str, provider: str = "google") -> OAuthIdentity | None:
+        import uuid
+        uid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        result = await self._db.execute(
+            select(OAuthIdentityModel).where(
+                OAuthIdentityModel.user_id == uid,
+                OAuthIdentityModel.provider == provider,
+            )
+        )
+        m = result.scalar_one_or_none()
+        return _to_entity(m) if m else None
+

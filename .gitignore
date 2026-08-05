@@ -1,6 +1,8 @@
 # Environment files — never commit real secrets
 .env.common
 services/**/.env
+scratch/
+
 
 # Keep examples
 !.env.example

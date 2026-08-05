@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import get_current_user_id
-from app.api.dependencies.database import get_user_repository
+from app.api.dependencies.database import get_user_repository, get_oauth_repository
 from app.domain.repositories.user_repository import UserRepository
 from app.application.use_cases.get_profile import ProfileUseCase
 from app.schemas.auth import UserResponse, UserUpdate
@@ -28,3 +28,16 @@ async def update_profile(
 ):
     use_case = ProfileUseCase(user_repo)
     return await use_case.update_profile(user_id, name=data.name, picture_url=data.picture_url)
+
+
+@router.get("/google-token")
+async def get_google_token(
+    user_id: UUID = Depends(get_current_user_id),
+    oauth_repo=Depends(get_oauth_repository),
+):
+    identity = await oauth_repo.get_by_user_id(str(user_id), provider="google")
+
+    if not identity or not identity.access_token:
+        raise HTTPException(status_code=404, detail="No Google OAuth token found for user")
+    return {"access_token": identity.access_token, "refresh_token": identity.refresh_token}
+

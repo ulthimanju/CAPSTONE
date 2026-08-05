@@ -13,9 +13,16 @@ export const OAuthCallbackPage = () => {
 
     const handleOAuthCallback = async () => {
       try {
-        // Exchange HTTP-only refresh cookie for session validation & user profile
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        if (token) {
+          SessionManager.setAccessToken(token);
+        }
+
+        // Initialize session / fetch profile
         await SessionManager.initialize({ signal: controller.signal });
-        navigate('/profile', { replace: true });
+        navigate('/workspaces', { replace: true });
+
       } catch (err) {
         if (axios.isCancel(err) || err.name === 'CanceledError') {
           return;
@@ -23,6 +30,7 @@ export const OAuthCallbackPage = () => {
         navigate('/login', { replace: true });
       }
     };
+
 
     handleOAuthCallback();
 

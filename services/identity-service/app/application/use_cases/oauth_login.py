@@ -12,7 +12,11 @@ from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO, OAuthLoginResult
 from app.config.settings import settings
 from shared.security.jwt import JWTManager, JWTSettings
+from app.domain.entities.user import User
+from app.domain.entities.oauth_identity import OAuthIdentity
+from app.domain.entities.session import Session
 from app.infrastructure.logging.audit_logger import auth_logger
+
 
 jwt_settings = JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
 jwt_manager = JWTManager(jwt_settings)
@@ -60,7 +64,7 @@ class OAuthUseCase:
                 )
                 user = await self.user_repo.create(user)
 
-            # 2. Check or create OAuth Identity
+            # 2. Check or create/update OAuth Identity
             identity = await self.oauth_repo.get_by_provider(OAuthProvider.GOOGLE, provider_user_id)
             if not identity:
                 identity = OAuthIdentity(
@@ -74,6 +78,13 @@ class OAuthUseCase:
                     expires_at=datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
                 )
                 await self.oauth_repo.create(identity)
+            else:
+                identity.access_token = token_dto.access_token
+                if token_dto.refresh_token:
+                    identity.refresh_token = token_dto.refresh_token
+                identity.expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
+                await self.oauth_repo.update(identity)
+
 
             # 3. Create Session
             expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)

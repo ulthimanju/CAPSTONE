@@ -8,6 +8,10 @@ import { AuthLayout } from '../layouts/AuthLayout';
 import { AppLayout } from '../layouts/AppLayout';
 import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
 
+import { WorkspacesPage } from '../pages/WorkspacesPage';
+import { WorkspaceDetailPage } from '../pages/WorkspaceDetailPage';
+
+
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -22,6 +26,27 @@ export const AppRoutes = () => {
         }
       />
       <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+      <Route
+        path="/workspaces"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <WorkspacesPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces/:workspaceId"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <WorkspaceDetailPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/profile"
         element={
@@ -42,7 +67,8 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/profile" replace />} />
+      <Route path="*" element={<Navigate to="/workspaces" replace />} />
     </Routes>
   );
 };
+

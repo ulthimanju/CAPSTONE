@@ -1,0 +1,178 @@
+from uuid import UUID
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.domain.entities.document import Document
+from app.domain.repositories.document_repository import DocumentRepository
+from app.infrastructure.database.models import DocumentModel
+from app.constants.enums import DocumentStatus, FileType, StorageProvider, ParseStatus, ChunkStatus, LifecycleStatus
+
+
+class SQLAlchemyDocumentRepository(DocumentRepository):
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    def _to_domain(self, model: DocumentModel) -> Document:
+        return Document(
+            id=model.id,
+            workspace_id=model.workspace_id,
+            uploaded_by=model.uploaded_by,
+            original_filename=model.original_filename,
+            mime_type=model.mime_type,
+            file_extension=FileType(model.file_extension.upper()),
+            file_size_bytes=model.file_size_bytes,
+            storage_provider=StorageProvider(model.storage_provider),
+            storage_file_id=model.storage_file_id,
+            storage_parent_id=model.storage_parent_id,
+            storage_metadata_json=model.storage_metadata_json or {},
+            checksum=model.checksum,
+            status=DocumentStatus(model.status),
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            deleted_at=model.deleted_at,
+            processing_job_id=model.processing_job_id,
+            is_processing=model.is_processing,
+            processing_started_at=model.processing_started_at,
+            processing_completed_at=model.processing_completed_at,
+            processing_error=model.processing_error,
+            parse_status=ParseStatus(model.parse_status),
+            parse_started_at=model.parse_started_at,
+            parse_completed_at=model.parse_completed_at,
+            parse_error=model.parse_error,
+            parse_result_id=model.parse_result_id,
+            is_split=model.is_split,
+            part_count=model.part_count,
+            chunk_status=ChunkStatus(model.chunk_status),
+            chunk_count=model.chunk_count,
+            chunk_started_at=model.chunk_started_at,
+            chunk_completed_at=model.chunk_completed_at,
+            chunk_error=model.chunk_error,
+            version=model.version,
+            parent_document_id=model.parent_document_id,
+            is_latest=model.is_latest,
+            is_deleted=model.is_deleted,
+            deleted_by=model.deleted_by,
+            lifecycle_status=LifecycleStatus(model.lifecycle_status),
+            last_processed_at=model.last_processed_at,
+            last_indexed_at=model.last_indexed_at,
+            last_accessed_at=model.last_accessed_at,
+        )
+
+    async def create(self, document: Document) -> Document:
+        model = DocumentModel(
+            id=document.id,
+            workspace_id=document.workspace_id,
+            uploaded_by=document.uploaded_by,
+            original_filename=document.original_filename,
+            mime_type=document.mime_type,
+            file_extension=document.file_extension.value if hasattr(document.file_extension, "value") else str(document.file_extension),
+            file_size_bytes=document.file_size_bytes,
+            storage_provider=document.storage_provider.value if hasattr(document.storage_provider, "value") else str(document.storage_provider),
+            storage_file_id=document.storage_file_id,
+            storage_parent_id=document.storage_parent_id,
+            storage_metadata_json=document.storage_metadata_json,
+            checksum=document.checksum,
+            status=document.status.value if hasattr(document.status, "value") else str(document.status),
+            created_at=document.created_at,
+            updated_at=document.updated_at,
+            deleted_at=document.deleted_at,
+            processing_job_id=document.processing_job_id,
+            is_processing=document.is_processing,
+            processing_started_at=document.processing_started_at,
+            processing_completed_at=document.processing_completed_at,
+            processing_error=document.processing_error,
+            parse_status=document.parse_status.value if hasattr(document.parse_status, "value") else str(document.parse_status),
+            parse_started_at=document.parse_started_at,
+            parse_completed_at=document.parse_completed_at,
+            parse_error=document.parse_error,
+            parse_result_id=document.parse_result_id,
+            is_split=document.is_split,
+            part_count=document.part_count,
+            chunk_status=document.chunk_status.value if hasattr(document.chunk_status, "value") else str(document.chunk_status),
+            chunk_count=document.chunk_count,
+            chunk_started_at=document.chunk_started_at,
+            chunk_completed_at=document.chunk_completed_at,
+            chunk_error=document.chunk_error,
+            version=document.version,
+            parent_document_id=document.parent_document_id,
+            is_latest=document.is_latest,
+            is_deleted=document.is_deleted,
+            deleted_by=document.deleted_by,
+            lifecycle_status=document.lifecycle_status.value if hasattr(document.lifecycle_status, "value") else str(document.lifecycle_status),
+            last_processed_at=document.last_processed_at,
+            last_indexed_at=document.last_indexed_at,
+            last_accessed_at=document.last_accessed_at,
+        )
+        self.session.add(model)
+        await self.session.flush()
+        return document
+
+    async def get_by_id(self, document_id: UUID) -> Document | None:
+        stmt = select(DocumentModel).where(DocumentModel.id == document_id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_domain(model) if model else None
+
+    async def list_by_workspace(self, workspace_id: UUID) -> list[Document]:
+        stmt = (
+            select(DocumentModel)
+            .where(
+                DocumentModel.workspace_id == workspace_id,
+                DocumentModel.status != DocumentStatus.DELETED.value,
+                DocumentModel.lifecycle_status != LifecycleStatus.DELETED.value,
+            )
+            .order_by(DocumentModel.created_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_domain(m) for m in models]
+
+    async def update(self, document: Document) -> Document:
+        stmt = select(DocumentModel).where(DocumentModel.id == document.id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model:
+            model.original_filename = document.original_filename
+            model.status = document.status.value if hasattr(document.status, "value") else str(document.status)
+            model.deleted_at = document.deleted_at
+            model.updated_at = document.updated_at
+            model.checksum = document.checksum
+            model.processing_job_id = document.processing_job_id
+            model.is_processing = document.is_processing
+            model.processing_started_at = document.processing_started_at
+            model.processing_completed_at = document.processing_completed_at
+            model.processing_error = document.processing_error
+            model.parse_status = document.parse_status.value if hasattr(document.parse_status, "value") else str(document.parse_status)
+            model.parse_started_at = document.parse_started_at
+            model.parse_completed_at = document.parse_completed_at
+            model.parse_error = document.parse_error
+            model.parse_result_id = document.parse_result_id
+            model.is_split = document.is_split
+            model.part_count = document.part_count
+            model.chunk_status = document.chunk_status.value if hasattr(document.chunk_status, "value") else str(document.chunk_status)
+            model.chunk_count = document.chunk_count
+            model.chunk_started_at = document.chunk_started_at
+            model.chunk_completed_at = document.chunk_completed_at
+            model.chunk_error = document.chunk_error
+            model.version = document.version
+            model.parent_document_id = document.parent_document_id
+            model.is_latest = document.is_latest
+            model.is_deleted = document.is_deleted
+            model.deleted_by = document.deleted_by
+            model.lifecycle_status = document.lifecycle_status.value if hasattr(document.lifecycle_status, "value") else str(document.lifecycle_status)
+            model.last_processed_at = document.last_processed_at
+            model.last_indexed_at = document.last_indexed_at
+            model.last_accessed_at = document.last_accessed_at
+            await self.session.flush()
+        return document
+
+    async def delete(self, document_id: UUID) -> bool:
+        stmt = select(DocumentModel).where(DocumentModel.id == document_id)
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model:
+            model.status = DocumentStatus.DELETED.value
+            model.lifecycle_status = LifecycleStatus.DELETED.value
+            model.is_deleted = True
+            await self.session.flush()
+            return True
+        return False
