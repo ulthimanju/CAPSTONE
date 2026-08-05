@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import hashlib
 from uuid import UUID, uuid4
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
 from app.domain.entities.user import User
