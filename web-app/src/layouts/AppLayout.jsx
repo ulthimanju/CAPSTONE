@@ -22,7 +22,8 @@ export const AppLayout = ({ children, activeTab, setActiveTab, docCount = 3 }) =
             className={`nav-item ${activeTab === 'documents' || !activeTab ? 'active' : ''}`}
             onClick={() => setActiveTab && setActiveTab('documents')}
           >
-            <i className="ti ti-file-text"></i>Documents<span class="count">{docCount}</span>
+            <i className="ti ti-file-text"></i>Documents<span className="count">{docCount}</span>
+
           </button>
           
           <button

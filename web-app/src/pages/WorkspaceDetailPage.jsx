@@ -33,21 +33,40 @@ export const WorkspaceDetailPage = () => {
   const [chunksList, setChunksList] = useState([]);
   const [loadingChunks, setLoadingChunks] = useState(false);
 
+  // Workspace Creation Modal
+  const [isCreateWsOpen, setIsCreateWsOpen] = useState(false);
+  const [newWsName, setNewWsName] = useState('');
+  const [newWsDescription, setNewWsDescription] = useState('');
+  const [creatingWs, setCreatingWs] = useState(false);
+
   const fetchWorkspaceAndDocs = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
 
-      const [wsRes, allWsRes, docsRes] = await Promise.all([
-        axios.get(`/api/v1/workspaces/${workspaceId}`, { headers }),
-        axios.get('/api/v1/workspaces', { headers }),
-        axios.get(`/api/v1/documents?workspace_id=${workspaceId}`, { headers }),
-      ]);
+      const allWsRes = await axios.get('/api/v1/workspaces', { headers });
+      const wsList = allWsRes.data.workspaces || [];
+      setAllWorkspaces(wsList);
 
-      setWorkspace(wsRes.data);
-      setAllWorkspaces(allWsRes.data.workspaces || []);
-      setDocuments(docsRes.data.documents || []);
+      let targetWsId = workspaceId;
+      if (!targetWsId && wsList.length > 0) {
+        targetWsId = wsList[0].id;
+        navigate(`/workspaces/${targetWsId}`, { replace: true });
+        return;
+      }
+
+      if (targetWsId) {
+        const [wsRes, docsRes] = await Promise.all([
+          axios.get(`/api/v1/workspaces/${targetWsId}`, { headers }),
+          axios.get(`/api/v1/documents?workspace_id=${targetWsId}`, { headers }),
+        ]);
+        setWorkspace(wsRes.data);
+        setDocuments(docsRes.data.documents || []);
+      } else {
+        setWorkspace(null);
+        setDocuments([]);
+      }
     } catch (err) {
       console.error('Failed to load workspace detail:', err);
       if (!silent) setError('Unable to load workspace details.');
@@ -55,6 +74,39 @@ export const WorkspaceDetailPage = () => {
       if (!silent) setLoading(false);
     }
   };
+
+  const handleCreateWorkspaceSubmit = async (e) => {
+    e.preventDefault();
+    if (!newWsName.trim()) return;
+
+    try {
+      setCreatingWs(true);
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      const res = await axios.post(
+        '/api/v1/workspaces',
+        {
+          name: newWsName.trim(),
+          description: newWsDescription.trim() || null,
+          visibility: 'PRIVATE',
+        },
+        { headers }
+      );
+
+      setNewWsName('');
+      setNewWsDescription('');
+      setIsCreateWsOpen(false);
+      setIsDropdownOpen(false);
+
+      const createdWs = res.data;
+      navigate(`/workspaces/${createdWs.id}`);
+    } catch (err) {
+      console.error('Failed to create workspace:', err);
+      alert('Failed to create workspace');
+    } finally {
+      setCreatingWs(false);
+    }
+  };
+
 
   useEffect(() => {
     fetchWorkspaceAndDocs();
@@ -176,6 +228,75 @@ export const WorkspaceDetailPage = () => {
     );
   }
 
+  if (!loading && allWorkspaces.length === 0) {
+    return (
+      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={0}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', padding: '2rem' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+            <i className="ti ti-folder-plus"></i>
+          </div>
+          <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>No Workspaces Found</h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '400px', marginBottom: '1.5rem' }}>
+            Get started by creating your first workspace to manage documents and collaborate with AI.
+          </p>
+          <button className="btn btn-primary" onClick={() => setIsCreateWsOpen(true)} style={{ padding: '8px 16px', fontSize: '13px' }}>
+            <i className="ti ti-plus"></i> Create Workspace
+          </button>
+        </div>
+
+        {/* Create Workspace Modal */}
+        <Modal open={isCreateWsOpen} onOpenChange={setIsCreateWsOpen}>
+          <ModalContent size="md" className="bg-[#16161a] border border-[#2a2a2e] text-white shadow-2xl">
+            <ModalHeader
+              title="Create New Workspace"
+              description="Set up a collaborative workspace for your documents and AI interactions."
+            />
+            <form onSubmit={handleCreateWorkspaceSubmit}>
+              <ModalBody className="space-y-4 py-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-gray-200">
+                    Workspace Name <span className="text-emerald-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. AI Research Lab"
+                    value={newWsName}
+                    onChange={(e) => setNewWsName(e.target.value)}
+                    required
+                    autoFocus
+                    className="w-full h-11 px-4 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-gray-200">
+                    Description <span className="text-gray-400 text-xs">(Optional)</span>
+                  </label>
+                  <textarea
+                    placeholder="Brief summary of the workspace purpose"
+                    value={newWsDescription}
+                    onChange={(e) => setNewWsDescription(e.target.value)}
+                    rows={3}
+                    className="w-full p-3 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors resize-none"
+                  />
+                </div>
+              </ModalBody>
+              
+              <ModalFooter className="gap-3 pt-4 border-t border-[#2a2a2e]">
+                <button type="button" className="btn" onClick={() => setIsCreateWsOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={creatingWs || !newWsName.trim()}>
+                  {creatingWs ? 'Creating...' : 'Create Workspace'}
+                </button>
+              </ModalFooter>
+            </form>
+          </ModalContent>
+        </Modal>
+      </AppLayout>
+    );
+  }
+
   if (error || !workspace) {
     return (
       <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={documents.length}>
@@ -187,6 +308,7 @@ export const WorkspaceDetailPage = () => {
       </AppLayout>
     );
   }
+
 
   return (
     <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={documents.length}>
@@ -217,7 +339,18 @@ export const WorkspaceDetailPage = () => {
                   <i className="ti ti-code"></i> {ws.name}
                 </div>
               ))}
+              <div
+                className="dropdown-item"
+                style={{ borderTop: '1px solid var(--border)', color: 'var(--accent)', fontWeight: '500', marginTop: '4px', paddingTop: '8px' }}
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  setIsCreateWsOpen(true);
+                }}
+              >
+                <i className="ti ti-plus" style={{ color: 'var(--accent)' }}></i> Create Workspace
+              </div>
             </div>
+
           </div>
         </div>
 
@@ -496,8 +629,60 @@ export const WorkspaceDetailPage = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Create Workspace Modal */}
+      <Modal open={isCreateWsOpen} onOpenChange={setIsCreateWsOpen}>
+        <ModalContent size="md" className="bg-[#16161a] border border-[#2a2a2e] text-white shadow-2xl">
+          <ModalHeader
+            title="Create New Workspace"
+            description="Set up a collaborative workspace for your documents and AI interactions."
+          />
+          <form onSubmit={handleCreateWorkspaceSubmit}>
+            <ModalBody className="space-y-4 py-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-200">
+                  Workspace Name <span className="text-emerald-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. AI Research Lab"
+                  value={newWsName}
+                  onChange={(e) => setNewWsName(e.target.value)}
+                  required
+                  autoFocus
+                  className="w-full h-11 px-4 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-200">
+                  Description <span className="text-gray-400 text-xs">(Optional)</span>
+                </label>
+                <textarea
+                  placeholder="Brief summary of the workspace purpose"
+                  value={newWsDescription}
+                  onChange={(e) => setNewWsDescription(e.target.value)}
+                  rows={3}
+                  className="w-full p-3 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors resize-none"
+                />
+              </div>
+            </ModalBody>
+            
+            <ModalFooter className="gap-3 pt-4 border-t border-[#2a2a2e]">
+              <button type="button" className="btn" onClick={() => setIsCreateWsOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={creatingWs || !newWsName.trim()}>
+                {creatingWs ? 'Creating...' : 'Create Workspace'}
+              </button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
     </AppLayout>
   );
 };
+
+
 
 

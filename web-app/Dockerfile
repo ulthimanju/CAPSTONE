@@ -4,9 +4,10 @@ FROM node:20.11.0-alpine AS builder
 WORKDIR /app
 
 COPY web-app/package*.json ./
-RUN npm ci --silent
+RUN npm install
 
 COPY web-app/ ./
+
 RUN npm run build
 
 # --- Stage 2: Runtime (nginx) ---

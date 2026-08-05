@@ -30,10 +30,11 @@ export const AppRoutes = () => {
         path="/workspaces"
         element={
           <ProtectedRoute>
-            <WorkspacesPage />
+            <WorkspaceDetailPage />
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/workspaces/:workspaceId"
         element={
