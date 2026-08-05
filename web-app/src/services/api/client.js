@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { apiConfig } from '../../config/api';
-import { tokenStorage } from '../../lib/storage';
+import { tokenStorage } from '../identity/tokenStorage';
 import { ApiError } from './errors';
 
 const API_BASE_URL = apiConfig.baseUrl;

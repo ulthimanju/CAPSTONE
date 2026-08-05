@@ -1,7 +1,7 @@
 import { authService } from './auth';
 import { profileService } from './profile';
 import { sessionService } from './session';
-import { tokenStorage } from '../../lib/storage';
+import { tokenStorage } from './tokenStorage';
 import { useAuthStore } from '../../store/authStore';
 
 export class SessionManager {
