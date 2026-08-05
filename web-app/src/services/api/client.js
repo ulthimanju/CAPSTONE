@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { apiConfig } from '../../config/api';
+import { API_ENDPOINTS } from '../../constants/api';
 import { tokenStorage } from '../identity/tokenStorage';
 import { ApiError } from './errors';
 
@@ -28,7 +29,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const res = await axios.post(`${API_BASE_URL}/tokens/refresh`, {}, { withCredentials: true });
+        const res = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.TOKENS.REFRESH}`, {}, { withCredentials: true });
         const { access_token } = res.data;
         tokenStorage.setAccessToken(access_token);
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
