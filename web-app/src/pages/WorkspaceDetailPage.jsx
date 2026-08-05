@@ -246,7 +246,8 @@ export const WorkspaceDetailPage = () => {
 
         {/* Create Workspace Modal */}
         <Modal open={isCreateWsOpen} onOpenChange={setIsCreateWsOpen}>
-          <ModalContent size="md" style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+          <ModalContent size="md" showCloseButton={false} style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+
             <ModalHeader
               title="Create New Workspace"
               description="Set up a collaborative workspace for your documents and AI interactions."
@@ -634,7 +635,8 @@ export const WorkspaceDetailPage = () => {
 
       {/* Create Workspace Modal */}
       <Modal open={isCreateWsOpen} onOpenChange={setIsCreateWsOpen}>
-        <ModalContent size="md" style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+        <ModalContent size="md" showCloseButton={false} style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+
           <ModalHeader
             title="Create New Workspace"
             description="Set up a collaborative workspace for your documents and AI interactions."
