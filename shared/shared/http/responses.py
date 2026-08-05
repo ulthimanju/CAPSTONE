@@ -1,8 +1,9 @@
 from typing import Any
 from fastapi.responses import JSONResponse
+from shared.http.status_codes import HTTPStatus
 
 
-def success_response(data: Any = None, message: str = "Success", status_code: int = 200) -> JSONResponse:
+def success_response(data: Any = None, message: str = "Success", status_code: int = HTTPStatus.OK) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={
@@ -13,7 +14,7 @@ def success_response(data: Any = None, message: str = "Success", status_code: in
     )
 
 
-def error_response(message: str, details: Any = None, status_code: int = 400) -> JSONResponse:
+def error_response(message: str, details: Any = None, status_code: int = HTTPStatus.BAD_REQUEST) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={
