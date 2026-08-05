@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
+import { AppLayout } from '../layouts/AppLayout';
 
 export const WorkspaceDetailPage = () => {
   const { workspaceId } = useParams();
@@ -16,6 +17,12 @@ export const WorkspaceDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState('documents');
+
+  // Custom Dropdown open state
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   // Markdown viewer modal
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [markdownContent, setMarkdownContent] = useState('');
@@ -25,9 +32,6 @@ export const WorkspaceDetailPage = () => {
   const [selectedDocChunks, setSelectedDocChunks] = useState(null);
   const [chunksList, setChunksList] = useState([]);
   const [loadingChunks, setLoadingChunks] = useState(false);
-
-  // Uploading state
-  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const fetchWorkspaceAndDocs = async (silent = false) => {
     try {
@@ -56,7 +60,7 @@ export const WorkspaceDetailPage = () => {
     fetchWorkspaceAndDocs();
   }, [workspaceId]);
 
-  // Polling loop: automatically poll every 2s until all documents reach a final state (READY_FOR_RAG or FAILED)
+  // Polling loop for active document processing
   useEffect(() => {
     const hasActiveProcessing = documents.some(
       (d) => d.status !== 'READY_FOR_RAG' && d.status !== 'FAILED'
@@ -157,7 +161,6 @@ export const WorkspaceDetailPage = () => {
     }
   };
 
-  // Compute ready vs processing counts
   const readyCount = documents.filter((d) => d.status === 'READY_FOR_RAG').length;
   const processingCount = documents.filter(
     (d) => d.status !== 'READY_FOR_RAG' && d.status !== 'FAILED'
@@ -165,295 +168,305 @@ export const WorkspaceDetailPage = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <Spinner size="lg" />
-      </div>
+      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={documents.length}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Spinner size="lg" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (error || !workspace) {
     return (
-      <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-        <div style={{ padding: '2rem', backgroundColor: '#180a0a', border: '1px solid #7f1d1d', borderRadius: '8px', color: '#fca5a5' }}>
-          {error || 'Workspace not found.'}
+      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={documents.length}>
+        <div style={{ padding: '2rem' }}>
+          <div style={{ padding: '1rem', background: 'var(--bg-1)', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px' }}>
+            {error || 'Workspace not found.'}
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#090a0f' }}>
-      {/* Top Header Bar */}
-      <header
-        style={{
-          display: 'flex',
-          justify: 'space-between',
-          alignItems: 'center',
-          padding: '0.85rem 2rem',
-          backgroundColor: '#07080c',
-          borderBottom: '1px solid #16181d',
-        }}
-      >
-        {/* Left: Workspace Selector Dropdown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ position: 'relative' }}>
-            <select
-              value={workspaceId}
-              onChange={(e) => navigate(`/workspaces/${e.target.value}`)}
-              style={{
-                appearance: 'none',
-                backgroundColor: '#111319',
-                border: '1px solid #222530',
-                borderRadius: '6px',
-                padding: '0.4rem 2.2rem 0.4rem 2.2rem',
-                color: '#ffffff',
-                fontSize: '0.875rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                outline: 'none',
-              }}
+    <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={documents.length}>
+      {/* ---------- TOPBAR ---------- */}
+      <div className="topbar" id="topbar">
+        <div className="topbar-left">
+          {/* Custom Workspace Dropdown */}
+          <div className={`custom-dropdown ${isDropdownOpen ? 'open' : ''}`} id="custom-workspace-dropdown">
+            <div
+              className="dropdown-trigger"
+              id="dropdown-trigger"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
-              {allWorkspaces.map((ws) => (
-                <option key={ws.id} value={ws.id} style={{ backgroundColor: '#111319', color: '#fff' }}>
-                  {ws.name}
-                </option>
-              ))}
-            </select>
-            <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem', color: '#10b981' }}>
-              📁
-            </span>
-            <span style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: '#6b7280', pointerEvents: 'none' }}>
-              ▼
-            </span>
-          </div>
-        </div>
-
-        {/* Center: Title and Metric Counters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.875rem' }}>
-          <span style={{ color: '#ffffff', fontWeight: '600' }}>Documents</span>
-          <span style={{ color: '#6b7280' }}>·</span>
-          <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>
-            {readyCount} ready · {processingCount} processing
-          </span>
-        </div>
-
-        {/* Right: Upload Button */}
-        <div>
-          <label
-            htmlFor="header-file-input"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              backgroundColor: '#10b981',
-              color: '#000000',
-              fontWeight: '600',
-              fontSize: '0.85rem',
-              padding: '0.45rem 1.1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'background-color 0.15s ease',
-            }}
-          >
-            <span>↑</span> Upload
-          </label>
-          <input
-            id="header-file-input"
-            type="file"
-            multiple
-            onChange={(e) => handleUploadFiles(e.target.files)}
-            style={{ display: 'none' }}
-          />
-        </div>
-      </header>
-
-      {/* Main Workspace Body Content */}
-      <main style={{ flex: 1, padding: '2rem 3rem', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
-        {/* Workspace Documents List Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-          <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>📁</span>
-          <span style={{ color: '#6b7280', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.08em' }}>
-            WORKSPACE DOCUMENTS
-          </span>
-        </div>
-
-        {/* Workspace Documents Table Container */}
-        <div
-          style={{
-            backgroundColor: '#0c0e14',
-            border: '1px solid #191c26',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            marginBottom: '2.5rem',
-          }}
-        >
-          {documents.length === 0 ? (
-            <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
-              No documents in workspace yet. Upload files below to get started.
+              <i className="ti ti-folder"></i>
+              <span id="selected-workspace-label">{workspace.name}</span>
+              <i className="ti ti-chevron-down"></i>
             </div>
-          ) : (
-            <div>
-              {documents.map((doc, idx) => (
+            <div className="dropdown-menu" id="dropdown-menu">
+              {allWorkspaces.map((ws) => (
                 <div
-                  key={doc.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justify: 'space-between',
-                    padding: '0.9rem 1.25rem',
-                    borderBottom: idx !== documents.length - 1 ? '1px solid #161822' : 'none',
-                    backgroundColor: idx % 2 === 0 ? '#0c0e14' : '#0a0b10',
-                    transition: 'background-color 0.15s ease',
+                  key={ws.id}
+                  className={`dropdown-item ${ws.id === workspaceId ? 'selected' : ''}`}
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    navigate(`/workspaces/${ws.id}`);
                   }}
                 >
-                  {/* Left: Document Icon & Name */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1, minWidth: 0 }}>
-                    <span style={{ color: '#6b7280', fontSize: '1rem' }}>📄</span>
-                    <span style={{ color: '#f3f4f6', fontSize: '0.875rem', fontWeight: '500', truncate: 'true', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {doc.original_filename}
-                    </span>
-                  </div>
-
-                  {/* Right: Meta (Size, Date, Status, Action Icons) */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.75rem', flexShrink: 0 }}>
-                    {/* File Size */}
-                    <span style={{ color: '#6b7280', fontSize: '0.8rem', width: '70px', textAlign: 'right' }}>
-                      {(doc.file_size_bytes / (1024 * 1024)).toFixed(2)} MB
-                    </span>
-
-                    {/* Date */}
-                    <span style={{ color: '#6b7280', fontSize: '0.8rem', width: '90px', textAlign: 'right' }}>
-                      Aug 5, 2026
-                    </span>
-
-                    {/* Status Indicator */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', width: '80px', justifyContent: 'flex-end' }}>
-                      {doc.status === 'READY_FOR_RAG' ? (
-                        <>
-                          <span style={{ color: '#10b981', fontSize: '0.75rem' }}>✓</span>
-                          <span style={{ color: '#10b981', fontSize: '0.8rem', fontWeight: '500' }}>Ready</span>
-                        </>
-                      ) : doc.status === 'FAILED' ? (
-                        <>
-                          <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>✕</span>
-                          <span style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: '500' }}>Failed</span>
-                        </>
-                      ) : (
-                        <>
-                          <span style={{ color: '#f59e0b', fontSize: '0.75rem' }}>⏳</span>
-                          <span style={{ color: '#f59e0b', fontSize: '0.8rem', fontWeight: '500' }}>Processing</span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Action Icon Buttons */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      {doc.storage_metadata_json?.web_view_link && (
-                        <a
-                          href={doc.storage_metadata_json.web_view_link.replace(/\/(edit|view)(\?.*)?$/, '/preview')}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Preview File"
-                          style={{ color: '#6b7280', textDecoration: 'none', fontSize: '0.9rem', cursor: 'pointer' }}
-                        >
-                          👁
-                        </a>
-                      )}
-                      {(doc.status === 'READY' || doc.status === 'READY_FOR_RAG') && (
-                        <button
-                          onClick={() => handleViewMarkdown(doc)}
-                          title="View Markdown Text"
-                          style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '0.9rem' }}
-                        >
-                          📄
-                        </button>
-                      )}
-                      {doc.status === 'READY_FOR_RAG' && (
-                        <button
-                          onClick={() => handleViewChunks(doc)}
-                          title="View Chunks"
-                          style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '0.9rem' }}
-                        >
-                          🧩
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteDocument(doc.id)}
-                        title="Delete File"
-                        style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '0.9rem' }}
-                      >
-                        🗑
-                      </button>
-                    </div>
-                  </div>
+                  <i className="ti ti-code"></i> {ws.name}
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        <div className="topbar-center">
+          <div className="topbar-title" id="topbar-title">
+            {activeTab === 'documents' && 'Documents'}
+            {activeTab === 'summary' && 'AI summary'}
+            {activeTab === 'learning' && 'Learning path'}
+            {activeTab === 'rag' && 'RAG assistant'}
+            {activeTab === 'collab' && 'Collaborators'}
+          </div>
+          <div className="topbar-sub" id="topbar-sub">
+            {activeTab === 'documents' && `${readyCount} ready · ${processingCount} processing`}
+            {activeTab === 'summary' && 'Generated from workspace documents'}
+            {activeTab === 'learning' && '45 curriculum units'}
+            {activeTab === 'rag' && 'Grounded in workspace documents'}
+            {activeTab === 'collab' && '1 active member'}
+          </div>
+        </div>
+
+        <div className="topbar-right" id="topbar-actions">
+          {activeTab === 'documents' && (
+            <>
+              <label htmlFor="header-file-input" className="btn btn-primary" style={{ margin: 0, cursor: 'pointer' }}>
+                <i className="ti ti-upload"></i>Upload
+              </label>
+              <input
+                id="header-file-input"
+                type="file"
+                multiple
+                onChange={(e) => handleUploadFiles(e.target.files)}
+                style={{ display: 'none' }}
+              />
+            </>
+          )}
+          {activeTab === 'summary' && (
+            <button className="btn"><i className="ti ti-refresh"></i>Regenerate</button>
+          )}
+          {activeTab === 'learning' && (
+            <button className="btn"><i className="ti ti-refresh"></i>Regenerate path</button>
+          )}
+          {activeTab === 'rag' && (
+            <button className="btn"><i className="ti ti-trash"></i>Clear</button>
+          )}
+          {activeTab === 'collab' && (
+            <button className="btn btn-primary"><i className="ti ti-user-plus"></i>Invite</button>
           )}
         </div>
+      </div>
 
-        {/* Drag and Drop Add Files Section */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-          <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>📄</span>
-          <span style={{ color: '#6b7280', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.08em' }}>
-            ADD FILES
-          </span>
-        </div>
+      <div className="content">
+        {/* ============ TAB 1: DOCUMENTS ============ */}
+        {activeTab === 'documents' && (
+          <section className="tab-panel active" id="panel-documents">
+            <div className="doc-layout">
+              <div>
+                <div className="section-label"><i className="ti ti-folder"></i>Workspace documents</div>
+                <div className="doc-list">
+                  {documents.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-4)' }}>
+                      No documents uploaded yet. Add files below.
+                    </div>
+                  ) : (
+                    documents.map((doc) => (
+                      <div className="doc-row" key={doc.id}>
+                        <i className="ti ti-file-text"></i>
+                        <span className="doc-name">{doc.original_filename}</span>
+                        <span className="doc-meta">
+                          {(doc.file_size_bytes / (1024 * 1024)).toFixed(2)} MB · Aug 5, 2026
+                        </span>
+                        <span className="doc-status">
+                          {doc.status === 'READY_FOR_RAG' ? (
+                            <><i className="ti ti-check"></i>Ready</>
+                          ) : doc.status === 'FAILED' ? (
+                            <span style={{ color: 'var(--danger)' }}><i className="ti ti-x"></i>Failed</span>
+                          ) : (
+                            <span style={{ color: '#f59e0b' }}><i className="ti ti-clock"></i>Processing</span>
+                          )}
+                        </span>
+                        {doc.storage_metadata_json?.web_view_link && (
+                          <a
+                            href={doc.storage_metadata_json.web_view_link.replace(/\/(edit|view)(\?.*)?$/, '/preview')}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="icon-btn"
+                            title="View in Drive"
+                          >
+                            <i className="ti ti-eye"></i>
+                          </a>
+                        )}
+                        {(doc.status === 'READY' || doc.status === 'READY_FOR_RAG') && (
+                          <i
+                            className="ti ti-file-description icon-btn"
+                            title="View Text"
+                            onClick={() => handleViewMarkdown(doc)}
+                          ></i>
+                        )}
+                        <i
+                          className="ti ti-trash icon-btn"
+                          title="Delete"
+                          onClick={() => handleDeleteDocument(doc.id)}
+                        ></i>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
 
-        <label
-          htmlFor="dropzone-file-input"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-              handleUploadFiles(e.dataTransfer.files);
-            }
-          }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justify: 'center',
-            padding: '3.5rem 2rem',
-            backgroundColor: '#0b0d12',
-            border: '1px dashed #1e2230',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            textAlign: 'center',
-            transition: 'border-color 0.2s ease',
-          }}
-        >
-          <div style={{ fontSize: '2rem', color: '#6b7280', marginBottom: '0.85rem' }}>
-            ⇪
-          </div>
-          <div style={{ color: '#d1d5db', fontSize: '0.95rem', fontWeight: '500', marginBottom: '1.25rem' }}>
-            Drag and drop files or Click to upload files
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.75rem', color: '#6b7280' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ color: '#10b981' }}>✓</span>
-              <span>PDFs (scanned/OCR), Word, Excel, PPT</span>
+              <div>
+                <div className="section-label"><i className="ti ti-file-plus"></i>Add files</div>
+                <label
+                  htmlFor="file-input"
+                  className="upload-zone"
+                  id="drop-zone"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      handleUploadFiles(e.dataTransfer.files);
+                    }
+                  }}
+                  style={{ display: 'block' }}
+                >
+                  <i className="ti ti-upload"></i>
+                  <p>Drag and drop files or Click to upload files</p>
+                  <input
+                    type="file"
+                    id="file-input"
+                    multiple
+                    onChange={(e) => handleUploadFiles(e.target.files)}
+                    style={{ display: 'none' }}
+                  />
+                  <ul className="upload-list">
+                    <li><i className="ti ti-check"></i>PDFs (scanned/OCR), Word, Excel, PPT</li>
+                    <li><i className="ti ti-check"></i>Images (PNG, JPG, WebP), TXT, code</li>
+                    <li><i className="ti ti-check"></i>Up to 50 MB per file</li>
+                  </ul>
+                </label>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ color: '#10b981' }}>✓</span>
-              <span>Images (PNG, JPG, WebP), TXT, code</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ color: '#10b981' }}>✓</span>
-              <span>Up to 50 MB per file</span>
-            </div>
-          </div>
+          </section>
+        )}
 
-          <input
-            id="dropzone-file-input"
-            type="file"
-            multiple
-            onChange={(e) => handleUploadFiles(e.target.files)}
-            style={{ display: 'none' }}
-          />
-        </label>
-      </main>
+        {/* ============ TAB 2: AI SUMMARY ============ */}
+        {activeTab === 'summary' && (
+          <section className="tab-panel active" id="panel-summary">
+            <div className="summary-head">
+              <div className="summary-head-l">
+                <div className="summary-icon"><i className="ti ti-sparkles"></i></div>
+                <div>
+                  <h2>Distributed system architecture and system design fundamentals</h2>
+                  <p>Synthesized from workspace documents</p>
+                </div>
+              </div>
+              <button className="btn"><i className="ti ti-refresh"></i>Regenerate</button>
+            </div>
+
+            <div className="prose">
+              <h3>Introduction</h3>
+              <p>System design and distributed systems architecture form the foundation of modern, large-scale software engineering. Applications must serve millions of concurrent users, handle petabytes of data, and guarantee continuous availability, which traditional monolithic implementations cannot support.</p>
+              <hr />
+              <h3>Executive overview</h3>
+              <h4>1. Microservices and architectural paradigms</h4>
+              <p>Distributed systems have evolved from monolithic structures to service-oriented architectures and microservices. A monolithic application encapsulates all business logic, data access, and UI rendering in a single deployable artifact.</p>
+            </div>
+          </section>
+        )}
+
+        {/* ============ TAB 3: LEARNING PATH ============ */}
+        {activeTab === 'learning' && (
+          <section className="tab-panel active" id="panel-learning">
+            <div className="lp-layout">
+              <div>
+                <div className="section-label"><i className="ti ti-list-details"></i>Curriculum units (45)</div>
+                <div className="curriculum">
+                  <div className="unit active">
+                    <div className="unit-num">01</div>
+                    <div><div className="unit-title">Distributed system architecture and system design fundamentals</div><div className="unit-meta">Intermediate · 480 min</div></div>
+                  </div>
+                  <div className="unit">
+                    <div className="unit-num">02</div>
+                    <div><div className="unit-title">Architectural paradigms and domain-driven design</div><div class="unit-meta">Beginner · 60 min</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lp-panel">
+                <div className="lp-tabs">
+                  <button className="lp-tab active"><i className="ti ti-file-description"></i>Unit summary</button>
+                  <button className="lp-tab"><i className="ti ti-cards"></i>Flashcards (4)</button>
+                  <button className="lp-tab"><i className="ti ti-help-octagon"></i>Self-quiz</button>
+                </div>
+                <div className="lp-body">
+                  <div className="prose">
+                    <h3>Unit overview</h3>
+                    <p>Distributed system architecture and system design fundamentals focus on building scalable, resilient, and high-performance software systems.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ============ TAB 4: RAG ASSISTANT ============ */}
+        {activeTab === 'rag' && (
+          <section className="tab-panel active" id="panel-rag">
+            <div className="rag-wrap">
+              <div className="rag-thread">
+                <div className="msg-bot">
+                  <div className="msg-avatar bot"><i className="ti ti-message-circle"></i></div>
+                  <div className="bubble">
+                    <h4>Definition of system design</h4>
+                    <p>System design is the process of defining the architecture, modules, interfaces, and data structures for a system to satisfy specified technical and business requirements.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rag-input">
+                <input type="text" placeholder="Ask a question about your workspace documents..." />
+                <button className="btn btn-primary"><i className="ti ti-send"></i>Send</button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ============ TAB 5: COLLABORATORS ============ */}
+        {activeTab === 'collab' && (
+          <section className="tab-panel active" id="panel-collab">
+            <div className="collab-card">
+              <div className="collab-icon"><i className="ti ti-users"></i></div>
+              <div>
+                <h2>Workspace collaborators</h2>
+                <p>Invite team members to read, edit, or manage this workspace</p>
+              </div>
+              <div className="collab-badge">1 member</div>
+            </div>
+
+            <div className="section-label"><i className="ti ti-user-plus"></i>Invite new collaborator</div>
+            <div className="invite-row">
+              <input type="email" placeholder="colleague@university.edu" />
+              <select>
+                <option>Viewer (read only)</option>
+                <option>Editor</option>
+                <option>Admin</option>
+              </select>
+              <button className="btn btn-primary"><i className="ti ti-user-plus"></i>Invite</button>
+            </div>
+          </section>
+        )}
+      </div>
 
       {/* Markdown Content Modal */}
       <Modal open={Boolean(selectedDoc)} onOpenChange={() => setSelectedDoc(null)}>
@@ -483,49 +496,8 @@ export const WorkspaceDetailPage = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
-      {/* Chunks Viewer Modal */}
-      <Modal open={Boolean(selectedDocChunks)} onOpenChange={() => setSelectedDocChunks(null)}>
-        <ModalContent size="lg" className="bg-[#16161a] border border-[#2a2a2e] text-white shadow-2xl">
-          <ModalHeader
-            title={`Semantic Chunks (${chunksList.length})`}
-            description={`Structured chunks for ${selectedDocChunks?.original_filename || 'document'}`}
-          />
-          <ModalBody className="py-4 space-y-3" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-            {loadingChunks ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-                <Spinner size="lg" />
-              </div>
-            ) : (
-              chunksList.map((chunk) => (
-                <div key={chunk.id} style={{ padding: '0.75rem 1rem', backgroundColor: '#0c0c0e', border: '1px solid #2a2a2e', borderRadius: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.75rem', color: '#a1a1aa' }}>
-                    <span style={{ color: '#10b981', fontWeight: '600' }}>Chunk #{chunk.chunk_index} • {chunk.chunk_type}</span>
-                    <span>Tokens: {chunk.token_count} | Chars: {chunk.character_count}</span>
-                  </div>
-                  {chunk.title && (
-                    <div style={{ fontWeight: '600', color: '#f4f4f5', marginBottom: '0.4rem', fontSize: '0.85rem' }}>
-                      Heading: {chunk.title}
-                    </div>
-                  )}
-                  <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '0.8rem', color: '#d4d4d8', margin: 0 }}>
-                    {chunk.content}
-                  </pre>
-                </div>
-              ))
-            )}
-          </ModalBody>
-          <ModalFooter className="pt-4 border-t border-[#2a2a2e]">
-            <button
-              onClick={() => setSelectedDocChunks(null)}
-              style={{ backgroundColor: '#27272a', color: '#fff', border: 'none', padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer' }}
-            >
-              Close
-            </button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </div>
+    </AppLayout>
   );
 };
+
 
