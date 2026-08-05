@@ -1,22 +1,7 @@
-import React, { useEffect } from 'react';
-import { profileService } from '../services/identity/profile';
-import { useAuthStore } from '../store/authStore';
+import React from 'react';
+import { useInitializeAuth } from '../hooks/useInitializeAuth';
 
 export const AuthProvider = ({ children }) => {
-  const setUser = useAuthStore((state) => state.setUser);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const user = await profileService.getProfile();
-        setUser(user);
-      } catch (error) {
-        clearAuth();
-      }
-    };
-    initAuth();
-  }, [setUser, clearAuth]);
-
+  useInitializeAuth();
   return <>{children}</>;
 };
