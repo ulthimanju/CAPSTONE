@@ -14,10 +14,10 @@ export function ModalContent({
 }) {
   return (
     <Dialog.Portal>
-      <Dialog.Overlay className={modalOverlayVariants()} />
+      <Dialog.Overlay className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm animate-in fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
       <Dialog.Content
         onInteractOutside={closeOnOutsideClick ? undefined : (e) => e.preventDefault()}
-        className={cn(modalContentVariants({ size, position }), className)}
+        className={cn(modalContentVariants({ size, position }), "z-[1000]", className)}
         {...props}
       >
         {showCloseButton && (
@@ -30,3 +30,4 @@ export function ModalContent({
     </Dialog.Portal>
   );
 }
+
