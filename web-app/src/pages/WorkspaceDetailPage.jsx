@@ -246,16 +246,17 @@ export const WorkspaceDetailPage = () => {
 
         {/* Create Workspace Modal */}
         <Modal open={isCreateWsOpen} onOpenChange={setIsCreateWsOpen}>
-          <ModalContent size="md" className="bg-[#16161a] border border-[#2a2a2e] text-white shadow-2xl">
+          <ModalContent size="md" style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
             <ModalHeader
               title="Create New Workspace"
               description="Set up a collaborative workspace for your documents and AI interactions."
+              style={{ padding: '20px 24px', borderBottom: '1px solid #2a2a2e' }}
             />
             <form onSubmit={handleCreateWorkspaceSubmit}>
-              <ModalBody className="space-y-4 py-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-200">
-                    Workspace Name <span className="text-emerald-400">*</span>
+              <ModalBody style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
+                    Workspace Name <span style={{ color: '#3ecf8e' }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -264,25 +265,25 @@ export const WorkspaceDetailPage = () => {
                     onChange={(e) => setNewWsName(e.target.value)}
                     required
                     autoFocus
-                    className="w-full h-11 px-4 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors"
+                    style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-200">
-                    Description <span className="text-gray-400 text-xs">(Optional)</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
+                    Description <span style={{ color: '#71717a', fontSize: '11px' }}>(Optional)</span>
                   </label>
                   <textarea
                     placeholder="Brief summary of the workspace purpose"
                     value={newWsDescription}
                     onChange={(e) => setNewWsDescription(e.target.value)}
                     rows={3}
-                    className="w-full p-3 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors resize-none"
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none', resize: 'none' }}
                   />
                 </div>
               </ModalBody>
               
-              <ModalFooter className="gap-3 pt-4 border-t border-[#2a2a2e]">
+              <ModalFooter style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2e', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button type="button" className="btn" onClick={() => setIsCreateWsOpen(false)}>
                   Cancel
                 </button>
@@ -293,6 +294,7 @@ export const WorkspaceDetailPage = () => {
             </form>
           </ModalContent>
         </Modal>
+
       </AppLayout>
     );
   }
@@ -632,16 +634,17 @@ export const WorkspaceDetailPage = () => {
 
       {/* Create Workspace Modal */}
       <Modal open={isCreateWsOpen} onOpenChange={setIsCreateWsOpen}>
-        <ModalContent size="md" className="bg-[#16161a] border border-[#2a2a2e] text-white shadow-2xl">
+        <ModalContent size="md" style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
           <ModalHeader
             title="Create New Workspace"
             description="Set up a collaborative workspace for your documents and AI interactions."
+            style={{ padding: '20px 24px', borderBottom: '1px solid #2a2a2e' }}
           />
           <form onSubmit={handleCreateWorkspaceSubmit}>
-            <ModalBody className="space-y-4 py-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-200">
-                  Workspace Name <span className="text-emerald-400">*</span>
+            <ModalBody style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
+                  Workspace Name <span style={{ color: '#3ecf8e' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -650,25 +653,25 @@ export const WorkspaceDetailPage = () => {
                   onChange={(e) => setNewWsName(e.target.value)}
                   required
                   autoFocus
-                  className="w-full h-11 px-4 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors"
+                  style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none' }}
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-200">
-                  Description <span className="text-gray-400 text-xs">(Optional)</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
+                  Description <span style={{ color: '#71717a', fontSize: '11px' }}>(Optional)</span>
                 </label>
                 <textarea
                   placeholder="Brief summary of the workspace purpose"
                   value={newWsDescription}
                   onChange={(e) => setNewWsDescription(e.target.value)}
                   rows={3}
-                  className="w-full p-3 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors resize-none"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none', resize: 'none' }}
                 />
               </div>
             </ModalBody>
             
-            <ModalFooter className="gap-3 pt-4 border-t border-[#2a2a2e]">
+            <ModalFooter style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2e', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button type="button" className="btn" onClick={() => setIsCreateWsOpen(false)}>
                 Cancel
               </button>
@@ -679,6 +682,7 @@ export const WorkspaceDetailPage = () => {
           </form>
         </ModalContent>
       </Modal>
+
     </AppLayout>
   );
 };
