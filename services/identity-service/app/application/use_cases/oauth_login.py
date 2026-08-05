@@ -13,6 +13,7 @@ from app.domain.repositories.oauth_repository import OAuthRepository
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.refresh_token_repository import RefreshTokenRepository
 from app.application.interfaces.oauth_client import OAuthClientInterface
+from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
 from app.infrastructure.security.jwt import create_access_token, create_refresh_token_value
 
 
@@ -32,14 +33,14 @@ class OAuthUseCase:
         self.refresh_repo = refresh_repo
 
     async def authenticate_google_user(self, request, device: str | None, ip_address: str | None, user_agent: str | None) -> tuple[User, Session, str, str]:
-        user_info, tokens = await self.oauth_client.fetch_user_info_and_tokens(request)
-        return await self.handle_google_callback(user_info, tokens, device, ip_address, user_agent)
+        user_dto, token_dto = await self.oauth_client.fetch_user_info_and_tokens(request)
+        return await self.handle_google_callback(user_dto, token_dto, device, ip_address, user_agent)
 
-    async def handle_google_callback(self, user_info: dict, tokens: dict, device: str | None, ip_address: str | None, user_agent: str | None) -> tuple[User, Session, str, str]:
-        provider_user_id = user_info["sub"]
-        email = user_info["email"]
-        name = user_info.get("name", email.split("@")[0])
-        picture = user_info.get("picture")
+    async def handle_google_callback(self, user_dto: GoogleUserDTO, token_dto: GoogleTokenDTO, device: str | None, ip_address: str | None, user_agent: str | None) -> tuple[User, Session, str, str]:
+        provider_user_id = user_dto.sub
+        email = user_dto.email
+        name = user_dto.name
+        picture = user_dto.picture
 
         # 1. Check or create User
         user = await self.user_repo.get_by_email(email)
@@ -64,9 +65,9 @@ class OAuthUseCase:
                 provider="google",
                 provider_user_id=provider_user_id,
                 email=email,
-                access_token=tokens.get("access_token"),
-                refresh_token=tokens.get("refresh_token"),
-                expires_at=datetime.now(timezone.utc) + timedelta(seconds=tokens.get("expires_in", 3600)) if "expires_in" in tokens else None
+                access_token=token_dto.access_token,
+                refresh_token=token_dto.refresh_token,
+                expires_at=datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
             )
             await self.oauth_repo.create(identity)
 
