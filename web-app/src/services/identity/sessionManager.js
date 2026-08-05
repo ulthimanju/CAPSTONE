@@ -61,6 +61,7 @@ export class SessionManager {
     } catch (err) {
       // Ignore logout API failures
     } finally {
+      tokenStorage.removeAccessToken();
       useAuthStore.getState().clearAuth();
     }
   }
