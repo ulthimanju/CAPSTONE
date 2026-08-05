@@ -1,9 +1,10 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from app.config.settings import settings
-from shared.security.jwt import JWTManager
+from shared.security.jwt import JWTManager, JWTSettings
 
-jwt_manager = JWTManager(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+jwt_settings = JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+jwt_manager = JWTManager(jwt_settings)
 
 
 def get_current_user_id(authorization: str = Header(...)) -> UUID:

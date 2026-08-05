@@ -4,10 +4,11 @@ from app.infrastructure.database.session import get_db
 from app.config.settings import settings
 from app.domain.exceptions.oauth import TokenValidationError
 from app.schemas.auth import TokenRefreshRequest, TokenResponse
-from shared.security.jwt import JWTManager
+from shared.security.jwt import JWTManager, JWTSettings
 
 router = APIRouter(prefix="/tokens", tags=["Tokens"])
-jwt_manager = JWTManager(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+jwt_settings = JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+jwt_manager = JWTManager(jwt_settings)
 
 
 @router.post("/refresh", response_model=TokenResponse)

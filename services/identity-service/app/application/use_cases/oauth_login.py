@@ -11,10 +11,11 @@ from app.constants.enums import Role, OAuthProvider
 from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO, OAuthLoginResult
 from app.config.settings import settings
-from shared.security.jwt import JWTManager
+from shared.security.jwt import JWTManager, JWTSettings
 from app.infrastructure.logging.audit_logger import auth_logger
 
-jwt_manager = JWTManager(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+jwt_settings = JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+jwt_manager = JWTManager(jwt_settings)
 
 
 class OAuthUseCase:

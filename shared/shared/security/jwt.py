@@ -1,15 +1,19 @@
-import secrets
-import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from shared.security.claims import JWTClaims
 
 
+@dataclass
+class JWTSettings:
+    secret_key: str
+    algorithm: str = "HS256"
+    issuer: str = "identity-service"
+
+
 class JWTManager:
-    def __init__(self, secret_key: str, algorithm: str = "HS256", issuer: str = "identity-service"):
-        self.secret_key = secret_key
-        self.algorithm = algorithm
-        self.issuer = issuer
+    def __init__(self, settings: JWTSettings):
+        self.settings = settings
 
     def create_access_token(
         self,
@@ -26,11 +30,11 @@ class JWTManager:
             "email": email,
             "role": role,
             "session_id": str(session_id),
-            "iss": self.issuer,
+            "iss": self.settings.issuer,
             "iat": int(now.timestamp()),
             "exp": int(expire.timestamp()),
         }
-        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        return jwt.encode(payload, self.settings.secret_key, algorithm=self.settings.algorithm)
 
     def create_refresh_token(self) -> str:
         """Generate a cryptographically random token string."""
@@ -38,7 +42,7 @@ class JWTManager:
 
     def decode_token(self, token: str) -> dict:
         try:
-            return jwt.decode(token, self.secret_key, algorithms=[self.algorithm], issuer=self.issuer)
+            return jwt.decode(token, self.settings.secret_key, algorithms=[self.settings.algorithm], issuer=self.settings.issuer)
         except JWTError as exc:
             raise ValueError(f"Invalid JWT token: {exc}") from exc
 
@@ -49,7 +53,7 @@ class JWTManager:
             email=payload.get("email", ""),
             role=payload.get("role", "user"),
             session_id=payload.get("session_id", ""),
-            iss=payload.get("iss", self.issuer),
+            iss=payload.get("iss", self.settings.issuer),
             iat=datetime.fromtimestamp(payload["iat"], tz=timezone.utc) if "iat" in payload else None,
             exp=datetime.fromtimestamp(payload["exp"], tz=timezone.utc) if "exp" in payload else None,
         )
