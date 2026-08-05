@@ -25,5 +25,8 @@ def get_session_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemySess
     return SQLAlchemySessionRepository(db)
 
 
-def get_refresh_token_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemyRefreshTokenRepository:
-    return SQLAlchemyRefreshTokenRepository(db)
+from app.infrastructure.repositories.sqlalchemy_unit_of_work import SQLAlchemyUnitOfWork
+
+
+def get_unit_of_work(db: AsyncSession = Depends(get_db)) -> SQLAlchemyUnitOfWork:
+    return SQLAlchemyUnitOfWork(db)
