@@ -1,6 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Header, status
-from app.infrastructure.security.jwt import decode_access_token
+from app.config.settings import settings
+from shared.security.jwt import JWTManager
+
+jwt_manager = JWTManager(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
 def get_current_user_id(authorization: str = Header(...)) -> UUID:
@@ -8,7 +11,7 @@ def get_current_user_id(authorization: str = Header(...)) -> UUID:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token header format")
     token = authorization.split(" ")[1]
     try:
-        payload = decode_access_token(token)
-        return UUID(payload["sub"])
+        claims = jwt_manager.get_claims(token)
+        return UUID(claims.sub)
     except Exception:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")

@@ -10,8 +10,11 @@ from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 from app.constants.enums import Role, OAuthProvider
 from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO, OAuthLoginResult
-from app.infrastructure.security.jwt import create_access_token, create_refresh_token_value
+from app.config.settings import settings
+from shared.security.jwt import JWTManager
 from app.infrastructure.logging.audit_logger import auth_logger
+
+jwt_manager = JWTManager(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
 class OAuthUseCase:
@@ -85,8 +88,8 @@ class OAuthUseCase:
             session = await self.session_repo.create(session)
 
             # 4. Generate Tokens
-            access_token = create_access_token(user.id, email, user.role, session.id)
-            raw_refresh_token = create_refresh_token_value()
+            access_token = jwt_manager.create_access_token(user.id, email, user.role, session.id)
+            raw_refresh_token = jwt_manager.create_refresh_token()
 
             # 5. Log structured audit events (safe, non-sensitive metadata only)
             auth_logger.oauth_completed(user_id=str(user.id), provider=OAuthProvider.GOOGLE)

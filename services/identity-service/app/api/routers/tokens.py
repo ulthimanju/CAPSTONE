@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, Cookie, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.session import get_db
+from app.config.settings import settings
 from app.domain.exceptions.oauth import TokenValidationError
 from app.schemas.auth import TokenRefreshRequest, TokenResponse
-from app.infrastructure.security.jwt import create_access_token, decode_token
+from shared.security.jwt import JWTManager
 
 router = APIRouter(prefix="/tokens", tags=["Tokens"])
+jwt_manager = JWTManager(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -19,11 +21,11 @@ async def refresh_token(
         raise TokenValidationError("Refresh token missing from cookie or request body")
 
     try:
-        payload = decode_token(token_str)
+        claims = jwt_manager.get_claims(token_str)
     except ValueError as exc:
         raise TokenValidationError(f"Invalid refresh token: {exc}") from exc
 
-    user_id = payload["sub"]
-    role = payload.get("role", "user")
-    new_access_token = create_access_token(user_id, payload.get("email", ""), role, payload.get("session_id", ""))
+    new_access_token = jwt_manager.create_access_token(
+        claims.sub, claims.email, claims.role, claims.session_id
+    )
     return TokenResponse(access_token=new_access_token, refresh_token=token_str)
