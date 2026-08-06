@@ -78,11 +78,6 @@ export const WorkspaceDetailPage = () => {
     }
   }, [searchParams, location.state]);
 
-  const handleTabChange = (newTab) => {
-    setActiveTab(newTab);
-    setSearchParams({ tab: newTab });
-  };
-
   // Custom Dropdown open state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -355,6 +350,7 @@ export const WorkspaceDetailPage = () => {
   // Lazy-load tab data when tab is opened
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    setSearchParams({ tab });
     if (tab === 'summary') {
       fetchSummary();
     } else if (tab === 'learning') {
