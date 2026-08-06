@@ -339,7 +339,7 @@ async def list_workspace_chunks(
 ):
     doc_repo = get_document_repository(session)
     chunk_repo = get_document_chunk_repository(session)
-    docs = await doc_repo.list_by_workspace_id(workspace_id)
+    docs = await doc_repo.list_by_workspace(workspace_id)
     all_chunks = []
     for doc in docs:
         chunks = await chunk_repo.list_by_document_id(doc.id)
