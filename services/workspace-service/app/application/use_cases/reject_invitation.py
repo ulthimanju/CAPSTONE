@@ -15,15 +15,10 @@ class RejectInvitationUseCase:
         if not invitation:
             raise HTTPException(status_code=404, detail="Invitation not found")
 
-        if invitation.invited_email and user_email:
-            inv_prefix = invitation.invited_email.lower().strip().split("@")[0]
-            usr_prefix = user_email.lower().strip().split("@")[0]
-            if inv_prefix != usr_prefix:
-                raise HTTPException(status_code=403, detail="Invitation is for another email address")
-
         if invitation.status != InvitationStatus.PENDING:
             raise HTTPException(status_code=400, detail=f"Invitation is already {invitation.status.value}")
 
         invitation.status = InvitationStatus.REJECTED
+        invitation.invited_user_id = user_id
         updated = await self.invitation_repo.update(invitation)
         return InvitationResponse.model_validate(updated)

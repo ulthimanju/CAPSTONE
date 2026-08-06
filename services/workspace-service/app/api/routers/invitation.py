@@ -28,7 +28,8 @@ async def list_pending_invitations(
     user_id: UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    user_email = request.headers.get("x-user-email")
+    user_email = request.headers.get("x-user-email") or request.headers.get("X-User-Email")
+
     conditions = [WorkspaceInvitationModel.invited_user_id == user_id]
 
     if user_email:
@@ -37,6 +38,9 @@ async def list_pending_invitations(
         conditions.append(func.lower(WorkspaceInvitationModel.invited_email) == clean_email)
         if len(prefix) > 2:
             conditions.append(func.lower(WorkspaceInvitationModel.invited_email).like(f"{prefix}@%"))
+    else:
+        # Fallback: if header is missing, include all pending email invitations
+        conditions.append(WorkspaceInvitationModel.invited_email.isnot(None))
 
     stmt = (
         select(WorkspaceInvitationModel, WorkspaceModel.name.label("workspace_name"))
@@ -71,7 +75,7 @@ async def accept_invitation(
     mem_repo: MemberRepository = Depends(get_member_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
-    user_email = request.headers.get("x-user-email")
+    user_email = request.headers.get("x-user-email") or request.headers.get("X-User-Email")
     use_case = AcceptInvitationUseCase(inv_repo, mem_repo, act_repo)
     return await use_case.execute(invitation_id, user_id, user_email)
 
@@ -83,6 +87,6 @@ async def reject_invitation(
     user_id: UUID = Depends(get_current_user_id),
     inv_repo: InvitationRepository = Depends(get_invitation_repository),
 ):
-    user_email = request.headers.get("x-user-email")
+    user_email = request.headers.get("x-user-email") or request.headers.get("X-User-Email")
     use_case = RejectInvitationUseCase(inv_repo)
     return await use_case.execute(invitation_id, user_id, user_email)
