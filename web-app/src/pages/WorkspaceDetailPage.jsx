@@ -653,221 +653,151 @@ export const WorkspaceDetailPage = () => {
 
 
   return (
-    <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={documents.length}>
-      {/* ---------- TOPBAR ---------- */}
-      <div className="topbar" id="topbar">
-        <div className="topbar-left">
-          {/* Custom Workspace Dropdown */}
-          <div className={`custom-dropdown ${isDropdownOpen ? 'open' : ''}`} id="custom-workspace-dropdown">
-            <div
-              className="dropdown-trigger"
-              id="dropdown-trigger"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            >
-              <i className="ti ti-folder"></i>
-              <span id="selected-workspace-label">{workspace.name}</span>
-              <i className="ti ti-chevron-down"></i>
-            </div>
-            <div className="dropdown-menu" id="dropdown-menu">
-              {allWorkspaces.map((ws) => (
-                <div
-                  key={ws.id}
-                  className={`dropdown-item ws-dropdown-item ${ws.id === workspaceId ? 'selected' : ''}`}
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    navigate(`/workspaces/${ws.id}`);
-                  }}
-                >
-                  <i className="ti ti-folder" style={{ flexShrink: 0 }}></i>
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ws.name}</span>
-                  <span className="ws-item-actions" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      className="ws-action-btn"
-                      title="Rename"
-                      onClick={(e) => openRenameModal(ws, e)}
-                    >
-                      <i className="ti ti-pencil"></i>
-                    </button>
-                    <button
-                      className="ws-action-btn"
-                      title="Archive"
-                      onClick={(e) => handleArchiveWorkspace(ws, e)}
-                    >
-                      <i className="ti ti-archive"></i>
-                    </button>
-                    <button
-                      className="ws-action-btn ws-action-danger"
-                      title="Delete"
-                      onClick={(e) => handleDeleteWorkspace(ws, e)}
-                    >
-                      <i className="ti ti-trash"></i>
-                    </button>
-                  </span>
-                </div>
-              ))}
-              <div
-                className="dropdown-item"
-                style={{ borderTop: '1px solid var(--border)', color: 'var(--accent)', fontWeight: '500', marginTop: '4px', paddingTop: '8px' }}
-                onClick={() => {
-                  setIsDropdownOpen(false);
-                  setIsCreateWsOpen(true);
-                }}
-              >
-                <i className="ti ti-plus" style={{ color: 'var(--accent)' }}></i> Create Workspace
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <div className="topbar-center">
-          <div className="topbar-title" id="topbar-title">
-            {activeTab === 'documents' && 'Documents'}
-            {activeTab === 'summary' && 'AI summary'}
-            {activeTab === 'learning' && 'Learning path'}
-            {activeTab === 'rag' && 'RAG assistant'}
-            {activeTab === 'collab' && 'Collaborators'}
-          </div>
-          <div className="topbar-sub" id="topbar-sub">
-            {activeTab === 'documents' && `${readyCount} ready · ${processingCount} processing`}
-            {activeTab === 'summary' && 'Generated from workspace documents'}
-            {activeTab === 'learning' && 'Curriculum units generated from documents'}
-            {activeTab === 'rag' && 'Grounded in workspace documents'}
-            {activeTab === 'collab' && 'Workspace collaborators'}
-          </div>
-        </div>
-
-        <div className="topbar-right" id="topbar-actions">
-          {activeTab === 'documents' && (
-            <>
-              <label htmlFor="header-file-input" className="btn btn-primary" style={{ margin: 0, cursor: 'pointer' }}>
-                <i className="ti ti-upload"></i>Upload
-              </label>
-              <input
-                id="header-file-input"
-                type="file"
-                multiple
-                onChange={(e) => handleUploadFiles(e.target.files)}
-                style={{ display: 'none' }}
-              />
-            </>
-          )}
-          {activeTab === 'summary' && (
-            <>
-              {summaryData && (
-                <button
-                  className="btn"
-                  onClick={() => setIsJsonModalOpen(true)}
-                  style={{ marginRight: '8px' }}
-                >
-                  <i className="ti ti-code"></i>View Raw JSON
-                </button>
-              )}
-              <button className="btn" onClick={handleGenerateSummary}>
-                <i className="ti ti-refresh"></i>Regenerate
-              </button>
-            </>
-          )}
-          {activeTab === 'learning' && (
-            <button className="btn" onClick={handleGenerateLearningPath}><i className="ti ti-refresh"></i>Regenerate path</button>
-          )}
-          {activeTab === 'rag' && (
-            <button className="btn"><i className="ti ti-trash"></i>Clear</button>
-          )}
-          {activeTab === 'collab' && (
-            <button className="btn btn-primary"><i className="ti ti-user-plus"></i>Invite</button>
-          )}
-        </div>
-      </div>
-
-      {/* ---------- MAIN CONTENT AREA ---------- */}
-      <div className="content-area">
+    <AppLayout
+      activeTab={activeTab}
+      setActiveTab={handleTabChange}
+      workspaceName={workspace?.name}
+      docCount={documents.length}
+      readyCount={readyCount}
+      processingCount={processingCount}
+    >
+      <div>
         {/* ============ TAB 1: DOCUMENTS ============ */}
         {activeTab === 'documents' && (
-          <section className="tab-panel active" id="panel-documents">
-            <div className="docs-grid">
-              <div>
-                <div className="section-label"><i className="ti ti-files"></i>Workspace documents</div>
-                <div className="doc-list" id="doc-list">
-                  {documents.length === 0 ? (
-                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-3)', fontSize: '13px' }}>
-                      No documents added yet. Drag & drop files or click upload below.
-                    </div>
-                  ) : (
-                    documents.map((doc) => (
-                      <div className="doc-item" key={doc.id}>
-                        <i className={`ti ${getFileIcon(doc.original_filename)} doc-icon`}></i>
-                        <div className="doc-info">
-                          <div className="doc-name">{doc.original_filename}</div>
-                          <div className="doc-meta">
-                            {formatBytes(doc.file_size_bytes)} · {new Date(doc.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <span className={`status-badge ${doc.status.toLowerCase().replace(/_/g, '-')}`}>
-                          {doc.status === 'READY_FOR_RAG' ? 'READY' : doc.status}
-                        </span>
-                        {doc.storage_metadata_json?.web_view_link && (
-                          <a
-                            href={doc.storage_metadata_json.web_view_link.replace(/\/(edit|view)(\?.*)?$/, '/preview')}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="icon-btn"
-                            title="View in Drive"
-                          >
-                            <i className="ti ti-eye"></i>
-                          </a>
-                        )}
-                        {(doc.status === 'READY' || doc.status === 'READY_FOR_RAG') && (
-                          <i
-                            className="ti ti-file-description icon-btn"
-                            title="View Text"
-                            onClick={() => handleViewMarkdown(doc)}
-                          ></i>
-                        )}
-                        <i
-                          className="ti ti-trash icon-btn"
-                          title="Delete"
-                          onClick={() => handleDeleteDocument(doc.id)}
-                        ></i>
-                      </div>
-                    ))
-                  )}
-                </div>
+          <div className="main-grid">
+            {/* Documents List Island */}
+            <div className="island docs-island">
+              <div className="section-heading">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                </svg>
+                WORKSPACE DOCUMENTS
               </div>
 
-              <div>
-                <div className="section-label"><i className="ti ti-file-plus"></i>Add files</div>
-                <label
-                  htmlFor="file-input"
-                  className="upload-zone"
-                  id="drop-zone"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                      handleUploadFiles(e.dataTransfer.files);
-                    }
-                  }}
-                  style={{ display: 'block' }}
-                >
-                  <i className="ti ti-upload"></i>
-                  <p>Drag and drop files or Click to upload files</p>
-                  <input
-                    type="file"
-                    id="file-input"
-                    multiple
-                    onChange={(e) => handleUploadFiles(e.target.files)}
-                    style={{ display: 'none' }}
-                  />
-                  <ul className="upload-list">
-                    <li><i className="ti ti-check"></i>PDFs (scanned/OCR), Word, Excel, PPT</li>
-                    <li><i className="ti ti-check"></i>Images (PNG, JPG, WebP), TXT, code</li>
-                    <li><i className="ti ti-check"></i>Up to 50 MB per file</li>
-                  </ul>
-                </label>
-              </div>
+              {documents.length === 0 ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-faint)', fontSize: '13px' }}>
+                  No documents added yet. Drag & drop files or click upload to get started.
+                </div>
+              ) : (
+                documents.map((doc) => (
+                  <div className="doc-row" key={doc.id}>
+                    <div className="doc-icon">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <path d="M14 2v6h6" />
+                      </svg>
+                    </div>
+                    <div className="doc-info">
+                      <div className="doc-name">{doc.original_filename}</div>
+                      <div className="doc-meta">
+                        {formatBytes(doc.file_size_bytes)} · {new Date(doc.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <span className="doc-status">
+                      {doc.status === 'READY_FOR_RAG' ? 'READY' : doc.status}
+                    </span>
+                    <div className="doc-actions">
+                      {doc.storage_metadata_json?.web_view_link && (
+                        <a
+                          href={doc.storage_metadata_json.web_view_link.replace(/\/(edit|view)(\?.*)?$/, '/preview')}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="icon-btn"
+                          title="View in Drive"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </a>
+                      )}
+                      {(doc.status === 'READY' || doc.status === 'READY_FOR_RAG') && (
+                        <span
+                          className="icon-btn"
+                          title="View Text"
+                          onClick={() => handleViewMarkdown(doc)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <path d="M14 2v6h6" />
+                          </svg>
+                        </span>
+                      )}
+                      <span
+                        className="icon-btn danger"
+                        title="Delete"
+                        onClick={() => handleDeleteDocument(doc.id)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          </section>
+
+            {/* Upload Island */}
+            <div className="island upload-island">
+              <div className="section-heading">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+                ADD FILES
+              </div>
+
+              <label
+                htmlFor="file-input"
+                className="upload-zone"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleUploadFiles(e.dataTransfer.files);
+                  }
+                }}
+              >
+                <div className="upload-ico">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 19V5M5 12l7-7 7 7" />
+                  </svg>
+                </div>
+                <div className="upload-title">Drag and drop files or Click to upload files</div>
+                <input
+                  type="file"
+                  id="file-input"
+                  multiple
+                  onChange={(e) => handleUploadFiles(e.target.files)}
+                  style={{ display: 'none' }}
+                />
+                <div className="upload-rules">
+                  <div className="rule">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    PDFs (scanned/OCR), Word, Excel, PPT
+                  </div>
+                  <div className="rule">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    Images (PNG, JPG, WebP), TXT, code
+                  </div>
+                  <div className="rule">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    Up to 50 MB per file
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
         )}
 
         {/* ============ TAB 2: AI SUMMARY ============ */}

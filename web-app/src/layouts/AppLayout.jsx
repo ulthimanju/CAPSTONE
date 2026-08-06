@@ -1,91 +1,220 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-export const AppLayout = ({ children, activeTab, setActiveTab, docCount = 3 }) => {
+export const AppLayout = ({
+  children,
+  activeTab = 'documents',
+  setActiveTab,
+  workspaceName = 'Software Engineering',
+  docCount = 0,
+  readyCount = 0,
+  processingCount = 0,
+  workspaces = [],
+  onSelectWorkspace,
+}) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // Dark Theme State
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    const htmlElement = document.documentElement;
+    if (theme === 'dark') {
+      htmlElement.setAttribute('data-theme', 'dark');
+    } else {
+      htmlElement.removeAttribute('data-theme');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const getTabTitle = () => {
+    switch (activeTab) {
+      case 'summary':
+        return 'AI Summary';
+      case 'learning':
+        return 'Learning Path';
+      case 'rag':
+        return 'RAG Assistant';
+      case 'collab':
+        return 'Collaborators';
+      case 'invitations':
+        return 'Invitations';
+      case 'archived':
+        return 'Archived Workspaces';
+      default:
+        return 'Documents';
+    }
+  };
+
+  const userInitials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'UM';
 
   return (
     <div className="shell">
-      {/* ============ LEFT NAV ============ */}
-      <nav className="nav">
-        <div className="nav-header">
-          <div className="nav-mark">S</div>
-          <div className="nav-title">
-            SYNAPSE
-          </div>
-        </div>
+      {/* 1. Brand Island */}
+      <div className="island brand-island">
+        <div className="logo-mark">S</div>
+        <div className="brand-name">SYNAPSE</div>
+      </div>
 
-        <div className="nav-body">
-          <div className="nav-label">Workspace</div>
-          
+      {/* 2. Workspace Selector Island */}
+      <div className="island workspace-island">
+        <div
+          className="workspace-pill"
+          onClick={() => navigate('/workspaces')}
+          title="Switch Workspace"
+        >
+          <span className="folder-ico">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+            </svg>
+          </span>
+          <span>{workspaceName}</span>
+          <span className="chev">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </span>
+        </div>
+      </div>
+
+      {/* 3. Status Island */}
+      <div className="island status-island">
+        <div className="header-status">
+          <span className="status-title">{getTabTitle()}</span>
+          <span className="status-dot">·</span>
+          <span className="status-meta">
+            <b>{readyCount || docCount}</b> ready
+          </span>
+          <span className="status-dot">·</span>
+          <span className="status-meta">
+            <b>{processingCount}</b> processing
+          </span>
+        </div>
+      </div>
+
+      {/* 4. Sidebar: Stack of Islands */}
+      <div className="sidebar">
+        {/* Navigation Island */}
+        <div className="island nav-island">
+          <div className="nav-label">WORKSPACE</div>
+
           <button
             className={`nav-item ${activeTab === 'documents' || !activeTab ? 'active' : ''}`}
-            onClick={() => setActiveTab && setActiveTab('documents')}
+            onClick={() => (setActiveTab ? setActiveTab('documents') : navigate('/workspaces'))}
           >
-            <i className="ti ti-file-text"></i>Documents<span className="count">{docCount}</span>
-
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+            </svg>
+            Documents
+            {docCount > 0 && <span className="badge">{docCount}</span>}
           </button>
-          
+
           <button
             className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
-            onClick={() => setActiveTab && setActiveTab('summary')}
+            onClick={() => (setActiveTab ? setActiveTab('summary') : navigate('/workspaces'))}
           >
-            <i className="ti ti-sparkles"></i>AI summary
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2 2 7l10 5 10-5-10-5Z" />
+              <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            AI summary
           </button>
 
           <button
             className={`nav-item ${activeTab === 'learning' ? 'active' : ''}`}
-            onClick={() => setActiveTab && setActiveTab('learning')}
+            onClick={() => (setActiveTab ? setActiveTab('learning') : navigate('/workspaces'))}
           >
-            <i className="ti ti-route"></i>Learning path
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 19V5M4 5l4 4M4 5l-4 4" transform="translate(2)" />
+              <path d="M20 5v14M20 19l-4-4M20 19l4-4" transform="translate(-2)" />
+            </svg>
+            Learning path
           </button>
 
           <button
             className={`nav-item ${activeTab === 'rag' ? 'active' : ''}`}
-            onClick={() => setActiveTab && setActiveTab('rag')}
+            onClick={() => (setActiveTab ? setActiveTab('rag') : navigate('/workspaces'))}
           >
-            <i className="ti ti-message-circle"></i>RAG assistant
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            RAG assistant
           </button>
 
           <button
             className={`nav-item ${activeTab === 'collab' ? 'active' : ''}`}
-            onClick={() => setActiveTab && setActiveTab('collab')}
+            onClick={() => (setActiveTab ? setActiveTab('collab') : navigate('/workspaces'))}
           >
-            <i className="ti ti-users"></i>Collaborators<span className="count">1</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            Collaborators
+            <span className="badge">1</span>
           </button>
 
           <button
             className={`nav-item ${activeTab === 'invitations' ? 'active' : ''}`}
-            onClick={() => setActiveTab ? setActiveTab('invitations') : (window.location.href = '/invitations')}
+            onClick={() => navigate('/invitations')}
           >
-            <i className="ti ti-mail-forward"></i>Invitations
+            <i className="ti ti-mail-forward"></i>
+            Invitations
           </button>
 
-          <button
-            className={`nav-item ${activeTab === 'archived' ? 'active' : ''}`}
-            onClick={() => setActiveTab && setActiveTab('archived')}
-            style={{ marginTop: 'auto' }}
-          >
-            <i className="ti ti-archive"></i>Archived Workspaces
-          </button>
-        </div>
-
-        <div className="nav-footer">
-          <div className="avatar-sm">
-            {user?.email ? user.email.substring(0, 2).toUpperCase() : 'UM'}
+          {/* Theme Toggle Button */}
+          <div className="nav-item" onClick={toggleTheme} title="Toggle Theme">
+            {theme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="5" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+            <span>{theme === 'dark' ? 'Light Theme' : 'Dark Theme'}</span>
           </div>
-          <span>Account</span>
-          <i className="ti ti-logout" onClick={logout} style={{ cursor: 'pointer' }} title="Logout"></i>
         </div>
-      </nav>
 
-      {/* ============ MAIN AREA ============ */}
-      <div className="main">
-        {children}
+        {/* Archive Island */}
+        <div className="island archive-island">
+          <div
+            className="archive-item"
+            onClick={() => (setActiveTab ? setActiveTab('archived') : navigate('/workspaces'))}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="3" width="20" height="5" rx="1" />
+              <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" />
+            </svg>
+            Archived Workspaces
+          </div>
+        </div>
+
+        {/* Account Island */}
+        <div className="island account-island">
+          <div className="account-left">
+            <div className="avatar">{userInitials}</div>
+            <span className="account-name">{user?.name || 'Account'}</span>
+          </div>
+          <span className="logout-ico" onClick={logout} title="Logout">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
+          </span>
+        </div>
       </div>
+
+      {/* 5. Main Area */}
+      <div className="main">{children}</div>
     </div>
   );
 };
-
-
-
