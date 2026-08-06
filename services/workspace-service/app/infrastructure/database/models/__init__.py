@@ -78,3 +78,21 @@ class WorkspaceActivityModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     workspace = relationship("WorkspaceModel", back_populates="activities")
+
+
+class LearningUnitContentModel(Base):
+    __tablename__ = "learning_unit_contents"
+    __table_args__ = (
+        Index("idx_unit_contents_ws_title", "workspace_id", "unit_title"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    unit_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    summary_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    flashcards_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    quiz_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="NOT_GENERATED")
+    model: Mapped[str | None] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

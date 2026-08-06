@@ -103,3 +103,35 @@ class LearningPathResponse(BaseModel):
     units: list[LearningUnit] = Field(default_factory=list, description="Ordered list of learning units (10-30)")
 
 
+class UnitContentSummary(BaseModel):
+    overview: str
+    sections: list[WorkspaceSummarySection] = Field(default_factory=list)
+    key_takeaways: list[str] = Field(default_factory=list)
+
+
+class UnitContentFlashcard(BaseModel):
+    front: str
+    back: str
+    concept_key: str | None = None
+
+
+class UnitContentQuiz(BaseModel):
+    question: str
+    options: list[str]
+    correct_answer: int
+    explanation: str
+
+
+class UnitContentResponse(BaseModel):
+    summary: UnitContentSummary
+    flashcards: list[UnitContentFlashcard] = Field(default_factory=list)
+    quiz: list[UnitContentQuiz] = Field(default_factory=list)
+
+
+class GenerateUnitContentRequest(BaseModel):
+    unit_title: str
+    unit_description: str | None = None
+    learning_objectives: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+
+

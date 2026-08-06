@@ -176,6 +176,75 @@ async def save_workspace_learning_path(
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.dependencies.database import get_db
+from app.infrastructure.database.models import LearningUnitContentModel
+from app.schemas.workspace import SaveUnitContentRequest
+
+
+@router.get("/{workspace_id}/units/content")
+async def get_learning_unit_content(
+    workspace_id: UUID,
+    unit_title: str,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(LearningUnitContentModel).where(
+        LearningUnitContentModel.workspace_id == workspace_id,
+        LearningUnitContentModel.unit_title == unit_title
+    )
+    res = await db.execute(stmt)
+    unit_content = res.scalar_one_or_none()
+    if not unit_content or unit_content.status != "READY":
+        return {"content": None, "status": unit_content.status if unit_content else "NOT_GENERATED"}
+
+    return {
+        "content": {
+            "summary": unit_content.summary_json,
+            "flashcards": unit_content.flashcards_json,
+            "quiz": unit_content.quiz_json,
+        },
+        "status": unit_content.status,
+        "model": unit_content.model,
+        "updated_at": unit_content.updated_at
+    }
+
+
+@router.put("/{workspace_id}/units/content")
+async def save_learning_unit_content(
+    workspace_id: UUID,
+    req: SaveUnitContentRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(LearningUnitContentModel).where(
+        LearningUnitContentModel.workspace_id == workspace_id,
+        LearningUnitContentModel.unit_title == req.unit_title
+    )
+    res = await db.execute(stmt)
+    unit_content = res.scalar_one_or_none()
+
+    if not unit_content:
+        unit_content = LearningUnitContentModel(
+            workspace_id=workspace_id,
+            unit_title=req.unit_title,
+            summary_json=req.summary_json,
+            flashcards_json=req.flashcards_json,
+            quiz_json=req.quiz_json,
+            status=req.status,
+            model=req.model
+        )
+        db.add(unit_content)
+    else:
+        unit_content.summary_json = req.summary_json
+        unit_content.flashcards_json = req.flashcards_json
+        unit_content.quiz_json = req.quiz_json
+        unit_content.status = req.status
+        unit_content.model = req.model
+
+    await db.flush()
+    return {"status": "saved", "workspace_id": str(workspace_id), "unit_title": req.unit_title}
+
+
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workspace(
     workspace_id: UUID,

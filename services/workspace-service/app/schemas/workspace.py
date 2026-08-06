@@ -26,6 +26,15 @@ class SaveLearningPathRequest(BaseModel):
     learning_path_json: dict
 
 
+class SaveUnitContentRequest(BaseModel):
+    unit_title: str
+    summary_json: dict | None = None
+    flashcards_json: list[dict] | None = None
+    quiz_json: list[dict] | None = None
+    model: str | None = "gemini-flash-latest"
+    status: str = "READY"
+
+
 class WorkspaceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

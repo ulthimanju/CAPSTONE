@@ -6,6 +6,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
 import { AppLayout } from '../layouts/AppLayout';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
+import { LearningUnitModal } from '../components/unit/LearningUnitModal';
 
 const getFileIcon = (filename) => {
   if (!filename) return 'ti-file';
@@ -56,6 +57,7 @@ export const WorkspaceDetailPage = () => {
   const [learningPathData, setLearningPathData] = useState(null);
   const [learningPathStatus, setLearningPathStatus] = useState(null); // 'QUEUED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
   const [learningPathProgressText, setLearningPathProgressText] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState(null);
 
   // Archived Workspaces state
   const [archivedWorkspaces, setArchivedWorkspaces] = useState([]);
@@ -992,7 +994,7 @@ export const WorkspaceDetailPage = () => {
 
                         {/* Tags */}
                         {unit.tags && unit.tags.length > 0 && (
-                          <div style={{ paddingLeft: '40px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          <div style={{ paddingLeft: '40px', display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
                             {unit.tags.map((tag, tIdx) => (
                               <span key={tIdx} style={{ fontSize: '11px', background: 'var(--bg-3)', color: 'var(--text-3)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)', fontFamily: 'var(--mono)' }}>
                                 #{tag}
@@ -1000,6 +1002,17 @@ export const WorkspaceDetailPage = () => {
                             ))}
                           </div>
                         )}
+
+                        {/* Open Unit Study Button */}
+                        <div style={{ paddingLeft: '40px', display: 'flex' }}>
+                          <button
+                            className="btn btn-primary"
+                            style={{ fontSize: '12px', padding: '6px 14px', gap: '6px' }}
+                            onClick={() => setSelectedUnit(unit)}
+                          >
+                            <i className="ti ti-book"></i> Open Learning Unit
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1296,6 +1309,14 @@ export const WorkspaceDetailPage = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Learning Unit Study Modal */}
+      <LearningUnitModal
+        open={Boolean(selectedUnit)}
+        onClose={() => setSelectedUnit(null)}
+        unit={selectedUnit}
+        workspaceId={workspaceId}
+      />
 
     </AppLayout>
   );

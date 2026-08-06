@@ -306,6 +306,138 @@ async def generate_workspace_learning_path_endpoint(workspace_id: str, x_user_id
         raise HTTPException(status_code=500, detail=f"Failed to generate workspace learning path: {str(e)}")
 
 
+async def _publish_unit_generation_event(
+    workspace_id: str,
+    unit_title: str,
+    status: str,
+    user_id: str | None = None,
+    error: str | None = None,
+):
+    event_payload = {
+        "event_name": "LearningUnitGeneration",
+        "workspace_id": workspace_id,
+        "unit_title": unit_title,
+        "status": status,
+        "error": error,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    if user_id:
+        event_payload["user_id"] = user_id
+    await publisher.publish(routing_key="notification.events", message=event_payload)
+
+
+from app.domain.prompts.unit_content_prompt_builder import UnitContentPromptBuilder
+from app.schemas.gateway import UnitContentResponse, GenerateUnitContentRequest
+
+
+@router.post("/workspaces/{workspace_id}/units/generate", response_model=UnitContentResponse)
+async def generate_unit_content(
+    workspace_id: str,
+    req: GenerateUnitContentRequest,
+    x_user_id: str | None = Header(default=None, alias="X-User-ID"),
+):
+    try:
+        ws_id = str(uuid.UUID(workspace_id))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid workspace_id UUID format.")
+
+    try:
+        await _publish_unit_generation_event(ws_id, req.unit_title, "QUEUED", user_id=x_user_id)
+        await _publish_unit_generation_event(ws_id, req.unit_title, "STARTED", user_id=x_user_id)
+
+        # 1. Retrieve RAG Context (~1K tokens) from rag-service
+        rag_url = settings.rag_service_url.rstrip("/")
+        search_query = f"{req.unit_title} {' '.join(req.tags)}"
+        retrieved_chunks_text = ""
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                headers = {"X-User-ID": x_user_id} if x_user_id else {}
+                rag_res = await client.post(
+                    f"{rag_url}/api/v1/rag/search",
+                    json={"workspace_id": ws_id, "query": search_query, "top_k": 5},
+                    headers=headers,
+                )
+                if rag_res.status_code == 200:
+                    search_data = rag_res.json()
+                    chunks = search_data.get("results", [])
+                    retrieved_chunks_text = "\n\n".join([
+                        f"--- Document Chunk ({c.get('document_name', 'Doc')}): ---\n{c.get('content', '')}"
+                        for c in chunks
+                    ])
+        except Exception as rag_err:
+            print(f"Warning: RAG context retrieval for unit '{req.unit_title}' failed: {rag_err}")
+
+        await _publish_unit_generation_event(ws_id, req.unit_title, "IN_PROGRESS", user_id=x_user_id)
+
+        # 2. Build Single Prompt for Summary + Flashcards + Quiz
+        assembled_prompt = f"""
+Unit Title:
+{req.unit_title}
+
+Description:
+{req.unit_description or 'N/A'}
+
+Learning Objectives:
+{chr(10).join(['- ' + obj for obj in req.learning_objectives]) if req.learning_objectives else 'N/A'}
+
+Tags:
+{', '.join(req.tags) if req.tags else 'N/A'}
+
+--- RETRIEVED RAG CONTEXT ---
+{retrieved_chunks_text if retrieved_chunks_text else 'No direct document chunks retrieved. Synthesize unit concepts accurately based on unit title and objectives.'}
+
+Generation Instructions:
+Generate a unified learning bundle containing:
+1. Summary (overview, sections with markdown/code/KaTeX/mermaid, key_takeaways)
+2. Flashcards (5-8 cards with front, back, concept_key)
+3. Quiz (5 questions with question, 4 options, correct_answer 0-3 index, explanation)
+"""
+
+        # 3. Call Gemini in 1 pass
+        sys_instruction = UnitContentPromptBuilder.build_system_instruction()
+        gemini_res = await gemini_client.generate_text(
+            prompt=assembled_prompt,
+            system_instruction=sys_instruction,
+            model=settings.gemini_default_model,
+            temperature=0.3,
+            top_p=0.95,
+            max_output_tokens=8192,
+            response_mime_type="application/json",
+            response_schema=UnitContentResponse,
+        )
+
+        # 4. Validate Schema
+        unit_validated = UnitContentResponse.model_validate_json(gemini_res["text"])
+
+        # 5. Persist to workspace-service
+        workspace_url = settings.workspace_service_url.rstrip("/")
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            headers = {"X-User-ID": x_user_id} if x_user_id else {}
+            await client.put(
+                f"{workspace_url}/api/v1/workspaces/{ws_id}/units/content",
+                json={
+                    "unit_title": req.unit_title,
+                    "summary_json": unit_validated.summary.model_dump(),
+                    "flashcards_json": [f.model_dump() for f in unit_validated.flashcards],
+                    "quiz_json": [q.model_dump() for q in unit_validated.quiz],
+                    "model": settings.gemini_default_model,
+                    "status": "READY",
+                },
+                headers=headers,
+            )
+
+        # 6. Publish COMPLETED event
+        await _publish_unit_generation_event(ws_id, req.unit_title, "COMPLETED", user_id=x_user_id)
+
+        return unit_validated
+
+    except Exception as e:
+        await _publish_unit_generation_event(ws_id, req.unit_title, "FAILED", user_id=x_user_id, error=str(e))
+        print(f"Error generating unit content for '{req.unit_title}': {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate unit content: {str(e)}")
+
+
 @router.post("/flashcards", response_model=FlashcardSetResponse)
 async def generate_flashcards(req: GenerationRequest):
     try:
