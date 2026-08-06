@@ -63,7 +63,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
         { headers }
       );
 
-      setNotice({ type: 'success', text: `Invitation sent successfully to ${inviteEmail.trim()} as ${selectedRole}!` });
+      setNotice({ type: 'success', text: `Invitation sent to ${inviteEmail.trim()} as ${selectedRole}!` });
       setInviteEmail('');
       fetchMembers();
     } catch (err) {
@@ -129,74 +129,68 @@ export const WorkspaceCollaborators = ({ workspace }) => {
   const getRoleBadgeStyle = (role) => {
     switch (role) {
       case 'OWNER':
-        return { background: 'rgba(62, 207, 142, 0.15)', color: '#3ecf8e', border: '1px solid rgba(62, 207, 142, 0.3)' };
+        return { background: 'rgba(62, 207, 142, 0.12)', color: '#3ecf8e', border: '1px solid rgba(62, 207, 142, 0.25)' };
       case 'ADMIN':
-        return { background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)' };
+        return { background: 'rgba(77, 124, 245, 0.12)', color: 'var(--accent)', border: '1px solid rgba(77, 124, 245, 0.25)' };
       case 'EDITOR':
-        return { background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' };
+        return { background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.25)' };
       default:
-        return { background: 'var(--bg-3)', color: 'var(--text-3)', border: '1px solid var(--border)' };
+        return { background: 'var(--island-2)', color: 'var(--text-faint)', border: '1px solid var(--border-soft)' };
     }
   };
 
   const isOwner = user?.id && workspace?.owner_id && user.id === workspace.owner_id;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '0.5rem 0' }}>
-      {/* ---------- HERO BANNER ---------- */}
-      <div
-        style={{
-          background: 'var(--bg-1)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: '12px',
-          padding: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justify: 'space-between',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'var(--accent-bg)',
-              color: 'var(--accent)',
-              display: 'flex',
-              alignItems: 'center',
-              justify: 'center',
-              fontSize: '24px',
-            }}
-          >
-            <i className="ti ti-users"></i>
-          </div>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)', margin: '0 0 4px 0' }}>
-              Workspace Collaborators
-            </h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-3)', margin: 0 }}>
-              Invite team members, assign access permissions, and manage workspace membership.
-            </p>
-          </div>
-        </div>
-
+    <div className="island" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* 1. Header Banner */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-soft)', paddingBottom: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
-              background: 'var(--bg-2)',
-              border: '1px solid var(--border-strong)',
-              borderRadius: '20px',
-              padding: '6px 14px',
-              fontSize: '12px',
-              color: 'var(--text-2)',
-              fontFamily: 'var(--mono)',
-              display: 'flex',
+              width: '34px',
+              height: '34px',
+              borderRadius: '8px',
+              background: 'rgba(77, 124, 245, 0.1)',
+              color: 'var(--accent)',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }}></span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <div>
+            <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>
+              Workspace Collaborators
+            </h2>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-faint)' }}>
+              Invite team members, assign access permissions, and manage workspace membership.
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              background: 'var(--island-2)',
+              border: '1px solid var(--border-soft)',
+              borderRadius: '20px',
+              padding: '5px 13px',
+              fontSize: '12px',
+              fontWeight: '500',
+              color: 'var(--text-dim)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent)' }}></span>
             {members.length} Active Member{members.length !== 1 ? 's' : ''}
           </div>
 
@@ -204,58 +198,57 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             <button
               className="btn"
               onClick={handleLeaveWorkspace}
-              style={{ fontSize: '12px', padding: '6px 12px', color: 'var(--danger)', borderColor: 'var(--border-strong)' }}
+              style={{ fontSize: '12.5px', padding: '6px 12px', color: 'var(--danger)', borderColor: 'var(--border-soft)' }}
             >
-              <i className="ti ti-logout"></i> Leave Workspace
+              Leave Workspace
             </button>
           )}
         </div>
       </div>
 
-      {/* NOTICE BANNER */}
+      {/* Notice Banner */}
       {notice && (
         <div
           style={{
-            background: notice.type === 'success' ? 'rgba(62, 207, 142, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-            border: `1px solid ${notice.type === 'success' ? 'var(--accent)' : 'var(--danger)'}`,
+            background: notice.type === 'success' ? 'rgba(62, 207, 142, 0.08)' : 'rgba(226, 87, 76, 0.08)',
+            border: `1px solid ${notice.type === 'success' ? 'rgba(62, 207, 142, 0.3)' : 'rgba(226, 87, 76, 0.3)'}`,
             borderRadius: '8px',
-            padding: '12px 16px',
+            padding: '10px 14px',
             fontSize: '13px',
-            color: notice.type === 'success' ? 'var(--accent)' : 'var(--danger)',
+            color: notice.type === 'success' ? '#3ecf8e' : 'var(--danger)',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
           }}
         >
-          <i className={notice.type === 'success' ? 'ti ti-circle-check' : 'ti ti-alert-triangle'}></i>
           {notice.text}
         </div>
       )}
 
-      {/* ---------- INVITE FORM CARD ---------- */}
-      <div
-        style={{
-          background: 'var(--bg-1)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: '12px',
-          padding: '24px',
-        }}
-      >
+      {/* 2. Invite New Team Member Form */}
+      <div style={{ borderBottom: '1px solid var(--border-soft)', paddingBottom: '22px' }}>
         <h3
           style={{
-            fontSize: '15px',
-            fontWeight: '600',
+            fontSize: '14px',
+            fontWeight: '700',
             color: 'var(--text)',
-            marginBottom: '16px',
+            marginBottom: '14px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
           }}
         >
-          <i className="ti ti-user-plus" style={{ color: 'var(--accent)' }}></i> Invite New Team Member
+          <span style={{ color: 'var(--accent)', display: 'inline-flex' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M19 8v6M22 11h-6" />
+            </svg>
+          </span>
+          Invite New Team Member
         </h3>
 
-        <form onSubmit={handleSendInvite} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <form onSubmit={handleSendInvite} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <input
             type="email"
             value={inviteEmail}
@@ -263,15 +256,15 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             placeholder="colleague@university.edu"
             required
             style={{
-              flex: 2,
-              minWidth: '240px',
-              background: 'var(--bg-2)',
-              border: '1px solid var(--border-strong)',
-              borderRadius: '8px',
-              padding: '10px 14px',
-              fontSize: '13px',
+              flex: 1,
+              background: 'var(--island-2)',
+              border: '1px solid var(--border-soft)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '9px 14px',
+              fontSize: '13.5px',
               color: 'var(--text)',
               outline: 'none',
+              height: '40px',
             }}
           />
 
@@ -279,16 +272,16 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
             style={{
-              flex: 1,
-              minWidth: '160px',
-              background: 'var(--bg-2)',
-              border: '1px solid var(--border-strong)',
-              borderRadius: '8px',
-              padding: '10px 14px',
-              fontSize: '13px',
+              width: '200px',
+              background: 'var(--island-2)',
+              border: '1px solid var(--border-soft)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '9px 14px',
+              fontSize: '13.5px',
               color: 'var(--text)',
               outline: 'none',
               cursor: 'pointer',
+              height: '40px',
             }}
           >
             <option value="VIEWER">Viewer (Read Only)</option>
@@ -300,34 +293,37 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             type="submit"
             className="btn btn-primary"
             disabled={inviting || !inviteEmail.trim()}
-            style={{ padding: '10px 20px', fontSize: '13px', gap: '6px' }}
+            style={{ height: '40px', padding: '0 18px', fontSize: '13.5px', gap: '7px' }}
           >
-            <i className="ti ti-send"></i> {inviting ? 'Sending...' : 'Send Invitation'}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="m22 2-7 20-4-9-9-4Z" />
+              <path d="M22 2 11 13" />
+            </svg>
+            {inviting ? 'Sending...' : 'Send Invitation'}
           </button>
         </form>
       </div>
 
-      {/* ---------- ACTIVE MEMBERS LIST CARD ---------- */}
-      <div
-        style={{
-          background: 'var(--bg-1)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: '12px',
-          padding: '24px',
-        }}
-      >
+      {/* 3. Active Workspace Members List */}
+      <div>
         <h3
           style={{
-            fontSize: '15px',
-            fontWeight: '600',
+            fontSize: '14px',
+            fontWeight: '700',
             color: 'var(--text)',
-            marginBottom: '16px',
+            marginBottom: '14px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
           }}
         >
-          <i className="ti ti-users" style={{ color: 'var(--accent)' }}></i> Active Workspace Members
+          <span style={{ color: 'var(--accent)', display: 'inline-flex' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+            </svg>
+          </span>
+          Active Workspace Members
         </h3>
 
         {loading ? (
@@ -335,7 +331,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             <Spinner size="md" />
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {members.map((member) => {
               const memberUserId = member.user_id || member.id;
               const isSelf = user?.id && memberUserId === user.id;
@@ -344,87 +340,86 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                 <div
                   key={member.id}
                   style={{
-                    background: 'var(--bg-2)',
-                    border: '1px solid var(--border)',
+                    background: 'var(--island-2)',
+                    border: '1px solid var(--border-soft)',
                     borderRadius: '10px',
-                    padding: '14px 18px',
+                    padding: '12px 16px',
                     display: 'flex',
                     alignItems: 'center',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  {/* Left: Avatar & Info */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div
                       style={{
-                        width: '38px',
-                        height: '38px',
+                        width: '34px',
+                        height: '34px',
                         borderRadius: '50%',
-                        background: 'var(--accent-bg)',
+                        background: 'rgba(77, 124, 245, 0.12)',
                         color: 'var(--accent)',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        justify: 'center',
+                        justifyContent: 'center',
                         fontWeight: '700',
-                        fontSize: '15px',
+                        fontSize: '13px',
+                        flexShrink: 0,
                       }}
                     >
                       {(member.name || member.email || 'U').charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {member.name || member.email || 'Member'}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text)' }}>
+                          {member.name || member.email || 'Member'}
+                        </span>
                         {isSelf && (
-                          <span style={{ fontSize: '11px', color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>(You)</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500' }}>(You)</span>
                         )}
+                        <span
+                          style={{
+                            fontSize: '10.5px',
+                            fontWeight: '700',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            letterSpacing: '0.04em',
+                            ...getRoleBadgeStyle(member.role),
+                          }}
+                        >
+                          {member.role}
+                        </span>
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>
-                        User ID: {String(memberUserId).slice(0, 18)}...
+
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', display: 'flex', gap: '10px' }}>
+                        <span>Joined {new Date(member.joined_at || member.joinedAt || Date.now()).toLocaleDateString()}</span>
+                        <span>·</span>
+                        <span>User ID: {String(memberUserId).slice(0, 18)}...</span>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        letterSpacing: '.03em',
-                        ...getRoleBadgeStyle(member.role),
-                      }}
-                    >
-                      {member.role}
-                    </span>
-
-                    <span style={{ fontSize: '12px', color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>
-                      Joined {new Date(member.joined_at || member.joinedAt || Date.now()).toLocaleDateString()}
-                    </span>
-
-                    {/* Owner Action: Transfer Ownership */}
-                    {isOwner && !isSelf && (
+                  {/* Right: Owner Actions */}
+                  {isOwner && !isSelf && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button
                         className="btn"
-                        style={{ fontSize: '11px', padding: '4px 10px', color: 'var(--accent)', borderColor: 'var(--border)' }}
+                        style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--accent)', borderColor: 'var(--border-soft)' }}
                         onClick={() => handleTransferOwnership(memberUserId)}
                         disabled={actionUserId === memberUserId}
                       >
-                        <i className="ti ti-crown"></i> Make Owner
+                        Make Owner
                       </button>
-                    )}
-
-                    {/* Owner Action: Remove Member */}
-                    {isOwner && !isSelf && (
                       <button
                         className="btn"
-                        style={{ fontSize: '11px', padding: '4px 10px', color: 'var(--danger)', borderColor: 'var(--border)' }}
+                        style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--danger)', borderColor: 'var(--border-soft)' }}
                         onClick={() => handleRemoveMember(memberUserId)}
                         disabled={actionUserId === memberUserId}
                       >
-                        <i className="ti ti-trash"></i> Remove
+                        Remove
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
