@@ -421,7 +421,7 @@ Generate a unified learning bundle containing:
         unit_validated = UnitContentResponse.model_validate_json(gemini_res["text"])
 
         # 5. Persist to workspace-service
-        workspace_url = settings.workspace_service_url.rstrip("/")
+        workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
         async with httpx.AsyncClient(timeout=15.0) as client:
             headers = {"X-User-ID": x_user_id} if x_user_id else {}
             await client.put(

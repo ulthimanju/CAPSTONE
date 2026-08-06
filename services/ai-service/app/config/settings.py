@@ -12,6 +12,7 @@ class AIServiceSettings(PlatformSettings):
 
 
 
+    workspace_service_url: str = Field(default="http://workspace-service:8000", env="WORKSPACE_SERVICE_URL")
     rag_service_url: str = Field(default="http://rag-service:8000", env="RAG_SERVICE_URL")
     document_service_url: str = Field(default="http://document-service:8000", env="DOCUMENT_SERVICE_URL")
 
