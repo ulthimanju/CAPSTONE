@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -6,9 +6,9 @@ import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import mermaid from 'mermaid';
 import 'katex/dist/katex.min.css';
-import 'highlight.js/styles/atom-one-dark.css';
+import './RichMarkdown.css';
 
-// Initialize mermaid with custom theme matching app colors
+// Initialize mermaid with custom theme matching app design tokens
 mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
@@ -17,177 +17,172 @@ mermaid.initialize({
     background: '#0c0c0e',
 
     primaryColor: '#16161a',
-    primaryTextColor: '#f4f4f5',
-    primaryBorderColor: '#27272a',
+    primaryTextColor: '#e4e4e7',
+    primaryBorderColor: '#2a2a2e',
 
-    secondaryColor: '#18181b',
+    secondaryColor: '#111113',
+    secondaryTextColor: '#a1a1aa',
+    secondaryBorderColor: '#1f1f22',
 
-    lineColor: '#a1a1aa',
+    tertiaryColor: '#16161a',
+    tertiaryTextColor: '#e4e4e7',
+    tertiaryBorderColor: '#2a2a2e',
 
-    textColor: '#f4f4f5',
+    lineColor: '#52525b',
+    textColor: '#e4e4e7',
+    labelTextColor: '#e4e4e7',
 
-    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-
-    fontSize: '14px',
+    fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+    fontSize: '13px',
 
     edgeLabelBackground: '#0c0c0e',
 
-    clusterBkg: '#121215',
-    clusterBorder: '#27272a',
+    clusterBkg: '#111113',
+    clusterBorder: '#2a2a2e',
+
+    // Flowchart specifics
+    fillType0: '#16161a',
+    fillType1: '#1f1f22',
+    fillType2: '#1a1a1e',
+
+    // Note / Special
+    noteBkgColor: '#16161a',
+    noteBorderColor: '#3ecf8e',
+    noteTextColor: '#e4e4e7',
+
+    // Sequence diagram
+    activationBkgColor: '#1f1f22',
+    activationBorderColor: '#3ecf8e',
+    labelBoxBkgColor: '#16161a',
+    labelBoxBorderColor: '#2a2a2e',
+    sequenceNumberColor: '#0c0c0e',
+
+    // Pie chart
+    pie1: '#3ecf8e',
+    pie2: '#3b82f6',
+    pie3: '#f59e0b',
+    pie4: '#e5484d',
+    pie5: '#c084fc',
+    pie6: '#67e8f9',
+    pie7: '#86efac',
+    pie8: '#fde68a',
   },
 });
 
+// ── Mermaid Diagram ────────────────────────────────────────────────────────
 const MermaidDiagram = ({ code }) => {
   const containerRef = useRef(null);
   const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
 
   useEffect(() => {
-    if (containerRef.current && code) {
-      containerRef.current.innerHTML = '';
-      mermaid
-        .render(idRef.current, code)
-        .then(({ svg }) => {
-          if (containerRef.current) {
-            containerRef.current.innerHTML = svg;
-          }
-        })
-        .catch((err) => {
-          console.error('Mermaid render error:', err);
-          if (containerRef.current) {
-            containerRef.current.innerHTML = `<pre style="color:var(--danger);font-size:12px;background:var(--bg-3);padding:8px;border-radius:6px;">${code}</pre>`;
-          }
-        });
-    }
+    if (!containerRef.current || !code) return;
+    containerRef.current.innerHTML = '';
+    mermaid
+      .render(idRef.current, code)
+      .then(({ svg }) => {
+        if (containerRef.current) containerRef.current.innerHTML = svg;
+      })
+      .catch((err) => {
+        console.error('Mermaid render error:', err);
+        if (containerRef.current) {
+          containerRef.current.innerHTML = `<pre style="color:#e5484d;font-size:12px;padding:8px;">${code}</pre>`;
+        }
+      });
   }, [code]);
 
-  return <div ref={containerRef} className="mermaid-diagram-container" style={{ margin: '1rem 0', textAlign: 'center' }} />;
+  return (
+    <div className="rmc-mermaid-wrap">
+      <div className="rmc-mermaid-label">
+        <i className="ti ti-chart-bubble" style={{ marginRight: 5 }} />
+        Diagram
+      </div>
+      <div className="rmc-mermaid-body" ref={containerRef} />
+    </div>
+  );
 };
 
+// ── Copy Button ────────────────────────────────────────────────────────────
+const CopyButton = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <button
+      className={`rmc-code-copy${copied ? ' copied' : ''}`}
+      onClick={handleCopy}
+      title="Copy code"
+    >
+      <i className={copied ? 'ti ti-check' : 'ti ti-copy'} />
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+};
+
+// ── Code Block ─────────────────────────────────────────────────────────────
+const CodeBlock = ({ className, children }) => {
+  const match = /language-(\w+)/.exec(className || '');
+  const lang = match ? match[1] : '';
+  const codeString = String(children).replace(/\n$/, '');
+
+  if (lang === 'mermaid') {
+    return <MermaidDiagram code={codeString} />;
+  }
+
+  return (
+    <div className="rmc-code-block">
+      <div className="rmc-code-header">
+        <span className="rmc-code-lang">{lang || 'code'}</span>
+        <CopyButton text={codeString} />
+      </div>
+      <pre>
+        <code className={className}>{children}</code>
+      </pre>
+    </div>
+  );
+};
+
+// ── Main Renderer ──────────────────────────────────────────────────────────
 export const RichMarkdownRenderer = ({ content, compact = false }) => {
   if (!content) return null;
 
   return (
-    <div className="rich-markdown-content">
+    <div className={`rich-markdown-content${compact ? ' rich-markdown-compact' : ''}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeHighlight]}
         components={{
+          // Code: fenced blocks and inline
           code({ node, inline, className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || '');
-            const lang = match ? match[1] : '';
-            const codeString = String(children).replace(/\n$/, '');
-
-            if (lang === 'mermaid') {
-              return <MermaidDiagram code={codeString} />;
-            }
-
             if (inline) {
-              return (
-                <code
-                  style={{
-                    background: 'var(--bg-3)',
-                    color: 'var(--accent)',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                  }}
-                  {...props}
-                >
-                  {children}
-                </code>
-              );
+              return <code className={className} {...props}>{children}</code>;
             }
-
-            return (
-              <pre
-                style={{
-                  background: '#1e1e2e',
-                  borderRadius: '8px',
-                  padding: '12px 16px',
-                  overflowX: 'auto',
-                  margin: compact ? '4px 0' : '12px 0',
-                  fontSize: '13px',
-                }}
-              >
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              </pre>
-            );
+            return <CodeBlock className={className}>{children}</CodeBlock>;
           },
+
+          // Pre: suppressed — CodeBlock renders its own <pre>
+          pre({ children }) {
+            return <>{children}</>;
+          },
+
+          // Table
           table({ children }) {
             return (
-              <div style={{ overflowX: 'auto', margin: compact ? '8px 0' : '16px 0' }}>
-                <table
-                  style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    fontSize: '13px',
-                    textAlign: 'left',
-                    background: 'var(--bg-1)',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {children}
-                </table>
+              <div className="rmc-table-wrap">
+                <table>{children}</table>
               </div>
             );
           },
-          th({ children }) {
-            return (
-              <th
-                style={{
-                  padding: '10px 14px',
-                  background: 'var(--bg-3)',
-                  color: 'var(--text)',
-                  fontWeight: '600',
-                  borderBottom: '2px solid var(--border-strong)',
-                }}
-              >
-                {children}
-              </th>
-            );
-          },
-          td({ children }) {
-            return (
-              <td
-                style={{
-                  padding: '10px 14px',
-                  borderBottom: '1px solid var(--border)',
-                  color: 'var(--text-2)',
-                }}
-              >
-                {children}
-              </td>
-            );
-          },
-          blockquote({ children }) {
-            return (
-              <blockquote
-                style={{
-                  borderLeft: '4px solid var(--accent)',
-                  margin: compact ? '4px 0' : '12px 0',
-                  paddingLeft: '16px',
-                  color: 'var(--text-2)',
-                  fontStyle: 'italic',
-                  background: 'var(--bg-3)',
-                  padding: '8px 16px',
-                  borderRadius: '0 8px 8px 0',
-                }}
-              >
-                {children}
-              </blockquote>
-            );
-          },
-          h1: ({ children }) => <h1 style={{ fontSize: '18px', fontWeight: '700', margin: compact ? '8px 0 4px 0' : '16px 0 8px 0', color: 'var(--text)' }}>{children}</h1>,
-          h2: ({ children }) => <h2 style={{ fontSize: '16px', fontWeight: '700', margin: compact ? '6px 0 3px 0' : '14px 0 6px 0', color: 'var(--text)' }}>{children}</h2>,
-          h3: ({ children }) => <h3 style={{ fontSize: '14px', fontWeight: '600', margin: compact ? '4px 0 2px 0' : '12px 0 4px 0', color: 'var(--text)' }}>{children}</h3>,
-          p: ({ children }) => <p style={{ margin: compact ? '0' : '8px 0', lineHeight: compact ? '1.4' : '1.6', color: 'var(--text-2)' }}>{children}</p>,
-          ul: ({ children }) => <ul style={{ paddingLeft: '20px', margin: compact ? '2px 0' : '8px 0' }}>{children}</ul>,
-          ol: ({ children }) => <ol style={{ paddingLeft: '20px', margin: compact ? '2px 0' : '8px 0' }}>{children}</ol>,
-          li: ({ children }) => <li style={{ margin: compact ? '2px 0' : '4px 0', lineHeight: compact ? '1.4' : '1.5', color: 'var(--text-2)' }}>{children}</li>,
+          thead: ({ children }) => <thead>{children}</thead>,
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children }) => <tr>{children}</tr>,
+          th: ({ children }) => <th>{children}</th>,
+          td: ({ children }) => <td>{children}</td>,
         }}
       >
         {content}

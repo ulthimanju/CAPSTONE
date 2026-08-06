@@ -1,0 +1,271 @@
+/* ============================================================
+   RichMarkdown — App-themed rich content renderer styles
+   Uses the app's own design token palette exclusively
+   ============================================================ */
+
+.rich-markdown-content {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* ── Headings ─────────────────────────────────────────── */
+.rich-markdown-content h1,
+.rich-markdown-content h2,
+.rich-markdown-content h3,
+.rich-markdown-content h4,
+.rich-markdown-content h5,
+.rich-markdown-content h6 {
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  margin: 1.1em 0 0.4em 0;
+}
+
+.rich-markdown-content h1 { font-size: 17px; font-weight: var(--font-weight-bold); border-bottom: 1px solid var(--color-border-strong); padding-bottom: 8px; }
+.rich-markdown-content h2 { font-size: 15px; font-weight: var(--font-weight-bold); }
+.rich-markdown-content h3 { font-size: 13.5px; font-weight: var(--font-weight-semibold); color: var(--color-primary); }
+.rich-markdown-content h4 { font-size: 12.5px; font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); }
+
+/* first heading has no top margin */
+.rich-markdown-content > *:first-child { margin-top: 0 !important; }
+.rich-markdown-content > *:last-child  { margin-bottom: 0 !important; }
+
+/* ── Paragraphs ───────────────────────────────────────── */
+.rich-markdown-compact p,
+.rich-markdown-content p {
+  margin: 0.4em 0;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* ── Lists ────────────────────────────────────────────── */
+.rich-markdown-content ul,
+.rich-markdown-content ol {
+  padding-left: 20px;
+  margin: 0.4em 0;
+}
+
+.rich-markdown-content li {
+  margin: 3px 0;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.rich-markdown-content li::marker {
+  color: var(--color-primary);
+}
+
+/* ── Inline code ──────────────────────────────────────── */
+.rich-markdown-content code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--color-bg-surface);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xs);
+  padding: 1px 6px;
+}
+
+/* ── Code blocks ──────────────────────────────────────── */
+.rmc-code-block {
+  margin: 12px 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  overflow: hidden;
+  background: var(--color-bg-secondary);
+}
+
+.rmc-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rmc-code-lang {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rmc-code-copy {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  transition: color 0.15s, background 0.15s;
+  font-family: var(--font-sans);
+}
+
+.rmc-code-copy:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-tertiary);
+}
+
+.rmc-code-copy.copied {
+  color: var(--color-success);
+}
+
+.rmc-code-block pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: transparent;
+}
+
+.rmc-code-block code {
+  font-family: var(--font-mono) !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  color: #e4e4e7;
+}
+
+/* hljs token overrides for app theme */
+.rmc-code-block .hljs-keyword,
+.rmc-code-block .hljs-selector-tag { color: #c084fc; }
+.rmc-code-block .hljs-string,
+.rmc-code-block .hljs-attr { color: #86efac; }
+.rmc-code-block .hljs-comment { color: #52525b; font-style: italic; }
+.rmc-code-block .hljs-number,
+.rmc-code-block .hljs-literal { color: #f9a8d4; }
+.rmc-code-block .hljs-built_in,
+.rmc-code-block .hljs-type { color: #67e8f9; }
+.rmc-code-block .hljs-function,
+.rmc-code-block .hljs-title { color: #93c5fd; }
+.rmc-code-block .hljs-variable,
+.rmc-code-block .hljs-name { color: #fde68a; }
+.rmc-code-block .hljs-tag,
+.rmc-code-block .hljs-selector-class { color: #f87171; }
+.rmc-code-block .hljs-punctuation,
+.rmc-code-block .hljs-operator { color: #a1a1aa; }
+
+/* ── Mermaid diagram container ────────────────────────── */
+.rmc-mermaid-wrap {
+  margin: 14px 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-secondary);
+  overflow: hidden;
+}
+
+.rmc-mermaid-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 12px;
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rmc-mermaid-body {
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.rmc-mermaid-body svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Tables ───────────────────────────────────────────── */
+.rmc-table-wrap {
+  overflow-x: auto;
+  margin: 12px 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+}
+
+.rmc-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.rmc-table-wrap th {
+  padding: 9px 14px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--color-border-strong);
+  white-space: nowrap;
+}
+
+.rmc-table-wrap td {
+  padding: 8px 14px;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rmc-table-wrap tr:last-child td { border-bottom: none; }
+
+.rmc-table-wrap tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--color-bg-surface) 30%, transparent);
+}
+
+/* ── Blockquotes ──────────────────────────────────────── */
+.rich-markdown-content blockquote {
+  margin: 10px 0;
+  padding: 10px 16px;
+  border-left: 3px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-bg-secondary));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.rich-markdown-content blockquote p { margin: 0; }
+
+/* ── Horizontal rule ──────────────────────────────────── */
+.rich-markdown-content hr {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--color-border-strong);
+}
+
+/* ── Strong & Em ──────────────────────────────────────── */
+.rich-markdown-content strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.rich-markdown-content em {
+  color: var(--color-text-secondary);
+}
+
+/* ── Compact mode (for list-item items) ───────────────── */
+.rich-markdown-compact p {
+  margin: 0 !important;
+  line-height: 1.4;
+}
+
+.rich-markdown-compact ul,
+.rich-markdown-compact ol {
+  margin: 2px 0;
+}
+
+.rich-markdown-compact li {
+  margin: 1px 0;
+}
