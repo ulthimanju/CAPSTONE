@@ -276,6 +276,11 @@ export const AppLayout = ({
             <span className="badge">1</span>
           </button>
 
+          {/* Second Nav Section Title */}
+          <div className="nav-label" style={{ marginTop: '8px', paddingTop: '4px' }}>
+            OTHERS
+          </div>
+
           <button
             className={`nav-item ${activeTab === 'invitations' ? 'active' : ''}`}
             onClick={() => navigate('/invitations')}
