@@ -98,6 +98,22 @@ export const LearningUnitDetailPage = () => {
       );
       if (res.data && res.data.content) {
         setContentData(res.data.content);
+
+        // Restore quiz answers and score from stored DB user_answer values
+        if (res.data.content.quiz && Array.isArray(res.data.content.quiz)) {
+          const initialAnswers = {};
+          let initialScore = 0;
+          res.data.content.quiz.forEach((q, idx) => {
+            if (q.user_answer !== undefined && q.user_answer !== null && q.user_answer !== -1) {
+              initialAnswers[idx] = q.user_answer;
+              if (q.user_answer === q.correct_answer) {
+                initialScore += 1;
+              }
+            }
+          });
+          setQuizAnswers(initialAnswers);
+          setQuizScore(initialScore);
+        }
       } else {
         setContentData(null);
       }
@@ -141,19 +157,56 @@ export const LearningUnitDetailPage = () => {
     setCardIndex((prev) => (contentData?.flashcards && prev < contentData.flashcards.length - 1 ? prev + 1 : prev));
   };
 
-  // Quiz Option Selector
-  const handleSelectQuizOption = (qIdx, optIdx, correctIdx) => {
+  // Quiz Option Selector (Saves user_answer to DB)
+  const handleSelectQuizOption = async (qIdx, optIdx, correctIdx) => {
     if (quizAnswers[qIdx] !== undefined) return;
-    const updated = { ...quizAnswers, [qIdx]: optIdx };
-    setQuizAnswers(updated);
-    if (optIdx === correctIdx) {
-      setQuizScore((prev) => prev + 1);
+    const updatedAnswers = { ...quizAnswers, [qIdx]: optIdx };
+    setQuizAnswers(updatedAnswers);
+
+    let updatedScore = 0;
+    const updatedQuiz = (contentData?.quiz || []).map((q, idx) => {
+      const userAns = updatedAnswers[idx] !== undefined ? updatedAnswers[idx] : (q.user_answer ?? -1);
+      if (userAns === q.correct_answer) updatedScore += 1;
+      return {
+        ...q,
+        user_answer: userAns
+      };
+    });
+
+    setQuizScore(updatedScore);
+    setContentData((prev) => (prev ? { ...prev, quiz: updatedQuiz } : prev));
+
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.patch(`/api/v1/workspaces/${workspaceId}/units/quiz-progress`, {
+        unit_title: decodedTitle,
+        quiz_json: updatedQuiz,
+      }, { headers });
+    } catch (err) {
+      console.error('Failed to save quiz progress to DB:', err);
     }
   };
 
-  const handleResetQuiz = () => {
+  const handleResetQuiz = async () => {
     setQuizAnswers({});
     setQuizScore(0);
+
+    if (!contentData || !contentData.quiz) return;
+    const resetQuiz = contentData.quiz.map((q) => ({
+      ...q,
+      user_answer: -1,
+    }));
+    setContentData((prev) => (prev ? { ...prev, quiz: resetQuiz } : prev));
+
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.patch(`/api/v1/workspaces/${workspaceId}/units/quiz-progress`, {
+        unit_title: decodedTitle,
+        quiz_json: resetQuiz,
+      }, { headers });
+    } catch (err) {
+      console.error('Failed to reset quiz progress in DB:', err);
+    }
   };
 
   return (

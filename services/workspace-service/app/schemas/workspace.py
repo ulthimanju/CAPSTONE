@@ -35,6 +35,11 @@ class SaveUnitContentRequest(BaseModel):
     status: str = "READY"
 
 
+class UpdateQuizProgressRequest(BaseModel):
+    unit_title: str
+    quiz_json: list[dict]
+
+
 class WorkspaceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -180,7 +180,28 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.database import get_db
 from app.infrastructure.database.models import LearningUnitContentModel
-from app.schemas.workspace import SaveUnitContentRequest
+from app.schemas.workspace import SaveUnitContentRequest, UpdateQuizProgressRequest
+
+
+@router.patch("/{workspace_id}/units/quiz-progress")
+async def update_quiz_progress(
+    workspace_id: UUID,
+    req: UpdateQuizProgressRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(LearningUnitContentModel).where(
+        LearningUnitContentModel.workspace_id == workspace_id,
+        LearningUnitContentModel.unit_title == req.unit_title
+    )
+    res = await db.execute(stmt)
+    unit_content = res.scalar_one_or_none()
+
+    if not unit_content:
+        raise HTTPException(status_code=404, detail="Learning unit content not found")
+
+    unit_content.quiz_json = req.quiz_json
+    await db.flush()
+    return {"status": "updated", "workspace_id": str(workspace_id), "unit_title": req.unit_title}
 
 
 @router.get("/{workspace_id}/units/content")

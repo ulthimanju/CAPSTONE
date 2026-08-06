@@ -36,6 +36,7 @@ Your task is to analyze the provided Learning Unit Metadata (Title, Description,
 - `question`: Clear question testing unit objectives.
 - `options`: Array of exactly 4 options.
 - `correct_answer`: Integer index (0, 1, 2, or 3) indicating the correct option.
+- `user_answer`: Set to integer -1 by default (unanswered).
 - `explanation`: Educational explanation of why the correct option is right and others are incorrect.
 
 ---

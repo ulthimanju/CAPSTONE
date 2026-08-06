@@ -119,6 +119,7 @@ class UnitContentQuiz(BaseModel):
     question: str
     options: list[str]
     correct_answer: int
+    user_answer: int = -1
     explanation: str
 
 
