@@ -212,36 +212,43 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
               {/* SUB-TAB 1: SUMMARY */}
               {activeTab === 'summary' && contentData.summary && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Overview */}
                   {contentData.summary.overview && (
-                    <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-2)' }}>
-                      <strong style={{ color: 'var(--text)', display: 'block', marginBottom: '4px', fontSize: '14px' }}>Overview</strong>
-                      {contentData.summary.overview}
+                    <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '16px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className="ti ti-notes"></i> Overview
+                      </h4>
+                      <RichMarkdownRenderer content={contentData.summary.overview} />
                     </div>
                   )}
 
+                  {/* Key Takeaways */}
+                  {contentData.summary.key_takeaways && contentData.summary.key_takeaways.length > 0 && (
+                    <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '16px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#3b82f6', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className="ti ti-bulb"></i> Key Takeaways
+                      </h4>
+                      <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '2px', margin: 0 }}>
+                        {contentData.summary.key_takeaways.map((item, idx) => (
+                          <li key={idx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.4' }}>
+                            <RichMarkdownRenderer content={item} compact />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Sections */}
                   {contentData.summary.sections && contentData.summary.sections.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       {contentData.summary.sections.map((sec, idx) => (
-                        <div key={idx} style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
-                          <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px' }}>
+                        <div key={idx} style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '16px' }}>
+                          <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px', borderBottom: '1px solid var(--border)', paddingBottom: '6px' }}>
                             {sec.title}
                           </h4>
                           <RichMarkdownRenderer content={sec.content} />
                         </div>
                       ))}
-                    </div>
-                  )}
-
-                  {contentData.summary.key_takeaways && contentData.summary.key_takeaways.length > 0 && (
-                    <div style={{ background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
-                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <i className="ti ti-check"></i> Key Takeaways
-                      </h4>
-                      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {contentData.summary.key_takeaways.map((pt, idx) => (
-                          <li key={idx}>{pt}</li>
-                        ))}
-                      </ul>
                     </div>
                   )}
                 </div>
