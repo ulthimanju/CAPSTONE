@@ -9,8 +9,9 @@ class WorkspaceInvitation:
     id: UUID
     workspace_id: UUID
     invited_by: UUID
-    invited_user_id: UUID
+    invited_user_id: UUID | None
     status: InvitationStatus
     expires_at: datetime
     created_at: datetime
+    invited_email: str | None = None
     accepted_at: datetime | None = None

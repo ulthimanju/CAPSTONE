@@ -48,12 +48,14 @@ class WorkspaceInvitationModel(Base):
     __tablename__ = "workspace_invitations"
     __table_args__ = (
         Index("idx_ws_invitation_status", "workspace_id", "invited_user_id", "status"),
+        Index("idx_ws_invitation_email", "invited_email", "status"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     invited_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    invited_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    invited_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), index=True)
+    invited_email: Mapped[str | None] = mapped_column(String(255), index=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="PENDING")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

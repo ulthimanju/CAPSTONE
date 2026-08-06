@@ -37,27 +37,17 @@ class InviteMemberUseCase:
         if not (is_owner or is_editor):
             raise HTTPException(status_code=403, detail="Permission denied to invite member")
 
-        target_user_id = req.user_id
-        if not target_user_id and req.email:
-            import uuid
-            target_user_id = uuid.uuid5(uuid.NAMESPACE_URL, f"mailto:{req.email.lower().strip()}")
-
-        if not target_user_id:
-            raise HTTPException(status_code=400, detail="Either user_id or email must be provided")
-
-        if target_user_id == invited_by:
-            raise HTTPException(status_code=400, detail="You cannot invite yourself to your own workspace")
-
-        existing_member = await self.member_repo.get_member(workspace_id, target_user_id)
-        if existing_member:
-            raise HTTPException(status_code=400, detail="User is already a member of this workspace")
+        target_email = req.email.lower().strip() if req.email else None
+        if not target_email and not req.user_id:
+            raise HTTPException(status_code=400, detail="Please provide a valid email address to invite")
 
         now = datetime.now(timezone.utc)
         invitation = WorkspaceInvitation(
             id=generate_uuid(),
             workspace_id=workspace_id,
             invited_by=invited_by,
-            invited_user_id=target_user_id,
+            invited_user_id=req.user_id,
+            invited_email=target_email,
             status=InvitationStatus.PENDING,
             expires_at=now + timedelta(days=7),
             created_at=now,
@@ -72,7 +62,7 @@ class InviteMemberUseCase:
             activity_type=ActivityType.MEMBER_INVITED,
             entity_type="invitation",
             entity_id=invitation.id,
-            metadata_json={"invited_user_id": str(req.user_id), "role": req.role.value},
+            metadata_json={"invited_email": target_email or str(req.user_id), "role": req.role.value},
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)

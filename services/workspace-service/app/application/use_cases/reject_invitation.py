@@ -15,13 +15,9 @@ class RejectInvitationUseCase:
         if not invitation:
             raise HTTPException(status_code=404, detail="Invitation not found")
 
-        email_uuid = None
-        if user_email:
-            import uuid
-            email_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"mailto:{user_email.lower().strip()}")
-
-        if invitation.invited_user_id not in (user_id, email_uuid):
-            raise HTTPException(status_code=403, detail="Invitation is for another user")
+        if invitation.invited_email and user_email:
+            if invitation.invited_email.lower().strip() != user_email.lower().strip():
+                raise HTTPException(status_code=403, detail="Invitation is for another email address")
 
         if invitation.status != InvitationStatus.PENDING:
             raise HTTPException(status_code=400, detail=f"Invitation is already {invitation.status.value}")

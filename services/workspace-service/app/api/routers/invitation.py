@@ -1,6 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
@@ -30,9 +30,10 @@ async def list_pending_invitations(
 ):
     user_email = request.headers.get("x-user-email")
     conditions = [WorkspaceInvitationModel.invited_user_id == user_id]
+
     if user_email:
-        email_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"mailto:{user_email.lower().strip()}")
-        conditions.append(WorkspaceInvitationModel.invited_user_id == email_uuid)
+        clean_email = user_email.lower().strip()
+        conditions.append(func.lower(WorkspaceInvitationModel.invited_email) == clean_email)
 
     stmt = (
         select(WorkspaceInvitationModel, WorkspaceModel.name.label("workspace_name"))
@@ -50,6 +51,7 @@ async def list_pending_invitations(
             "workspace_id": str(inv.workspace_id),
             "workspace_name": ws_name,
             "invited_by": str(inv.invited_by),
+            "invited_email": inv.invited_email,
             "status": inv.status,
             "expires_at": inv.expires_at.isoformat() if inv.expires_at else None,
             "created_at": inv.created_at.isoformat() if inv.created_at else None,
