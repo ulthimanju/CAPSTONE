@@ -22,6 +22,9 @@ export const WorkspacesPage = () => {
   const [description, setDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
+  const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [actionInvId, setActionInvId] = useState(null);
+
   const fetchWorkspaces = async () => {
     try {
       setLoading(true);
@@ -37,9 +40,48 @@ export const WorkspacesPage = () => {
     }
   };
 
+  const fetchPendingInvitations = async () => {
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      const res = await axios.get('/api/v1/invitations/pending', { headers });
+      setPendingInvitations(res.data || []);
+    } catch (err) {
+      console.error('Failed to load pending invitations:', err);
+    }
+  };
+
   useEffect(() => {
     fetchWorkspaces();
+    fetchPendingInvitations();
   }, []);
+
+  const handleAcceptInvite = async (invitationId) => {
+    try {
+      setActionInvId(invitationId);
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.post(`/api/v1/invitations/${invitationId}/accept`, {}, { headers });
+      await fetchPendingInvitations();
+      await fetchWorkspaces();
+    } catch (err) {
+      console.error('Failed to accept invitation:', err);
+      alert('Failed to accept invitation.');
+    } finally {
+      setActionInvId(null);
+    }
+  };
+
+  const handleRejectInvite = async (invitationId) => {
+    try {
+      setActionInvId(invitationId);
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.post(`/api/v1/invitations/${invitationId}/reject`, {}, { headers });
+      await fetchPendingInvitations();
+    } catch (err) {
+      console.error('Failed to decline invitation:', err);
+    } finally {
+      setActionInvId(null);
+    }
+  };
 
   const handleCreateWorkspace = async (e) => {
     e.preventDefault();
@@ -95,6 +137,58 @@ export const WorkspacesPage = () => {
           </div>
         ) : (
           <div>
+            {/* Pending Invitations Section */}
+            {pendingInvitations.length > 0 && (
+              <div style={{ marginBottom: '24px', background: 'var(--bg-1)', border: '1px solid var(--accent)', borderRadius: '12px', padding: '20px' }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="ti ti-mail-forward"></i> Pending Workspace Invitations ({pendingInvitations.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {pendingInvitations.map((inv) => (
+                    <div
+                      key={inv.id}
+                      style={{
+                        background: 'var(--bg-2)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: 'space-between',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
+                          {inv.workspace_name || 'Workspace Collaboration'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>
+                          You have been invited to collaborate on this workspace.
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          className="btn btn-primary"
+                          disabled={actionInvId === inv.id}
+                          onClick={() => handleAcceptInvite(inv.id)}
+                          style={{ fontSize: '12px', padding: '6px 14px', gap: '4px' }}
+                        >
+                          <i className="ti ti-check"></i> Accept Invitation
+                        </button>
+                        <button
+                          className="btn"
+                          disabled={actionInvId === inv.id}
+                          onClick={() => handleRejectInvite(inv.id)}
+                          style={{ fontSize: '12px', padding: '6px 14px', color: 'var(--danger)', borderColor: 'var(--border)' }}
+                        >
+                          <i className="ti ti-x"></i> Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="section-label" style={{ marginBottom: '12px' }}><i className="ti ti-folders"></i>Your Workspaces ({workspaces.length})</div>
             <div className="doc-list">
               {workspaces.map((ws) => (
