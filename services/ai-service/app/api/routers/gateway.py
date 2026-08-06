@@ -168,11 +168,11 @@ async def generate_workspace_summary_endpoint(workspace_id: str):
         # 4. Build System Instruction using WorkspaceSummaryPromptBuilder
         sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction()
 
-        # 5. Call Gemini with gemini-2.5-flash & strict JSON schema validation
+        # 5. Call Gemini with configured default model & strict JSON schema validation
         gemini_res = await gemini_client.generate_text(
             prompt=assembled_prompt,
             system_instruction=sys_instruction,
-            model="gemini-2.5-flash",
+            model=settings.gemini_default_model,
             temperature=0.3,
             top_p=0.95,
             response_mime_type="application/json",

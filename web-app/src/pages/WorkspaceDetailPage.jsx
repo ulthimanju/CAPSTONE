@@ -656,7 +656,7 @@ export const WorkspaceDetailPage = () => {
                 <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
                   {summaryProgressText}
                 </h3>
-                <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Synthesizing workspace documents using Gemini 2.5 Flash...</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Synthesizing workspace documents using Gemini...</p>
               </div>
             ) : summaryData ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '1rem 0' }}>
