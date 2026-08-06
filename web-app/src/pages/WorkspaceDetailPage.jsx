@@ -21,6 +21,7 @@ export const WorkspaceDetailPage = () => {
 
   // Lazy-load flags
   const [summaryLoaded, setSummaryLoaded] = useState(false);
+  const [learningPathLoaded, setLearningPathLoaded] = useState(false);
 
   // Summary generation state
   const [summaryData, setSummaryData] = useState(null);
@@ -28,6 +29,11 @@ export const WorkspaceDetailPage = () => {
   const [summaryProgressText, setSummaryProgressText] = useState('');
   const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
+
+  // Learning Path state
+  const [learningPathData, setLearningPathData] = useState(null);
+  const [learningPathStatus, setLearningPathStatus] = useState(null); // 'QUEUED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
+  const [learningPathProgressText, setLearningPathProgressText] = useState('');
 
   // Tab state
   const [activeTab, setActiveTab] = useState('documents');
