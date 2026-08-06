@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Spinner } from '../components/ui/Spinner';
@@ -35,6 +35,8 @@ const formatBytes = (bytes, decimals = 2) => {
 export const WorkspaceDetailPage = () => {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
   const [workspace, setWorkspace] = useState(null);
@@ -65,8 +67,21 @@ export const WorkspaceDetailPage = () => {
   const [archivedWorkspaces, setArchivedWorkspaces] = useState([]);
   const [archivedLoading, setArchivedLoading] = useState(false);
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState('documents');
+  // Tab state initialized from URL param or location state
+  const initialTab = searchParams.get('tab') || location.state?.tab || 'documents';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') || location.state?.tab;
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams, location.state]);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setSearchParams({ tab: newTab });
+  };
 
   // Custom Dropdown open state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

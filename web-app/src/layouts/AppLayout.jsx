@@ -91,6 +91,25 @@ export const AppLayout = ({
 
   const userInitials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'UM';
 
+  const handleNavClick = (tabKey) => {
+    if (tabKey === 'invitations') {
+      navigate('/invitations');
+      return;
+    }
+
+    const isWorkspaceRoute = window.location.pathname.startsWith('/workspaces') || window.location.pathname === '/';
+    if (setActiveTab && isWorkspaceRoute) {
+      setActiveTab(tabKey);
+    } else {
+      const firstWsId = workspacesList.length > 0 ? workspacesList[0].id : null;
+      if (firstWsId) {
+        navigate(`/workspaces/${firstWsId}?tab=${tabKey}`, { state: { tab: tabKey } });
+      } else {
+        navigate(`/workspaces?tab=${tabKey}`, { state: { tab: tabKey } });
+      }
+    }
+  };
+
   return (
     <div className="shell">
       {/* 1. Brand Island */}
@@ -215,13 +234,13 @@ export const AppLayout = ({
 
       {/* 4. Sidebar: Stack of Islands */}
       <div className="sidebar">
-        {/* Navigation Island */}
+        {/* Navigation Island 1: WORKSPACE */}
         <div className="island nav-island">
           <div className="nav-label">WORKSPACE</div>
 
           <button
             className={`nav-item ${activeTab === 'documents' || !activeTab ? 'active' : ''}`}
-            onClick={() => (setActiveTab ? setActiveTab('documents') : navigate('/workspaces'))}
+            onClick={() => handleNavClick('documents')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -233,7 +252,7 @@ export const AppLayout = ({
 
           <button
             className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
-            onClick={() => (setActiveTab ? setActiveTab('summary') : navigate('/workspaces'))}
+            onClick={() => handleNavClick('summary')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2 2 7l10 5 10-5-10-5Z" />
@@ -244,7 +263,7 @@ export const AppLayout = ({
 
           <button
             className={`nav-item ${activeTab === 'learning' ? 'active' : ''}`}
-            onClick={() => (setActiveTab ? setActiveTab('learning') : navigate('/workspaces'))}
+            onClick={() => handleNavClick('learning')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 19V5M4 5l4 4M4 5l-4 4" transform="translate(2)" />
@@ -255,7 +274,7 @@ export const AppLayout = ({
 
           <button
             className={`nav-item ${activeTab === 'rag' ? 'active' : ''}`}
-            onClick={() => (setActiveTab ? setActiveTab('rag') : navigate('/workspaces'))}
+            onClick={() => handleNavClick('rag')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -265,7 +284,7 @@ export const AppLayout = ({
 
           <button
             className={`nav-item ${activeTab === 'collab' ? 'active' : ''}`}
-            onClick={() => (setActiveTab ? setActiveTab('collab') : navigate('/workspaces'))}
+            onClick={() => handleNavClick('collab')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -283,7 +302,7 @@ export const AppLayout = ({
 
           <button
             className={`nav-item ${activeTab === 'invitations' ? 'active' : ''}`}
-            onClick={() => navigate('/invitations')}
+            onClick={() => handleNavClick('invitations')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect width="20" height="16" x="2" y="4" rx="2" />
@@ -294,7 +313,7 @@ export const AppLayout = ({
 
           <button
             className={`nav-item ${activeTab === 'archived' ? 'active' : ''}`}
-            onClick={() => (setActiveTab ? setActiveTab('archived') : navigate('/workspaces'))}
+            onClick={() => handleNavClick('archived')}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="2" y="3" width="20" height="5" rx="1" />
