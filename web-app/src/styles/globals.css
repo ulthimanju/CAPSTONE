@@ -66,7 +66,8 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   padding: var(--gap);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   transition: background 0.3s ease, color 0.3s ease;
 }
 
@@ -92,12 +93,12 @@ svg, i[class^="ti-"], i[class*=" ti-"] {
 .shell {
   display: grid;
   grid-template-columns: 260px auto 1fr;
-  grid-template-rows: 56px 1fr;
+  grid-template-rows: 56px calc(100vh - 56px - (var(--gap) * 3));
   gap: var(--gap);
   max-width: 1600px;
   margin: 0 auto;
-  min-height: calc(100vh - (var(--gap) * 2));
-  align-items: start;
+  height: calc(100vh - (var(--gap) * 2));
+  overflow: hidden;
 }
 
 /* ---------- BRAND ISLAND (top-left) ---------- */
@@ -298,6 +299,8 @@ svg, i[class^="ti-"], i[class*=" ti-"] {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
+  height: 100%;
+  overflow-y: auto;
 }
 
 .nav-island {
@@ -465,6 +468,10 @@ svg, i[class^="ti-"], i[class*=" ti-"] {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .main-grid {
