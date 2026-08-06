@@ -94,16 +94,15 @@ async def generate_text(req: GenerationRequest):
         raise HTTPException(status_code=500, detail=f"Text generation error: {e}")
 
 
-from app.domain.prompts.summary_prompt_builder import SummaryPromptBuilder
+from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
 
 
 @router.post("/summaries", response_model=SummaryResponse)
 async def generate_summary(req: GenerationRequest):
     try:
-        sys_instruction = SummaryPromptBuilder.build_system_instruction(req.system_instruction)
-        user_prompt = SummaryPromptBuilder.build_user_prompt(req.prompt)
+        sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction()
         res = await gemini_client.generate_text(
-            prompt=user_prompt,
+            prompt=req.prompt,
             system_instruction=sys_instruction,
             model=req.model,
             temperature=0.3,
@@ -114,8 +113,8 @@ async def generate_summary(req: GenerationRequest):
     except Exception as e:
         # Fallback raw string parsing if json schema validation fails
         res_raw = await gemini_client.generate_text(
-            prompt=SummaryPromptBuilder.build_user_prompt(req.prompt),
-            system_instruction=SummaryPromptBuilder.build_system_instruction(req.system_instruction),
+            prompt=req.prompt,
+            system_instruction=WorkspaceSummaryPromptBuilder.build_system_instruction(),
             model=req.model,
         )
         return SummaryResponse(
