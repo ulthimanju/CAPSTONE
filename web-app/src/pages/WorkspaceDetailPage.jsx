@@ -14,8 +14,12 @@ export const WorkspaceDetailPage = () => {
   const [workspace, setWorkspace] = useState(null);
   const [allWorkspaces, setAllWorkspaces] = useState([]);
   const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);       // workspace list + docs
+  const [docsLoading, setDocsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Lazy-load flags
+  const [summaryLoaded, setSummaryLoaded] = useState(false);
 
   // Summary generation state
   const [summaryData, setSummaryData] = useState(null);
@@ -50,53 +54,73 @@ export const WorkspaceDetailPage = () => {
   const [renameValue, setRenameValue] = useState('');
   const [renamingWs, setRenamingWs] = useState(false);
 
-  const fetchWorkspaceAndDocs = async (silent = false) => {
+  // Step 1: Fetch workspace list only
+  const fetchWorkspaceList = async () => {
     try {
-      if (!silent) setLoading(true);
+      setLoading(true);
       setError(null);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-
       const allWsRes = await axios.get('/api/v1/workspaces', { headers });
       const wsList = allWsRes.data.workspaces || [];
       setAllWorkspaces(wsList);
 
-      let targetWsId = workspaceId;
-      if (!targetWsId && wsList.length > 0) {
-        targetWsId = wsList[0].id;
-        if (!silent) setLoading(false);
-        navigate(`/workspaces/${targetWsId}`, { replace: true });
+      if (!workspaceId && wsList.length > 0) {
+        // Redirect to first workspace; documents will load via workspaceId effect
+        navigate(`/workspaces/${wsList[0].id}`, { replace: true });
         return;
       }
 
-      if (targetWsId) {
-        const [wsRes, docsRes, summaryRes] = await Promise.all([
-          axios.get(`/api/v1/workspaces/${targetWsId}`, { headers }).catch((err) => { console.error('Ws err:', err); return null; }),
-          axios.get(`/api/v1/documents?workspace_id=${targetWsId}`, { headers }).catch((err) => { console.error('Docs err:', err); return { data: { documents: [] } }; }),
-          axios.get(`/api/v1/workspaces/${targetWsId}/summary`, { headers }).catch((err) => { console.error('Summary err:', err); return { data: { summary: null } }; })
-        ]);
-
-        if (wsRes && wsRes.data) {
-          setWorkspace(wsRes.data);
-        } else {
-          setWorkspace(null);
-        }
-        setDocuments((docsRes && docsRes.data && docsRes.data.documents) || []);
-        if (summaryRes && summaryRes.data && summaryRes.data.summary) {
-          setSummaryData(summaryRes.data.summary);
-        } else {
-          setSummaryData(null);
-        }
-      } else {
-        setWorkspace(null);
-        setDocuments([]);
-        setSummaryData(null);
+      // Populate workspace info from list without extra API call
+      if (workspaceId) {
+        const found = wsList.find((w) => w.id === workspaceId) || null;
+        setWorkspace(found);
+        await fetchDocuments(workspaceId, headers);
       }
     } catch (err) {
-      console.error('Failed to load workspace detail:', err);
-      if (!silent) setError('Unable to load workspace details.');
+      console.error('Failed to load workspaces:', err);
+      setError('Unable to load workspaces.');
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
+  };
+
+  // Step 2: Fetch documents for selected workspace
+  const fetchDocuments = async (wsId, headers) => {
+    if (!wsId) return;
+    const h = headers || (user?.id ? { 'X-User-ID': user.id } : {});
+    try {
+      setDocsLoading(true);
+      const docsRes = await axios.get(`/api/v1/documents?workspace_id=${wsId}`, { headers: h });
+      setDocuments(docsRes.data.documents || []);
+    } catch (err) {
+      console.error('Failed to load documents:', err);
+      setDocuments([]);
+    } finally {
+      setDocsLoading(false);
+    }
+  };
+
+  // Step 3: Fetch summary — called lazily when summary tab is opened
+  const fetchSummary = async () => {
+    if (!workspaceId || summaryLoaded) return;
+    const headers = user?.id ? { 'X-User-ID': user.id } : {};
+    try {
+      const res = await axios.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers });
+      setSummaryData((res.data && res.data.summary) || null);
+    } catch (err) {
+      console.error('Failed to load summary:', err);
+      setSummaryData(null);
+    } finally {
+      setSummaryLoaded(true);
+    }
+  };
+
+  // Legacy: used by polling loop for silent document refresh
+  const fetchWorkspaceAndDocs = async (silent = false) => {
+    if (!silent) return fetchWorkspaceList();
+    // silent = true: just refresh documents
+    const headers = user?.id ? { 'X-User-ID': user.id } : {};
+    if (workspaceId) await fetchDocuments(workspaceId, headers);
   };
 
   const handleCreateWorkspaceSubmit = async (e) => {
@@ -198,10 +222,32 @@ export const WorkspaceDetailPage = () => {
       alert('Failed to delete workspace');
     }
   };
-  // Trigger data fetch on mount and whenever workspaceId changes
+  // On mount: fetch workspace list (which also triggers doc fetch)
   useEffect(() => {
-    fetchWorkspaceAndDocs();
+    fetchWorkspaceList();
+  }, []);
+
+  // On workspace switch: update active workspace info + fetch docs; reset lazy flags
+  useEffect(() => {
+    if (!workspaceId) return;
+    setSummaryLoaded(false);
+    setSummaryData(null);
+    setActiveTab('documents');
+    setAllWorkspaces((prev) => {
+      const found = prev.find((w) => w.id === workspaceId) || null;
+      setWorkspace(found);
+      return prev;
+    });
+    fetchDocuments(workspaceId);
   }, [workspaceId]);
+
+  // Lazy-load tab data when tab is opened
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'summary') {
+      fetchSummary();
+    }
+  };
 
   // Listen to SSE events for real-time SummaryGeneration progress
   useEffect(() => {
@@ -356,7 +402,7 @@ export const WorkspaceDetailPage = () => {
 
   if (loading) {
     return (
-      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={documents.length}>
+      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={documents.length}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
           <Spinner size="lg" />
         </div>
@@ -366,7 +412,7 @@ export const WorkspaceDetailPage = () => {
 
   if (!loading && allWorkspaces.length === 0) {
     return (
-      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={0}>
+      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={0}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', padding: '2rem' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
             <i className="ti ti-folder-plus"></i>
@@ -438,7 +484,7 @@ export const WorkspaceDetailPage = () => {
 
   if (error || !workspace) {
     return (
-      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={documents.length}>
+      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={documents.length}>
         <div style={{ padding: '2rem' }}>
           <div style={{ padding: '1rem', background: 'var(--bg-1)', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px' }}>
             {error || 'Workspace not found.'}
@@ -450,7 +496,7 @@ export const WorkspaceDetailPage = () => {
 
 
   return (
-    <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} docCount={documents.length}>
+    <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={documents.length}>
       {/* ---------- TOPBAR ---------- */}
       <div className="topbar" id="topbar">
         <div className="topbar-left">
