@@ -248,16 +248,25 @@ export const LearningUnitDetailPage = () => {
         </div>
 
         {/* Right: Regenerate Action Button */}
-        {contentData && (
+        <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
           <button
             className="btn"
-            style={{ fontSize: '12px', padding: '6px 14px', gap: '6px', color: 'var(--text-2)', borderColor: 'var(--border-strong)', flexShrink: 0 }}
+            style={{
+              fontSize: '12px',
+              padding: '7px 16px',
+              gap: '6px',
+              color: 'var(--text-2)',
+              borderColor: 'var(--border-strong)',
+              background: 'var(--bg-2)',
+              borderRadius: '6px',
+              fontWeight: '500'
+            }}
             onClick={handleGenerateContent}
             disabled={generating}
           >
             <i className="ti ti-rotate-clockwise"></i> {generating ? 'Regenerating...' : 'Regenerate Study Bundle'}
           </button>
-        )}
+        </div>
       </header>
 
       {/* ============ DEDICATED TAB BAR ============ */}
