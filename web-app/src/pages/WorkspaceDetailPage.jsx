@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { AppLayout } from '../layouts/AppLayout';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 import { LearningUnitModal } from '../components/unit/LearningUnitModal';
+import { WorkspaceRagAssistant } from '../components/workspace/WorkspaceRagAssistant';
 
 const getFileIcon = (filename) => {
   if (!filename) return 'ti-file';
@@ -1042,23 +1043,7 @@ export const WorkspaceDetailPage = () => {
         {/* ============ TAB 4: RAG ASSISTANT ============ */}
         {activeTab === 'rag' && (
           <section className="tab-panel active" id="panel-rag">
-            <div className="rag-wrap">
-              <div className="rag-thread" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '30vh', textAlign: 'center' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', marginBottom: '0.75rem' }}>
-                  <i className="ti ti-message-bot"></i>
-                </div>
-                <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.25rem' }}>RAG Assistant</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '400px' }}>
-                  {documents.length === 0
-                    ? 'Upload documents to start asking questions grounded in your workspace content.'
-                    : 'Ask any question below to query your workspace documents.'}
-                </p>
-              </div>
-              <div className="rag-input">
-                <input type="text" placeholder="Ask a question about your workspace documents..." disabled={documents.length === 0} />
-                <button className="btn btn-primary" disabled={documents.length === 0}><i className="ti ti-send"></i>Send</button>
-              </div>
-            </div>
+            <WorkspaceRagAssistant workspaceId={workspaceId} documents={documents} />
           </section>
         )}
 
