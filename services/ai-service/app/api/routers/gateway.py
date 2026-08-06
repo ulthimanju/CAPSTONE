@@ -1,4 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
+import uuid
+import httpx
+from datetime import datetime, timezone
+from fastapi import APIRouter, HTTPException, Header, status
 from app.infrastructure.clients.providers.gemini_provider import GeminiClient, TokenCounter
 from app.schemas.gateway import (
     EmbeddingRequest,
