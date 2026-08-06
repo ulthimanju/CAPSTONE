@@ -8,6 +8,7 @@ import { AppLayout } from '../layouts/AppLayout';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 import { LearningUnitModal } from '../components/unit/LearningUnitModal';
 import { WorkspaceRagAssistant } from '../components/workspace/WorkspaceRagAssistant';
+import { WorkspaceCollaborators } from '../components/workspace/WorkspaceCollaborators';
 
 const getFileIcon = (filename) => {
   if (!filename) return 'ti-file';
@@ -1050,25 +1051,7 @@ export const WorkspaceDetailPage = () => {
         {/* ============ TAB 5: COLLABORATORS ============ */}
         {activeTab === 'collab' && (
           <section className="tab-panel active" id="panel-collab">
-            <div className="collab-card">
-              <div className="collab-icon"><i className="ti ti-users"></i></div>
-              <div>
-                <h2>Workspace collaborators</h2>
-                <p>Invite team members to read, edit, or manage this workspace</p>
-              </div>
-              <div className="collab-badge">1 member</div>
-            </div>
-
-            <div className="section-label"><i className="ti ti-user-plus"></i>Invite new collaborator</div>
-            <div className="invite-row">
-              <input type="email" placeholder="colleague@university.edu" />
-              <select>
-                <option>Viewer (read only)</option>
-                <option>Editor</option>
-                <option>Admin</option>
-              </select>
-              <button className="btn btn-primary"><i className="ti ti-user-plus"></i>Invite</button>
-            </div>
+            <WorkspaceCollaborators workspace={workspace} />
           </section>
         )}
 
