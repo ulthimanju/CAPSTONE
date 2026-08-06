@@ -97,17 +97,18 @@ export const AppLayout = ({
       return;
     }
 
-    const isWorkspaceRoute = window.location.pathname.startsWith('/workspaces') || window.location.pathname === '/';
-    if (setActiveTab && isWorkspaceRoute) {
-      setActiveTab(tabKey);
-    } else {
-      const firstWsId = workspacesList.length > 0 ? workspacesList[0].id : null;
-      if (firstWsId) {
-        navigate(`/workspaces/${firstWsId}?tab=${tabKey}`, { state: { tab: tabKey } });
-      } else {
-        navigate(`/workspaces?tab=${tabKey}`, { state: { tab: tabKey } });
-      }
+    if (tabKey === 'archived') {
+      navigate('/workspaces?tab=archived');
+      if (setActiveTab) setActiveTab('archived');
+      return;
     }
+
+    const currentWsId = workspacesList.length > 0 ? workspacesList[0].id : null;
+    const path = currentWsId ? `/workspaces/${currentWsId}` : '/workspaces';
+    const query = tabKey === 'documents' ? '' : `?tab=${tabKey}`;
+
+    navigate(`${path}${query}`);
+    if (setActiveTab) setActiveTab(tabKey);
   };
 
   return (

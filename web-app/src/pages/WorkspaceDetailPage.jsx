@@ -113,10 +113,10 @@ export const WorkspaceDetailPage = () => {
       const wsList = allWsRes.data.workspaces || [];
       setAllWorkspaces(wsList);
 
-      if (!workspaceId && wsList.length > 0) {
-        // Redirect to first workspace; preserve tab query parameters
-        const search = location.search; // e.g. "?tab=archived"
-        navigate(`/workspaces/${wsList[0].id}${search}`, { replace: true, state: location.state });
+      const isArchivedTab = searchParams.get('tab') === 'archived';
+      if (!workspaceId && !isArchivedTab && wsList.length > 0) {
+        // Redirect to first workspace for active workspace tabs
+        navigate(`/workspaces/${wsList[0].id}`, { replace: true });
         return;
       }
 
@@ -356,7 +356,12 @@ export const WorkspaceDetailPage = () => {
   // Lazy-load tab data when tab is opened
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setSearchParams({ tab });
+    if (tab === 'archived') {
+      navigate('/workspaces?tab=archived');
+    } else {
+      setSearchParams(tab === 'documents' ? {} : { tab });
+    }
+
     if (tab === 'summary') {
       fetchSummary();
     } else if (tab === 'learning') {
