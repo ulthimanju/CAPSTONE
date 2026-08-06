@@ -127,11 +127,29 @@ const CopyButton = ({ text }) => {
 // ── Code Block ─────────────────────────────────────────────────────────────
 const CodeBlock = ({ className, children }) => {
   const match = /language-(\w+)/.exec(className || '');
-  const lang = match ? match[1] : '';
-  const codeString = String(children).replace(/\n$/, '');
+  let lang = match ? match[1] : '';
+  let codeString = String(children).replace(/\n$/, '');
 
-  if (lang === 'mermaid') {
-    return <MermaidDiagram code={codeString} />;
+  if (codeString.includes('\\n')) {
+    codeString = codeString.replace(/\\n/g, '\n');
+  }
+
+  const trimmed = codeString.trim();
+  const isMermaid =
+    lang === 'mermaid' ||
+    trimmed.startsWith('mermaid') ||
+    trimmed.startsWith('graph ') ||
+    trimmed.startsWith('graph TD') ||
+    trimmed.startsWith('graph LR') ||
+    trimmed.startsWith('flowchart ') ||
+    trimmed.startsWith('sequenceDiagram') ||
+    trimmed.startsWith('classDiagram') ||
+    trimmed.startsWith('erDiagram') ||
+    trimmed.startsWith('pie');
+
+  if (isMermaid) {
+    const cleanCode = trimmed.replace(/^mermaid\s*/i, '');
+    return <MermaidDiagram code={cleanCode} />;
   }
 
   return (
@@ -150,6 +168,16 @@ const CodeBlock = ({ className, children }) => {
 // ── Main Renderer ──────────────────────────────────────────────────────────
 export const RichMarkdownRenderer = ({ content, compact = false }) => {
   if (!content) return null;
+
+  let normalizedContent = typeof content === 'string' ? content : String(content);
+
+  // 1. Unescape literal "\\n" and "\\t" string characters into real newlines and tabs
+  if (normalizedContent.includes('\\n')) {
+    normalizedContent = normalizedContent.replace(/\\n/g, '\n');
+  }
+  if (normalizedContent.includes('\\t')) {
+    normalizedContent = normalizedContent.replace(/\\t/g, '\t');
+  }
 
   return (
     <div className={`rich-markdown-content${compact ? ' rich-markdown-compact' : ''}`}>
@@ -185,7 +213,7 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
           td: ({ children }) => <td>{children}</td>,
         }}
       >
-        {content}
+        {normalizedContent}
       </ReactMarkdown>
     </div>
   );
