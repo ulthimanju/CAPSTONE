@@ -132,7 +132,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
 
   return (
     <Modal open={open} onOpenChange={onClose}>
-      <ModalContent size="xl" className="bg-[#121215] border border-[#2a2a32] text-white shadow-2xl overflow-hidden" style={{ maxWidth: '900px', maxHeight: '90vh' }}>
+      <ModalContent size="xl" style={{ background: 'var(--bg-1)', border: '1px solid var(--border-strong)', color: 'var(--text)', borderRadius: '12px', maxWidth: '900px', maxHeight: '90vh', overflow: 'hidden' }}>
         {/* Header */}
         <ModalHeader
           title={unit.title}
