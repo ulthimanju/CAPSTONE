@@ -391,10 +391,14 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                         </span>
                       </div>
 
-                      <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', display: 'flex', gap: '10px' }}>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', display: 'flex', gap: '8px' }}>
+                        {member.email && member.email !== member.name && (
+                          <>
+                            <span>{member.email}</span>
+                            <span>·</span>
+                          </>
+                        )}
                         <span>Joined {new Date(member.joined_at || member.joinedAt || Date.now()).toLocaleDateString()}</span>
-                        <span>·</span>
-                        <span>User ID: {String(memberUserId).slice(0, 18)}...</span>
                       </div>
                     </div>
                   </div>
