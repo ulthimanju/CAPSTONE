@@ -161,7 +161,7 @@ export const LearningUnitDetailPage = () => {
       {/* ============ TOPBAR ============ */}
       <header
         style={{
-          height: '60px',
+          height: '64px',
           borderBottom: '1px solid var(--border)',
           background: 'var(--bg-1)',
           padding: '0 24px',
@@ -174,107 +174,107 @@ export const LearningUnitDetailPage = () => {
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* Left: Back Button & Workspace Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
           <button
             className="btn"
-            style={{ fontSize: '13px', padding: '6px 12px', gap: '6px' }}
+            style={{ fontSize: '13px', padding: '7px 14px', gap: '6px', borderRadius: '8px', flexShrink: 0 }}
             onClick={() => navigate(`/workspaces/${workspaceId}`)}
           >
             <i className="ti ti-arrow-left"></i> Back to Workspace
           </button>
-          <div style={{ height: '18px', width: '1px', background: 'var(--border)' }}></div>
-          <div>
-            <span style={{ fontSize: '12px', color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>
-              {workspace?.name || 'Workspace'} / Learning Path
+          <div style={{ height: '20px', width: '1px', background: 'var(--border)', flexShrink: 0 }}></div>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-3)', fontFamily: 'var(--mono)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+              {workspace?.name || 'Workspace'} • Learning Unit
             </span>
-            <h1 style={{ fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--text)' }}>
+            <h1 style={{ fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--text)', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {decodedTitle}
             </h1>
           </div>
         </div>
 
-        {contentData && (
-          <button
-            className="btn"
-            style={{ fontSize: '12px', padding: '6px 14px', gap: '6px', color: 'var(--text-2)', borderColor: 'var(--border-strong)' }}
-            onClick={handleGenerateContent}
-            disabled={generating}
-          >
-            <i className="ti ti-rotate-clockwise"></i> {generating ? 'Regenerating...' : 'Regenerate Study Bundle'}
-          </button>
-        )}
-      </header>
+        {/* Right: Segmented Sub-Tabs + Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+          {contentData && (
+            <div style={{ display: 'flex', background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '3px', gap: '2px' }}>
+              <button
+                onClick={() => setActiveTab('summary')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  background: activeTab === 'summary' ? 'var(--bg-1)' : 'transparent',
+                  border: activeTab === 'summary' ? '1px solid var(--border-strong)' : '1px solid transparent',
+                  borderRadius: '6px',
+                  color: activeTab === 'summary' ? 'var(--text)' : 'var(--text-3)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: activeTab === 'summary' ? '0 2px 4px rgba(0,0,0,0.2)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <i className="ti ti-file-text"></i> Summary
+              </button>
 
-      {/* ============ SUB-TAB BAR BELOW TOPBAR ============ */}
-      {contentData && (
-        <div
-          style={{
-            background: 'var(--bg-1)',
-            borderBottom: '1px solid var(--border)',
-            padding: '0 24px',
-            display: 'flex',
-            gap: '12px',
-            flexShrink: 0,
-          }}
-        >
-          <button
-            onClick={() => setActiveTab('summary')}
-            style={{
-              padding: '12px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'summary' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: activeTab === 'summary' ? 'var(--text)' : 'var(--text-3)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <i className="ti ti-file-text"></i> Summary
-          </button>
+              <button
+                onClick={() => setActiveTab('flashcards')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  background: activeTab === 'flashcards' ? 'var(--bg-1)' : 'transparent',
+                  border: activeTab === 'flashcards' ? '1px solid var(--border-strong)' : '1px solid transparent',
+                  borderRadius: '6px',
+                  color: activeTab === 'flashcards' ? 'var(--text)' : 'var(--text-3)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: activeTab === 'flashcards' ? '0 2px 4px rgba(0,0,0,0.2)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <i className="ti ti-cards"></i> Flashcards ({contentData.flashcards?.length || 0})
+              </button>
 
-          <button
-            onClick={() => setActiveTab('flashcards')}
-            style={{
-              padding: '12px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'flashcards' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: activeTab === 'flashcards' ? 'var(--text)' : 'var(--text-3)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <i className="ti ti-cards"></i> Flashcards ({contentData.flashcards?.length || 0})
-          </button>
+              <button
+                onClick={() => setActiveTab('quiz')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  background: activeTab === 'quiz' ? 'var(--bg-1)' : 'transparent',
+                  border: activeTab === 'quiz' ? '1px solid var(--border-strong)' : '1px solid transparent',
+                  borderRadius: '6px',
+                  color: activeTab === 'quiz' ? 'var(--text)' : 'var(--text-3)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: activeTab === 'quiz' ? '0 2px 4px rgba(0,0,0,0.2)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <i className="ti ti-help-circle"></i> Quiz ({contentData.quiz?.length || 0})
+              </button>
+            </div>
+          )}
 
-          <button
-            onClick={() => setActiveTab('quiz')}
-            style={{
-              padding: '12px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'quiz' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: activeTab === 'quiz' ? 'var(--text)' : 'var(--text-3)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <i className="ti ti-help-circle"></i> Quiz ({contentData.quiz?.length || 0})
-          </button>
+          {contentData && (
+            <button
+              className="btn"
+              style={{ fontSize: '12px', padding: '7px 14px', gap: '6px', color: 'var(--text-2)', borderColor: 'var(--border-strong)' }}
+              onClick={handleGenerateContent}
+              disabled={generating}
+            >
+              <i className="ti ti-rotate-clockwise"></i> {generating ? 'Regenerating...' : 'Regenerate'}
+            </button>
+          )}
         </div>
-      )}
+      </header>
 
       {/* ============ MAIN CONTENT AREA ============ */}
       <main style={{ flex: 1, overflowY: 'auto', maxWidth: '960px', width: '100%', margin: '0 auto', padding: '24px 20px' }}>
