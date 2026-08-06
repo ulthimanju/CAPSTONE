@@ -272,45 +272,6 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
                   ) : (
                     <RichMarkdownRenderer content={msg.text} />
                   )}
-
-                  {/* Citations Drawer */}
-                  {msg.citations && msg.citations.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: '12px',
-                        paddingTop: '10px',
-                        borderTop: '1px solid var(--border)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                      }}
-                    >
-                      <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                        Source Citations ({msg.citations.length})
-                      </span>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {msg.citations.map((cite, cIdx) => (
-                          <span
-                            key={cIdx}
-                            style={{
-                              fontSize: '11px',
-                              background: 'var(--bg-1)',
-                              border: '1px solid var(--border)',
-                              borderRadius: '6px',
-                              padding: '3px 8px',
-                              color: 'var(--text-3)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <i className="ti ti-file-text" style={{ color: 'var(--accent)' }}></i>
-                            {cite.document_name || cite.source || `Chunk ${cIdx + 1}`}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             );
