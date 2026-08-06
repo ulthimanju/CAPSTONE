@@ -1,3 +1,5 @@
+import os
+import time
 import uuid
 import httpx
 from datetime import datetime, timezone
@@ -316,17 +318,22 @@ async def _publish_unit_generation_event(
     user_id: str | None = None,
     error: str | None = None,
 ):
-    event_payload = {
-        "event_name": "LearningUnitGeneration",
-        "workspace_id": workspace_id,
-        "unit_title": unit_title,
-        "status": status,
-        "error": error,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-    if user_id:
-        event_payload["user_id"] = user_id
-    await publisher.publish(routing_key="notification.events", message=event_payload)
+    try:
+        notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+        payload = {
+            "event_id": str(generate_uuid()),
+            "event_name": "LearningUnitGeneration",
+            "workspace_id": workspace_id,
+            "unit_title": unit_title,
+            "user_id": user_id,
+            "status": status,
+            "error": error,
+            "timestamp": time.time(),
+        }
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+    except Exception as evt_err:
+        print(f"Notice: Failed to publish LearningUnitGeneration event: {evt_err}")
 
 
 from app.domain.prompts.unit_content_prompt_builder import UnitContentPromptBuilder
