@@ -881,24 +881,7 @@ export const WorkspaceDetailPage = () => {
                 <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Building progressive curriculum units from document outlines using Gemini...</p>
               </div>
             ) : learningPathData ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '1rem 0' }}>
-                {/* Title & Description Banner */}
-                <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>
-                      {learningPathData.title || workspace?.name} Curriculum
-                    </h2>
-                    <span style={{ fontSize: '12px', background: 'var(--bg-3)', color: 'var(--accent)', padding: '4px 10px', borderRadius: '12px', fontWeight: '600', border: '1px solid var(--border-strong)' }}>
-                      {learningPathData.units?.length || 0} Units
-                    </span>
-                  </div>
-                  {learningPathData.description && (
-                    <p style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.6', margin: 0 }}>
-                      {learningPathData.description}
-                    </p>
-                  )}
-                </div>
-
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '1rem 0' }}>
                 {/* Units List */}
                 {learningPathData.units && learningPathData.units.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
