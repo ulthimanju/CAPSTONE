@@ -7,6 +7,28 @@ import { useAuth } from '../hooks/useAuth';
 import { AppLayout } from '../layouts/AppLayout';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 
+const getFileIcon = (filename) => {
+  if (!filename) return 'ti-file';
+  const ext = filename.split('.').pop().toLowerCase();
+  if (['pdf'].includes(ext)) return 'ti-file-type-pdf';
+  if (['doc', 'docx'].includes(ext)) return 'ti-file-type-doc';
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'ti-file-type-xls';
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext)) return 'ti-file-type-jpg';
+  if (['txt', 'md'].includes(ext)) return 'ti-file-text';
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'ti-file-zip';
+  if (['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'c', 'cpp', 'html', 'css', 'json'].includes(ext)) return 'ti-file-code';
+  return 'ti-file-description';
+};
+
+const formatBytes = (bytes, decimals = 2) => {
+  if (!bytes || bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
 export const WorkspaceDetailPage = () => {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
