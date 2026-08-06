@@ -179,6 +179,7 @@ async def generate_workspace_summary_endpoint(workspace_id: str, x_user_id: str 
             model=settings.gemini_default_model,
             temperature=0.3,
             top_p=0.95,
+            max_output_tokens=8192,
             response_mime_type="application/json",
             response_schema=WorkspaceSummaryResponse,
         )
