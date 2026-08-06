@@ -32,7 +32,6 @@ class WorkspaceResponse(BaseModel):
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     cover_image_url: str | None
-    summary_json: dict | None = None
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None
