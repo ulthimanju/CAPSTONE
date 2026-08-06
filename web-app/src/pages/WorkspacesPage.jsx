@@ -137,55 +137,39 @@ export const WorkspacesPage = () => {
           </div>
         ) : (
           <div>
-            {/* Pending Invitations Section */}
+            {/* Pending Invitations Quick Alert */}
             {pendingInvitations.length > 0 && (
-              <div style={{ marginBottom: '24px', background: 'var(--bg-1)', border: '1px solid var(--accent)', borderRadius: '12px', padding: '20px' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <i className="ti ti-mail-forward"></i> Pending Workspace Invitations ({pendingInvitations.length})
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {pendingInvitations.map((inv) => (
-                    <div
-                      key={inv.id}
-                      style={{
-                        background: 'var(--bg-2)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '8px',
-                        padding: '12px 16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justify: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
-                          {inv.workspace_name || 'Workspace Collaboration'}
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>
-                          You have been invited to collaborate on this workspace.
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          className="btn btn-primary"
-                          disabled={actionInvId === inv.id}
-                          onClick={() => handleAcceptInvite(inv.id)}
-                          style={{ fontSize: '12px', padding: '6px 14px', gap: '4px' }}
-                        >
-                          <i className="ti ti-check"></i> Accept Invitation
-                        </button>
-                        <button
-                          className="btn"
-                          disabled={actionInvId === inv.id}
-                          onClick={() => handleRejectInvite(inv.id)}
-                          style={{ fontSize: '12px', padding: '6px 14px', color: 'var(--danger)', borderColor: 'var(--border)' }}
-                        >
-                          <i className="ti ti-x"></i> Decline
-                        </button>
-                      </div>
+              <div
+                style={{
+                  marginBottom: '24px',
+                  background: 'var(--bg-1)',
+                  border: '1px solid var(--accent)',
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <i className="ti ti-mail-forward" style={{ color: 'var(--accent)', fontSize: '20px' }}></i>
+                  <div>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
+                      You have {pendingInvitations.length} pending workspace invitation{pendingInvitations.length !== 1 ? 's' : ''}
+                    </span>
+                    <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>
+                      Review and accept invitations on your dedicated Invitations page.
                     </div>
-                  ))}
+                  </div>
                 </div>
+
+                <button
+                  className="btn btn-primary"
+                  onClick={() => navigate('/invitations')}
+                  style={{ fontSize: '12px', padding: '6px 14px', gap: '6px' }}
+                >
+                  View Invitations <i className="ti ti-arrow-right"></i>
+                </button>
               </div>
             )}
 

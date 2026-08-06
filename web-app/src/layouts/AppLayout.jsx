@@ -55,6 +55,13 @@ export const AppLayout = ({ children, activeTab, setActiveTab, docCount = 3 }) =
           </button>
 
           <button
+            className={`nav-item ${activeTab === 'invitations' ? 'active' : ''}`}
+            onClick={() => setActiveTab ? setActiveTab('invitations') : (window.location.href = '/invitations')}
+          >
+            <i className="ti ti-mail-forward"></i>Invitations
+          </button>
+
+          <button
             className={`nav-item ${activeTab === 'archived' ? 'active' : ''}`}
             onClick={() => setActiveTab && setActiveTab('archived')}
             style={{ marginTop: 'auto' }}

@@ -11,6 +11,7 @@ import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
 import { WorkspacesPage } from '../pages/WorkspacesPage';
 import { WorkspaceDetailPage } from '../pages/WorkspaceDetailPage';
 import { LearningUnitDetailPage } from '../pages/LearningUnitDetailPage';
+import { InvitationsPage } from '../pages/InvitationsPage';
 
 
 export const AppRoutes = () => {
@@ -50,6 +51,15 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <LearningUnitDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/invitations"
+        element={
+          <ProtectedRoute>
+            <InvitationsPage />
           </ProtectedRoute>
         }
       />
