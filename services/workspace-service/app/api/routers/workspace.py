@@ -179,8 +179,56 @@ async def save_workspace_learning_path(
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.database import get_db
-from app.infrastructure.database.models import LearningUnitContentModel
-from app.schemas.workspace import SaveUnitContentRequest, UpdateQuizProgressRequest
+from app.infrastructure.database.models import LearningUnitContentModel, WorkspaceChatModel
+from app.schemas.workspace import SaveUnitContentRequest, UpdateQuizProgressRequest, SaveWorkspaceChatRequest
+
+
+@router.get("/{workspace_id}/chat")
+async def get_workspace_chat(
+    workspace_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
+    res = await db.execute(stmt)
+    chat = res.scalar_one_or_none()
+    return {"messages": chat.messages_json if chat else []}
+
+
+@router.put("/{workspace_id}/chat")
+async def save_workspace_chat(
+    workspace_id: UUID,
+    req: SaveWorkspaceChatRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
+    res = await db.execute(stmt)
+    chat = res.scalar_one_or_none()
+
+    if not chat:
+        chat = WorkspaceChatModel(
+            workspace_id=workspace_id,
+            messages_json=req.messages,
+        )
+        db.add(chat)
+    else:
+        chat.messages_json = req.messages
+
+    await db.flush()
+    return {"status": "saved", "workspace_id": str(workspace_id), "count": len(req.messages)}
+
+
+@router.delete("/{workspace_id}/chat")
+async def clear_workspace_chat(
+    workspace_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
+    res = await db.execute(stmt)
+    chat = res.scalar_one_or_none()
+    if chat:
+        chat.messages_json = []
+        await db.flush()
+    return {"status": "cleared", "workspace_id": str(workspace_id)}
 
 
 @router.patch("/{workspace_id}/units/quiz-progress")

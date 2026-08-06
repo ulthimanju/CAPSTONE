@@ -40,6 +40,10 @@ class UpdateQuizProgressRequest(BaseModel):
     quiz_json: list[dict]
 
 
+class SaveWorkspaceChatRequest(BaseModel):
+    messages: list[dict]
+
+
 class WorkspaceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

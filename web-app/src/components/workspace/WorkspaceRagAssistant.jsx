@@ -15,6 +15,32 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Fetch existing monotonic chat history for this workspace
+  useEffect(() => {
+    if (!workspaceId) return;
+    const fetchChatHistory = async () => {
+      try {
+        const headers = user?.id ? { 'X-User-ID': user.id } : {};
+        const res = await axios.get(`/api/v1/workspaces/${workspaceId}/chat`, { headers });
+        if (res.data && Array.isArray(res.data.messages)) {
+          setMessages(res.data.messages);
+        }
+      } catch (err) {
+        console.error('Failed to load workspace chat history:', err);
+      }
+    };
+    fetchChatHistory();
+  }, [workspaceId]);
+
+  const saveChatHistory = async (newMessages) => {
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.put(`/api/v1/workspaces/${workspaceId}/chat`, { messages: newMessages }, { headers });
+    } catch (err) {
+      console.error('Failed to persist workspace chat history:', err);
+    }
+  };
+
   const handleSend = async (queryToSend) => {
     const text = (queryToSend || inputQuery).trim();
     if (!text || loading || documents.length === 0) return;
@@ -26,7 +52,8 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedWithUser = [...messages, userMsg];
+    setMessages(updatedWithUser);
     if (!queryToSend) setInputQuery('');
     setLoading(true);
 
@@ -50,7 +77,9 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
-      setMessages((prev) => [...prev, assistantMsg]);
+      const finalMessages = [...updatedWithUser, assistantMsg];
+      setMessages(finalMessages);
+      await saveChatHistory(finalMessages);
     } catch (err) {
       console.error('RAG Assistant error:', err);
       const errorMsg = {
@@ -60,14 +89,22 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
         citations: [],
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      const finalMessages = [...updatedWithUser, errorMsg];
+      setMessages(finalMessages);
+      await saveChatHistory(finalMessages);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClearChat = () => {
+  const handleClearChat = async () => {
     setMessages([]);
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.delete(`/api/v1/workspaces/${workspaceId}/chat`, { headers });
+    } catch (err) {
+      console.error('Failed to clear workspace chat history:', err);
+    }
   };
 
   const suggestedPrompts = [
