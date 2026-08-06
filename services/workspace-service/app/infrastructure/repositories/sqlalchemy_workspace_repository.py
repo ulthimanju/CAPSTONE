@@ -82,6 +82,35 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             ) for m in models
         ]
 
+    async def list_archived_by_user_id(self, user_id: UUID) -> list[Workspace]:
+        stmt = (
+            select(WorkspaceModel)
+            .join(WorkspaceMemberModel, WorkspaceModel.id == WorkspaceMemberModel.workspace_id)
+            .where(
+                WorkspaceMemberModel.user_id == user_id,
+                WorkspaceModel.status == WorkspaceStatus.ARCHIVED.value,
+            )
+            .order_by(WorkspaceModel.updated_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().unique().all()
+        return [
+            Workspace(
+                id=m.id,
+                owner_id=m.owner_id,
+                name=m.name,
+                description=m.description,
+                visibility=WorkspaceVisibility(m.visibility),
+                status=WorkspaceStatus(m.status),
+                cover_image_url=m.cover_image_url,
+                created_at=m.created_at,
+                updated_at=m.updated_at,
+                archived_at=m.archived_at,
+                summary_json=m.summary_json,
+                learning_path_json=m.learning_path_json,
+            ) for m in models
+        ]
+
     async def update(self, workspace: Workspace) -> Workspace:
         stmt = select(WorkspaceModel).where(WorkspaceModel.id == workspace.id)
         result = await self.session.execute(stmt)

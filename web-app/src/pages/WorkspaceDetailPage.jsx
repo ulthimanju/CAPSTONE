@@ -57,6 +57,10 @@ export const WorkspaceDetailPage = () => {
   const [learningPathStatus, setLearningPathStatus] = useState(null); // 'QUEUED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
   const [learningPathProgressText, setLearningPathProgressText] = useState('');
 
+  // Archived Workspaces state
+  const [archivedWorkspaces, setArchivedWorkspaces] = useState([]);
+  const [archivedLoading, setArchivedLoading] = useState(false);
+
   // Tab state
   const [activeTab, setActiveTab] = useState('documents');
 
@@ -158,6 +162,46 @@ export const WorkspaceDetailPage = () => {
       setLearningPathData(null);
     } finally {
       setLearningPathLoaded(true);
+    }
+  };
+
+  // Step 5: Fetch archived workspaces list
+  const fetchArchivedWorkspaces = async () => {
+    try {
+      setArchivedLoading(true);
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      const res = await axios.get('/api/v1/workspaces/archived/list', { headers });
+      setArchivedWorkspaces(res.data.workspaces || []);
+    } catch (err) {
+      console.error('Failed to fetch archived workspaces:', err);
+      setArchivedWorkspaces([]);
+    } finally {
+      setArchivedLoading(false);
+    }
+  };
+
+  const handleRestoreWorkspace = async (wsId) => {
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.post(`/api/v1/workspaces/${wsId}/restore`, {}, { headers });
+      await fetchArchivedWorkspaces();
+      await fetchWorkspaceList();
+    } catch (err) {
+      console.error('Failed to restore workspace:', err);
+      alert('Failed to un-archive workspace');
+    }
+  };
+
+  const handlePermanentDeleteWorkspace = async (wsId, wsName) => {
+    if (!confirm(`Permanently delete "${wsName}"? This cannot be undone.`)) return;
+    try {
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.delete(`/api/v1/workspaces/${wsId}`, { headers });
+      await fetchArchivedWorkspaces();
+      await fetchWorkspaceList();
+    } catch (err) {
+      console.error('Failed to delete workspace:', err);
+      alert('Failed to delete workspace');
     }
   };
 
@@ -296,6 +340,8 @@ export const WorkspaceDetailPage = () => {
       fetchSummary();
     } else if (tab === 'learning') {
       fetchLearningPath();
+    } else if (tab === 'archived') {
+      fetchArchivedWorkspaces();
     }
   };
 
@@ -305,6 +351,8 @@ export const WorkspaceDetailPage = () => {
       fetchSummary();
     } else if (activeTab === 'learning') {
       fetchLearningPath();
+    } else if (activeTab === 'archived') {
+      fetchArchivedWorkspaces();
     }
   }, [activeTab, workspaceId]);
 
@@ -1022,6 +1070,80 @@ export const WorkspaceDetailPage = () => {
                 <option>Admin</option>
               </select>
               <button className="btn btn-primary"><i className="ti ti-user-plus"></i>Invite</button>
+            </div>
+          </section>
+        )}
+
+        {/* ============ TAB 6: ARCHIVED WORKSPACES ============ */}
+        {activeTab === 'archived' && (
+          <section className="tab-panel active" id="panel-archived">
+            <div style={{ padding: '0.5rem 0' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)', marginBottom: '4px' }}>
+                  Archived Workspaces
+                </h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-3)' }}>
+                  Workspaces you have archived. Un-archive to restore them to your active list or permanently delete them.
+                </p>
+              </div>
+
+              {archivedLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+                  <Spinner size="lg" />
+                </div>
+              ) : archivedWorkspaces.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '35vh', textAlign: 'center', padding: '2rem', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: '10px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+                    <i className="ti ti-archive"></i>
+                  </div>
+                  <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.4rem' }}>No archived workspaces</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-3)' }}>Workspaces you archive will appear here.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                  {archivedWorkspaces.map((ws) => (
+                    <div
+                      key={ws.id}
+                      style={{
+                        background: 'var(--bg-1)',
+                        border: '1px solid var(--border-strong)',
+                        borderRadius: '10px',
+                        padding: '18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justify: 'space-between',
+                        gap: '16px',
+                      }}
+                    >
+                      <div>
+                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', margin: '0 0 6px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {ws.name}
+                        </h3>
+                        <div style={{ fontSize: '12px', color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>
+                          Created {new Date(ws.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
+                        <button
+                          className="btn btn-primary"
+                          style={{ flex: 1, padding: '6px 12px', fontSize: '12px' }}
+                          onClick={() => handleRestoreWorkspace(ws.id)}
+                        >
+                          <i className="ti ti-rotate-clockwise"></i> Un-archive
+                        </button>
+                        <button
+                          className="btn"
+                          style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--danger)', borderColor: 'var(--border-strong)' }}
+                          onClick={() => handlePermanentDeleteWorkspace(ws.id, ws.name)}
+                        >
+                          <i className="ti ti-trash"></i> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
         )}

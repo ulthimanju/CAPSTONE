@@ -48,6 +48,18 @@ async def list_workspaces(
     return await use_case.execute(user_id)
 
 
+@router.get("/archived/list", response_model=WorkspaceListResponse)
+async def list_archived_workspaces(
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+):
+    archived = await ws_repo.list_archived_by_user_id(user_id)
+    return WorkspaceListResponse(
+        workspaces=[WorkspaceResponse.model_validate(w) for w in archived],
+        total=len(archived)
+    )
+
+
 @router.get("/{workspace_id}", response_model=WorkspaceResponse)
 async def get_workspace(
     workspace_id: UUID,

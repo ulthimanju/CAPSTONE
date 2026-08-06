@@ -17,6 +17,10 @@ class WorkspaceRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_archived_by_user_id(self, user_id: UUID) -> list[Workspace]:
+        pass
+
+    @abstractmethod
     async def update(self, workspace: Workspace) -> Workspace:
         pass
 

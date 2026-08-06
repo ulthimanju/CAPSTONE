@@ -51,7 +51,15 @@ export const AppLayout = ({ children, activeTab, setActiveTab, docCount = 3 }) =
             className={`nav-item ${activeTab === 'collab' ? 'active' : ''}`}
             onClick={() => setActiveTab && setActiveTab('collab')}
           >
-            <i className="ti ti-users"></i>Collaborators<span class="count">1</span>
+            <i className="ti ti-users"></i>Collaborators<span className="count">1</span>
+          </button>
+
+          <button
+            className={`nav-item ${activeTab === 'archived' ? 'active' : ''}`}
+            onClick={() => setActiveTab && setActiveTab('archived')}
+            style={{ marginTop: 'auto' }}
+          >
+            <i className="ti ti-archive"></i>Archived Workspaces
           </button>
         </div>
 
