@@ -800,27 +800,54 @@ export const WorkspaceDetailPage = () => {
                 <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Synthesizing workspace documents using Gemini...</p>
               </div>
             ) : summaryData ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '1rem 0' }}>
+              /* ONE SINGLE UNIFIED ISLAND CARD */
+              <div className="island" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                
+                {/* Header Actions Row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-soft)', paddingBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-bg)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 2 2 7l10 5 10-5-10-5Z" />
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>
+                        {summaryData.title || 'Workspace Executive Summary'}
+                      </h2>
+                      <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>Synthesized AI Insights</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn" onClick={() => setIsJsonModalOpen(true)} style={{ fontSize: '12.5px', padding: '6px 12px' }}>
+                      Raw JSON
+                    </button>
+                    <button className="btn btn-primary" onClick={handleGenerateSummary} style={{ fontSize: '12.5px', padding: '6px 12px' }}>
+                      Regenerate
+                    </button>
+                  </div>
+                </div>
 
-                {/* Overview */}
+                {/* Overview Section */}
                 {summaryData.overview && (
-                  <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--accent)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <i className="ti ti-notes"></i> Overview
                     </h3>
                     <RichMarkdownRenderer content={summaryData.overview} />
                   </div>
                 )}
 
-                {/* Key Takeaways */}
+                {/* Key Takeaways Section */}
                 {summaryData.key_takeaways && summaryData.key_takeaways.length > 0 && (
-                  <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#3b82f6', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#4D7CF5', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <i className="ti ti-bulb"></i> Key Takeaways
                     </h3>
-                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {summaryData.key_takeaways.map((item, idx) => (
-                        <li key={idx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.4' }}>
+                        <li key={idx} style={{ fontSize: '13.5px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
                           <RichMarkdownRenderer content={item} compact />
                         </li>
                       ))}
@@ -828,14 +855,14 @@ export const WorkspaceDetailPage = () => {
                   </div>
                 )}
 
-                {/* Sections */}
+                {/* Main Sections */}
                 {summaryData.sections && summaryData.sections.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
                     {summaryData.sections.map((sec, idx) => (
-                      <div key={idx} style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+                      <div key={idx}>
+                        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '6px' }}>
                           {sec.title}
-                        </h3>
+                        </h4>
                         <RichMarkdownRenderer content={sec.content} />
                       </div>
                     ))}
@@ -843,12 +870,12 @@ export const WorkspaceDetailPage = () => {
                 )}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+              <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--island-2)', border: '1px solid var(--border)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
                   <i className="ti ti-sparkles"></i>
                 </div>
                 <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>AI Summary</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '450px', marginBottom: '1.5rem' }}>
                   {documents.length === 0
                     ? 'Upload documents to this workspace to generate an AI summary.'
                     : 'No summary generated yet. Click below to synthesize key insights from your workspace documents.'}
