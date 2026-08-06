@@ -11,6 +11,7 @@ from app.schemas.gateway import (
     ChatRequest,
 )
 from app.utils.ids import generate_uuid
+from app.config.settings import settings
 
 router = APIRouter(prefix="/api/v1/ai", tags=["AI Gateway"])
 gemini_client = GeminiClient()
@@ -108,7 +109,7 @@ async def _publish_summary_event(workspace_id: str, status: str, user_id: str | 
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
         payload = {
-            "event_id": generate_uuid(),
+            "event_id": str(generate_uuid()),
             "event_name": "SummaryGeneration",
             "workspace_id": workspace_id,
             "user_id": user_id,
