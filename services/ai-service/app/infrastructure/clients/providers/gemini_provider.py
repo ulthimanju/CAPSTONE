@@ -63,48 +63,50 @@ class GeminiClient:
         start_time = time.time()
         last_err = None
 
-        for attempt in range(1, retries + 1):
-            try:
-                loop = asyncio.get_event_loop()
+        fallback_models = [target_model, "gemini-2.5-flash", "gemini-2.0-flash"]
+        for curr_model in fallback_models:
+            for attempt in range(1, retries + 1):
+                try:
+                    loop = asyncio.get_event_loop()
 
-                def _call():
-                    return client.models.generate_content(
-                        model=target_model,
-                        contents=prompt,
-                        config=config,
+                    def _call(m=curr_model):
+                        return client.models.generate_content(
+                            model=m,
+                            contents=prompt,
+                            config=config,
+                        )
+
+                    response = await asyncio.wait_for(
+                        loop.run_in_executor(None, _call),
+                        timeout=timeout_seconds,
                     )
 
-                response = await asyncio.wait_for(
-                    loop.run_in_executor(None, _call),
-                    timeout=timeout_seconds,
-                )
+                    latency_ms = int((time.time() - start_time) * 1000)
+                    out_text = response.text or ""
+                    
+                    # Token usage parsing
+                    input_tokens = TokenCounter.estimate_tokens(prompt)
+                    output_tokens = TokenCounter.estimate_tokens(out_text)
 
-                latency_ms = int((time.time() - start_time) * 1000)
-                out_text = response.text or ""
-                
-                # Token usage parsing
-                input_tokens = TokenCounter.estimate_tokens(prompt)
-                output_tokens = TokenCounter.estimate_tokens(out_text)
+                    if hasattr(response, "usage_metadata") and response.usage_metadata:
+                        input_tokens = getattr(response.usage_metadata, "prompt_token_count", input_tokens)
+                        output_tokens = getattr(response.usage_metadata, "candidates_token_count", output_tokens)
 
-                if hasattr(response, "usage_metadata") and response.usage_metadata:
-                    input_tokens = getattr(response.usage_metadata, "prompt_token_count", input_tokens)
-                    output_tokens = getattr(response.usage_metadata, "candidates_token_count", output_tokens)
-
-                return {
-                    "text": out_text,
-                    "model": target_model,
-                    "provider": AIProvider.GEMINI,
-                    "prompt_tokens": input_tokens,
-                    "completion_tokens": output_tokens,
-                    "total_tokens": input_tokens + output_tokens,
-                    "latency_ms": latency_ms,
-                }
-            except Exception as e:
-                last_err = e
-                if attempt < retries:
-                    await asyncio.sleep(0.5 * (2 ** (attempt - 1)))
-                else:
-                    raise RuntimeError(f"Gemini generation failed after {retries} attempts: {last_err}")
+                    return {
+                        "text": out_text,
+                        "model": curr_model,
+                        "provider": AIProvider.GEMINI,
+                        "prompt_tokens": input_tokens,
+                        "completion_tokens": output_tokens,
+                        "total_tokens": input_tokens + output_tokens,
+                        "latency_ms": latency_ms,
+                    }
+                except Exception as e:
+                    last_err = e
+                    if "503" in str(e) or "UNAVAILABLE" in str(e):
+                        # Switch immediately to fallback model on 503 high demand spike
+                        break
+        raise RuntimeError(f"Gemini generation failed across models ({fallback_models}): {last_err}")
 
     async def embed_texts(
         self,
