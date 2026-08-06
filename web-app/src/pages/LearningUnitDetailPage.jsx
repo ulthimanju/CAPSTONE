@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Spinner } from '../components/ui/Spinner';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 import { useAuth } from '../hooks/useAuth';
+import { AppLayout } from '../layouts/AppLayout';
 
 export const LearningUnitDetailPage = () => {
   const { workspaceId, unitTitle } = useParams();
@@ -49,8 +50,8 @@ export const LearningUnitDetailPage = () => {
           data.unit_title === decodedTitle
         ) {
           if (data.status === 'QUEUED') setGenerationProgressText('Queued...');
-          else if (data.status === 'STARTED') setGenerationProgressText('Retrieving RAG document context (~1K tokens)...');
-          else if (data.status === 'IN_PROGRESS') setGenerationProgressText('Generating Summary, Flashcards & Quiz with Gemini in 1 pass...');
+          else if (data.status === 'STARTED') setGenerationProgressText('Retrieving RAG document context...');
+          else if (data.status === 'IN_PROGRESS') setGenerationProgressText('Generating Summary, Flashcards & Quiz with Gemini...');
           else if (data.status === 'COMPLETED') {
             setGenerationProgressText('Completed!');
             fetchUnitContent();
@@ -157,7 +158,7 @@ export const LearningUnitDetailPage = () => {
     setCardIndex((prev) => (contentData?.flashcards && prev < contentData.flashcards.length - 1 ? prev + 1 : prev));
   };
 
-  // Quiz Option Selector (Saves user_answer to DB)
+  // Quiz Option Selector
   const handleSelectQuizOption = async (qIdx, optIdx, correctIdx) => {
     if (quizAnswers[qIdx] !== undefined) return;
     const updatedAnswers = { ...quizAnswers, [qIdx]: optIdx };
@@ -169,7 +170,7 @@ export const LearningUnitDetailPage = () => {
       if (userAns === q.correct_answer) updatedScore += 1;
       return {
         ...q,
-        user_answer: userAns
+        user_answer: userAns,
       };
     });
 
@@ -178,10 +179,14 @@ export const LearningUnitDetailPage = () => {
 
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.patch(`/api/v1/workspaces/${workspaceId}/units/quiz-progress`, {
-        unit_title: decodedTitle,
-        quiz_json: updatedQuiz,
-      }, { headers });
+      await axios.patch(
+        `/api/v1/workspaces/${workspaceId}/units/quiz-progress`,
+        {
+          unit_title: decodedTitle,
+          quiz_json: updatedQuiz,
+        },
+        { headers }
+      );
     } catch (err) {
       console.error('Failed to save quiz progress to DB:', err);
     }
@@ -200,188 +205,144 @@ export const LearningUnitDetailPage = () => {
 
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.patch(`/api/v1/workspaces/${workspaceId}/units/quiz-progress`, {
-        unit_title: decodedTitle,
-        quiz_json: resetQuiz,
-      }, { headers });
+      await axios.patch(
+        `/api/v1/workspaces/${workspaceId}/units/quiz-progress`,
+        {
+          unit_title: decodedTitle,
+          quiz_json: resetQuiz,
+        },
+        { headers }
+      );
     } catch (err) {
       console.error('Failed to reset quiz progress in DB:', err);
     }
   };
 
   return (
-    <div style={{ height: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* ============ TOPBAR ============ */}
-      <header
-        style={{
-          height: '60px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--bg-1)',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justify: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          flexShrink: 0,
-        }}
-      >
-        {/* Left: Back Button & Workspace Breadcrumb */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
-          <button
-            className="btn"
-            style={{ fontSize: '13px', padding: '6px 12px', gap: '6px', borderRadius: '6px', flexShrink: 0 }}
-            onClick={() => navigate(`/workspaces/${workspaceId}`)}
-          >
-            <i className="ti ti-arrow-left"></i> Back to Workspace
-          </button>
-          <div style={{ height: '18px', width: '1px', background: 'var(--border)', flexShrink: 0 }}></div>
-          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-3)', fontFamily: 'var(--mono)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
-              {workspace?.name || 'Workspace'} • Learning Unit
-            </span>
-            <h1 style={{ fontSize: '15px', fontWeight: '600', margin: 0, color: 'var(--text)', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {decodedTitle}
-            </h1>
+    <AppLayout
+      activeTab="learning"
+      workspaceName={workspace?.name || 'Workspace'}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* 1. Header Island Banner */}
+        <div className="island" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button
+              className="btn"
+              onClick={() => navigate(`/workspaces/${workspaceId}`)}
+              style={{ fontSize: '13px', padding: '6px 12px', gap: '6px', borderRadius: '8px' }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              Back to Workspace
+            </button>
+            <div style={{ height: '20px', width: '1px', background: 'var(--border-soft)' }}></div>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-faint)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                LEARNING UNIT
+              </span>
+              <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', margin: 0, lineHeight: '1.3' }}>
+                {decodedTitle}
+              </h2>
+            </div>
           </div>
-        </div>
 
-        {/* Right: Regenerate Action Button */}
-        <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
           <button
-            className="btn"
-            style={{
-              fontSize: '12px',
-              padding: '7px 16px',
-              gap: '6px',
-              color: 'var(--text-2)',
-              borderColor: 'var(--border-strong)',
-              background: 'var(--bg-2)',
-              borderRadius: '6px',
-              fontWeight: '500'
-            }}
+            className="btn btn-primary"
             onClick={handleGenerateContent}
             disabled={generating}
+            style={{ fontSize: '12.5px', padding: '7px 14px', gap: '6px' }}
           >
-            <i className="ti ti-rotate-clockwise"></i> {generating ? 'Regenerating...' : 'Regenerate Study Bundle'}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+            </svg>
+            {generating ? 'Regenerating...' : 'Regenerate Study Bundle'}
           </button>
         </div>
-      </header>
 
-      {/* ============ DEDICATED TAB BAR ============ */}
-      {contentData && (
-        <div
-          style={{
-            background: 'var(--bg-1)',
-            borderBottom: '1px solid var(--border)',
-            padding: '0 24px',
-            display: 'flex',
-            gap: '8px',
-            flexShrink: 0,
-          }}
-        >
-          <button
-            onClick={() => setActiveTab('summary')}
-            style={{
-              padding: '12px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'summary' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: activeTab === 'summary' ? 'var(--text)' : 'var(--text-3)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <i className="ti ti-file-text"></i> Summary
-          </button>
+        {/* 2. Sub-Navigation Tabs Bar */}
+        {contentData && (
+          <div className="island" style={{ padding: '8px 12px', display: 'flex', gap: '6px' }}>
+            <button
+              onClick={() => setActiveTab('summary')}
+              className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
+              style={{ width: 'auto', padding: '8px 16px', borderRadius: '8px' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+              </svg>
+              Summary
+            </button>
 
-          <button
-            onClick={() => setActiveTab('flashcards')}
-            style={{
-              padding: '12px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'flashcards' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: activeTab === 'flashcards' ? 'var(--text)' : 'var(--text-3)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <i className="ti ti-cards"></i> Flashcards ({contentData.flashcards?.length || 0})
-          </button>
+            <button
+              onClick={() => setActiveTab('flashcards')}
+              className={`nav-item ${activeTab === 'flashcards' ? 'active' : ''}`}
+              style={{ width: 'auto', padding: '8px 16px', borderRadius: '8px' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="5" width="14" height="14" rx="2" />
+                <path d="M22 9v10a2 2 0 0 1-2 2H8" />
+              </svg>
+              Flashcards ({contentData.flashcards?.length || 0})
+            </button>
 
-          <button
-            onClick={() => setActiveTab('quiz')}
-            style={{
-              padding: '12px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'quiz' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: activeTab === 'quiz' ? 'var(--text)' : 'var(--text-3)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <i className="ti ti-help-circle"></i> Quiz ({contentData.quiz?.length || 0})
-          </button>
-        </div>
-      )}
+            <button
+              onClick={() => setActiveTab('quiz')}
+              className={`nav-item ${activeTab === 'quiz' ? 'active' : ''}`}
+              style={{ width: 'auto', padding: '8px 16px', borderRadius: '8px' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+              </svg>
+              Quiz ({contentData.quiz?.length || 0})
+            </button>
+          </div>
+        )}
 
-      {/* ============ MAIN CONTENT AREA ============ */}
-      <main style={{ flex: 1, overflowY: 'auto', maxWidth: '960px', width: '100%', margin: '0 auto', padding: '24px 20px' }}>
+        {/* 3. Main Content Container */}
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
             <Spinner size="lg" />
           </div>
         ) : generating ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', textAlign: 'center', padding: '2rem', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: '12px' }}>
+          <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Spinner size="lg" />
             <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
               {generationProgressText}
             </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '420px' }}>
-              Gemini is retrieving ~1K RAG document context tokens and generating Summary, Flashcards & Quiz in 1 single pass...
+            <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '420px' }}>
+              Gemini is processing RAG document context and building your interactive Summary, Flashcards, and Quiz...
             </p>
           </div>
         ) : !contentData ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '45vh', textAlign: 'center', padding: '3rem 2rem', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: '12px' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'var(--accent-bg)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', marginBottom: '1.25rem' }}>
-              <i className="ti ti-sparkles"></i>
+          <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--island-2)', border: '1px solid var(--border-soft)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2 2 7l10 5 10-5-10-5Z" />
+                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
             </div>
             <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>Unit Content Not Generated Yet</h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.75rem', lineHeight: '1.6' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '450px', marginBottom: '1.5rem', lineHeight: '1.6' }}>
               Generate a unified study bundle containing a rich summary, interactive flashcards, and a multiple-choice quiz — powered by RAG context from your workspace documents.
             </p>
-            <button className="btn btn-primary" onClick={handleGenerateContent} style={{ padding: '10px 24px', fontSize: '14px' }}>
-              <i className="ti ti-bolt"></i> Generate Unit Study Bundle
+            <button className="btn btn-primary" onClick={handleGenerateContent} style={{ padding: '10px 20px', fontSize: '13.5px', gap: '8px' }}>
+              Generate Unit Study Bundle
             </button>
           </div>
         ) : (
           <>
             {/* SUB-TAB 1: SUMMARY */}
             {activeTab === 'summary' && contentData.summary && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="island" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Overview */}
                 {contentData.summary.overview && (
-                  <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--accent)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="ti ti-notes"></i> Overview
+                  <div>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      Overview
                     </h3>
                     <RichMarkdownRenderer content={contentData.summary.overview} />
                   </div>
@@ -389,13 +350,13 @@ export const LearningUnitDetailPage = () => {
 
                 {/* Key Takeaways */}
                 {contentData.summary.key_takeaways && contentData.summary.key_takeaways.length > 0 && (
-                  <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#3b82f6', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="ti ti-bulb"></i> Key Takeaways
+                  <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#4D7CF5', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      Key Takeaways
                     </h3>
-                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '2px', margin: 0 }}>
+                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px', margin: 0 }}>
                       {contentData.summary.key_takeaways.map((item, idx) => (
-                        <li key={idx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.4' }}>
+                        <li key={idx} style={{ fontSize: '13.5px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
                           <RichMarkdownRenderer content={item} compact />
                         </li>
                       ))}
@@ -405,12 +366,12 @@ export const LearningUnitDetailPage = () => {
 
                 {/* Sections */}
                 {contentData.summary.sections && contentData.summary.sections.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
                     {contentData.summary.sections.map((sec, idx) => (
-                      <div key={idx} style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+                      <div key={idx}>
+                        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '6px' }}>
                           {sec.title}
-                        </h3>
+                        </h4>
                         <RichMarkdownRenderer content={sec.content} />
                       </div>
                     ))}
@@ -421,9 +382,9 @@ export const LearningUnitDetailPage = () => {
 
             {/* SUB-TAB 2: FLASHCARDS */}
             {activeTab === 'flashcards' && contentData.flashcards && contentData.flashcards.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', padding: '1.5rem 0' }}>
-                <div style={{ fontSize: '13px', color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>
-                  Card {cardIndex + 1} of {contentData.flashcards.length}
+              <div className="island" style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-faint)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  CARD {cardIndex + 1} OF {contentData.flashcards.length}
                 </div>
 
                 {/* Flashcard Card */}
@@ -431,53 +392,59 @@ export const LearningUnitDetailPage = () => {
                   onClick={() => setIsFlipped(!isFlipped)}
                   style={{
                     width: '100%',
-                    maxWidth: '600px',
+                    maxWidth: '620px',
                     minHeight: '260px',
-                    background: 'var(--bg-1)',
-                    border: '1px solid var(--border-strong)',
-                    borderRadius: '14px',
-                    padding: '32px',
+                    background: 'var(--island-2)',
+                    border: '1px solid var(--border-soft)',
+                    borderRadius: 'var(--radius)',
+                    padding: '36px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justify: 'center',
                     textAlign: 'center',
                     cursor: 'pointer',
-                    boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+                    boxShadow: 'var(--shadow)',
                     transition: 'transform 0.2s ease',
                     position: 'relative',
                   }}
                 >
-                  <span style={{ position: 'absolute', top: '14px', right: '16px', fontSize: '11px', color: 'var(--accent)', fontWeight: '600', letterSpacing: '.05em', textTransform: 'uppercase' }}>
+                  <span style={{ position: 'absolute', top: '16px', right: '18px', fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '.06em', textTransform: 'uppercase' }}>
                     {isFlipped ? 'Answer' : 'Question'}
                   </span>
-                  <h3 style={{ fontSize: isFlipped ? '16px' : '18px', fontWeight: isFlipped ? '400' : '600', color: isFlipped ? 'var(--text-2)' : 'var(--text)', lineHeight: '1.6', margin: 0 }}>
+                  <h3 style={{ fontSize: isFlipped ? '16px' : '18px', fontWeight: isFlipped ? '500' : '600', color: isFlipped ? 'var(--text-dim)' : 'var(--text)', lineHeight: '1.6', margin: 0 }}>
                     {isFlipped
                       ? contentData.flashcards[cardIndex]?.back
                       : contentData.flashcards[cardIndex]?.front}
                   </h3>
-                  <p style={{ marginTop: '20px', fontSize: '12px', color: 'var(--text-3)' }}>
+                  <p style={{ marginTop: '24px', fontSize: '12px', color: 'var(--text-faint)' }}>
                     Click card to flip ↺
                   </p>
                 </div>
 
                 {/* Controls */}
-                <div style={{ display: 'flex', gap: '14px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     className="btn"
                     onClick={handlePrevCard}
                     disabled={cardIndex === 0}
-                    style={{ fontSize: '13px', padding: '8px 18px' }}
+                    style={{ fontSize: '13px', padding: '8px 18px', gap: '6px' }}
                   >
-                    <i className="ti ti-chevron-left"></i> Previous
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                    Previous
                   </button>
                   <button
                     className="btn btn-primary"
                     onClick={handleNextCard}
                     disabled={cardIndex === contentData.flashcards.length - 1}
-                    style={{ fontSize: '13px', padding: '8px 18px' }}
+                    style={{ fontSize: '13px', padding: '8px 18px', gap: '6px' }}
                   >
-                    Next <i className="ti ti-chevron-right"></i>
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -485,17 +452,17 @@ export const LearningUnitDetailPage = () => {
 
             {/* SUB-TAB 3: QUIZ */}
             {activeTab === 'quiz' && contentData.quiz && contentData.quiz.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '14px' }}>
-                  <span style={{ fontSize: '14px', color: 'var(--text)', fontWeight: '600' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="island" style={{ padding: '16px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', color: 'var(--text)', fontWeight: '700' }}>
                     Score: {quizScore} / {contentData.quiz.length}
                   </span>
                   <button
                     className="btn"
                     onClick={handleResetQuiz}
-                    style={{ fontSize: '12px', padding: '6px 12px', color: 'var(--text-3)' }}
+                    style={{ fontSize: '12px', padding: '6px 12px' }}
                   >
-                    <i className="ti ti-rotate-clockwise"></i> Reset Quiz
+                    Reset Quiz
                   </button>
                 </div>
 
@@ -503,9 +470,9 @@ export const LearningUnitDetailPage = () => {
                   const answeredOpt = quizAnswers[qIdx];
                   const isAnswered = answeredOpt !== undefined;
                   return (
-                    <div key={qIdx} style={{ background: 'var(--bg-1)', border: '1px solid var(--border-strong)', borderRadius: '12px', padding: '20px' }}>
-                      <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', display: 'flex', gap: '10px' }}>
-                        <span style={{ color: 'var(--accent)', fontFamily: 'var(--mono)' }}>Q{qIdx + 1}.</span> {q.question}
+                    <div key={qIdx} className="island" style={{ padding: '22px 24px' }}>
+                      <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px', display: 'flex', gap: '10px' }}>
+                        <span style={{ color: 'var(--accent)', fontWeight: '700' }}>Q{qIdx + 1}.</span> {q.question}
                       </h4>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
@@ -513,10 +480,10 @@ export const LearningUnitDetailPage = () => {
                           let optionStyle = {
                             padding: '12px 16px',
                             borderRadius: '8px',
-                            fontSize: '14px',
-                            border: '1px solid var(--border)',
-                            background: 'var(--bg-2)',
-                            color: 'var(--text-2)',
+                            fontSize: '13.5px',
+                            border: '1px solid var(--border-soft)',
+                            background: 'var(--island-2)',
+                            color: 'var(--text-dim)',
                             cursor: isAnswered ? 'default' : 'pointer',
                             textAlign: 'left',
                             display: 'flex',
@@ -527,13 +494,13 @@ export const LearningUnitDetailPage = () => {
 
                           if (isAnswered) {
                             if (optIdx === q.correct_answer) {
-                              optionStyle.border = '1px solid var(--accent)';
-                              optionStyle.background = 'var(--accent-bg)';
-                              optionStyle.color = 'var(--accent)';
+                              optionStyle.border = '1px solid rgba(62, 207, 142, 0.4)';
+                              optionStyle.background = 'rgba(62, 207, 142, 0.1)';
+                              optionStyle.color = '#3ecf8e';
                               optionStyle.fontWeight = '600';
                             } else if (optIdx === answeredOpt) {
-                              optionStyle.border = '1px solid var(--danger)';
-                              optionStyle.background = 'rgba(239, 68, 68, 0.1)';
+                              optionStyle.border = '1px solid rgba(226, 87, 76, 0.4)';
+                              optionStyle.background = 'rgba(226, 87, 76, 0.1)';
                               optionStyle.color = 'var(--danger)';
                             }
                           }
@@ -545,7 +512,7 @@ export const LearningUnitDetailPage = () => {
                               onClick={() => handleSelectQuizOption(qIdx, optIdx, q.correct_answer)}
                               disabled={isAnswered}
                             >
-                              <span style={{ fontFamily: 'var(--mono)', fontSize: '12px', opacity: 0.7 }}>
+                              <span style={{ fontSize: '12px', opacity: 0.7, fontWeight: '700' }}>
                                 {String.fromCharCode(65 + optIdx)}.
                               </span>
                               <span>{opt}</span>
@@ -555,8 +522,8 @@ export const LearningUnitDetailPage = () => {
                       </div>
 
                       {isAnswered && (
-                        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)', fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.5' }}>
-                          <strong style={{ color: answeredOpt === q.correct_answer ? 'var(--accent)' : 'var(--danger)', display: 'block', marginBottom: '4px' }}>
+                        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border-soft)', fontSize: '13px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
+                          <strong style={{ color: answeredOpt === q.correct_answer ? '#3ecf8e' : 'var(--danger)', display: 'block', marginBottom: '4px' }}>
                             {answeredOpt === q.correct_answer ? '✓ Correct!' : '✗ Incorrect'}
                           </strong>
                           {q.explanation}
@@ -569,7 +536,7 @@ export const LearningUnitDetailPage = () => {
             )}
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
