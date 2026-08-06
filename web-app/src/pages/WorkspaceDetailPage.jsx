@@ -265,10 +265,14 @@ export const WorkspaceDetailPage = () => {
           else if (data.status === 'COMPLETED') {
             setSummaryProgressText('Completed');
             // Fetch completed summary
-            axios.get(`/api/v1/workspaces/${workspaceId}/summary`).then((res) => {
-              if (res.data && res.data.summary) setSummaryData(res.data.summary);
+            const headers = user?.id ? { 'X-User-ID': user.id } : {};
+            axios.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers }).then((res) => {
+              if (res.data && res.data.summary) {
+                setSummaryData(res.data.summary);
+                setSummaryLoaded(true);
+              }
               setSummaryStatus(null);
-            });
+            }).catch(() => setSummaryStatus(null));
           } else if (data.status === 'FAILED') {
             setSummaryProgressText('Failed: ' + (data.error || 'Unknown error'));
             setTimeout(() => setSummaryStatus(null), 4000);
@@ -285,7 +289,12 @@ export const WorkspaceDetailPage = () => {
       setSummaryStatus('QUEUED');
       setSummaryProgressText('Generating Summary...');
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(`/api/v1/ai/workspaces/${workspaceId}/summary`, {}, { headers });
+      const res = await axios.post(`/api/v1/ai/workspaces/${workspaceId}/summary`, {}, { headers });
+      if (res.data) {
+        setSummaryData(res.data);
+        setSummaryLoaded(true);
+      }
+      setSummaryStatus(null);
     } catch (err) {
       console.error('Failed to trigger summary generation:', err);
       setSummaryStatus('FAILED');
