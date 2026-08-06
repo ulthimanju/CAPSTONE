@@ -465,9 +465,9 @@ export const WorkspaceDetailPage = () => {
           <div className="topbar-sub" id="topbar-sub">
             {activeTab === 'documents' && `${readyCount} ready · ${processingCount} processing`}
             {activeTab === 'summary' && 'Generated from workspace documents'}
-            {activeTab === 'learning' && '45 curriculum units'}
+            {activeTab === 'learning' && 'Curriculum units generated from documents'}
             {activeTab === 'rag' && 'Grounded in workspace documents'}
-            {activeTab === 'collab' && '1 active member'}
+            {activeTab === 'collab' && 'Workspace collaborators'}
           </div>
         </div>
 
@@ -597,24 +597,21 @@ export const WorkspaceDetailPage = () => {
         {/* ============ TAB 2: AI SUMMARY ============ */}
         {activeTab === 'summary' && (
           <section className="tab-panel active" id="panel-summary">
-            <div className="summary-head">
-              <div className="summary-head-l">
-                <div className="summary-icon"><i className="ti ti-sparkles"></i></div>
-                <div>
-                  <h2>Distributed system architecture and system design fundamentals</h2>
-                  <p>Synthesized from workspace documents</p>
-                </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+                <i className="ti ti-sparkles"></i>
               </div>
-              <button className="btn"><i className="ti ti-refresh"></i>Regenerate</button>
-            </div>
-
-            <div className="prose">
-              <h3>Introduction</h3>
-              <p>System design and distributed systems architecture form the foundation of modern, large-scale software engineering. Applications must serve millions of concurrent users, handle petabytes of data, and guarantee continuous availability, which traditional monolithic implementations cannot support.</p>
-              <hr />
-              <h3>Executive overview</h3>
-              <h4>1. Microservices and architectural paradigms</h4>
-              <p>Distributed systems have evolved from monolithic structures to service-oriented architectures and microservices. A monolithic application encapsulates all business logic, data access, and UI rendering in a single deployable artifact.</p>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>AI Summary</h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+                {documents.length === 0
+                  ? 'Upload documents to this workspace to generate an AI summary.'
+                  : 'No summary generated yet. Click below to synthesize key insights from your workspace documents.'}
+              </p>
+              {documents.length > 0 && (
+                <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                  <i className="ti ti-sparkles"></i> Generate Summary
+                </button>
+              )}
             </div>
           </section>
         )}
@@ -622,34 +619,21 @@ export const WorkspaceDetailPage = () => {
         {/* ============ TAB 3: LEARNING PATH ============ */}
         {activeTab === 'learning' && (
           <section className="tab-panel active" id="panel-learning">
-            <div className="lp-layout">
-              <div>
-                <div className="section-label"><i className="ti ti-list-details"></i>Curriculum units (45)</div>
-                <div className="curriculum">
-                  <div className="unit active">
-                    <div className="unit-num">01</div>
-                    <div><div className="unit-title">Distributed system architecture and system design fundamentals</div><div className="unit-meta">Intermediate · 480 min</div></div>
-                  </div>
-                  <div className="unit">
-                    <div className="unit-num">02</div>
-                    <div><div className="unit-title">Architectural paradigms and domain-driven design</div><div class="unit-meta">Beginner · 60 min</div></div>
-                  </div>
-                </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+                <i className="ti ti-route"></i>
               </div>
-
-              <div className="lp-panel">
-                <div className="lp-tabs">
-                  <button className="lp-tab active"><i className="ti ti-file-description"></i>Unit summary</button>
-                  <button className="lp-tab"><i className="ti ti-cards"></i>Flashcards (4)</button>
-                  <button className="lp-tab"><i className="ti ti-help-octagon"></i>Self-quiz</button>
-                </div>
-                <div className="lp-body">
-                  <div className="prose">
-                    <h3>Unit overview</h3>
-                    <p>Distributed system architecture and system design fundamentals focus on building scalable, resilient, and high-performance software systems.</p>
-                  </div>
-                </div>
-              </div>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>Learning Path</h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+                {documents.length === 0
+                  ? 'Upload documents to build a custom structured learning path.'
+                  : 'No learning path generated yet. Create a step-by-step curriculum from your documents.'}
+              </p>
+              {documents.length > 0 && (
+                <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                  <i className="ti ti-plus"></i> Generate Learning Path
+                </button>
+              )}
             </div>
           </section>
         )}
@@ -658,18 +642,20 @@ export const WorkspaceDetailPage = () => {
         {activeTab === 'rag' && (
           <section className="tab-panel active" id="panel-rag">
             <div className="rag-wrap">
-              <div className="rag-thread">
-                <div className="msg-bot">
-                  <div className="msg-avatar bot"><i className="ti ti-message-circle"></i></div>
-                  <div className="bubble">
-                    <h4>Definition of system design</h4>
-                    <p>System design is the process of defining the architecture, modules, interfaces, and data structures for a system to satisfy specified technical and business requirements.</p>
-                  </div>
+              <div className="rag-thread" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '30vh', textAlign: 'center' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', marginBottom: '0.75rem' }}>
+                  <i className="ti ti-message-bot"></i>
                 </div>
+                <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.25rem' }}>RAG Assistant</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '400px' }}>
+                  {documents.length === 0
+                    ? 'Upload documents to start asking questions grounded in your workspace content.'
+                    : 'Ask any question below to query your workspace documents.'}
+                </p>
               </div>
               <div className="rag-input">
-                <input type="text" placeholder="Ask a question about your workspace documents..." />
-                <button className="btn btn-primary"><i className="ti ti-send"></i>Send</button>
+                <input type="text" placeholder="Ask a question about your workspace documents..." disabled={documents.length === 0} />
+                <button className="btn btn-primary" disabled={documents.length === 0}><i className="ti ti-send"></i>Send</button>
               </div>
             </div>
           </section>
