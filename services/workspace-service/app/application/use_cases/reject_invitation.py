@@ -10,12 +10,17 @@ class RejectInvitationUseCase:
     def __init__(self, invitation_repo: InvitationRepository):
         self.invitation_repo = invitation_repo
 
-    async def execute(self, invitation_id: UUID, user_id: UUID) -> InvitationResponse:
+    async def execute(self, invitation_id: UUID, user_id: UUID, user_email: str | None = None) -> InvitationResponse:
         invitation = await self.invitation_repo.get_by_id(invitation_id)
         if not invitation:
             raise HTTPException(status_code=404, detail="Invitation not found")
 
-        if invitation.invited_user_id != user_id:
+        email_uuid = None
+        if user_email:
+            import uuid
+            email_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"mailto:{user_email.lower().strip()}")
+
+        if invitation.invited_user_id not in (user_id, email_uuid):
             raise HTTPException(status_code=403, detail="Invitation is for another user")
 
         if invitation.status != InvitationStatus.PENDING:

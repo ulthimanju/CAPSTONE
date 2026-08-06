@@ -25,12 +25,18 @@ export const WorkspacesPage = () => {
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [actionInvId, setActionInvId] = useState(null);
 
+  const getHeaders = () => {
+    const headers = {};
+    if (user?.id) headers['X-User-ID'] = user.id;
+    if (user?.email) headers['X-User-Email'] = user.email;
+    return headers;
+  };
+
   const fetchWorkspaces = async () => {
     try {
       setLoading(true);
       setError(null);
-      const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.get('/api/v1/workspaces', { headers });
+      const res = await axios.get('/api/v1/workspaces', { headers: getHeaders() });
       setWorkspaces(res.data.workspaces || []);
     } catch (err) {
       console.error('Failed to load workspaces:', err);
@@ -42,8 +48,7 @@ export const WorkspacesPage = () => {
 
   const fetchPendingInvitations = async () => {
     try {
-      const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.get('/api/v1/invitations/pending', { headers });
+      const res = await axios.get('/api/v1/invitations/pending', { headers: getHeaders() });
       setPendingInvitations(res.data || []);
     } catch (err) {
       console.error('Failed to load pending invitations:', err);

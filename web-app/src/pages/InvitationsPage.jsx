@@ -14,11 +14,17 @@ export const InvitationsPage = () => {
   const [actionInvId, setActionInvId] = useState(null);
   const [notice, setNotice] = useState(null);
 
+  const getHeaders = () => {
+    const headers = {};
+    if (user?.id) headers['X-User-ID'] = user.id;
+    if (user?.email) headers['X-User-Email'] = user.email;
+    return headers;
+  };
+
   const fetchInvitations = async () => {
     try {
       setLoading(true);
-      const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.get('/api/v1/invitations/pending', { headers });
+      const res = await axios.get('/api/v1/invitations/pending', { headers: getHeaders() });
       setInvitations(res.data || []);
     } catch (err) {
       console.error('Failed to load pending invitations:', err);
@@ -34,8 +40,7 @@ export const InvitationsPage = () => {
   const handleAccept = async (invitationId, workspaceId) => {
     try {
       setActionInvId(invitationId);
-      const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(`/api/v1/invitations/${invitationId}/accept`, {}, { headers });
+      await axios.post(`/api/v1/invitations/${invitationId}/accept`, {}, { headers: getHeaders() });
       setNotice({ type: 'success', text: 'Invitation accepted! Redirecting to workspace...' });
       setTimeout(() => {
         if (workspaceId) {
@@ -55,8 +60,7 @@ export const InvitationsPage = () => {
   const handleReject = async (invitationId) => {
     try {
       setActionInvId(invitationId);
-      const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(`/api/v1/invitations/${invitationId}/reject`, {}, { headers });
+      await axios.post(`/api/v1/invitations/${invitationId}/reject`, {}, { headers: getHeaders() });
       setNotice({ type: 'info', text: 'Invitation declined.' });
       fetchInvitations();
     } catch (err) {
