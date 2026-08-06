@@ -26,6 +26,8 @@ export const WorkspaceDetailPage = () => {
   const [summaryData, setSummaryData] = useState(null);
   const [summaryStatus, setSummaryStatus] = useState(null); // 'QUEUED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
   const [summaryProgressText, setSummaryProgressText] = useState('');
+  const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
+  const [copiedJson, setCopiedJson] = useState(false);
 
   // Tab state
   const [activeTab, setActiveTab] = useState('documents');
@@ -606,7 +608,20 @@ export const WorkspaceDetailPage = () => {
             </>
           )}
           {activeTab === 'summary' && (
-            <button className="btn"><i className="ti ti-refresh"></i>Regenerate</button>
+            <>
+              {summaryData && (
+                <button
+                  className="btn"
+                  onClick={() => setIsJsonModalOpen(true)}
+                  style={{ marginRight: '8px' }}
+                >
+                  <i className="ti ti-code"></i>View Raw JSON
+                </button>
+              )}
+              <button className="btn" onClick={handleGenerateSummary}>
+                <i className="ti ti-refresh"></i>Regenerate
+              </button>
+            </>
           )}
           {activeTab === 'learning' && (
             <button className="btn"><i className="ti ti-refresh"></i>Regenerate path</button>
@@ -971,6 +986,39 @@ export const WorkspaceDetailPage = () => {
               </button>
             </ModalFooter>
           </form>
+        </ModalContent>
+      </Modal>
+
+      {/* Raw JSON Payload Modal */}
+      <Modal open={isJsonModalOpen} onOpenChange={setIsJsonModalOpen}>
+        <ModalContent size="lg" showCloseButton={false} style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)', maxWidth: '800px', width: '90%' }}>
+          <ModalHeader
+            title="Raw Summary JSON Payload"
+            description="The exact JSON schema response received from Gemini and stored in the database."
+            style={{ padding: '20px 24px', borderBottom: '1px solid #2a2a2e' }}
+          />
+          <ModalBody style={{ padding: '20px 24px', maxHeight: '60vh', overflowY: 'auto' }}>
+            <pre style={{ background: '#0c0c0e', border: '1px solid #2a2a2e', borderRadius: '8px', padding: '16px', color: '#a6e3a1', fontFamily: 'monospace', fontSize: '12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
+              {JSON.stringify(summaryData, null, 2)}
+            </pre>
+          </ModalBody>
+          <ModalFooter style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(summaryData, null, 2));
+                setCopiedJson(true);
+                setTimeout(() => setCopiedJson(false), 2000);
+              }}
+            >
+              <i className={copiedJson ? "ti ti-check" : "ti ti-copy"}></i>
+              {copiedJson ? "Copied!" : "Copy JSON"}
+            </button>
+            <button type="button" className="btn btn-primary" onClick={() => setIsJsonModalOpen(false)}>
+              Close
+            </button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 
