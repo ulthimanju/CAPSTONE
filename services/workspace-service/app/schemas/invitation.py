@@ -10,8 +10,9 @@ class InvitationResponse(BaseModel):
     id: UUID
     workspace_id: UUID
     invited_by: UUID
-    invited_user_id: UUID
+    invited_user_id: UUID | None = None
+    invited_email: str | None = None
     status: InvitationStatus
     expires_at: datetime
     created_at: datetime
-    accepted_at: datetime | None
+    accepted_at: datetime | None = None
