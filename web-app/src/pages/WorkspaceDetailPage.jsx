@@ -69,13 +69,18 @@ export const WorkspaceDetailPage = () => {
 
       if (targetWsId) {
         const [wsRes, docsRes, summaryRes] = await Promise.all([
-          axios.get(`/api/v1/workspaces/${targetWsId}`, { headers }),
-          axios.get(`/api/v1/documents?workspace_id=${targetWsId}`, { headers }),
-          axios.get(`/api/v1/workspaces/${targetWsId}/summary`, { headers }).catch(() => ({ data: { summary: null } }))
+          axios.get(`/api/v1/workspaces/${targetWsId}`, { headers }).catch((err) => { console.error('Ws err:', err); return null; }),
+          axios.get(`/api/v1/documents?workspace_id=${targetWsId}`, { headers }).catch((err) => { console.error('Docs err:', err); return { data: { documents: [] } }; }),
+          axios.get(`/api/v1/workspaces/${targetWsId}/summary`, { headers }).catch((err) => { console.error('Summary err:', err); return { data: { summary: null } }; })
         ]);
-        setWorkspace(wsRes.data);
-        setDocuments(docsRes.data.documents || []);
-        if (summaryRes.data && summaryRes.data.summary) {
+
+        if (wsRes && wsRes.data) {
+          setWorkspace(wsRes.data);
+        } else {
+          setWorkspace(null);
+        }
+        setDocuments((docsRes && docsRes.data && docsRes.data.documents) || []);
+        if (summaryRes && summaryRes.data && summaryRes.data.summary) {
           setSummaryData(summaryRes.data.summary);
         } else {
           setSummaryData(null);
