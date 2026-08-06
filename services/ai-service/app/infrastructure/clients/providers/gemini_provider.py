@@ -63,7 +63,7 @@ class GeminiClient:
         start_time = time.time()
         last_err = None
 
-        fallback_models = [target_model, "gemini-2.5-flash", "gemini-2.0-flash"]
+        fallback_models = [target_model, "gemini-flash-latest", "gemini-flash-lite-latest"]
         for curr_model in fallback_models:
             for attempt in range(1, retries + 1):
                 try:
