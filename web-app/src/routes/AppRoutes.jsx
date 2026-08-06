@@ -10,6 +10,7 @@ import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
 
 import { WorkspacesPage } from '../pages/WorkspacesPage';
 import { WorkspaceDetailPage } from '../pages/WorkspaceDetailPage';
+import { LearningUnitDetailPage } from '../pages/LearningUnitDetailPage';
 
 
 export const AppRoutes = () => {
@@ -40,6 +41,15 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <WorkspaceDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/workspaces/:workspaceId/units/:unitTitle"
+        element={
+          <ProtectedRoute>
+            <LearningUnitDetailPage />
           </ProtectedRoute>
         }
       />

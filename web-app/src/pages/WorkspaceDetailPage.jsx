@@ -1008,7 +1008,7 @@ export const WorkspaceDetailPage = () => {
                           <button
                             className="btn btn-primary"
                             style={{ fontSize: '12px', padding: '6px 14px', gap: '6px' }}
-                            onClick={() => setSelectedUnit(unit)}
+                            onClick={() => navigate(`/workspaces/${workspaceId}/units/${encodeURIComponent(unit.title)}`)}
                           >
                             <i className="ti ti-book"></i> Open Learning Unit
                           </button>
