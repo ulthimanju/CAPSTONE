@@ -157,7 +157,7 @@ export const LearningUnitDetailPage = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* ============ TOPBAR ============ */}
       <header
         style={{
@@ -171,6 +171,7 @@ export const LearningUnitDetailPage = () => {
           position: 'sticky',
           top: 0,
           zIndex: 100,
+          flexShrink: 0,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -213,6 +214,7 @@ export const LearningUnitDetailPage = () => {
             padding: '0 24px',
             display: 'flex',
             gap: '12px',
+            flexShrink: 0,
           }}
         >
           <button
@@ -275,7 +277,7 @@ export const LearningUnitDetailPage = () => {
       )}
 
       {/* ============ MAIN CONTENT AREA ============ */}
-      <main style={{ flex: 1, maxWidth: '960px', width: '100%', margin: '0 auto', padding: '24px 20px' }}>
+      <main style={{ flex: 1, overflowY: 'auto', maxWidth: '960px', width: '100%', margin: '0 auto', padding: '24px 20px' }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}>
             <Spinner size="lg" />
