@@ -198,6 +198,10 @@ export const WorkspaceDetailPage = () => {
       alert('Failed to delete workspace');
     }
   };
+  // Trigger data fetch on mount and whenever workspaceId changes
+  useEffect(() => {
+    fetchWorkspaceAndDocs();
+  }, [workspaceId]);
 
   // Listen to SSE events for real-time SummaryGeneration progress
   useEffect(() => {
