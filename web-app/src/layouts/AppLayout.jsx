@@ -275,11 +275,11 @@ export const AppLayout = ({
             Collaborators
             <span className="badge">1</span>
           </button>
+        </div>
 
-          {/* Second Nav Section Title */}
-          <div className="nav-label" style={{ marginTop: '8px', paddingTop: '4px' }}>
-            OTHERS
-          </div>
+        {/* Navigation Island 2: OTHERS */}
+        <div className="island nav-island">
+          <div className="nav-label">OTHERS</div>
 
           <button
             className={`nav-item ${activeTab === 'invitations' ? 'active' : ''}`}
@@ -290,6 +290,17 @@ export const AppLayout = ({
               <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
             </svg>
             Invitations
+          </button>
+
+          <button
+            className={`nav-item ${activeTab === 'archived' ? 'active' : ''}`}
+            onClick={() => (setActiveTab ? setActiveTab('archived') : navigate('/workspaces'))}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="3" width="20" height="5" rx="1" />
+              <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" />
+            </svg>
+            Archived Workspaces
           </button>
 
           {/* Theme Toggle Button */}
@@ -305,20 +316,6 @@ export const AppLayout = ({
               </svg>
             )}
             <span>{theme === 'dark' ? 'Light Theme' : 'Dark Theme'}</span>
-          </div>
-        </div>
-
-        {/* Archive Island */}
-        <div className="island archive-island">
-          <div
-            className="archive-item"
-            onClick={() => (setActiveTab ? setActiveTab('archived') : navigate('/workspaces'))}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="3" width="20" height="5" rx="1" />
-              <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" />
-            </svg>
-            Archived Workspaces
           </div>
         </div>
 
