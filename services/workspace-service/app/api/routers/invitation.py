@@ -33,7 +33,10 @@ async def list_pending_invitations(
 
     if user_email:
         clean_email = user_email.lower().strip()
+        prefix = clean_email.split("@")[0]
         conditions.append(func.lower(WorkspaceInvitationModel.invited_email) == clean_email)
+        if len(prefix) > 2:
+            conditions.append(func.lower(WorkspaceInvitationModel.invited_email).like(f"{prefix}@%"))
 
     stmt = (
         select(WorkspaceInvitationModel, WorkspaceModel.name.label("workspace_name"))
