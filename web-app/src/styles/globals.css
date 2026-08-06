@@ -70,6 +70,15 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
+/* Base Icon Alignment Rules */
+svg, i[class^="ti-"], i[class*=" ti-"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 /* ---------- SHARED ISLAND SHELL ---------- */
 .island {
   background: var(--island);
@@ -105,13 +114,14 @@ body {
   height: 32px;
   border-radius: 9px;
   background: linear-gradient(145deg, #6992ff, #4D7CF5);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify: center;
+  justify-content: center;
   font-weight: 700;
   font-size: 15px;
   color: #FFFFFF;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .brand-name {
@@ -150,13 +160,21 @@ body {
 
 .folder-ico {
   color: var(--accent);
-  display: flex;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
 }
 
 .chev {
   color: var(--text-faint);
   margin-left: 2px;
-  display: flex;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
 }
 
 .status-island {
@@ -164,7 +182,7 @@ body {
   grid-row: 1;
   display: flex;
   align-items: center;
-  justify: space-between;
+  justify-content: space-between;
   padding: 12px 22px;
 }
 
@@ -237,11 +255,17 @@ body {
   text-align: left;
   font-family: inherit;
   transition: all 0.15s ease;
+  min-height: 40px;
 }
 
 .nav-item i, .nav-item svg {
   flex-shrink: 0;
-  font-size: 16px;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
   opacity: 0.85;
 }
 
@@ -284,12 +308,22 @@ body {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 10px 8px;
+  padding: 10px 12px;
   font-size: 13.5px;
   color: var(--text-faint);
   cursor: pointer;
   border-radius: 9px;
   transition: color 0.15s ease;
+  min-height: 38px;
+}
+
+.archive-item i, .archive-item svg {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 }
 
 .archive-item:hover {
@@ -300,7 +334,7 @@ body {
   padding: 10px 14px;
   display: flex;
   align-items: center;
-  justify: space-between;
+  justify-content: space-between;
   margin-top: auto;
 }
 
@@ -317,11 +351,12 @@ body {
   background: var(--island-2);
   border: 1px solid var(--border);
   color: var(--text-dim);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify: center;
+  justify-content: center;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .account-name {
@@ -332,12 +367,18 @@ body {
 .logout-ico {
   color: var(--text-faint);
   cursor: pointer;
-  display: flex;
-  transition: color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .logout-ico:hover {
   color: var(--danger);
+  background: rgba(226, 87, 76, 0.1);
 }
 
 /* ---------- MAIN CONTENT AREA ---------- */
@@ -375,6 +416,12 @@ body {
 
 .section-heading i, .section-heading svg {
   color: var(--text-faint);
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .doc-row {
@@ -395,10 +442,19 @@ body {
   border-radius: 9px;
   background: rgba(77, 124, 245, 0.08);
   border: 1px solid rgba(77, 124, 245, 0.15);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+
+.doc-icon svg, .doc-icon i {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .doc-info {
@@ -439,14 +495,25 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify: center;
+  justify-content: center;
   color: var(--text-faint);
   cursor: pointer;
   background: transparent;
   border: none;
   transition: all 0.15s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.icon-btn svg, .icon-btn i {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-btn:hover {
@@ -471,7 +538,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify: center;
+  justify-content: center;
   text-align: center;
   background: var(--island-2);
   cursor: pointer;
@@ -489,11 +556,20 @@ body {
   border-radius: 12px;
   background: var(--island);
   border: 1px solid var(--border);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify: center;
+  justify-content: center;
   color: var(--text-dim);
   margin-bottom: 18px;
+}
+
+.upload-ico svg, .upload-ico i {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .upload-title {
@@ -521,13 +597,18 @@ body {
 .rule i, .rule svg {
   color: var(--accent);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
 }
 
 /* ---------- BUTTONS & FORM UTILITIES ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
-  justify: center;
+  justify-content: center;
   gap: 8px;
   padding: 8px 16px;
   border-radius: var(--radius-sm);
@@ -538,6 +619,12 @@ body {
   background: var(--island-2);
   color: var(--text);
   transition: all 0.15s ease;
+}
+
+.btn i, .btn svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn:hover {
