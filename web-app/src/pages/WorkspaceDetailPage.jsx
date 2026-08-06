@@ -5,6 +5,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../com
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
 import { AppLayout } from '../layouts/AppLayout';
+import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 
 export const WorkspaceDetailPage = () => {
   const { workspaceId } = useParams();
@@ -743,9 +744,7 @@ export const WorkspaceDetailPage = () => {
                     <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--accent)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <i className="ti ti-notes"></i> Overview
                     </h3>
-                    <div style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-2)', whiteSpace: 'pre-wrap' }}>
-                      {summaryData.overview}
-                    </div>
+                    <RichMarkdownRenderer content={summaryData.overview} />
                   </div>
                 )}
 
@@ -758,7 +757,7 @@ export const WorkspaceDetailPage = () => {
                     <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {summaryData.key_takeaways.map((item, idx) => (
                         <li key={idx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.5' }}>
-                          {item}
+                          <RichMarkdownRenderer content={item} />
                         </li>
                       ))}
                     </ul>
@@ -770,12 +769,10 @@ export const WorkspaceDetailPage = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {summaryData.sections.map((sec, idx) => (
                       <div key={idx} style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
                           {sec.title}
                         </h3>
-                        <div style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-2)', whiteSpace: 'pre-wrap' }}>
-                          {sec.content}
-                        </div>
+                        <RichMarkdownRenderer content={sec.content} />
                       </div>
                     ))}
                   </div>
