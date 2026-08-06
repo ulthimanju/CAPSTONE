@@ -16,3 +16,4 @@ class Workspace:
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None
+    summary_json: dict | None = None

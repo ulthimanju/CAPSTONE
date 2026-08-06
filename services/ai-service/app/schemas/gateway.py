@@ -67,6 +67,17 @@ class SummaryResponse(BaseModel):
     bullet_points: list[str]
 
 
+class WorkspaceSummarySection(BaseModel):
+    title: str
+    content: str
+
+
+class WorkspaceSummaryResponse(BaseModel):
+    overview: str
+    sections: list[WorkspaceSummarySection] = Field(default_factory=list)
+    key_takeaways: list[str] = Field(default_factory=list)
+
+
 class ChatMessage(BaseModel):
     role: str = Field(..., description="user or model/assistant")
     content: str

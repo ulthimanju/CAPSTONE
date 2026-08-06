@@ -97,31 +97,107 @@ async def generate_text(req: GenerationRequest):
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
 
 
-@router.post("/summaries", response_model=SummaryResponse)
-async def generate_summary(req: GenerationRequest):
+from app.schemas.gateway import WorkspaceSummaryResponse
+import httpx
+import os
+
+
+async def _publish_summary_event(workspace_id: str, status: str, user_id: str | None = None, error: str | None = None):
     try:
+        notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+        payload = {
+            "event_id": generate_uuid(),
+            "event_name": "SummaryGeneration",
+            "workspace_id": workspace_id,
+            "user_id": user_id,
+            "status": status,
+            "error": error,
+            "timestamp": time.time()
+        }
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+    except Exception as evt_err:
+        print(f"Notice: Failed to publish SummaryGeneration event: {evt_err}")
+
+
+@router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
+async def generate_workspace_summary_endpoint(workspace_id: str):
+    ws_id = workspace_id
+    await _publish_summary_event(ws_id, "QUEUED")
+    await _publish_summary_event(ws_id, "STARTED")
+
+    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
+    document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
+
+    try:
+        await _publish_summary_event(ws_id, "IN_PROGRESS")
+
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # 1. Fetch Workspace Metadata
+            ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}")
+            if ws_res.status_code != 200:
+                raise HTTPException(status_code=404, detail="Workspace metadata not found")
+            ws_meta = ws_res.json()
+
+            # 2. Fetch Processed Document Chunks
+            chunks_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/chunks")
+            if chunks_res.status_code != 200:
+                raise HTTPException(status_code=500, detail="Failed to retrieve workspace document chunks")
+            chunks_data = chunks_res.json().get("chunks", [])
+
+        # 3. Assemble Workspace Context (Max ~13,000 tokens)
+        context_parts = [
+            f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
+            f"Description: {ws_meta.get('description', 'N/A')}\n",
+            "--- WORKSPACE DOCUMENT CHUNKS ---"
+        ]
+
+        total_tokens = TokenCounter.estimate_tokens("\n".join(context_parts))
+        max_chunk_tokens = 13000
+
+        for chunk in chunks_data:
+            chunk_str = f"\n[Document: {chunk.get('document_filename', 'Doc')} | Chunk {chunk.get('chunk_index', 0)}]\n{chunk.get('content', '')}"
+            c_tokens = TokenCounter.estimate_tokens(chunk_str)
+            if total_tokens + c_tokens > max_chunk_tokens:
+                break
+            context_parts.append(chunk_str)
+            total_tokens += c_tokens
+
+        assembled_prompt = "\n".join(context_parts)
+
+        # 4. Build System Instruction using WorkspaceSummaryPromptBuilder
         sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction()
-        res = await gemini_client.generate_text(
-            prompt=req.prompt,
+
+        # 5. Call Gemini with gemini-2.5-flash & strict JSON schema validation
+        gemini_res = await gemini_client.generate_text(
+            prompt=assembled_prompt,
             system_instruction=sys_instruction,
-            model=req.model,
+            model="gemini-2.5-flash",
             temperature=0.3,
+            top_p=0.95,
             response_mime_type="application/json",
-            response_schema=SummaryResponse,
+            response_schema=WorkspaceSummaryResponse,
         )
-        return SummaryResponse.model_validate_json(res["text"])
+
+        # 6. Validate Response Schema
+        summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
+
+        # 7. Persist Summary via workspace-service
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            await client.put(
+                f"{workspace_url}/api/v1/workspaces/{ws_id}/summary",
+                json={"summary_json": summary_validated.model_dump()}
+            )
+
+        # 8. Publish COMPLETED event
+        await _publish_summary_event(ws_id, "COMPLETED")
+
+        return summary_validated
+
     except Exception as e:
-        # Fallback raw string parsing if json schema validation fails
-        res_raw = await gemini_client.generate_text(
-            prompt=req.prompt,
-            system_instruction=WorkspaceSummaryPromptBuilder.build_system_instruction(),
-            model=req.model,
-        )
-        return SummaryResponse(
-            summary=res_raw["text"],
-            key_takeaways=["Key educational summary generated."],
-            bullet_points=[res_raw["text"][:100]],
-        )
+        await _publish_summary_event(ws_id, "FAILED", error=str(e))
+        print(f"Error generating workspace summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate workspace summary: {str(e)}")
 
 
 @router.post("/flashcards", response_model=FlashcardSetResponse)

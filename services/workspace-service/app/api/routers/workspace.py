@@ -94,6 +94,44 @@ async def restore_workspace(
     return await use_case.execute(workspace_id, user_id)
 
 
+from app.schemas.workspace import (
+    CreateWorkspaceRequest,
+    UpdateWorkspaceRequest,
+    SaveSummaryRequest,
+    WorkspaceResponse,
+    WorkspaceListResponse,
+)
+
+
+@router.get("/{workspace_id}/summary")
+async def get_workspace_summary(
+    workspace_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+):
+    ws = await ws_repo.get_by_id(workspace_id)
+    if not ws:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    return {"summary": ws.summary_json}
+
+
+@router.put("/{workspace_id}/summary")
+async def save_workspace_summary(
+    workspace_id: UUID,
+    req: SaveSummaryRequest,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+):
+    ws = await ws_repo.get_by_id(workspace_id)
+    if not ws:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    ws.summary_json = req.summary_json
+    await ws_repo.update(ws)
+    return {"status": "saved", "workspace_id": str(workspace_id)}
+
+
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workspace(
     workspace_id: UUID,

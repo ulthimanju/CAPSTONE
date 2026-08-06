@@ -17,6 +17,11 @@ export const WorkspaceDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Summary generation state
+  const [summaryData, setSummaryData] = useState(null);
+  const [summaryStatus, setSummaryStatus] = useState(null); // 'QUEUED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
+  const [summaryProgressText, setSummaryProgressText] = useState('');
+
   // Tab state
   const [activeTab, setActiveTab] = useState('documents');
 
@@ -63,15 +68,22 @@ export const WorkspaceDetailPage = () => {
       }
 
       if (targetWsId) {
-        const [wsRes, docsRes] = await Promise.all([
+        const [wsRes, docsRes, summaryRes] = await Promise.all([
           axios.get(`/api/v1/workspaces/${targetWsId}`, { headers }),
           axios.get(`/api/v1/documents?workspace_id=${targetWsId}`, { headers }),
+          axios.get(`/api/v1/workspaces/${targetWsId}/summary`, { headers }).catch(() => ({ data: { summary: null } }))
         ]);
         setWorkspace(wsRes.data);
         setDocuments(docsRes.data.documents || []);
+        if (summaryRes.data && summaryRes.data.summary) {
+          setSummaryData(summaryRes.data.summary);
+        } else {
+          setSummaryData(null);
+        }
       } else {
         setWorkspace(null);
         setDocuments([]);
+        setSummaryData(null);
       }
     } catch (err) {
       console.error('Failed to load workspace detail:', err);
@@ -181,9 +193,50 @@ export const WorkspaceDetailPage = () => {
     }
   };
 
+  // Listen to SSE events for real-time SummaryGeneration progress
   useEffect(() => {
-    fetchWorkspaceAndDocs();
+    if (!workspaceId) return;
+    const eventSource = new EventSource('/api/v1/notifications/stream');
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event_name === 'SummaryGeneration' && data.workspace_id === workspaceId) {
+          setSummaryStatus(data.status);
+          if (data.status === 'QUEUED') setSummaryProgressText('Generating Summary...');
+          else if (data.status === 'STARTED') setSummaryProgressText('Collecting Workspace Content...');
+          else if (data.status === 'IN_PROGRESS') setSummaryProgressText('Generating Educational Summary...');
+          else if (data.status === 'COMPLETED') {
+            setSummaryProgressText('Completed');
+            // Fetch completed summary
+            axios.get(`/api/v1/workspaces/${workspaceId}/summary`).then((res) => {
+              if (res.data && res.data.summary) setSummaryData(res.data.summary);
+              setSummaryStatus(null);
+            });
+          } else if (data.status === 'FAILED') {
+            setSummaryProgressText('Failed: ' + (data.error || 'Unknown error'));
+            setTimeout(() => setSummaryStatus(null), 4000);
+          }
+        }
+      } catch (e) {}
+    };
+
+    return () => eventSource.close();
   }, [workspaceId]);
+
+  const handleGenerateSummary = async () => {
+    try {
+      setSummaryStatus('QUEUED');
+      setSummaryProgressText('Generating Summary...');
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await axios.post(`/api/v1/ai/workspaces/${workspaceId}/summary`, {}, { headers });
+    } catch (err) {
+      console.error('Failed to trigger summary generation:', err);
+      setSummaryStatus('FAILED');
+      setSummaryProgressText('Failed to start summary generation');
+      setTimeout(() => setSummaryStatus(null), 3000);
+    }
+  };
 
   // Polling loop for active document processing
   useEffect(() => {
@@ -597,22 +650,90 @@ export const WorkspaceDetailPage = () => {
         {/* ============ TAB 2: AI SUMMARY ============ */}
         {activeTab === 'summary' && (
           <section className="tab-panel active" id="panel-summary">
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
-                <i className="ti ti-sparkles"></i>
+            {summaryStatus ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
+                <Spinner size="lg" />
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
+                  {summaryProgressText}
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Synthesizing workspace documents using Gemini 2.5 Flash...</p>
               </div>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>AI Summary</h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.5rem' }}>
-                {documents.length === 0
-                  ? 'Upload documents to this workspace to generate an AI summary.'
-                  : 'No summary generated yet. Click below to synthesize key insights from your workspace documents.'}
-              </p>
-              {documents.length > 0 && (
-                <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
-                  <i className="ti ti-sparkles"></i> Generate Summary
-                </button>
-              )}
-            </div>
+            ) : summaryData ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '1rem 0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', marginBottom: '4px' }}>
+                      {workspace.name} — Educational Notes
+                    </h2>
+                    <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Comprehensive summary synthesized from workspace documents</p>
+                  </div>
+                  <button className="btn btn-primary" onClick={handleGenerateSummary} style={{ padding: '6px 14px', fontSize: '12px' }}>
+                    <i className="ti ti-refresh"></i> Regenerate Summary
+                  </button>
+                </div>
+
+                {/* Overview */}
+                {summaryData.overview && (
+                  <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--accent)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="ti ti-notes"></i> Overview
+                    </h3>
+                    <div style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-2)', whiteSpace: 'pre-wrap' }}>
+                      {summaryData.overview}
+                    </div>
+                  </div>
+                )}
+
+                {/* Key Takeaways */}
+                {summaryData.key_takeaways && summaryData.key_takeaways.length > 0 && (
+                  <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#3b82f6', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <i className="ti ti-bulb"></i> Key Takeaways
+                    </h3>
+                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {summaryData.key_takeaways.map((item, idx) => (
+                        <li key={idx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.5' }}>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Sections */}
+                {summaryData.sections && summaryData.sections.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {summaryData.sections.map((sec, idx) => (
+                      <div key={idx} style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px' }}>
+                          {sec.title}
+                        </h3>
+                        <div style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-2)', whiteSpace: 'pre-wrap' }}>
+                          {sec.content}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+                  <i className="ti ti-sparkles"></i>
+                </div>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>AI Summary</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+                  {documents.length === 0
+                    ? 'Upload documents to this workspace to generate an AI summary.'
+                    : 'No summary generated yet. Click below to synthesize key insights from your workspace documents.'}
+                </p>
+                {documents.length > 0 && (
+                  <button className="btn btn-primary" onClick={handleGenerateSummary} style={{ padding: '8px 16px', fontSize: '13px' }}>
+                    <i className="ti ti-sparkles"></i> Generate Summary
+                  </button>
+                )}
+              </div>
+            )}
           </section>
         )}
 

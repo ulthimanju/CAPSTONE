@@ -18,6 +18,10 @@ class UpdateWorkspaceRequest(BaseModel):
     cover_image_url: str | None = None
 
 
+class SaveSummaryRequest(BaseModel):
+    summary_json: dict
+
+
 class WorkspaceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -28,6 +32,7 @@ class WorkspaceResponse(BaseModel):
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     cover_image_url: str | None
+    summary_json: dict | None = None
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None

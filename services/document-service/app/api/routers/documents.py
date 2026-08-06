@@ -332,6 +332,31 @@ async def list_chunks(
     return await use_case.execute(document_id)
 
 
+@router.get("/workspaces/{workspace_id}/chunks")
+async def list_workspace_chunks(
+    workspace_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+):
+    doc_repo = get_document_repository(session)
+    chunk_repo = get_document_chunk_repository(session)
+    docs = await doc_repo.list_by_workspace_id(workspace_id)
+    all_chunks = []
+    for doc in docs:
+        chunks = await chunk_repo.list_by_document_id(doc.id)
+        for c in chunks:
+            all_chunks.append({
+                "id": str(c.id),
+                "document_id": str(c.document_id),
+                "document_filename": doc.original_filename,
+                "chunk_index": c.chunk_index,
+                "chunk_type": c.chunk_type.value if hasattr(c.chunk_type, "value") else str(c.chunk_type),
+                "title": c.title,
+                "content": c.content,
+                "token_count": c.token_count,
+            })
+    return {"chunks": all_chunks, "total": len(all_chunks)}
+
+
 @router.get("/{document_id}/chunks/{chunk_id}", response_model=ChunkResponse)
 async def get_chunk(
     document_id: UUID,
