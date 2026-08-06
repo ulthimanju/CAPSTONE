@@ -8,12 +8,33 @@ import mermaid from 'mermaid';
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/atom-one-dark.css';
 
-// Initialize mermaid once
+// Initialize mermaid with custom theme matching app colors
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'dark',
+  theme: 'base',
   securityLevel: 'loose',
-  fontFamily: 'inherit',
+  themeVariables: {
+    background: '#0c0c0e',
+
+    primaryColor: '#16161a',
+    primaryTextColor: '#f4f4f5',
+    primaryBorderColor: '#27272a',
+
+    secondaryColor: '#18181b',
+
+    lineColor: '#a1a1aa',
+
+    textColor: '#f4f4f5',
+
+    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+
+    fontSize: '14px',
+
+    edgeLabelBackground: '#0c0c0e',
+
+    clusterBkg: '#121215',
+    clusterBorder: '#27272a',
+  },
 });
 
 const MermaidDiagram = ({ code }) => {
