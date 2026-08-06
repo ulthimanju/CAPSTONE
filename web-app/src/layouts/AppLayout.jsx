@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 
 export const AppLayout = ({
@@ -19,6 +20,11 @@ export const AppLayout = ({
   // Dark Theme State
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
+  // Workspace Dropdown State
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [workspacesList, setWorkspacesList] = useState(workspaces || []);
+  const dropdownRef = useRef(null);
+
   useEffect(() => {
     const htmlElement = document.documentElement;
     if (theme === 'dark') {
@@ -28,6 +34,37 @@ export const AppLayout = ({
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      try {
+        const headers = {};
+        if (user?.id) headers['X-User-ID'] = user.id;
+        if (user?.email) headers['X-User-Email'] = user.email;
+        const res = await axios.get('/api/v1/workspaces', { headers });
+        if (res.data && res.data.workspaces) {
+          setWorkspacesList(res.data.workspaces);
+        }
+      } catch (err) {
+        console.error('Failed to fetch workspaces in AppLayout:', err);
+      }
+    };
+
+    if (user) {
+      fetchWorkspaces();
+    }
+  }, [user]);
+
+  // Click outside listener for dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -63,10 +100,10 @@ export const AppLayout = ({
       </div>
 
       {/* 2. Workspace Selector Island */}
-      <div className="island workspace-island">
+      <div className="island workspace-island" ref={dropdownRef}>
         <div
           className="workspace-pill"
-          onClick={() => navigate('/workspaces')}
+          onClick={() => setIsDropdownOpen((prev) => !prev)}
           title="Switch Workspace"
         >
           <span className="folder-ico">
@@ -76,11 +113,89 @@ export const AppLayout = ({
           </span>
           <span>{workspaceName}</span>
           <span className="chev">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              style={{
+                transform: isDropdownOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.15s ease',
+              }}
+            >
               <path d="m6 9 6 6 6-6" />
             </svg>
           </span>
         </div>
+
+        {/* Dropdown Menu */}
+        {isDropdownOpen && (
+          <div className="workspace-dropdown-menu">
+            <div
+              style={{
+                fontSize: '11px',
+                fontWeight: '700',
+                letterSpacing: '0.08em',
+                color: 'var(--text-faint)',
+                padding: '6px 10px 4px',
+                textTransform: 'uppercase',
+              }}
+            >
+              WORKSPACES
+            </div>
+            {workspacesList.length === 0 ? (
+              <div style={{ padding: '8px 10px', fontSize: '12.5px', color: 'var(--text-faint)' }}>
+                No active workspaces found
+              </div>
+            ) : (
+              workspacesList.map((ws) => {
+                const isSelected = ws.name === workspaceName;
+                return (
+                  <div
+                    key={ws.id}
+                    className={`ws-dropdown-item ${isSelected ? 'selected' : ''}`}
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      if (onSelectWorkspace) {
+                        onSelectWorkspace(ws);
+                      } else {
+                        navigate(`/workspaces/${ws.id}`);
+                      }
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+                    </svg>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ws.name}
+                    </span>
+                    {isSelected && (
+                      <span className="check-ico">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+            <div
+              className="ws-dropdown-footer"
+              onClick={() => {
+                setIsDropdownOpen(false);
+                navigate('/workspaces');
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span>Manage / All Workspaces</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 3. Status Island */}
