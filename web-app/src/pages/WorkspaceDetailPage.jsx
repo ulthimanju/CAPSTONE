@@ -114,8 +114,9 @@ export const WorkspaceDetailPage = () => {
       setAllWorkspaces(wsList);
 
       if (!workspaceId && wsList.length > 0) {
-        // Redirect to first workspace; documents will load via workspaceId effect
-        navigate(`/workspaces/${wsList[0].id}`, { replace: true });
+        // Redirect to first workspace; preserve tab query parameters
+        const search = location.search; // e.g. "?tab=archived"
+        navigate(`/workspaces/${wsList[0].id}${search}`, { replace: true, state: location.state });
         return;
       }
 
