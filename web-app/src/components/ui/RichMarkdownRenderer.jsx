@@ -42,7 +42,7 @@ const MermaidDiagram = ({ code }) => {
   return <div ref={containerRef} className="mermaid-diagram-container" style={{ margin: '1rem 0', textAlign: 'center' }} />;
 };
 
-export const RichMarkdownRenderer = ({ content }) => {
+export const RichMarkdownRenderer = ({ content, compact = false }) => {
   if (!content) return null;
 
   return (
@@ -85,7 +85,7 @@ export const RichMarkdownRenderer = ({ content }) => {
                   borderRadius: '8px',
                   padding: '12px 16px',
                   overflowX: 'auto',
-                  margin: '12px 0',
+                  margin: compact ? '4px 0' : '12px 0',
                   fontSize: '13px',
                 }}
               >
@@ -97,7 +97,7 @@ export const RichMarkdownRenderer = ({ content }) => {
           },
           table({ children }) {
             return (
-              <div style={{ overflowX: 'auto', margin: '16px 0' }}>
+              <div style={{ overflowX: 'auto', margin: compact ? '8px 0' : '16px 0' }}>
                 <table
                   style={{
                     width: '100%',
@@ -147,7 +147,7 @@ export const RichMarkdownRenderer = ({ content }) => {
               <blockquote
                 style={{
                   borderLeft: '4px solid var(--accent)',
-                  margin: '12px 0',
+                  margin: compact ? '4px 0' : '12px 0',
                   paddingLeft: '16px',
                   color: 'var(--text-2)',
                   fontStyle: 'italic',
@@ -160,13 +160,13 @@ export const RichMarkdownRenderer = ({ content }) => {
               </blockquote>
             );
           },
-          h1: ({ children }) => <h1 style={{ fontSize: '18px', fontWeight: '700', margin: '16px 0 8px 0', color: 'var(--text)' }}>{children}</h1>,
-          h2: ({ children }) => <h2 style={{ fontSize: '16px', fontWeight: '700', margin: '14px 0 6px 0', color: 'var(--text)' }}>{children}</h2>,
-          h3: ({ children }) => <h3 style={{ fontSize: '14px', fontWeight: '600', margin: '12px 0 4px 0', color: 'var(--text)' }}>{children}</h3>,
-          p: ({ children }) => <p style={{ margin: '8px 0', lineHeight: '1.6', color: 'var(--text-2)' }}>{children}</p>,
-          ul: ({ children }) => <ul style={{ paddingLeft: '20px', margin: '8px 0' }}>{children}</ul>,
-          ol: ({ children }) => <ol style={{ paddingLeft: '20px', margin: '8px 0' }}>{children}</ol>,
-          li: ({ children }) => <li style={{ margin: '4px 0', lineHeight: '1.5', color: 'var(--text-2)' }}>{children}</li>,
+          h1: ({ children }) => <h1 style={{ fontSize: '18px', fontWeight: '700', margin: compact ? '8px 0 4px 0' : '16px 0 8px 0', color: 'var(--text)' }}>{children}</h1>,
+          h2: ({ children }) => <h2 style={{ fontSize: '16px', fontWeight: '700', margin: compact ? '6px 0 3px 0' : '14px 0 6px 0', color: 'var(--text)' }}>{children}</h2>,
+          h3: ({ children }) => <h3 style={{ fontSize: '14px', fontWeight: '600', margin: compact ? '4px 0 2px 0' : '12px 0 4px 0', color: 'var(--text)' }}>{children}</h3>,
+          p: ({ children }) => <p style={{ margin: compact ? '0' : '8px 0', lineHeight: compact ? '1.4' : '1.6', color: 'var(--text-2)' }}>{children}</p>,
+          ul: ({ children }) => <ul style={{ paddingLeft: '20px', margin: compact ? '2px 0' : '8px 0' }}>{children}</ul>,
+          ol: ({ children }) => <ol style={{ paddingLeft: '20px', margin: compact ? '2px 0' : '8px 0' }}>{children}</ol>,
+          li: ({ children }) => <li style={{ margin: compact ? '2px 0' : '4px 0', lineHeight: compact ? '1.4' : '1.5', color: 'var(--text-2)' }}>{children}</li>,
         }}
       >
         {content}

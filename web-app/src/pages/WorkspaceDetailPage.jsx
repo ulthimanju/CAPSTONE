@@ -754,10 +754,10 @@ export const WorkspaceDetailPage = () => {
                     <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#3b82f6', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <i className="ti ti-bulb"></i> Key Takeaways
                     </h3>
-                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       {summaryData.key_takeaways.map((item, idx) => (
-                        <li key={idx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.5' }}>
-                          <RichMarkdownRenderer content={item} />
+                        <li key={idx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.4' }}>
+                          <RichMarkdownRenderer content={item} compact />
                         </li>
                       ))}
                     </ul>
