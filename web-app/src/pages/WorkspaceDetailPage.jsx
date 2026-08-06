@@ -63,6 +63,7 @@ export const WorkspaceDetailPage = () => {
       let targetWsId = workspaceId;
       if (!targetWsId && wsList.length > 0) {
         targetWsId = wsList[0].id;
+        if (!silent) setLoading(false);
         navigate(`/workspaces/${targetWsId}`, { replace: true });
         return;
       }
