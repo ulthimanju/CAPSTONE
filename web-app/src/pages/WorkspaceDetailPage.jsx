@@ -339,7 +339,12 @@ export const WorkspaceDetailPage = () => {
     setSummaryData(null);
     setLearningPathLoaded(false);
     setLearningPathData(null);
-    setActiveTab('documents');
+
+    const requestedTab = searchParams.get('tab') || location.state?.tab;
+    if (!requestedTab) {
+      setActiveTab('documents');
+    }
+
     setAllWorkspaces((prev) => {
       const found = prev.find((w) => w.id === workspaceId) || null;
       setWorkspace(found);
