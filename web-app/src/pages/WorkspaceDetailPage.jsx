@@ -726,17 +726,6 @@ export const WorkspaceDetailPage = () => {
               </div>
             ) : summaryData ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '1rem 0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '16px' }}>
-                  <div>
-                    <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', marginBottom: '4px' }}>
-                      {workspace.name} — Educational Notes
-                    </h2>
-                    <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Comprehensive summary synthesized from workspace documents</p>
-                  </div>
-                  <button className="btn btn-primary" onClick={handleGenerateSummary} style={{ padding: '6px 14px', fontSize: '12px' }}>
-                    <i className="ti ti-refresh"></i> Regenerate Summary
-                  </button>
-                </div>
 
                 {/* Overview */}
                 {summaryData.overview && (
