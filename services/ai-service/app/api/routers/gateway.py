@@ -207,6 +207,105 @@ async def generate_workspace_summary_endpoint(workspace_id: str, x_user_id: str 
         raise HTTPException(status_code=500, detail=f"Failed to generate workspace summary: {str(e)}")
 
 
+from app.domain.prompts.learning_path_prompt_builder import LearningPathPromptBuilder
+from app.schemas.gateway import LearningPathResponse
+
+
+async def _publish_learning_path_event(workspace_id: str, status: str, user_id: str | None = None, error: str | None = None):
+    try:
+        notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+        payload = {
+            "event_id": str(generate_uuid()),
+            "event_name": "LearningPathGeneration",
+            "workspace_id": workspace_id,
+            "user_id": user_id,
+            "status": status,
+            "error": error,
+            "timestamp": time.time(),
+        }
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+    except Exception as evt_err:
+        print(f"Notice: Failed to publish LearningPathGeneration event: {evt_err}")
+
+
+@router.post("/workspaces/{workspace_id}/learning-path", response_model=LearningPathResponse)
+async def generate_workspace_learning_path_endpoint(workspace_id: str, x_user_id: str | None = Header(None)):
+    ws_id = workspace_id
+    await _publish_learning_path_event(ws_id, "QUEUED", user_id=x_user_id)
+    await _publish_learning_path_event(ws_id, "STARTED", user_id=x_user_id)
+
+    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
+    document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
+
+    try:
+        await _publish_learning_path_event(ws_id, "IN_PROGRESS", user_id=x_user_id)
+
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # 1. Fetch Workspace Metadata
+            headers = {"X-User-ID": x_user_id} if x_user_id else {}
+            ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
+            if ws_res.status_code != 200:
+                raise HTTPException(status_code=404, detail="Workspace metadata not found")
+            ws_meta = ws_res.json()
+
+            # 2. Fetch Processed Document Hierarchy / Outline (Not full text)
+            outline_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/outline")
+            if outline_res.status_code != 200:
+                raise HTTPException(status_code=500, detail="Failed to retrieve workspace document outline")
+            outline_data = outline_res.json().get("outline", "")
+
+        # 3. Assemble Workspace Outline Context (Max ~13,000 tokens)
+        context_parts = [
+            f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
+            f"Description: {ws_meta.get('description', 'N/A')}\n",
+            "--- WORKSPACE KNOWLEDGE OUTLINE ---",
+            outline_data,
+        ]
+
+        assembled_prompt = "\n".join(context_parts)
+        # Truncate if outline exceeds 13000 tokens (~52000 chars)
+        if len(assembled_prompt) > 52000:
+            assembled_prompt = assembled_prompt[:52000] + "\n... [Workspace Outline Truncated]"
+
+        # 4. Build System Instruction using LearningPathPromptBuilder
+        sys_instruction = LearningPathPromptBuilder.build_system_instruction()
+
+        # 5. Call Gemini with configured default model & strict JSON schema validation
+        gemini_res = await gemini_client.generate_text(
+            prompt=assembled_prompt,
+            system_instruction=sys_instruction,
+            model=settings.gemini_default_model,
+            temperature=0.3,
+            top_p=0.95,
+            max_output_tokens=8192,
+            response_mime_type="application/json",
+            response_schema=LearningPathResponse,
+        )
+
+        # 6. Validate Response Schema
+        lp_validated = LearningPathResponse.model_validate_json(gemini_res["text"])
+
+        # 7. Persist Learning Path via workspace-service
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            headers = {"X-User-ID": x_user_id} if x_user_id else {}
+            await client.put(
+                f"{workspace_url}/api/v1/workspaces/{ws_id}/learning-path",
+                json={"learning_path_json": lp_validated.model_dump()},
+                headers=headers,
+            )
+
+        # 8. Publish COMPLETED event
+        await _publish_learning_path_event(ws_id, "COMPLETED", user_id=x_user_id)
+
+        return lp_validated
+
+    except Exception as e:
+        await _publish_learning_path_event(ws_id, "FAILED", user_id=x_user_id, error=str(e))
+        print(f"Error generating workspace learning path: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate workspace learning path: {str(e)}")
+
+
 @router.post("/flashcards", response_model=FlashcardSetResponse)
 async def generate_flashcards(req: GenerationRequest):
     try:

@@ -357,6 +357,53 @@ async def list_workspace_chunks(
     return {"chunks": all_chunks, "total": len(all_chunks)}
 
 
+import re
+
+
+@router.get("/workspaces/{workspace_id}/outline")
+async def get_workspace_outline(
+    workspace_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+):
+    doc_repo = get_document_repository(session)
+    parse_repo = get_document_parse_result_repository(session)
+    chunk_repo = get_document_chunk_repository(session)
+
+    docs = await doc_repo.list_by_workspace(workspace_id)
+    doc_outlines = []
+
+    for doc in docs:
+        headings = []
+        parse_res = await parse_repo.get_by_document_id(doc.id)
+        if parse_res and parse_res.markdown_content:
+            for line in parse_res.markdown_content.splitlines():
+                stripped = line.strip()
+                if re.match(r"^#{1,6}\s+", stripped):
+                    headings.append(stripped)
+
+        # Fallback to chunk titles if no markdown headings found
+        if not headings:
+            chunks = await chunk_repo.list_by_document_id(doc.id)
+            for c in chunks:
+                if c.title and c.title.strip():
+                    headings.append(f"- {c.title.strip()}")
+
+        outline_str = f"Document: {doc.original_filename}\n"
+        if headings:
+            outline_str += "\n".join(headings)
+        else:
+            outline_str += "(No sub-headings extracted)"
+
+        doc_outlines.append(outline_str)
+
+    unified_outline = "\n\n".join(doc_outlines)
+    return {
+        "workspace_id": str(workspace_id),
+        "outline": unified_outline,
+        "document_count": len(docs),
+    }
+
+
 @router.get("/{document_id}/chunks/{chunk_id}", response_model=ChunkResponse)
 async def get_chunk(
     document_id: UUID,

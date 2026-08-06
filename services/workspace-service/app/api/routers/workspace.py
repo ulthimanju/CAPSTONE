@@ -132,6 +132,38 @@ async def save_workspace_summary(
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
 
+from app.schemas.workspace import SaveLearningPathRequest
+
+
+@router.get("/{workspace_id}/learning-path")
+async def get_workspace_learning_path(
+    workspace_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+):
+    ws = await ws_repo.get_by_id(workspace_id)
+    if not ws:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    return {"learning_path": ws.learning_path_json}
+
+
+@router.put("/{workspace_id}/learning-path")
+async def save_workspace_learning_path(
+    workspace_id: UUID,
+    req: SaveLearningPathRequest,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+):
+    ws = await ws_repo.get_by_id(workspace_id)
+    if not ws:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    ws.learning_path_json = req.learning_path_json
+    await ws_repo.update(ws)
+    return {"status": "saved", "workspace_id": str(workspace_id)}
+
+
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workspace(
     workspace_id: UUID,

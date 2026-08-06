@@ -235,6 +235,8 @@ export const WorkspaceDetailPage = () => {
     if (!workspaceId) return;
     setSummaryLoaded(false);
     setSummaryData(null);
+    setLearningPathLoaded(false);
+    setLearningPathData(null);
     setActiveTab('documents');
     setAllWorkspaces((prev) => {
       const found = prev.find((w) => w.id === workspaceId) || null;
@@ -249,10 +251,12 @@ export const WorkspaceDetailPage = () => {
     setActiveTab(tab);
     if (tab === 'summary') {
       fetchSummary();
+    } else if (tab === 'learning') {
+      fetchLearningPath();
     }
   };
 
-  // Listen to SSE events for real-time SummaryGeneration progress
+  // Listen to SSE events for real-time SummaryGeneration & LearningPathGeneration progress
   useEffect(() => {
     if (!workspaceId) return;
     const eventSource = new EventSource('/api/v1/notifications/stream');
@@ -267,7 +271,6 @@ export const WorkspaceDetailPage = () => {
           else if (data.status === 'IN_PROGRESS') setSummaryProgressText('Generating Educational Summary...');
           else if (data.status === 'COMPLETED') {
             setSummaryProgressText('Completed');
-            // Fetch completed summary
             const headers = user?.id ? { 'X-User-ID': user.id } : {};
             axios.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers }).then((res) => {
               if (res.data && res.data.summary) {
@@ -279,6 +282,25 @@ export const WorkspaceDetailPage = () => {
           } else if (data.status === 'FAILED') {
             setSummaryProgressText('Failed: ' + (data.error || 'Unknown error'));
             setTimeout(() => setSummaryStatus(null), 4000);
+          }
+        } else if (data.event_name === 'LearningPathGeneration' && data.workspace_id === workspaceId) {
+          setLearningPathStatus(data.status);
+          if (data.status === 'QUEUED') setLearningPathProgressText('Generating Learning Path...');
+          else if (data.status === 'STARTED') setLearningPathProgressText('Collecting Workspace Structure...');
+          else if (data.status === 'IN_PROGRESS') setLearningPathProgressText('Building Curriculum Units...');
+          else if (data.status === 'COMPLETED') {
+            setLearningPathProgressText('Completed');
+            const headers = user?.id ? { 'X-User-ID': user.id } : {};
+            axios.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers }).then((res) => {
+              if (res.data && res.data.learning_path) {
+                setLearningPathData(res.data.learning_path);
+                setLearningPathLoaded(true);
+              }
+              setLearningPathStatus(null);
+            }).catch(() => setLearningPathStatus(null));
+          } else if (data.status === 'FAILED') {
+            setLearningPathProgressText('Failed: ' + (data.error || 'Unknown error'));
+            setTimeout(() => setLearningPathStatus(null), 4000);
           }
         }
       } catch (e) {}
@@ -303,6 +325,25 @@ export const WorkspaceDetailPage = () => {
       setSummaryStatus('FAILED');
       setSummaryProgressText('Failed to start summary generation');
       setTimeout(() => setSummaryStatus(null), 3000);
+    }
+  };
+
+  const handleGenerateLearningPath = async () => {
+    try {
+      setLearningPathStatus('QUEUED');
+      setLearningPathProgressText('Generating Learning Path...');
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      const res = await axios.post(`/api/v1/ai/workspaces/${workspaceId}/learning-path`, {}, { headers });
+      if (res.data) {
+        setLearningPathData(res.data);
+        setLearningPathLoaded(true);
+      }
+      setLearningPathStatus(null);
+    } catch (err) {
+      console.error('Failed to trigger learning path generation:', err);
+      setLearningPathStatus('FAILED');
+      setLearningPathProgressText('Failed to start learning path generation');
+      setTimeout(() => setLearningPathStatus(null), 3000);
     }
   };
 
@@ -624,7 +665,7 @@ export const WorkspaceDetailPage = () => {
             </>
           )}
           {activeTab === 'learning' && (
-            <button className="btn"><i className="ti ti-refresh"></i>Regenerate path</button>
+            <button className="btn" onClick={handleGenerateLearningPath}><i className="ti ti-refresh"></i>Regenerate path</button>
           )}
           {activeTab === 'rag' && (
             <button className="btn"><i className="ti ti-trash"></i>Clear</button>
@@ -635,34 +676,31 @@ export const WorkspaceDetailPage = () => {
         </div>
       </div>
 
-      <div className="content">
+      {/* ---------- MAIN CONTENT AREA ---------- */}
+      <div className="content-area">
         {/* ============ TAB 1: DOCUMENTS ============ */}
         {activeTab === 'documents' && (
           <section className="tab-panel active" id="panel-documents">
-            <div className="doc-layout">
+            <div className="docs-grid">
               <div>
-                <div className="section-label"><i className="ti ti-folder"></i>Workspace documents</div>
-                <div className="doc-list">
+                <div className="section-label"><i className="ti ti-files"></i>Workspace documents</div>
+                <div className="doc-list" id="doc-list">
                   {documents.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-4)' }}>
-                      No documents uploaded yet. Add files below.
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-3)', fontSize: '13px' }}>
+                      No documents added yet. Drag & drop files or click upload below.
                     </div>
                   ) : (
                     documents.map((doc) => (
-                      <div className="doc-row" key={doc.id}>
-                        <i className="ti ti-file-text"></i>
-                        <span className="doc-name">{doc.original_filename}</span>
-                        <span className="doc-meta">
-                          {(doc.file_size_bytes / (1024 * 1024)).toFixed(2)} MB · Aug 5, 2026
-                        </span>
-                        <span className="doc-status">
-                          {doc.status === 'READY_FOR_RAG' ? (
-                            <><i className="ti ti-check"></i>Ready</>
-                          ) : doc.status === 'FAILED' ? (
-                            <span style={{ color: 'var(--danger)' }}><i className="ti ti-x"></i>Failed</span>
-                          ) : (
-                            <span style={{ color: '#f59e0b' }}><i className="ti ti-clock"></i>Processing</span>
-                          )}
+                      <div className="doc-item" key={doc.id}>
+                        <i className={`ti ${getFileIcon(doc.original_filename)} doc-icon`}></i>
+                        <div className="doc-info">
+                          <div className="doc-name">{doc.original_filename}</div>
+                          <div className="doc-meta">
+                            {formatBytes(doc.file_size_bytes)} · {new Date(doc.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <span className={`status-badge ${doc.status.toLowerCase().replace(/_/g, '-')}`}>
+                          {doc.status === 'READY_FOR_RAG' ? 'READY' : doc.status}
                         </span>
                         {doc.storage_metadata_json?.web_view_link && (
                           <a
@@ -806,22 +844,102 @@ export const WorkspaceDetailPage = () => {
         {/* ============ TAB 3: LEARNING PATH ============ */}
         {activeTab === 'learning' && (
           <section className="tab-panel active" id="panel-learning">
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
-                <i className="ti ti-route"></i>
+            {learningPathStatus ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
+                <Spinner size="lg" />
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
+                  {learningPathProgressText}
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Building progressive curriculum units from document outlines using Gemini...</p>
               </div>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>Learning Path</h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.5rem' }}>
-                {documents.length === 0
-                  ? 'Upload documents to build a custom structured learning path.'
-                  : 'No learning path generated yet. Create a step-by-step curriculum from your documents.'}
-              </p>
-              {documents.length > 0 && (
-                <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '13px' }}>
-                  <i className="ti ti-plus"></i> Generate Learning Path
-                </button>
-              )}
-            </div>
+            ) : learningPathData ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '1rem 0' }}>
+                {/* Title & Description Banner */}
+                <div style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>
+                      {learningPathData.title || workspace?.name} Curriculum
+                    </h2>
+                    <span style={{ fontSize: '12px', background: 'var(--bg-3)', color: 'var(--accent)', padding: '4px 10px', borderRadius: '12px', fontWeight: '600', border: '1px solid var(--border-strong)' }}>
+                      {learningPathData.units?.length || 0} Units
+                    </span>
+                  </div>
+                  {learningPathData.description && (
+                    <p style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.6', margin: 0 }}>
+                      {learningPathData.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Units List */}
+                {learningPathData.units && learningPathData.units.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {learningPathData.units.map((unit, idx) => (
+                      <div key={idx} style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
+                            {idx + 1}
+                          </div>
+                          <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', margin: 0 }}>
+                            {unit.title}
+                          </h3>
+                        </div>
+
+                        {unit.description && (
+                          <p style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.5', marginBottom: '14px', paddingLeft: '40px' }}>
+                            {unit.description}
+                          </p>
+                        )}
+
+                        {/* Learning Objectives */}
+                        {unit.learning_objectives && unit.learning_objectives.length > 0 && (
+                          <div style={{ paddingLeft: '40px', marginBottom: '14px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--accent)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Learning Objectives
+                            </div>
+                            <ul style={{ paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '4px', margin: 0 }}>
+                              {unit.learning_objectives.map((obj, oIdx) => (
+                                <li key={oIdx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.4' }}>
+                                  {obj}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Tags */}
+                        {unit.tags && unit.tags.length > 0 && (
+                          <div style={{ paddingLeft: '40px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {unit.tags.map((tag, tIdx) => (
+                              <span key={tIdx} style={{ fontSize: '11px', background: 'var(--bg-3)', color: 'var(--text-3)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)', fontFamily: 'var(--mono)' }}>
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+                  <i className="ti ti-route"></i>
+                </div>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>Learning Path</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+                  {documents.length === 0
+                    ? 'Upload documents to build a custom structured learning path.'
+                    : 'No learning path generated yet. Create a step-by-step curriculum from your documents.'}
+                </p>
+                {documents.length > 0 && (
+                  <button className="btn btn-primary" onClick={handleGenerateLearningPath} style={{ padding: '8px 16px', fontSize: '13px' }}>
+                    <i className="ti ti-sparkles"></i> Generate Learning Path
+                  </button>
+                )}
+              </div>
+            )}
           </section>
         )}
 

@@ -21,6 +21,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             status=workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status),
             cover_image_url=workspace.cover_image_url,
             summary_json=workspace.summary_json,
+            learning_path_json=workspace.learning_path_json,
             created_at=workspace.created_at,
             updated_at=workspace.updated_at,
             archived_at=workspace.archived_at
@@ -47,6 +48,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             updated_at=model.updated_at,
             archived_at=model.archived_at,
             summary_json=model.summary_json,
+            learning_path_json=model.learning_path_json,
         )
 
     async def list_by_user_id(self, user_id: UUID) -> list[Workspace]:
@@ -76,6 +78,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 updated_at=m.updated_at,
                 archived_at=m.archived_at,
                 summary_json=m.summary_json,
+                learning_path_json=m.learning_path_json,
             ) for m in models
         ]
 
@@ -90,6 +93,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             model.status = workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status)
             model.cover_image_url = workspace.cover_image_url
             model.summary_json = workspace.summary_json
+            model.learning_path_json = workspace.learning_path_json
             model.archived_at = workspace.archived_at
             model.updated_at = workspace.updated_at
             await self.session.flush()

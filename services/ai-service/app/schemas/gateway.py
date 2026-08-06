@@ -89,3 +89,17 @@ class ChatRequest(BaseModel):
     model: str = "gemini-flash-latest"
     temperature: float = 0.7
 
+
+class LearningUnit(BaseModel):
+    title: str = Field(..., description="Title of the learning milestone")
+    description: str = Field(..., description="1-2 sentence introduction to unit scope")
+    learning_objectives: list[str] = Field(default_factory=list, description="2-5 measurable objectives with action verbs")
+    tags: list[str] = Field(default_factory=list, description="3-8 concept/tech tags")
+
+
+class LearningPathResponse(BaseModel):
+    title: str = Field(..., description="Title of the overall curriculum")
+    description: str = Field(..., description="Comprehensive curriculum description")
+    units: list[LearningUnit] = Field(default_factory=list, description="Ordered list of learning units (10-30)")
+
+

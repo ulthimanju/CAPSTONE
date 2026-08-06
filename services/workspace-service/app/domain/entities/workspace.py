@@ -17,3 +17,4 @@ class Workspace:
     updated_at: datetime
     archived_at: datetime | None = None
     summary_json: dict | None = None
+    learning_path_json: dict | None = None

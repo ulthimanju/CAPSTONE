@@ -22,6 +22,10 @@ class SaveSummaryRequest(BaseModel):
     summary_json: dict
 
 
+class SaveLearningPathRequest(BaseModel):
+    learning_path_json: dict
+
+
 class WorkspaceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
