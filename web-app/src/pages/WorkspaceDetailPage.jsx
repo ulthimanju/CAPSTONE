@@ -146,6 +146,21 @@ export const WorkspaceDetailPage = () => {
     }
   };
 
+  // Step 4: Fetch learning path — called lazily when learning tab is opened
+  const fetchLearningPath = async () => {
+    if (!workspaceId || learningPathLoaded) return;
+    const headers = user?.id ? { 'X-User-ID': user.id } : {};
+    try {
+      const res = await axios.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
+      setLearningPathData((res.data && res.data.learning_path) || null);
+    } catch (err) {
+      console.error('Failed to load learning path:', err);
+      setLearningPathData(null);
+    } finally {
+      setLearningPathLoaded(true);
+    }
+  };
+
   // Legacy: used by polling loop for silent document refresh
   const fetchWorkspaceAndDocs = async (silent = false) => {
     if (!silent) return fetchWorkspaceList();
@@ -283,6 +298,15 @@ export const WorkspaceDetailPage = () => {
       fetchLearningPath();
     }
   };
+
+  // Trigger tab data fetch whenever activeTab or workspaceId changes
+  useEffect(() => {
+    if (activeTab === 'summary') {
+      fetchSummary();
+    } else if (activeTab === 'learning') {
+      fetchLearningPath();
+    }
+  }, [activeTab, workspaceId]);
 
   // Listen to SSE events for real-time SummaryGeneration & LearningPathGeneration progress
   useEffect(() => {
