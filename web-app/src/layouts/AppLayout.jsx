@@ -222,14 +222,6 @@ export const AppLayout = ({
       <div className="island status-island">
         <div className="header-status">
           <span className="status-title">{getTabTitle()}</span>
-          <span className="status-dot">·</span>
-          <span className="status-meta">
-            <b>{readyCount || docCount}</b> ready
-          </span>
-          <span className="status-dot">·</span>
-          <span className="status-meta">
-            <b>{processingCount}</b> processing
-          </span>
         </div>
       </div>
 
