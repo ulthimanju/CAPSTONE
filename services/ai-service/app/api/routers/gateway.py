@@ -101,6 +101,8 @@ from app.schemas.gateway import WorkspaceSummaryResponse
 import httpx
 import os
 
+import time
+from fastapi import Header
 
 async def _publish_summary_event(workspace_id: str, status: str, user_id: str | None = None, error: str | None = None):
     try:
@@ -121,20 +123,21 @@ async def _publish_summary_event(workspace_id: str, status: str, user_id: str | 
 
 
 @router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
-async def generate_workspace_summary_endpoint(workspace_id: str):
+async def generate_workspace_summary_endpoint(workspace_id: str, x_user_id: str | None = Header(None)):
     ws_id = workspace_id
-    await _publish_summary_event(ws_id, "QUEUED")
-    await _publish_summary_event(ws_id, "STARTED")
+    await _publish_summary_event(ws_id, "QUEUED", user_id=x_user_id)
+    await _publish_summary_event(ws_id, "STARTED", user_id=x_user_id)
 
     workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
     document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
 
     try:
-        await _publish_summary_event(ws_id, "IN_PROGRESS")
+        await _publish_summary_event(ws_id, "IN_PROGRESS", user_id=x_user_id)
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            # 1. Fetch Workspace Metadata
-            ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}")
+            # 1. Fetch Workspace Metadata (forward the X-User-ID header)
+            headers = {"X-User-ID": x_user_id} if x_user_id else {}
+            ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
             if ws_res.status_code != 200:
                 raise HTTPException(status_code=404, detail="Workspace metadata not found")
             ws_meta = ws_res.json()
@@ -184,18 +187,20 @@ async def generate_workspace_summary_endpoint(workspace_id: str):
 
         # 7. Persist Summary via workspace-service
         async with httpx.AsyncClient(timeout=15.0) as client:
+            headers = {"X-User-ID": x_user_id} if x_user_id else {}
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/summary",
-                json={"summary_json": summary_validated.model_dump()}
+                json={"summary_json": summary_validated.model_dump()},
+                headers=headers
             )
 
         # 8. Publish COMPLETED event
-        await _publish_summary_event(ws_id, "COMPLETED")
+        await _publish_summary_event(ws_id, "COMPLETED", user_id=x_user_id)
 
         return summary_validated
 
     except Exception as e:
-        await _publish_summary_event(ws_id, "FAILED", error=str(e))
+        await _publish_summary_event(ws_id, "FAILED", user_id=x_user_id, error=str(e))
         print(f"Error generating workspace summary: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate workspace summary: {str(e)}")
 
