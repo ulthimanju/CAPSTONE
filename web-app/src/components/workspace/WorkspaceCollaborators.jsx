@@ -54,11 +54,10 @@ export const WorkspaceCollaborators = ({ workspace }) => {
     try {
       setInviting(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      // Post member invitation to workspace-service
       await axios.post(
         `/api/v1/workspaces/${workspaceId}/members`,
         {
-          user_id: user?.id || workspace?.owner_id,
+          email: inviteEmail.trim(),
           role: selectedRole,
         },
         { headers }
@@ -69,10 +68,11 @@ export const WorkspaceCollaborators = ({ workspace }) => {
       fetchMembers();
     } catch (err) {
       console.error('Failed to send invitation:', err);
-      setNotice({ type: 'error', text: 'Failed to send invitation. Please verify user eligibility.' });
+      const detail = err.response?.data?.detail || 'Failed to send invitation. Please verify user eligibility.';
+      setNotice({ type: 'error', text: detail });
     } finally {
       setInviting(false);
-      setTimeout(() => setNotice(null), 4000);
+      setTimeout(() => setNotice(null), 5000);
     }
   };
 

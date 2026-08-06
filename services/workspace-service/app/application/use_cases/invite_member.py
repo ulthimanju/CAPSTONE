@@ -37,7 +37,18 @@ class InviteMemberUseCase:
         if not (is_owner or is_editor):
             raise HTTPException(status_code=403, detail="Permission denied to invite member")
 
-        existing_member = await self.member_repo.get_member(workspace_id, req.user_id)
+        target_user_id = req.user_id
+        if not target_user_id and req.email:
+            import uuid
+            target_user_id = uuid.uuid5(uuid.NAMESPACE_URL, f"mailto:{req.email.lower().strip()}")
+
+        if not target_user_id:
+            raise HTTPException(status_code=400, detail="Either user_id or email must be provided")
+
+        if target_user_id == invited_by:
+            raise HTTPException(status_code=400, detail="You cannot invite yourself to your own workspace")
+
+        existing_member = await self.member_repo.get_member(workspace_id, target_user_id)
         if existing_member:
             raise HTTPException(status_code=400, detail="User is already a member of this workspace")
 
@@ -46,7 +57,7 @@ class InviteMemberUseCase:
             id=generate_uuid(),
             workspace_id=workspace_id,
             invited_by=invited_by,
-            invited_user_id=req.user_id,
+            invited_user_id=target_user_id,
             status=InvitationStatus.PENDING,
             expires_at=now + timedelta(days=7),
             created_at=now,

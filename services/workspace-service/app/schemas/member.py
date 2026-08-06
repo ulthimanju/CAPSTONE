@@ -5,7 +5,8 @@ from app.constants.enums import WorkspaceRole
 
 
 class InviteMemberRequest(BaseModel):
-    user_id: UUID
+    user_id: UUID | None = None
+    email: str | None = None
     role: WorkspaceRole = WorkspaceRole.VIEWER
 
 
