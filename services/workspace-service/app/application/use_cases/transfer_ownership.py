@@ -66,6 +66,8 @@ class TransferOwnershipUseCase:
         await self.activity_repo.record_activity(activity)
 
         await self.cache.invalidate_workspace_members(workspace_id)
+        await self.cache.invalidate_user_permission(workspace_id, current_owner_id)
+        await self.cache.invalidate_user_permission(workspace_id, new_owner_id)
         await self.cache.invalidate_user_workspaces(current_owner_id)
         await self.cache.invalidate_user_workspaces(new_owner_id)
 

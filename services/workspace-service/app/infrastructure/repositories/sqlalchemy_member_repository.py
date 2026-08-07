@@ -29,6 +29,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
             self.session.add(model)
             await self.session.flush()
             await self.cache.invalidate_workspace_members(member.workspace_id)
+            await self.cache.invalidate_user_permission(member.workspace_id, member.user_id)
             return member
         except IntegrityError:
             await self.session.rollback()
@@ -38,6 +39,10 @@ class SQLAlchemyMemberRepository(MemberRepository):
             raise HTTPException(status_code=409, detail="Workspace membership already exists.")
 
     async def get_member(self, workspace_id: UUID, user_id: UUID) -> WorkspaceMember | None:
+        cached_perm = await self.cache.get_user_permission(workspace_id, user_id)
+        if cached_perm is not None:
+            return cached_perm
+
         stmt = select(WorkspaceMemberModel).where(
             WorkspaceMemberModel.workspace_id == workspace_id,
             WorkspaceMemberModel.user_id == user_id
@@ -46,7 +51,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
         model = result.scalar_one_or_none()
         if not model:
             return None
-        return WorkspaceMember(
+        member = WorkspaceMember(
             id=model.id,
             workspace_id=model.workspace_id,
             user_id=model.user_id,
@@ -55,6 +60,8 @@ class SQLAlchemyMemberRepository(MemberRepository):
             joined_at=model.joined_at,
             last_accessed_at=model.last_accessed_at
         )
+        await self.cache.set_user_permission(workspace_id, user_id, member)
+        return member
 
     async def list_members(self, workspace_id: UUID) -> list[WorkspaceMember]:
         cached_members = await self.cache.get_workspace_members(workspace_id)
@@ -101,6 +108,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
             raise HTTPException(status_code=409, detail="Workspace membership was modified by another request")
         member.version = expected_version + 1
         await self.cache.invalidate_workspace_members(member.workspace_id)
+        await self.cache.invalidate_user_permission(member.workspace_id, member.user_id)
         return member
 
     async def remove_member(self, workspace_id: UUID, user_id: UUID) -> bool:
@@ -112,5 +120,6 @@ class SQLAlchemyMemberRepository(MemberRepository):
         await self.session.flush()
         if result.rowcount > 0:
             await self.cache.invalidate_workspace_members(workspace_id)
+            await self.cache.invalidate_user_permission(workspace_id, user_id)
             return True
         return False

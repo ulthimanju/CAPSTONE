@@ -21,6 +21,9 @@ class WorkspaceCacheManager:
     def _get_workspace_members_key(self, workspace_id: uuid.UUID) -> str:
         return f"workspace_members:{workspace_id}"
 
+    def _get_workspace_permissions_key(self, workspace_id: uuid.UUID, user_id: uuid.UUID) -> str:
+        return f"workspace_permissions:{workspace_id}:{user_id}"
+
     async def get(self, workspace_id: uuid.UUID) -> Workspace | None:
         if not self.redis:
             return None
@@ -184,5 +187,94 @@ class WorkspaceCacheManager:
             return
         try:
             await self.redis.delete(self._get_workspace_members_key(workspace_id))
+        except Exception:
+            pass
+
+    async def get_user_permission(self, workspace_id: uuid.UUID, user_id: uuid.UUID) -> WorkspaceMember | None:
+        if not self.redis:
+            return None
+        try:
+            val = await self.redis.get(self._get_workspace_permissions_key(workspace_id, user_id))
+            if not val:
+                return None
+            m = json.loads(val)
+            return WorkspaceMember(
+                id=uuid.UUID(m["id"]),
+                workspace_id=uuid.UUID(m["workspace_id"]),
+                user_id=uuid.UUID(m["user_id"]),
+                role=WorkspaceRole(m["role"]),
+                version=m.get("version", 1),
+                joined_at=datetime.fromisoformat(m["joined_at"]) if m.get("joined_at") else datetime.now(timezone.utc),
+                last_accessed_at=datetime.fromisoformat(m["last_accessed_at"]) if m.get("last_accessed_at") else datetime.now(timezone.utc),
+            )
+        except Exception:
+            return None
+
+    async def set_user_permission(self, workspace_id: uuid.UUID, user_id: uuid.UUID, member: WorkspaceMember, ttl: int = settings.workspace_cache_ttl):
+        if not self.redis:
+            return
+        try:
+            key = self._get_workspace_permissions_key(workspace_id, user_id)
+            payload = json.dumps({
+                "id": str(member.id),
+                "workspace_id": str(member.workspace_id),
+                "user_id": str(member.user_id),
+                "role": member.role.value if hasattr(member.role, "value") else str(member.role),
+                "version": getattr(member, "version", 1),
+                "joined_at": member.joined_at.isoformat() if member.joined_at else None,
+                "last_accessed_at": member.last_accessed_at.isoformat() if member.last_accessed_at else None,
+            })
+            await self.redis.setex(key, ttl, payload)
+        except Exception:
+            pass
+
+    async def invalidate_user_permission(self, workspace_id: uuid.UUID, user_id: uuid.UUID):
+        if not self.redis:
+            return
+        try:
+            await self.redis.delete(self._get_workspace_permissions_key(workspace_id, user_id))
+        except Exception:
+            pass
+
+    async def invalidate_workspace_permissions(self, workspace_id: uuid.UUID):
+        if not self.redis:
+            return
+        try:
+            pattern = f"workspace_permissions:{workspace_id}:*"
+            keys = []
+            if hasattr(self.redis, "scan_iter") and callable(getattr(self.redis, "scan_iter")):
+                try:
+                    res = self.redis.scan_iter(match=pattern, count=100)
+                    if hasattr(res, "__aiter__"):
+                        async for key in res:
+                            keys.append(key)
+                    elif isinstance(res, (list, tuple)):
+                        keys = list(res)
+                except Exception:
+                    keys = []
+            if not keys and hasattr(self.redis, "scan") and callable(getattr(self.redis, "scan")):
+                try:
+                    cursor = "0"
+                    while True:
+                        res = await self.redis.scan(cursor=cursor, match=pattern, count=100)
+                        if isinstance(res, (tuple, list)) and len(res) == 2:
+                            cursor, matched_keys = res
+                            keys.extend(matched_keys)
+                            if str(cursor) == "0" or cursor == 0:
+                                break
+                        else:
+                            break
+                except Exception:
+                    keys = []
+            if not keys and hasattr(self.redis, "keys") and callable(getattr(self.redis, "keys")):
+                try:
+                    res_keys = await self.redis.keys(pattern)
+                    if isinstance(res_keys, (list, tuple)):
+                        keys = list(res_keys)
+                except Exception:
+                    pass
+
+            if keys:
+                await self.redis.delete(*keys)
         except Exception:
             pass
