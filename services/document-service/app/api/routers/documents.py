@@ -350,6 +350,7 @@ async def validate_document(
 
 
 from app.api.dependencies.database import get_document_cache
+from app.infrastructure.cache.document_cache import DocumentCacheManager
 
 
 @router.get("/{document_id}/status")
