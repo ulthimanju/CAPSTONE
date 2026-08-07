@@ -14,6 +14,18 @@ from shared.enums.document import (
     ALLOWED_DOCUMENT_STATUS_TRANSITIONS,
     ALLOWED_PARSE_STATUS_TRANSITIONS,
 )
+from shared.enums.workspace import (
+    WorkspaceStatus,
+    WorkspaceVisibility,
+    WorkspaceRole,
+)
+from shared.enums.notification import (
+    NotificationStatus,
+    NotificationType,
+    NotificationPriority,
+    EventName,
+    EventStatus,
+)
 from shared.enums.processing import (
     ProcessingJobType,
     ProcessingStatus,
@@ -34,6 +46,14 @@ __all__ = [
     "LifecycleStatus",
     "ALLOWED_DOCUMENT_STATUS_TRANSITIONS",
     "ALLOWED_PARSE_STATUS_TRANSITIONS",
+    "WorkspaceStatus",
+    "WorkspaceVisibility",
+    "WorkspaceRole",
+    "NotificationStatus",
+    "NotificationType",
+    "NotificationPriority",
+    "EventName",
+    "EventStatus",
     "ProcessingJobType",
     "ProcessingStatus",
 ]

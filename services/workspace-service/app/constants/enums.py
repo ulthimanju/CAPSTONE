@@ -1,38 +1,11 @@
-from enum import Enum
+from shared.enums.workspace import (
+    WorkspaceStatus,
+    WorkspaceVisibility,
+    WorkspaceRole,
+)
 
-
-class WorkspaceStatus(str, Enum):
-    ACTIVE = "ACTIVE"
-    ARCHIVED = "ARCHIVED"
-    DELETED = "DELETED"
-
-
-class WorkspaceVisibility(str, Enum):
-    PRIVATE = "PRIVATE"
-    SHARED = "SHARED"
-
-
-class WorkspaceRole(str, Enum):
-    OWNER = "OWNER"
-    EDITOR = "EDITOR"
-    VIEWER = "VIEWER"
-
-
-class InvitationStatus(str, Enum):
-    PENDING = "PENDING"
-    ACCEPTED = "ACCEPTED"
-    REJECTED = "REJECTED"
-    EXPIRED = "EXPIRED"
-    CANCELLED = "CANCELLED"
-
-
-class ActivityType(str, Enum):
-    WORKSPACE_CREATED = "WORKSPACE_CREATED"
-    WORKSPACE_UPDATED = "WORKSPACE_UPDATED"
-    WORKSPACE_ARCHIVED = "WORKSPACE_ARCHIVED"
-    WORKSPACE_RESTORED = "WORKSPACE_RESTORED"
-    WORKSPACE_DELETED = "WORKSPACE_DELETED"
-    MEMBER_INVITED = "MEMBER_INVITED"
-    MEMBER_JOINED = "MEMBER_JOINED"
-    MEMBER_REMOVED = "MEMBER_REMOVED"
-    OWNERSHIP_TRANSFERRED = "OWNERSHIP_TRANSFERRED"
+__all__ = [
+    "WorkspaceStatus",
+    "WorkspaceVisibility",
+    "WorkspaceRole",
+]
