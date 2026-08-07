@@ -8,10 +8,19 @@ from app.constants.enums import ActivityType
 from app.utils.ids import generate_uuid
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 class DeleteWorkspaceUseCase:
-    def __init__(self, workspace_repo: WorkspaceRepository, activity_repo: ActivityRepository):
+    def __init__(
+        self,
+        workspace_repo: WorkspaceRepository,
+        activity_repo: ActivityRepository,
+        cache_manager: WorkspaceCacheManager | None = None,
+    ):
         self.workspace_repo = workspace_repo
         self.activity_repo = activity_repo
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def execute(self, workspace_id: UUID, user_id: UUID) -> bool:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
@@ -32,4 +41,6 @@ class DeleteWorkspaceUseCase:
         )
         await self.activity_repo.record_activity(activity)
 
-        return await self.workspace_repo.delete(workspace_id)
+        res = await self.workspace_repo.delete(workspace_id)
+        await self.cache.invalidate(workspace_id)
+        return res

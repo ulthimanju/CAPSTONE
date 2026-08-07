@@ -9,10 +9,19 @@ from app.schemas.workspace import WorkspaceResponse
 from app.utils.ids import generate_uuid
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 class RestoreWorkspaceUseCase:
-    def __init__(self, workspace_repo: WorkspaceRepository, activity_repo: ActivityRepository):
+    def __init__(
+        self,
+        workspace_repo: WorkspaceRepository,
+        activity_repo: ActivityRepository,
+        cache_manager: WorkspaceCacheManager | None = None,
+    ):
         self.workspace_repo = workspace_repo
         self.activity_repo = activity_repo
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def execute(self, workspace_id: UUID, user_id: UUID) -> WorkspaceResponse:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
@@ -26,6 +35,7 @@ class RestoreWorkspaceUseCase:
         workspace.archived_at = None
         workspace.updated_at = now
         updated = await self.workspace_repo.update(workspace)
+        await self.cache.invalidate(workspace_id)
 
         activity = WorkspaceActivity(
             id=generate_uuid(),

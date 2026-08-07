@@ -8,11 +8,18 @@ from app.infrastructure.repositories.sqlalchemy_invitation_repository import SQL
 from app.infrastructure.repositories.sqlalchemy_activity_repository import SQLAlchemyActivityRepository
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
+        session.info["post_commit_invalidations"] = set()
         try:
             yield session
             await session.commit()
+            cache = WorkspaceCacheManager()
+            for ws_id in session.info.get("post_commit_invalidations", set()):
+                await cache.invalidate(ws_id)
         except Exception:
             await session.rollback()
             raise

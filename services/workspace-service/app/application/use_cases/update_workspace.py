@@ -10,16 +10,21 @@ from app.schemas.workspace import UpdateWorkspaceRequest, WorkspaceResponse
 from app.utils.ids import generate_uuid
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 class UpdateWorkspaceUseCase:
     def __init__(
         self,
         workspace_repo: WorkspaceRepository,
         member_repo: MemberRepository,
         activity_repo: ActivityRepository,
+        cache_manager: WorkspaceCacheManager | None = None,
     ):
         self.workspace_repo = workspace_repo
         self.member_repo = member_repo
         self.activity_repo = activity_repo
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def execute(self, workspace_id: UUID, user_id: UUID, req: UpdateWorkspaceRequest) -> WorkspaceResponse:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
@@ -44,6 +49,7 @@ class UpdateWorkspaceUseCase:
 
         workspace.updated_at = datetime.now(timezone.utc)
         updated = await self.workspace_repo.update(workspace)
+        await self.cache.invalidate(workspace_id)
 
         activity = WorkspaceActivity(
             id=generate_uuid(),
