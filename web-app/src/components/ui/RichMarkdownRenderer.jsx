@@ -4,7 +4,6 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
 import mermaid from 'mermaid';
 import 'katex/dist/katex.min.css';
 import './RichMarkdown.css';
@@ -184,7 +183,7 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
     <div className={`rich-markdown-content${compact ? ' rich-markdown-compact' : ''}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
+        rehypePlugins={[rehypeKatex, rehypeHighlight]}
         components={{
           // Code blocks & inline code
           code({ node, inline, className, children, ...props }) {
