@@ -277,6 +277,8 @@ async def update_quiz_progress(
 
     unit_content.quiz_json = req.quiz_json
     await db.flush()
+    cache = WorkspaceCacheManager()
+    await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
     return {"status": "updated", "workspace_id": str(workspace_id), "unit_title": req.unit_title}
 
 
@@ -286,6 +288,11 @@ async def get_learning_unit_content(
     unit_title: str,
     db: AsyncSession = Depends(get_db),
 ):
+    cache = WorkspaceCacheManager()
+    cached = await cache.get_learning_unit_content(workspace_id, unit_title)
+    if cached is not None:
+        return cached
+
     stmt = select(LearningUnitContentModel).where(
         LearningUnitContentModel.workspace_id == workspace_id,
         LearningUnitContentModel.unit_title == unit_title
@@ -295,7 +302,7 @@ async def get_learning_unit_content(
     if not unit_content or unit_content.status != "READY":
         return {"content": None, "status": unit_content.status if unit_content else "NOT_GENERATED"}
 
-    return {
+    payload = {
         "content": {
             "summary": unit_content.summary_json,
             "flashcards": unit_content.flashcards_json,
@@ -303,8 +310,10 @@ async def get_learning_unit_content(
         },
         "status": unit_content.status,
         "model": unit_content.model,
-        "updated_at": unit_content.updated_at
+        "updated_at": unit_content.updated_at.isoformat() if unit_content.updated_at else None
     }
+    await cache.set_learning_unit_content(workspace_id, unit_title, payload)
+    return payload
 
 
 @router.put("/{workspace_id}/units/content")
@@ -339,6 +348,8 @@ async def save_learning_unit_content(
         unit_content.model = req.model
 
     await db.flush()
+    cache = WorkspaceCacheManager()
+    await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
     return {"status": "saved", "workspace_id": str(workspace_id), "unit_title": req.unit_title}
 
 

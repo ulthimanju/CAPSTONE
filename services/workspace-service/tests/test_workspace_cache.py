@@ -115,7 +115,12 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     await cache.set_workspace_learning_path(ws_id, {"modules": ["Unit 1"]})
     assert redis_mock.setex.called
 
-    # 7. CreateWorkspaceUseCase invalidates user_workspaces:{user_id}
+    # 7. Get learning unit content: Cache MISS -> sets learning_unit:{ws_id}:{hash} with 3600s TTL
+    redis_mock.get.return_value = None
+    await cache.set_learning_unit_content(ws_id, "Module 1", {"summary": "Content"})
+    assert redis_mock.setex.called
+
+    # 8. CreateWorkspaceUseCase invalidates user_workspaces:{user_id}
     act_repo = AsyncMock()
     mock_mem_repo = AsyncMock()
     create_uc = CreateWorkspaceUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
@@ -123,7 +128,7 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     await create_uc.execute(owner_id, CreateWorkspaceRequest(name="New Workspace"))
     assert redis_mock.delete.called
 
-    # 8. UpdateWorkspaceUseCase invalidation
+    # 9. UpdateWorkspaceUseCase invalidation
     member_mock = MagicMock()
     member_mock.role = "OWNER"
     mock_mem_repo.get_member.return_value = member_mock
@@ -133,20 +138,20 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     await update_uc.execute(ws_id, owner_id, UpdateWorkspaceRequest(name="Updated Name"))
     assert redis_mock.delete.called
 
-    # 9. TransferOwnershipUseCase invalidates workspace_members and workspace_permissions
+    # 10. TransferOwnershipUseCase invalidates workspace_members and workspace_permissions
     transfer_uc = TransferOwnershipUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
     await transfer_uc.execute(ws_id, owner_id, member_user_id)
     assert redis_mock.delete.called
 
-    # 10. RemoveMemberUseCase invalidates workspace_members and workspace_permissions
+    # 11. RemoveMemberUseCase invalidates workspace_members and workspace_permissions
     mock_mem_repo.remove_member.return_value = True
     remove_uc = RemoveMemberUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
     await remove_uc.execute(ws_id, owner_id, member_user_id)
     assert redis_mock.delete.called
 
-    # 11. DeleteWorkspaceUseCase invalidation (invalidates workspace, members, permissions, summary, and learning_path)
+    # 12. DeleteWorkspaceUseCase invalidation (invalidates workspace, members, permissions, summary, learning_path, and learning_units)
     delete_uc = DeleteWorkspaceUseCase(repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
     await delete_uc.execute(ws_id, owner_id)

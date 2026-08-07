@@ -1,5 +1,6 @@
 import json
 import uuid
+import hashlib
 from typing import Any
 from datetime import datetime, timezone
 from app.domain.entities.workspace import Workspace
@@ -29,6 +30,10 @@ class WorkspaceCacheManager:
 
     def _get_workspace_learning_path_key(self, workspace_id: uuid.UUID) -> str:
         return f"workspace_learning_path:{workspace_id}"
+
+    def _get_learning_unit_key(self, workspace_id: uuid.UUID, unit_title: str) -> str:
+        title_hash = hashlib.sha256(unit_title.encode("utf-8")).hexdigest()[:16]
+        return f"learning_unit:{workspace_id}:{title_hash}"
 
     async def get(self, workspace_id: uuid.UUID) -> Workspace | None:
         if not self.redis:
@@ -341,6 +346,78 @@ class WorkspaceCacheManager:
         except Exception:
             pass
 
+    async def get_learning_unit_content(self, workspace_id: uuid.UUID, unit_title: str) -> Any | None:
+        if not self.redis:
+            return None
+        try:
+            val = await self.redis.get(self._get_learning_unit_key(workspace_id, unit_title))
+            if not val:
+                return None
+            return json.loads(val)
+        except Exception:
+            return None
+
+    async def set_learning_unit_content(self, workspace_id: uuid.UUID, unit_title: str, content_data: Any, ttl: int = 3600):
+        if not self.redis:
+            return
+        try:
+            key = self._get_learning_unit_key(workspace_id, unit_title)
+            await self.redis.setex(key, ttl, json.dumps(content_data, default=str))
+        except Exception:
+            pass
+
+    async def invalidate_learning_unit_content(self, workspace_id: uuid.UUID, unit_title: str):
+        if not self.redis:
+            return
+        try:
+            await self.redis.delete(self._get_learning_unit_key(workspace_id, unit_title))
+        except Exception:
+            pass
+
+    async def invalidate_workspace_learning_units(self, workspace_id: uuid.UUID):
+        if not self.redis:
+            return
+        try:
+            pattern = f"learning_unit:{workspace_id}:*"
+            keys = []
+            if hasattr(self.redis, "scan_iter") and callable(getattr(self.redis, "scan_iter")):
+                try:
+                    res = self.redis.scan_iter(match=pattern, count=100)
+                    if hasattr(res, "__aiter__"):
+                        async for key in res:
+                            keys.append(key)
+                    elif isinstance(res, (list, tuple)):
+                        keys = list(res)
+                except Exception:
+                    keys = []
+            if not keys and hasattr(self.redis, "scan") and callable(getattr(self.redis, "scan")):
+                try:
+                    cursor = "0"
+                    while True:
+                        res = await self.redis.scan(cursor=cursor, match=pattern, count=100)
+                        if isinstance(res, (tuple, list)) and len(res) == 2:
+                            cursor, matched_keys = res
+                            keys.extend(matched_keys)
+                            if str(cursor) == "0" or cursor == 0:
+                                break
+                        else:
+                            break
+                except Exception:
+                    keys = []
+            if not keys and hasattr(self.redis, "keys") and callable(getattr(self.redis, "keys")):
+                try:
+                    res_keys = await self.redis.keys(pattern)
+                    if isinstance(res_keys, (list, tuple)):
+                        keys = list(res_keys)
+                except Exception:
+                    pass
+
+            if keys:
+                await self.redis.delete(*keys)
+        except Exception:
+            pass
+
     async def invalidate_workspace_generated_content(self, workspace_id: uuid.UUID):
         await self.invalidate_workspace_summary(workspace_id)
         await self.invalidate_workspace_learning_path(workspace_id)
+        await self.invalidate_workspace_learning_units(workspace_id)
