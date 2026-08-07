@@ -3,6 +3,7 @@ import uuid
 from typing import Any
 from datetime import datetime, timezone
 from app.domain.entities.user import User
+from app.config.settings import settings
 import redis.asyncio as aioredis
 
 _global_redis_client = None
