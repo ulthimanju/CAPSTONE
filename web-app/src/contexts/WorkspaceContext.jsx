@@ -1,17 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { apiClient } from '../services/api/client';
 import { useAuth } from '../hooks/useAuth';
-import {
-  useDocumentEvents,
-  useSummaryEvents,
-  useLearningPathEvents,
-  useWorkspaceEvents,
-} from '../providers/SSEProvider';
+import { useSSE } from '../providers/SSEProvider';
 
 const WorkspaceContext = createContext(null);
 
 export function WorkspaceProvider({ children, activeWorkspaceId }) {
   const { user } = useAuth();
+  const { registerRefreshHandler } = useSSE();
 
   const [workspaces, setWorkspaces] = useState([]);
   const [workspace, setWorkspace] = useState(null);
@@ -80,24 +76,27 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     }
   }, [user?.id, activeWorkspaceId]);
 
-  // Automatic SSE Domain Invalidation Wireup
-  useDocumentEvents(activeWorkspaceId, useCallback(() => {
-    refetchDocuments(activeWorkspaceId);
-  }, [activeWorkspaceId, refetchDocuments]));
+  // Register Store Refresh Handlers with SSEProvider Invalidation Registry
+  useEffect(() => {
+    if (!activeWorkspaceId) return;
+    const unregDocs = registerRefreshHandler('documents', activeWorkspaceId, () => refetchDocuments(activeWorkspaceId));
+    const unregSummary = registerRefreshHandler('summary', activeWorkspaceId, () => {
+      setSummaryLoaded(false);
+      refetchSummary(activeWorkspaceId);
+    });
+    const unregLp = registerRefreshHandler('learning_path', activeWorkspaceId, () => {
+      setLearningPathLoaded(false);
+      refetchLearningPath(activeWorkspaceId);
+    });
+    const unregWs = registerRefreshHandler('workspace', activeWorkspaceId, () => refetchWorkspaces());
 
-  useSummaryEvents(activeWorkspaceId, useCallback(() => {
-    setSummaryLoaded(false);
-    refetchSummary(activeWorkspaceId);
-  }, [activeWorkspaceId, refetchSummary]));
-
-  useLearningPathEvents(activeWorkspaceId, useCallback(() => {
-    setLearningPathLoaded(false);
-    refetchLearningPath(activeWorkspaceId);
-  }, [activeWorkspaceId, refetchLearningPath]));
-
-  useWorkspaceEvents(activeWorkspaceId, useCallback(() => {
-    refetchWorkspaces();
-  }, [refetchWorkspaces]));
+    return () => {
+      unregDocs();
+      unregSummary();
+      unregLp();
+      unregWs();
+    };
+  }, [activeWorkspaceId, registerRefreshHandler, refetchDocuments, refetchSummary, refetchLearningPath, refetchWorkspaces]);
 
   const value = {
     workspaces,

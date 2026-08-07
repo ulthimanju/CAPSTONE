@@ -5,7 +5,8 @@ const SSEContext = createContext({
   connected: false,
   lastEvent: null,
   subscribe: () => () => {},
-  subscribeToDomain: () => () => {},
+  registerRefreshHandler: () => () => {},
+  invalidateDomain: () => {},
 });
 
 const ROUTE_MAP = {
@@ -23,33 +24,41 @@ export function SSEProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState(null);
   const listenersRef = useRef(new Set());
-  const domainListenersRef = useRef(new Map()); // Map<key: "domain:workspaceId", Set<fn>>
+  const refreshRegistryRef = useRef(new Map()); // Map<key: "domain:workspaceId", Set<refreshFn>>
 
-  const dispatchEventToSubscribers = (payload) => {
-    setLastEvent(payload);
-
-    // Notify raw global listeners
-    listenersRef.current.forEach((fn) => fn(payload));
-
-    // Route event through Central Domain Router
-    const evtName = payload.eventType || payload.event;
-    const domain = ROUTE_MAP[evtName];
-    if (!domain) return;
-
-    const wsId = payload.workspace_id;
-
-    // Notify domain-specific subscribers for matching workspace or global domain subscribers
+  // Invalidate domain & execute registered refresh handlers
+  const invalidateDomain = (domain, workspaceId) => {
     const targetKeys = [
-      `${domain}:${wsId}`,
+      `${domain}:${workspaceId}`,
       `${domain}:global`,
     ];
 
     targetKeys.forEach((key) => {
-      const subscribers = domainListenersRef.current.get(key);
-      if (subscribers) {
-        subscribers.forEach((fn) => fn(payload));
+      const handlers = refreshRegistryRef.current.get(key);
+      if (handlers) {
+        handlers.forEach((fn) => {
+          try {
+            fn(workspaceId);
+          } catch (err) {
+            console.error(`Error executing refresh handler for ${key}:`, err);
+          }
+        });
       }
     });
+  };
+
+  const dispatchEventToSubscribers = (payload) => {
+    setLastEvent(payload);
+
+    // Notify raw listeners
+    listenersRef.current.forEach((fn) => fn(payload));
+
+    // Route event through Central Domain Router & trigger store invalidation
+    const evtName = payload.eventType || payload.event;
+    const domain = ROUTE_MAP[evtName];
+    if (domain) {
+      invalidateDomain(domain, payload.workspace_id);
+    }
   };
 
   useEffect(() => {
@@ -158,24 +167,32 @@ export function SSEProvider({ children }) {
     };
   };
 
-  const subscribeToDomain = (domain, workspaceId, callback) => {
+  const registerRefreshHandler = (domain, workspaceId, refreshFn) => {
     const key = `${domain}:${workspaceId || 'global'}`;
-    if (!domainListenersRef.current.has(key)) {
-      domainListenersRef.current.set(key, new Set());
+    if (!refreshRegistryRef.current.has(key)) {
+      refreshRegistryRef.current.set(key, new Set());
     }
-    const set = domainListenersRef.current.get(key);
-    set.add(callback);
+    const set = refreshRegistryRef.current.get(key);
+    set.add(refreshFn);
 
     return () => {
-      set.delete(callback);
+      set.delete(refreshFn);
       if (set.size === 0) {
-        domainListenersRef.current.delete(key);
+        refreshRegistryRef.current.delete(key);
       }
     };
   };
 
   return (
-    <SSEContext.Provider value={{ connected, lastEvent, subscribe, subscribeToDomain }}>
+    <SSEContext.Provider
+      value={{
+        connected,
+        lastEvent,
+        subscribe,
+        registerRefreshHandler,
+        invalidateDomain,
+      }}
+    >
       {children}
     </SSEContext.Provider>
   );
@@ -183,37 +200,4 @@ export function SSEProvider({ children }) {
 
 export function useSSE() {
   return useContext(SSEContext);
-}
-
-// Domain-Specific Hooks
-export function useDocumentEvents(workspaceId, callback) {
-  const { subscribeToDomain } = useSSE();
-  useEffect(() => {
-    if (!callback) return;
-    return subscribeToDomain('documents', workspaceId, callback);
-  }, [workspaceId, callback, subscribeToDomain]);
-}
-
-export function useSummaryEvents(workspaceId, callback) {
-  const { subscribeToDomain } = useSSE();
-  useEffect(() => {
-    if (!callback) return;
-    return subscribeToDomain('summary', workspaceId, callback);
-  }, [workspaceId, callback, subscribeToDomain]);
-}
-
-export function useLearningPathEvents(workspaceId, callback) {
-  const { subscribeToDomain } = useSSE();
-  useEffect(() => {
-    if (!callback) return;
-    return subscribeToDomain('learning_path', workspaceId, callback);
-  }, [workspaceId, callback, subscribeToDomain]);
-}
-
-export function useWorkspaceEvents(workspaceId, callback) {
-  const { subscribeToDomain } = useSSE();
-  useEffect(() => {
-    if (!callback) return;
-    return subscribeToDomain('workspace', workspaceId, callback);
-  }, [workspaceId, callback, subscribeToDomain]);
 }
