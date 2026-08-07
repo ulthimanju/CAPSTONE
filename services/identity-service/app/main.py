@@ -31,6 +31,9 @@ app = FastAPI(
 
 app.add_exception_handler(IdentityServiceError, identity_exception_handler)
 
+from shared.logging.correlation_id import CorrelationIdMiddleware
+app.add_middleware(CorrelationIdMiddleware)
+
 # SessionMiddleware is required by Authlib for OAuth state storage
 app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret)
 

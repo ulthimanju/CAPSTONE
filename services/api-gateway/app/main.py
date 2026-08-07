@@ -37,21 +37,33 @@ def get_current_user_id(
     )
 
 
+from shared.logging.correlation_id import _request_id_ctx, get_tracing_headers
+
+
 # Phase 5: Platform Middleware (Correlation ID, Request Timer, Security Headers)
 @app.middleware("http")
 async def platform_middleware(request: Request, call_next):
-    correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
+    req_id = (
+        request.headers.get("X-Request-ID")
+        or request.headers.get("X-Correlation-ID")
+        or str(uuid.uuid4())
+    )
+    token = _request_id_ctx.set(req_id)
+    request.state.request_id = req_id
+    request.state.correlation_id = req_id
     start_time = time.time()
 
-    response: Response = await call_next(request)
-
-    latency_ms = int((time.time() - start_time) * 1000)
-    response.headers["X-Correlation-ID"] = correlation_id
-    response.headers["X-Response-Time-MS"] = str(latency_ms)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-
-    return response
+    try:
+        response: Response = await call_next(request)
+        latency_ms = int((time.time() - start_time) * 1000)
+        response.headers["X-Request-ID"] = req_id
+        response.headers["X-Correlation-ID"] = req_id
+        response.headers["X-Response-Time-MS"] = str(latency_ms)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        return response
+    finally:
+        _request_id_ctx.reset(token)
 
 
 # Phase 1: Gateway Infrastructure & Service Status Monitoring
@@ -74,7 +86,7 @@ async def services_status():
     results = {}
     for s_name, health_url in services.items():
         try:
-            res = await client.get(health_url, timeout=3.0)
+            res = await client.get(health_url, headers=get_tracing_headers(), timeout=3.0)
             results[s_name] = {"available": res.status_code == 200, "status_code": res.status_code}
         except Exception:
             results[s_name] = {"available": False, "error": "Unreachable"}
@@ -90,6 +102,10 @@ async def proxy_request(service_url: str, request: Request):
 
     headers = dict(request.headers)
     headers.pop("host", None)
+
+    req_id = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID") or request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+    headers["X-Request-ID"] = req_id
+    headers["X-Correlation-ID"] = req_id
 
     content = await request.body()
     req = client.build_request(
