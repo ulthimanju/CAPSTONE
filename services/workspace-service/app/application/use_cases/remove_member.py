@@ -9,16 +9,21 @@ from app.constants.enums import ActivityType
 from app.utils.ids import generate_uuid
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 class RemoveMemberUseCase:
     def __init__(
         self,
         workspace_repo: WorkspaceRepository,
         member_repo: MemberRepository,
         activity_repo: ActivityRepository,
+        cache_manager: WorkspaceCacheManager | None = None,
     ):
         self.workspace_repo = workspace_repo
         self.member_repo = member_repo
         self.activity_repo = activity_repo
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def execute(self, workspace_id: UUID, actor_id: UUID, member_user_id: UUID) -> bool:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
@@ -44,4 +49,5 @@ class RemoveMemberUseCase:
                 created_at=datetime.now(timezone.utc),
             )
             await self.activity_repo.record_activity(activity)
+            await self.cache.invalidate_user_workspaces(member_user_id)
         return success

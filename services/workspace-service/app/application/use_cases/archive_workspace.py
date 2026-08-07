@@ -36,6 +36,9 @@ class ArchiveWorkspaceUseCase:
         workspace.updated_at = now
         updated = await self.workspace_repo.update(workspace)
         await self.cache.invalidate(workspace_id)
+        await self.cache.invalidate_user_workspaces(workspace.owner_id)
+        if user_id != workspace.owner_id:
+            await self.cache.invalidate_user_workspaces(user_id)
 
         activity = WorkspaceActivity(
             id=generate_uuid(),

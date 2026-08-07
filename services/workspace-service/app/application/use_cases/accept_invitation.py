@@ -11,16 +11,21 @@ from app.schemas.invitation import InvitationResponse
 from app.utils.ids import generate_uuid
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 class AcceptInvitationUseCase:
     def __init__(
         self,
         invitation_repo: InvitationRepository,
         member_repo: MemberRepository,
         activity_repo: ActivityRepository,
+        cache_manager: WorkspaceCacheManager | None = None,
     ):
         self.invitation_repo = invitation_repo
         self.member_repo = member_repo
         self.activity_repo = activity_repo
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def execute(self, invitation_id: UUID, user_id: UUID, user_email: str | None = None) -> InvitationResponse:
         invitation = await self.invitation_repo.get_by_id(invitation_id)
@@ -62,5 +67,7 @@ class AcceptInvitationUseCase:
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
+
+        await self.cache.invalidate_user_workspaces(user_id)
 
         return InvitationResponse.model_validate(updated_invitation)

@@ -63,6 +63,10 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         return ws
 
     async def list_by_user_id(self, user_id: UUID) -> list[Workspace]:
+        cached_list = await self.cache.get_user_workspaces(user_id)
+        if cached_list is not None:
+            return cached_list
+
         stmt = (
             select(WorkspaceModel)
             .join(WorkspaceMemberModel, WorkspaceModel.id == WorkspaceMemberModel.workspace_id)
@@ -75,7 +79,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         )
         result = await self.session.execute(stmt)
         models = result.scalars().unique().all()
-        return [
+        workspaces = [
             Workspace(
                 id=m.id,
                 owner_id=m.owner_id,
@@ -91,6 +95,8 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 learning_path_json=m.learning_path_json,
             ) for m in models
         ]
+        await self.cache.set_user_workspaces(user_id, workspaces)
+        return workspaces
 
     async def list_archived_by_user_id(self, user_id: UUID) -> list[Workspace]:
         stmt = (

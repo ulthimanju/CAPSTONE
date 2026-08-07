@@ -11,16 +11,21 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.schemas.workspace import CreateWorkspaceRequest, WorkspaceResponse
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 class CreateWorkspaceUseCase:
     def __init__(
         self,
         workspace_repo: WorkspaceRepository,
         member_repo: MemberRepository,
         activity_repo: ActivityRepository,
+        cache_manager: WorkspaceCacheManager | None = None,
     ):
         self.workspace_repo = workspace_repo
         self.member_repo = member_repo
         self.activity_repo = activity_repo
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def execute(self, user_id: UUID, req: CreateWorkspaceRequest) -> WorkspaceResponse:
         now = datetime.now(timezone.utc)
@@ -62,6 +67,8 @@ class CreateWorkspaceUseCase:
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
+
+        await self.cache.invalidate_user_workspaces(user_id)
 
         res = WorkspaceResponse.model_validate(workspace)
         res.user_role = WorkspaceRole.OWNER
