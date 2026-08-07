@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Any
-from sqlalchemy import DateTime, ForeignKey, String, BigInteger, Integer, Boolean, Text, Index, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, String, BigInteger, Integer, Boolean, Text, Index, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.base import Base
@@ -16,6 +16,16 @@ class DocumentModel(Base):
         Index("idx_documents_status", "status"),
         Index("idx_documents_parse_status", "parse_status"),
         Index("idx_documents_storage_file_id", "storage_file_id"),
+        Index(
+            "idx_documents_active_workspace",
+            "workspace_id",
+            postgresql_where=text("is_deleted = false"),
+        ),
+        Index(
+            "idx_documents_active_status",
+            "status",
+            postgresql_where=text("is_deleted = false"),
+        ),
         UniqueConstraint(
             "workspace_id",
             "uploaded_by",
