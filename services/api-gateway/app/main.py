@@ -39,8 +39,10 @@ def get_current_user_id(
 
 from shared.logging.correlation_id import _request_id_ctx, get_tracing_headers
 from shared.middleware.request_timeout import RequestTimeoutMiddleware
+from shared.middleware.error_handler import register_global_exception_handlers
 
 app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=60.0)
+register_global_exception_handlers(app)
 
 
 # Phase 5: Platform Middleware (Correlation ID, Request Timer, Security Headers)

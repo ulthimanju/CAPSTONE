@@ -95,7 +95,9 @@ def test_spoofed_executable_renamed_pdf_rejected_with_415():
 
     response = client.post("/api/v1/documents/raw", headers=headers, data=data, files=files)
     assert response.status_code == 415
-    assert "Unsupported file type" in response.json()["detail"] or "Executable" in response.json()["detail"]
+    res_data = response.json()
+    assert res_data["error"]["code"] == "UNSUPPORTED_MEDIA_TYPE"
+    assert "Unsupported file type" in res_data["error"]["message"] or "Executable" in res_data["error"]["message"]
 
 
 def test_unsupported_binary_format_rejected_with_415():
@@ -105,4 +107,6 @@ def test_unsupported_binary_format_rejected_with_415():
 
     response = client.post("/api/v1/documents/raw", headers=headers, data=data, files=files)
     assert response.status_code == 415
-    assert "Unsupported Media Type" in response.json()["detail"]
+    res_data = response.json()
+    assert res_data["error"]["code"] == "UNSUPPORTED_MEDIA_TYPE"
+    assert "Unsupported Media Type" in res_data["error"]["message"]
