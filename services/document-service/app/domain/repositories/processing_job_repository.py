@@ -21,5 +21,9 @@ class DocumentProcessingJobRepository(ABC):
         pass
 
     @abstractmethod
+    async def update_with_version(self, job: DocumentProcessingJob, expected_version: int) -> DocumentProcessingJob:
+        pass
+
+    @abstractmethod
     async def try_atomic_acquire(self, job_id: UUID) -> bool:
         pass

@@ -17,3 +17,4 @@ class DocumentProcessingJob:
     completed_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    version: int = 1
