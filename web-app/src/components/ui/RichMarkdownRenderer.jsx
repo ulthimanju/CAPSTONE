@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeRaw from 'rehype-raw';
 import mermaid from 'mermaid';
 import 'katex/dist/katex.min.css';
 import './RichMarkdown.css';
@@ -69,7 +70,7 @@ mermaid.initialize({
   },
 });
 
-// ── Mermaid Diagram ────────────────────────────────────────────────────────
+// ── Mermaid Diagram Component ──────────────────────────────────────────────
 const MermaidDiagram = ({ code }) => {
   const containerRef = useRef(null);
   const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
@@ -101,7 +102,7 @@ const MermaidDiagram = ({ code }) => {
   );
 };
 
-// ── Copy Button ────────────────────────────────────────────────────────────
+// ── Copy Code Button ───────────────────────────────────────────────────────
 const CopyButton = ({ text }) => {
   const [copied, setCopied] = useState(false);
 
@@ -124,7 +125,7 @@ const CopyButton = ({ text }) => {
   );
 };
 
-// ── Code Block ─────────────────────────────────────────────────────────────
+// ── Code Block Component ───────────────────────────────────────────────────
 const CodeBlock = ({ className, children }) => {
   const match = /language-(\w+)/.exec(className || '');
   let lang = match ? match[1] : '';
@@ -165,13 +166,13 @@ const CodeBlock = ({ className, children }) => {
   );
 };
 
-// ── Main Renderer ──────────────────────────────────────────────────────────
+// ── Unified Markdown Renderer Component ───────────────────────────────────
 export const RichMarkdownRenderer = ({ content, compact = false }) => {
   if (!content) return null;
 
   let normalizedContent = typeof content === 'string' ? content : String(content);
 
-  // 1. Unescape literal "\\n" and "\\t" string characters into real newlines and tabs
+  // Unescape literal "\\n" and "\\t" string characters into real newlines and tabs
   if (normalizedContent.includes('\\n')) {
     normalizedContent = normalizedContent.replace(/\\n/g, '\n');
   }
@@ -183,9 +184,9 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
     <div className={`rich-markdown-content${compact ? ' rich-markdown-compact' : ''}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex, rehypeHighlight]}
+        rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
         components={{
-          // Code: fenced blocks and inline
+          // Code blocks & inline code
           code({ node, inline, className, children, ...props }) {
             if (inline) {
               return <code className={className} {...props}>{children}</code>;
@@ -193,12 +194,12 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
             return <CodeBlock className={className}>{children}</CodeBlock>;
           },
 
-          // Pre: suppressed — CodeBlock renders its own <pre>
+          // Suppress pre element (CodeBlock handles its own pre/header)
           pre({ children }) {
             return <>{children}</>;
           },
 
-          // Table
+          // Formatted Tables
           table({ children }) {
             return (
               <div className="rmc-table-wrap">
@@ -211,6 +212,33 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
           tr: ({ children }) => <tr>{children}</tr>,
           th: ({ children }) => <th>{children}</th>,
           td: ({ children }) => <td>{children}</td>,
+
+          // Links open securely in new tab
+          a({ href, children, ...props }) {
+            const isExternal = href?.startsWith('http://') || href?.startsWith('https://');
+            return (
+              <a
+                href={href}
+                target={isExternal ? '_blank' : undefined}
+                rel={isExternal ? 'noopener noreferrer' : undefined}
+                {...props}
+              >
+                {children}
+              </a>
+            );
+          },
+
+          // Images
+          img({ src, alt, ...props }) {
+            return (
+              <img
+                src={src}
+                alt={alt || 'Image'}
+                style={{ maxWidth: '100%', borderRadius: '8px', border: '1px solid var(--border-soft)' }}
+                {...props}
+              />
+            );
+          },
         }}
       >
         {normalizedContent}
@@ -218,3 +246,7 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
     </div>
   );
 };
+
+// Aliases for unified consumption
+export const MarkdownRenderer = RichMarkdownRenderer;
+export default RichMarkdownRenderer;

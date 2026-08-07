@@ -19,3 +19,4 @@ export * from "./Select";
 export * from "./Dropdown";
 export * from "./Breadcrumb";
 export * from "./Pagination";
+export * from "./RichMarkdownRenderer";
