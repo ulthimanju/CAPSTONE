@@ -171,10 +171,18 @@ async def get_workspace_learning_path(
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
 ):
+    cache = WorkspaceCacheManager()
+    cached_lp = await cache.get_workspace_learning_path(workspace_id)
+    if cached_lp is not None:
+        return {"learning_path": cached_lp}
+
     ws = await ws_repo.get_by_id(workspace_id)
     if not ws:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Workspace not found")
+
+    if ws.learning_path_json:
+        await cache.set_workspace_learning_path(workspace_id, ws.learning_path_json)
     return {"learning_path": ws.learning_path_json}
 
 
@@ -191,6 +199,8 @@ async def save_workspace_learning_path(
         raise HTTPException(status_code=404, detail="Workspace not found")
     ws.learning_path_json = req.learning_path_json
     await ws_repo.update(ws)
+    cache = WorkspaceCacheManager()
+    await cache.invalidate_workspace_learning_path(workspace_id)
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
 

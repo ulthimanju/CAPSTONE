@@ -27,6 +27,9 @@ class WorkspaceCacheManager:
     def _get_workspace_summary_key(self, workspace_id: uuid.UUID) -> str:
         return f"workspace_summary:{workspace_id}"
 
+    def _get_workspace_learning_path_key(self, workspace_id: uuid.UUID) -> str:
+        return f"workspace_learning_path:{workspace_id}"
+
     async def get(self, workspace_id: uuid.UUID) -> Workspace | None:
         if not self.redis:
             return None
@@ -307,5 +310,33 @@ class WorkspaceCacheManager:
             return
         try:
             await self.redis.delete(self._get_workspace_summary_key(workspace_id))
+        except Exception:
+            pass
+
+    async def get_workspace_learning_path(self, workspace_id: uuid.UUID) -> Any | None:
+        if not self.redis:
+            return None
+        try:
+            val = await self.redis.get(self._get_workspace_learning_path_key(workspace_id))
+            if not val:
+                return None
+            return json.loads(val)
+        except Exception:
+            return None
+
+    async def set_workspace_learning_path(self, workspace_id: uuid.UUID, learning_path_data: Any, ttl: int = 3600):
+        if not self.redis:
+            return
+        try:
+            key = self._get_workspace_learning_path_key(workspace_id)
+            await self.redis.setex(key, ttl, json.dumps(learning_path_data))
+        except Exception:
+            pass
+
+    async def invalidate_workspace_learning_path(self, workspace_id: uuid.UUID):
+        if not self.redis:
+            return
+        try:
+            await self.redis.delete(self._get_workspace_learning_path_key(workspace_id))
         except Exception:
             pass
