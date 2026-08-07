@@ -84,8 +84,8 @@ async def transfer_ownership(
     return await use_case.execute(workspace_id, user_id, req.new_owner_id)
 
 
-from app.schemas.member import UpdateMemberRoleRequest
-from fastapi import HTTPException
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
 
 @router.put("/members/{member_user_id}", response_model=MemberResponse)
 async def update_member_role(
@@ -99,4 +99,7 @@ async def update_member_role(
     if not member:
         raise HTTPException(status_code=404, detail="Workspace member not found")
     member.role = req.role
-    return await mem_repo.update_role_with_version(member, expected_version=req.version)
+    updated = await mem_repo.update_role_with_version(member, expected_version=req.version)
+    cache = WorkspaceCacheManager()
+    await cache.invalidate_workspace_members(workspace_id)
+    return updated
