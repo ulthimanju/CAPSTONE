@@ -109,14 +109,27 @@ async def upload_document_raw(
     temp_path = temp_upload.name
     content_checksum = sha256.hexdigest()
 
+    def _read_file_bytes(path: str) -> bytes:
+        with open(path, "rb") as disk_file:
+            return disk_file.read()
+
+    def _remove_file(path: str):
+        if os.path.exists(path):
+            os.remove(path)
+
+    def _move_file(src: str, dst: str):
+        if os.path.exists(src):
+            if os.path.exists(dst):
+                os.remove(dst)
+            os.replace(src, dst)
+
     # Idempotency Check BEFORE performing external Google Drive upload or DB creation
     from app.infrastructure.database.session import AsyncSessionLocal
     async with AsyncSessionLocal() as session:
         repo = get_document_repository(session)
         existing = await repo.get_by_checksum(workspace_id=workspace_id, uploaded_by=user_id, checksum=content_checksum)
         if existing:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+            await asyncio.to_thread(_remove_file, temp_path)
             logger.info(f"Idempotent upload match for '{file.filename}' (checksum: {content_checksum[:8]}...). Returning existing document record {existing.id}.")
             return DocumentResponse.model_validate(existing)
 
@@ -137,9 +150,8 @@ async def upload_document_raw(
             if token_res.status_code == 200:
                 access_token = token_res.json().get("access_token")
                 if access_token:
-                    # Stream file payload to Google Drive v3 Multipart API
-                    with open(temp_path, "rb") as disk_file:
-                        file_bytes = disk_file.read()
+                    # Stream file payload to Google Drive v3 Multipart API via worker thread read
+                    file_bytes = await asyncio.to_thread(_read_file_bytes, temp_path)
 
                     metadata = {"name": file.filename, "mimeType": file.content_type or "application/pdf"}
                     boundary = "----GoogleDriveBoundary7MA4YW"
@@ -208,18 +220,14 @@ async def upload_document_raw(
             retry_repo = get_document_repository(retry_session)
             existing = await retry_repo.get_by_checksum(workspace_id=workspace_id, uploaded_by=user_id, checksum=content_checksum)
             if existing:
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
+                await asyncio.to_thread(_remove_file, temp_path)
                 logger.info(f"Concurrent upload race conflict resolved for '{file.filename}' (checksum: {content_checksum[:8]}...). Returning existing document record {existing.id}.")
                 return DocumentResponse.model_validate(existing)
             raise
 
-    # Move temporary file on disk to destination path for LlamaParse
+    # Move temporary file on disk to destination path for LlamaParse asynchronously
     local_upload_path = os.path.join(tempfile.gettempdir(), f"upload_{created_doc.id}.{ext.lower()}")
-    if os.path.exists(temp_path):
-        if os.path.exists(local_upload_path):
-            os.remove(local_upload_path)
-        os.replace(temp_path, local_upload_path)
+    await asyncio.to_thread(_move_file, temp_path, local_upload_path)
 
     return created_doc
 
