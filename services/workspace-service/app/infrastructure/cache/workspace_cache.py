@@ -346,31 +346,37 @@ class WorkspaceCacheManager:
         except Exception:
             pass
 
-    async def get_learning_unit_content(self, workspace_id: uuid.UUID, unit_title: str) -> Any | None:
+    def _get_learning_unit_key(self, workspace_id: uuid.UUID, unit_identifier: uuid.UUID | str) -> str:
+        if isinstance(unit_identifier, uuid.UUID):
+            return f"learning_unit:{workspace_id}:{unit_identifier}"
+        title_hash = hashlib.sha256(unit_identifier.strip().lower().encode("utf-8")).hexdigest()[:16]
+        return f"learning_unit:{workspace_id}:{title_hash}"
+
+    async def get_learning_unit_content(self, workspace_id: uuid.UUID, unit_identifier: uuid.UUID | str) -> Any | None:
         if not self.redis:
             return None
         try:
-            val = await self.redis.get(self._get_learning_unit_key(workspace_id, unit_title))
+            val = await self.redis.get(self._get_learning_unit_key(workspace_id, unit_identifier))
             if not val:
                 return None
             return json.loads(val)
         except Exception:
             return None
 
-    async def set_learning_unit_content(self, workspace_id: uuid.UUID, unit_title: str, content_data: Any, ttl: int = 3600):
+    async def set_learning_unit_content(self, workspace_id: uuid.UUID, unit_identifier: uuid.UUID | str, content_data: Any, ttl: int = 3600):
         if not self.redis:
             return
         try:
-            key = self._get_learning_unit_key(workspace_id, unit_title)
+            key = self._get_learning_unit_key(workspace_id, unit_identifier)
             await self.redis.setex(key, ttl, json.dumps(content_data, default=str))
         except Exception:
             pass
 
-    async def invalidate_learning_unit_content(self, workspace_id: uuid.UUID, unit_title: str):
+    async def invalidate_learning_unit_content(self, workspace_id: uuid.UUID, unit_identifier: uuid.UUID | str):
         if not self.redis:
             return
         try:
-            await self.redis.delete(self._get_learning_unit_key(workspace_id, unit_title))
+            await self.redis.delete(self._get_learning_unit_key(workspace_id, unit_identifier))
         except Exception:
             pass
 

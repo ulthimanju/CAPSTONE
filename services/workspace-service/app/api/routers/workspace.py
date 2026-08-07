@@ -279,6 +279,8 @@ async def update_quiz_progress(
     await db.flush()
     cache = WorkspaceCacheManager()
     await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
+    if unit_content.id:
+        await cache.invalidate_learning_unit_content(workspace_id, unit_content.id)
     return {"status": "updated", "workspace_id": str(workspace_id), "unit_title": req.unit_title}
 
 
@@ -313,6 +315,8 @@ async def get_learning_unit_content(
         "updated_at": unit_content.updated_at.isoformat() if unit_content.updated_at else None
     }
     await cache.set_learning_unit_content(workspace_id, unit_title, payload)
+    if unit_content.id:
+        await cache.set_learning_unit_content(workspace_id, unit_content.id, payload)
     return payload
 
 
@@ -350,6 +354,8 @@ async def save_learning_unit_content(
     await db.flush()
     cache = WorkspaceCacheManager()
     await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
+    if unit_content.id:
+        await cache.invalidate_learning_unit_content(workspace_id, unit_content.id)
     return {"status": "saved", "workspace_id": str(workspace_id), "unit_title": req.unit_title}
 
 
