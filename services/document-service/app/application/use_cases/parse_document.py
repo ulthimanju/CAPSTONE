@@ -269,6 +269,8 @@ class ParseDocumentUseCase:
             job.completed_at = done_now
             await self.job_repo.update(job)
 
+            if hasattr(self.doc_repo, "session") and self.doc_repo.session:
+                await self.doc_repo.session.commit()
 
             return ParseResultResponse.model_validate(parse_result)
 

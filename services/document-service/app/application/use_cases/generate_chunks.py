@@ -114,6 +114,10 @@ class GenerateChunksUseCase:
             job.completed_at = done_now
             await self.job_repo.update(job)
 
+            # Ensure DB transaction is committed BEFORE publishing background tasks or triggering workers
+            if hasattr(self.doc_repo, "session") and self.doc_repo.session:
+                await self.doc_repo.session.commit()
+
             # Trigger automatic embedding generation in rag-service & publish notification platform event
             try:
                 import httpx
