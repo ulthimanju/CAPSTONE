@@ -17,7 +17,7 @@ class DocumentRepository(ABC):
         pass
 
     @abstractmethod
-    async def update(self, document: Document) -> Document:
+    async def update(self, document: Document, expected_version: int | None = None) -> Document:
         pass
 
     @abstractmethod

@@ -126,43 +126,61 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         models = result.scalars().all()
         return [self._to_domain(m) for m in models]
 
-    async def update(self, document: Document) -> Document:
+    async def update(self, document: Document, expected_version: int | None = None) -> Document:
         stmt = select(DocumentModel).where(DocumentModel.id == document.id)
+        if expected_version is not None:
+            stmt = stmt.where(DocumentModel.version == expected_version)
+
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        if model:
-            model.original_filename = document.original_filename
-            model.status = document.status.value if hasattr(document.status, "value") else str(document.status)
-            model.deleted_at = document.deleted_at
-            model.updated_at = document.updated_at
-            model.checksum = document.checksum
-            model.processing_job_id = document.processing_job_id
-            model.is_processing = document.is_processing
-            model.processing_started_at = document.processing_started_at
-            model.processing_completed_at = document.processing_completed_at
-            model.processing_error = document.processing_error
-            model.parse_status = document.parse_status.value if hasattr(document.parse_status, "value") else str(document.parse_status)
-            model.parse_started_at = document.parse_started_at
-            model.parse_completed_at = document.parse_completed_at
-            model.parse_error = document.parse_error
-            model.parse_result_id = document.parse_result_id
-            model.is_split = document.is_split
-            model.part_count = document.part_count
-            model.chunk_status = document.chunk_status.value if hasattr(document.chunk_status, "value") else str(document.chunk_status)
-            model.chunk_count = document.chunk_count
-            model.chunk_started_at = document.chunk_started_at
-            model.chunk_completed_at = document.chunk_completed_at
-            model.chunk_error = document.chunk_error
-            model.version = document.version
-            model.parent_document_id = document.parent_document_id
-            model.is_latest = document.is_latest
-            model.is_deleted = document.is_deleted
-            model.deleted_by = document.deleted_by
-            model.lifecycle_status = document.lifecycle_status.value if hasattr(document.lifecycle_status, "value") else str(document.lifecycle_status)
-            model.last_processed_at = document.last_processed_at
-            model.last_indexed_at = document.last_indexed_at
-            model.last_accessed_at = document.last_accessed_at
-            await self.session.flush()
+
+        if not model:
+            # Check if document exists with a different version (Concurrency Conflict)
+            check_stmt = select(DocumentModel).where(DocumentModel.id == document.id)
+            check_res = await self.session.execute(check_stmt)
+            existing_doc = check_res.scalar_one_or_none()
+            if existing_doc:
+                from fastapi import HTTPException, status
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Document has been modified by another process. Please refresh and try again.",
+                )
+            from fastapi import HTTPException, status
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+        model.original_filename = document.original_filename
+        model.status = document.status.value if hasattr(document.status, "value") else str(document.status)
+        model.deleted_at = document.deleted_at
+        model.updated_at = document.updated_at
+        model.checksum = document.checksum
+        model.processing_job_id = document.processing_job_id
+        model.is_processing = document.is_processing
+        model.processing_started_at = document.processing_started_at
+        model.processing_completed_at = document.processing_completed_at
+        model.processing_error = document.processing_error
+        model.parse_status = document.parse_status.value if hasattr(document.parse_status, "value") else str(document.parse_status)
+        model.parse_started_at = document.parse_started_at
+        model.parse_completed_at = document.parse_completed_at
+        model.parse_error = document.parse_error
+        model.parse_result_id = document.parse_result_id
+        model.is_split = document.is_split
+        model.part_count = document.part_count
+        model.chunk_status = document.chunk_status.value if hasattr(document.chunk_status, "value") else str(document.chunk_status)
+        model.chunk_count = document.chunk_count
+        model.chunk_started_at = document.chunk_started_at
+        model.chunk_completed_at = document.chunk_completed_at
+        model.chunk_error = document.chunk_error
+        model.version = model.version + 1  # Increment version on update
+        model.parent_document_id = document.parent_document_id
+        model.is_latest = document.is_latest
+        model.is_deleted = document.is_deleted
+        model.deleted_by = document.deleted_by
+        model.lifecycle_status = document.lifecycle_status.value if hasattr(document.lifecycle_status, "value") else str(document.lifecycle_status)
+        model.last_processed_at = document.last_processed_at
+        model.last_indexed_at = document.last_indexed_at
+        model.last_accessed_at = document.last_accessed_at
+        await self.session.flush()
+        document.version = model.version
         return document
 
     async def delete(self, document_id: UUID) -> bool:

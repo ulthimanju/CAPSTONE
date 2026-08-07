@@ -19,6 +19,7 @@ class UploadDocumentRequest(BaseModel):
 
 class UpdateDocumentRequest(BaseModel):
     original_filename: str | None = None
+    version: int | None = None
 
 
 class DocumentResponse(BaseModel):
