@@ -15,9 +15,13 @@ def resolve_file_extension(filename: str) -> FileType:
         return FileType.TXT
 
 
+from app.infrastructure.cache.document_cache import DocumentCacheManager
+
+
 class UploadDocumentUseCase:
-    def __init__(self, doc_repo: DocumentRepository):
+    def __init__(self, doc_repo: DocumentRepository, cache_manager: DocumentCacheManager | None = None):
         self.doc_repo = doc_repo
+        self.cache = cache_manager or DocumentCacheManager()
 
     async def execute(self, user_id: UUID, req: UploadDocumentRequest) -> DocumentResponse:
         now = datetime.now(timezone.utc)
@@ -42,4 +46,5 @@ class UploadDocumentUseCase:
             updated_at=now,
         )
         created = await self.doc_repo.create(document)
+        await self.cache.invalidate_workspace_documents(req.workspace_id)
         return DocumentResponse.model_validate(created)

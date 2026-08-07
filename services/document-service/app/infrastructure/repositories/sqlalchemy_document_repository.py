@@ -7,9 +7,13 @@ from app.infrastructure.database.models import DocumentModel
 from app.constants.enums import DocumentStatus, FileType, StorageProvider, ParseStatus, ChunkStatus, LifecycleStatus
 
 
+from app.infrastructure.cache.document_cache import DocumentCacheManager
+
+
 class SQLAlchemyDocumentRepository(DocumentRepository):
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, cache_manager: DocumentCacheManager | None = None):
         self.session = session
+        self.cache = cache_manager or DocumentCacheManager()
 
     def _to_domain(self, model: DocumentModel) -> Document:
         return Document(
@@ -104,6 +108,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         )
         self.session.add(model)
         await self.session.flush()
+        await self.cache.invalidate_workspace_documents(document.workspace_id)
         return document
 
     async def get_by_id(self, document_id: UUID) -> Document | None:
@@ -118,6 +123,10 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         return self._to_domain(model) if model else None
 
     async def list_by_workspace(self, workspace_id: UUID) -> list[Document]:
+        cached_docs = await self.cache.get_workspace_documents(workspace_id)
+        if cached_docs is not None:
+            return cached_docs
+
         stmt = (
             select(DocumentModel)
             .where(
@@ -130,7 +139,9 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        return [self._to_domain(m) for m in models]
+        documents = [self._to_domain(m) for m in models]
+        await self.cache.set_workspace_documents(workspace_id, documents)
+        return documents
 
     async def update(self, document: Document, expected_version: int | None = None) -> Document:
         stmt = select(DocumentModel).where(DocumentModel.id == document.id)
@@ -141,7 +152,6 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         model = result.scalar_one_or_none()
 
         if not model:
-            # Check if document exists with a different version (Concurrency Conflict)
             check_stmt = select(DocumentModel).where(DocumentModel.id == document.id)
             check_res = await self.session.execute(check_stmt)
             existing_doc = check_res.scalar_one_or_none()
@@ -176,7 +186,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         model.chunk_started_at = document.chunk_started_at
         model.chunk_completed_at = document.chunk_completed_at
         model.chunk_error = document.chunk_error
-        model.version = model.version + 1  # Increment version on update
+        model.version = model.version + 1
         model.parent_document_id = document.parent_document_id
         model.is_latest = document.is_latest
         model.is_deleted = document.is_deleted
@@ -187,6 +197,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         model.last_accessed_at = document.last_accessed_at
         await self.session.flush()
         document.version = model.version
+        await self.cache.invalidate_workspace_documents(document.workspace_id)
         return document
 
     async def update_processing_status_with_version(
@@ -234,7 +245,10 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
                 status_code=http_status.HTTP_409_CONFLICT,
                 detail="Document processing state transition conflict. Document was modified by another worker.",
             )
-        return await self.get_by_id(document_id)
+        updated_doc = await self.get_by_id(document_id)
+        if updated_doc:
+            await self.cache.invalidate_workspace_documents(updated_doc.workspace_id)
+        return updated_doc
 
     async def delete(self, document_id: UUID) -> bool:
         stmt = select(DocumentModel).where(DocumentModel.id == document_id)
@@ -245,6 +259,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             model.lifecycle_status = LifecycleStatus.DELETED.value
             model.is_deleted = True
             await self.session.flush()
+            await self.cache.invalidate_workspace_documents(model.workspace_id)
             return True
         return False
 

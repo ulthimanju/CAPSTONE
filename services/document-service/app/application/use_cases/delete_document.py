@@ -5,9 +5,13 @@ from app.domain.repositories.document_repository import DocumentRepository
 from app.constants.enums import DocumentStatus
 
 
+from app.infrastructure.cache.document_cache import DocumentCacheManager
+
+
 class DeleteDocumentUseCase:
-    def __init__(self, doc_repo: DocumentRepository):
+    def __init__(self, doc_repo: DocumentRepository, cache_manager: DocumentCacheManager | None = None):
         self.doc_repo = doc_repo
+        self.cache = cache_manager or DocumentCacheManager()
 
     async def execute(self, document_id: UUID) -> bool:
         doc = await self.doc_repo.get_by_id(document_id)
@@ -18,4 +22,5 @@ class DeleteDocumentUseCase:
         doc.deleted_at = datetime.now(timezone.utc)
         doc.updated_at = datetime.now(timezone.utc)
         await self.doc_repo.update(doc)
+        await self.cache.invalidate_workspace_documents(doc.workspace_id)
         return True
