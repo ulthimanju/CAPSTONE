@@ -1,20 +1,37 @@
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncTransaction
 from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 
 
 class SQLAlchemyUnitOfWork(UnitOfWorkInterface):
+    """
+    SQLAlchemy Unit of Work implementation that owns transaction lifecycles.
+    Automatically starts a database transaction on __aenter__ and either commits
+    on clean exit or rolls back on exception in __aexit__.
+    """
     def __init__(self, db: AsyncSession):
         self._db = db
+        self._tx: AsyncTransaction | None = None
 
     async def __aenter__(self):
+        self._tx = await self._db.begin()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
+        if exc_type is None:
+            await self.commit()
+        else:
             await self.rollback()
 
     async def commit(self):
-        await self._db.commit()
+        if self._tx:
+            await self._tx.commit()
+            self._tx = None
+        else:
+            await self._db.commit()
 
     async def rollback(self):
-        await self._db.rollback()
+        if self._tx:
+            await self._tx.rollback()
+            self._tx = None
+        else:
+            await self._db.rollback()

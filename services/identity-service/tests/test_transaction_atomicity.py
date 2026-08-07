@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
+from app.infrastructure.repositories.sqlalchemy_unit_of_work import SQLAlchemyUnitOfWork
 from app.application.use_cases.oauth_login import OAuthUseCase
 from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
 from app.domain.entities.user import User
@@ -15,30 +16,54 @@ from app.constants.enums import Role
 
 
 @pytest.mark.asyncio
-async def test_oauth_flow_rollback_on_exception():
-    # Mocks
+async def test_uow_automatic_transaction_lifecycle_success():
+    mock_db = AsyncMock()
+    mock_tx = AsyncMock()
+    mock_db.begin.return_value = mock_tx
+
+    uow = SQLAlchemyUnitOfWork(mock_db)
+
+    async with uow:
+        pass  # Clean exit
+
+    # Verify transaction began on enter and committed on exit
+    mock_db.begin.assert_called_once()
+    mock_tx.commit.assert_called_once()
+    mock_tx.rollback.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_uow_automatic_transaction_lifecycle_rollback():
+    mock_db = AsyncMock()
+    mock_tx = AsyncMock()
+    mock_db.begin.return_value = mock_tx
+
+    uow = SQLAlchemyUnitOfWork(mock_db)
+
+    with pytest.raises(RuntimeError):
+        async with uow:
+            raise RuntimeError("Database write error")
+
+    # Verify transaction began on enter and rolled back on exception
+    mock_db.begin.assert_called_once()
+    mock_tx.rollback.assert_called_once()
+    mock_tx.commit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_oauth_usecase_with_uow_atomicity():
     user_repo = AsyncMock()
     oauth_repo = AsyncMock()
     session_repo = AsyncMock()
     oauth_client = AsyncMock()
     refresh_repo = AsyncMock()
-    uow = AsyncMock()
 
-    # Track rollback and commit calls
-    uow.commit = AsyncMock()
-    uow.rollback = AsyncMock()
+    mock_db = AsyncMock()
+    mock_tx = AsyncMock()
+    mock_db.begin.return_value = mock_tx
 
-    # UOW context manager mock
-    async def uow_enter():
-        return uow
-    async def uow_exit(exc_type, exc_val, exc_tb):
-        if exc_type is not None:
-            await uow.rollback()
+    uow = SQLAlchemyUnitOfWork(mock_db)
 
-    uow.__aenter__ = AsyncMock(side_effect=uow_enter)
-    uow.__aexit__ = AsyncMock(side_effect=uow_exit)
-
-    # Setup User & OAuth returning None initially
     user_repo.get_by_email.return_value = None
     user_repo.create.return_value = User(
         id=uuid.uuid4(),
@@ -51,8 +76,8 @@ async def test_oauth_flow_rollback_on_exception():
     )
     oauth_repo.get_by_provider.return_value = None
 
-    # Simulate failure on session creation midway through authentication flow
-    session_repo.create.side_effect = RuntimeError("Database error during session creation")
+    # Simulate exception midway
+    session_repo.create.side_effect = RuntimeError("Midway database crash")
 
     use_case = OAuthUseCase(
         user_repo=user_repo,
@@ -75,8 +100,7 @@ async def test_oauth_flow_rollback_on_exception():
         expires_in=3600,
     )
 
-    # Execute callback and assert RuntimeError is raised
-    with pytest.raises(RuntimeError, match="Database error during session creation"):
+    with pytest.raises(RuntimeError, match="Midway database crash"):
         await use_case.handle_google_callback(
             user_dto=user_dto,
             token_dto=token_dto,
@@ -85,6 +109,6 @@ async def test_oauth_flow_rollback_on_exception():
             user_agent="pytest",
         )
 
-    # Assert commit was NEVER called and rollback WAS called
-    uow.commit.assert_not_called()
-    uow.rollback.assert_called_once()
+    # Assert transaction rolled back automatically on error
+    mock_tx.rollback.assert_called_once()
+    mock_tx.commit.assert_not_called()

@@ -16,7 +16,6 @@ class SessionUseCase:
         if self.uow:
             async with self.uow:
                 await self.session_repo.delete(session_id)
-                await self.uow.commit()
         else:
             await self.session_repo.delete(session_id)
 
@@ -24,6 +23,5 @@ class SessionUseCase:
         if self.uow:
             async with self.uow:
                 await self.session_repo.delete_all_for_user(user_id)
-                await self.uow.commit()
         else:
             await self.session_repo.delete_all_for_user(user_id)

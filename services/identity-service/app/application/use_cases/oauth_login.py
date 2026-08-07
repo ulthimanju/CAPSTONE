@@ -119,9 +119,6 @@ class OAuthUseCase:
             auth_logger.oauth_completed(user_id=str(user.id), provider=OAuthProvider.GOOGLE)
             auth_logger.session_created(session_id=str(session.id), user_id=str(user.id))
 
-            # 6. Commit atomic transaction
-            await self.uow.commit()
-
             return OAuthLoginResult(
                 user=user,
                 session=session,
