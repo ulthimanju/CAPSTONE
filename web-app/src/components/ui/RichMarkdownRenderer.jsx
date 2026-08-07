@@ -185,17 +185,27 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeHighlight]}
         components={{
-          // Code blocks & inline code
-          code({ node, inline, className, children, ...props }) {
-            if (inline) {
-              return <code className={className} {...props}>{children}</code>;
-            }
-            return <CodeBlock className={className}>{children}</CodeBlock>;
+          // Pre element intercepts fenced code blocks and routes them to CodeBlock
+          pre({ children }) {
+            const childrenArray = React.Children.toArray(children);
+            const codeElement = childrenArray.find((child) => child && child.type === 'code') || children;
+            const className = codeElement?.props?.className || '';
+            const codeContent = codeElement?.props?.children || children;
+
+            return (
+              <CodeBlock className={className}>
+                {codeContent}
+              </CodeBlock>
+            );
           },
 
-          // Suppress pre element (CodeBlock handles its own pre/header)
-          pre({ children }) {
-            return <>{children}</>;
+          // Code element handles inline backtick code exclusively
+          code({ children, className, ...props }) {
+            return (
+              <code className={`rmc-inline-code ${className || ''}`} {...props}>
+                {children}
+              </code>
+            );
           },
 
           // Formatted Tables

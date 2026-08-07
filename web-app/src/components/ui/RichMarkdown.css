@@ -63,8 +63,9 @@
 }
 
 /* ── Inline code ──────────────────────────────────────── */
-.rich-markdown-content code:not(pre code) {
-  font-family: var(--mono);
+.rich-markdown-content code:not(pre code),
+.rmc-inline-code {
+  font-family: var(--mono, monospace);
   font-size: 12px;
   background: var(--bg-3);
   color: var(--accent);
