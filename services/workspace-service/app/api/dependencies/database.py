@@ -8,7 +8,14 @@ from app.infrastructure.repositories.sqlalchemy_invitation_repository import SQL
 from app.infrastructure.repositories.sqlalchemy_activity_repository import SQLAlchemyActivityRepository
 
 
-from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+_workspace_cache_instance: WorkspaceCacheManager | None = None
+
+
+def get_workspace_cache() -> WorkspaceCacheManager:
+    global _workspace_cache_instance
+    if _workspace_cache_instance is None:
+        _workspace_cache_instance = WorkspaceCacheManager()
+    return _workspace_cache_instance
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -17,7 +24,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         try:
             yield session
             await session.commit()
-            cache = WorkspaceCacheManager()
+            cache = get_workspace_cache()
             for ws_id in session.info.get("post_commit_invalidations", set()):
                 await cache.invalidate(ws_id)
         except Exception:

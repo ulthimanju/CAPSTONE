@@ -349,15 +349,15 @@ async def validate_document(
     return await use_case.execute(document_id)
 
 
-from app.infrastructure.cache.document_cache import DocumentCacheManager
+from app.api.dependencies.database import get_document_cache
 
 
 @router.get("/{document_id}/status")
 async def get_document_status(
     document_id: UUID,
     session: AsyncSession = Depends(get_db_session),
+    cache: DocumentCacheManager = Depends(get_document_cache),
 ):
-    cache = DocumentCacheManager()
     cached = await cache.get_document_status(document_id)
     if cached is not None:
         return cached

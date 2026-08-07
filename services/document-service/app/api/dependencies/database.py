@@ -14,7 +14,14 @@ from app.infrastructure.services.parser_services import LlamaParseClient
 from app.config.settings import settings
 
 
-from app.infrastructure.cache.document_cache import DocumentCacheManager
+_document_cache_instance: DocumentCacheManager | None = None
+
+
+def get_document_cache() -> DocumentCacheManager:
+    global _document_cache_instance
+    if _document_cache_instance is None:
+        _document_cache_instance = DocumentCacheManager()
+    return _document_cache_instance
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -23,7 +30,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         try:
             yield session
             await session.commit()
-            cache = DocumentCacheManager()
+            cache = get_document_cache()
             for ws_id in session.info.get("post_commit_invalidations", set()):
                 await cache.invalidate_workspace_documents(ws_id)
         except Exception:
