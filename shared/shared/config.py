@@ -36,9 +36,11 @@ class PlatformSettings(BaseSettings):
     http_connect_timeout: float = 5.0
     http_read_timeout: float = 30.0
     http_write_timeout: float = 30.0
-    http_pool_timeout: float = 5.0
     http_pool_size: int = 100
     max_upload_size_mb: int = 50
+    # RAG Config
+    rag_default_top_k: int = 10
+    rag_max_top_k: int = 20
 
     # Database Tuning Configs (Optional defaults for services using DB)
     database_url: Optional[str] = None

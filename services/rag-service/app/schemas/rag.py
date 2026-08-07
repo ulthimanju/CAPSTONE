@@ -19,7 +19,7 @@ class ChunkEmbeddingStatusResponse(BaseModel):
 class SemanticSearchRequest(BaseModel):
     workspace_id: uuid.UUID
     query: str
-    top_k: int = Field(default=5, ge=1, le=20)
+    top_k: int = Field(default=10, ge=1, le=20)
 
 
 class SearchResultChunk(BaseModel):
@@ -41,7 +41,7 @@ class SemanticSearchResponse(BaseModel):
 class RAGChatRequest(BaseModel):
     workspace_id: uuid.UUID
     question: str
-    top_k: int = 5
+    top_k: int = Field(default=10, ge=1, le=20)
     system_instruction: str | None = None
 
 
