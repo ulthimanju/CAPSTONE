@@ -225,9 +225,28 @@ async def upload_document_raw(
                 return DocumentResponse.model_validate(existing)
             raise
 
-    # Move temporary file on disk to destination path for LlamaParse asynchronously
+    # Move temporary file on disk to destination path for LlamaParse asynchronously with failure cleanup
     local_upload_path = os.path.join(tempfile.gettempdir(), f"upload_{created_doc.id}.{ext.lower()}")
-    await asyncio.to_thread(_move_file, temp_path, local_upload_path)
+    try:
+        await asyncio.to_thread(_move_file, temp_path, local_upload_path)
+    except Exception as move_err:
+        logger.error(f"Failed to finalize upload file move for document {created_doc.id}: {move_err}")
+        await asyncio.to_thread(_remove_file, temp_path)
+        await asyncio.to_thread(_remove_file, local_upload_path)
+
+        # Remove persisted document DB record so no orphaned DB entry remains
+        try:
+            async with AsyncSessionLocal() as cleanup_session:
+                cleanup_repo = get_document_repository(cleanup_session)
+                await cleanup_repo.delete(created_doc.id)
+                await cleanup_session.commit()
+        except Exception as db_clean_err:
+            logger.warning(f"Failed to clean up document DB record after file move error: {db_clean_err}")
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to finalize document upload storage",
+        )
 
     return created_doc
 
