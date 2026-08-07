@@ -65,6 +65,28 @@ class ParseStatus(str, Enum):
     FAILED = "FAILED"
 
 
+ALLOWED_DOCUMENT_STATUS_TRANSITIONS = {
+    DocumentStatus.UPLOADED: {DocumentStatus.PROCESSING, DocumentStatus.FAILED, DocumentStatus.DELETED},
+    DocumentStatus.PROCESSING: {DocumentStatus.PROCESSED, DocumentStatus.READY, DocumentStatus.READY_FOR_RAG, DocumentStatus.FAILED, DocumentStatus.DELETED},
+    DocumentStatus.PROCESSED: {DocumentStatus.READY_FOR_RAG, DocumentStatus.READY, DocumentStatus.FAILED, DocumentStatus.DELETED},
+    DocumentStatus.READY_FOR_RAG: {DocumentStatus.DELETED, DocumentStatus.ARCHIVED, DocumentStatus.PROCESSING},
+    DocumentStatus.READY: {DocumentStatus.DELETED, DocumentStatus.ARCHIVED, DocumentStatus.PROCESSING},
+    DocumentStatus.FAILED: {DocumentStatus.PROCESSING, DocumentStatus.DELETED},
+    DocumentStatus.DELETED: set(),
+    DocumentStatus.ARCHIVED: {DocumentStatus.READY_FOR_RAG, DocumentStatus.READY, DocumentStatus.DELETED},
+}
+
+ALLOWED_PARSE_STATUS_TRANSITIONS = {
+    ParseStatus.PENDING: {ParseStatus.VALIDATING, ParseStatus.QUEUED, ParseStatus.PARSING, ParseStatus.FAILED},
+    ParseStatus.VALIDATING: {ParseStatus.QUEUED, ParseStatus.PARSING, ParseStatus.FAILED},
+    ParseStatus.QUEUED: {ParseStatus.PARSING, ParseStatus.FAILED},
+    ParseStatus.PARSING: {ParseStatus.MERGING, ParseStatus.COMPLETED, ParseStatus.FAILED},
+    ParseStatus.MERGING: {ParseStatus.COMPLETED, ParseStatus.FAILED},
+    ParseStatus.COMPLETED: {ParseStatus.PARSING, ParseStatus.FAILED},
+    ParseStatus.FAILED: {ParseStatus.PENDING, ParseStatus.QUEUED, ParseStatus.PARSING},
+}
+
+
 class ChunkStatus(str, Enum):
     PENDING = "PENDING"
     GENERATING = "GENERATING"

@@ -199,6 +199,19 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
     ) -> Document | None:
         from sqlalchemy import update, func
         from fastapi import HTTPException, status as http_status
+        from app.constants.enums import ALLOWED_DOCUMENT_STATUS_TRANSITIONS, DocumentStatus
+
+        current = await self.get_by_id(document_id)
+        if current:
+            curr_status = DocumentStatus(current.status) if hasattr(current.status, "value") else DocumentStatus(str(current.status))
+            target_status = DocumentStatus(status) if status in DocumentStatus.__members__ else status
+            if curr_status in ALLOWED_DOCUMENT_STATUS_TRANSITIONS:
+                allowed = ALLOWED_DOCUMENT_STATUS_TRANSITIONS[curr_status]
+                if target_status not in allowed and target_status != curr_status:
+                    raise HTTPException(
+                        status_code=http_status.HTTP_409_CONFLICT,
+                        detail=f"Invalid document state transition from {curr_status.value} to {status}",
+                    )
 
         stmt = (
             update(DocumentModel)
