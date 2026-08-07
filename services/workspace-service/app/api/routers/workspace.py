@@ -5,7 +5,9 @@ from app.api.dependencies.database import (
     get_workspace_repository,
     get_member_repository,
     get_activity_repository,
+    get_workspace_cache,
 )
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 from app.domain.repositories.workspace_repository import WorkspaceRepository
 from app.domain.repositories.member_repository import MemberRepository
 from app.domain.repositories.activity_repository import ActivityRepository
@@ -128,8 +130,8 @@ async def get_workspace_summary(
     workspace_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
-    cache = WorkspaceCacheManager()
     cached_summary = await cache.get_workspace_summary(workspace_id)
     if cached_summary is not None:
         return {"summary": cached_summary}
@@ -150,6 +152,7 @@ async def save_workspace_summary(
     req: SaveSummaryRequest,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
     ws = await ws_repo.get_by_id(workspace_id)
     if not ws:
@@ -157,7 +160,6 @@ async def save_workspace_summary(
         raise HTTPException(status_code=404, detail="Workspace not found")
     ws.summary_json = req.summary_json
     await ws_repo.update(ws)
-    cache = WorkspaceCacheManager()
     await cache.invalidate_workspace_summary(workspace_id)
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
@@ -170,8 +172,8 @@ async def get_workspace_learning_path(
     workspace_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
-    cache = WorkspaceCacheManager()
     cached_lp = await cache.get_workspace_learning_path(workspace_id)
     if cached_lp is not None:
         return {"learning_path": cached_lp}
@@ -192,6 +194,7 @@ async def save_workspace_learning_path(
     req: SaveLearningPathRequest,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
     ws = await ws_repo.get_by_id(workspace_id)
     if not ws:
@@ -199,7 +202,6 @@ async def save_workspace_learning_path(
         raise HTTPException(status_code=404, detail="Workspace not found")
     ws.learning_path_json = req.learning_path_json
     await ws_repo.update(ws)
-    cache = WorkspaceCacheManager()
     await cache.invalidate_workspace_learning_path(workspace_id)
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
@@ -264,6 +266,7 @@ async def update_quiz_progress(
     workspace_id: UUID,
     req: UpdateQuizProgressRequest,
     db: AsyncSession = Depends(get_db),
+    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
     stmt = select(LearningUnitContentModel).where(
         LearningUnitContentModel.workspace_id == workspace_id,
@@ -277,7 +280,6 @@ async def update_quiz_progress(
 
     unit_content.quiz_json = req.quiz_json
     await db.flush()
-    cache = WorkspaceCacheManager()
     await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
     if unit_content.id:
         await cache.invalidate_learning_unit_content(workspace_id, unit_content.id)
@@ -289,8 +291,8 @@ async def get_learning_unit_content(
     workspace_id: UUID,
     unit_title: str,
     db: AsyncSession = Depends(get_db),
+    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
-    cache = WorkspaceCacheManager()
     cached = await cache.get_learning_unit_content(workspace_id, unit_title)
     if cached is not None:
         return cached
@@ -325,6 +327,7 @@ async def save_learning_unit_content(
     workspace_id: UUID,
     req: SaveUnitContentRequest,
     db: AsyncSession = Depends(get_db),
+    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
     stmt = select(LearningUnitContentModel).where(
         LearningUnitContentModel.workspace_id == workspace_id,
@@ -352,7 +355,6 @@ async def save_learning_unit_content(
         unit_content.model = req.model
 
     await db.flush()
-    cache = WorkspaceCacheManager()
     await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
     if unit_content.id:
         await cache.invalidate_learning_unit_content(workspace_id, unit_content.id)
