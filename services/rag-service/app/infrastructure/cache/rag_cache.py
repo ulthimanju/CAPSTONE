@@ -77,7 +77,41 @@ class RAGCacheManager:
             return
         try:
             pattern = self._get_workspace_pattern(workspace_id)
-            keys = await self.redis.keys(pattern)
+            keys = []
+            if hasattr(self.redis, "scan_iter") and callable(getattr(self.redis, "scan_iter")):
+                try:
+                    res = self.redis.scan_iter(match=pattern, count=100)
+                    if hasattr(res, "__aiter__"):
+                        async for key in res:
+                            keys.append(key)
+                    elif isinstance(res, (list, tuple)):
+                        keys = list(res)
+                except Exception:
+                    keys = []
+
+            if not keys and hasattr(self.redis, "scan") and callable(getattr(self.redis, "scan")):
+                try:
+                    cursor = "0"
+                    while True:
+                        res = await self.redis.scan(cursor=cursor, match=pattern, count=100)
+                        if isinstance(res, (tuple, list)) and len(res) == 2:
+                            cursor, matched_keys = res
+                            keys.extend(matched_keys)
+                            if str(cursor) == "0" or cursor == 0:
+                                break
+                        else:
+                            break
+                except Exception:
+                    keys = []
+
+            if not keys and hasattr(self.redis, "keys") and callable(getattr(self.redis, "keys")):
+                try:
+                    res_keys = await self.redis.keys(pattern)
+                    if isinstance(res_keys, (list, tuple)):
+                        keys = list(res_keys)
+                except Exception:
+                    pass
+
             if keys:
                 await self.redis.delete(*keys)
         except Exception:

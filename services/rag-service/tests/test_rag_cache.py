@@ -49,7 +49,6 @@ async def test_rag_retrieval_cache_hit_and_miss():
     vector_repo.similarity_search.reset_mock()
 
     # 2. Second RAG ask: Cache HIT -> BYPASSES get_embeddings and similarity_search!
-    # Mock Redis returning cached retrieval JSON
     import json
     cached_payload = json.dumps([
         {
@@ -71,7 +70,11 @@ async def test_rag_retrieval_cache_hit_and_miss():
     assert not ai_client.get_embeddings.called
     assert not vector_repo.similarity_search.called
 
-    # 3. Test Cache Invalidation on workspace corpus change
+    # 3. Test Cache Invalidation via SCAN / scan_iter
+    redis_mock.scan.return_value = (0, [f"rag_retrieval:{ws_id}:hash:3"])
     redis_mock.keys.return_value = [f"rag_retrieval:{ws_id}:hash:3"]
+    # Delete scan_iter attribute so scan / keys fallback is exercised cleanly
+    delattr(redis_mock, "scan_iter")
+
     await cache.invalidate_workspace_retrievals(ws_id)
     assert redis_mock.delete.called
