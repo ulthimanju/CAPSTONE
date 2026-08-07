@@ -15,14 +15,26 @@ def _to_entity(m: UserModel) -> User:
     )
 
 
+from app.infrastructure.cache.user_cache import UserCacheManager
+
+
 class SQLAlchemyUserRepository(UserRepository):
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, cache_manager: UserCacheManager | None = None) -> None:
         self._db = db
+        self.cache = cache_manager or UserCacheManager()
 
     async def get_by_id(self, user_id: UUID) -> User | None:
+        cached_user = await self.cache.get_user_profile(user_id)
+        if cached_user is not None:
+            return cached_user
+
         result = await self._db.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one_or_none()
-        return _to_entity(m) if m else None
+        if not m:
+            return None
+        user = _to_entity(m)
+        await self.cache.set_user_profile(user)
+        return user
 
     async def get_by_email(self, email: str) -> User | None:
         result = await self._db.execute(select(UserModel).where(UserModel.email == email))
@@ -35,6 +47,9 @@ class SQLAlchemyUserRepository(UserRepository):
         self._db.add(m)
         await self._db.flush()
         await self._db.refresh(m)
+        if "post_commit_user_invalidations" in self._db.info:
+            self._db.info["post_commit_user_invalidations"].add(user.id)
+        await self.cache.invalidate_user_profile(user.id)
         return _to_entity(m)
 
     async def update(self, user: User) -> User:
@@ -44,4 +59,8 @@ class SQLAlchemyUserRepository(UserRepository):
         m.picture_url = user.picture_url
         await self._db.flush()
         await self._db.refresh(m)
-        return _to_entity(m)
+        updated_user = _to_entity(m)
+        if "post_commit_user_invalidations" in self._db.info:
+            self._db.info["post_commit_user_invalidations"].add(user.id)
+        await self.cache.invalidate_user_profile(user.id)
+        return updated_user

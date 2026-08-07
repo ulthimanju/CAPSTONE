@@ -19,6 +19,18 @@ engine = create_async_engine(
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
+from app.infrastructure.cache.user_cache import UserCacheManager
+
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        yield session
+        session.info["post_commit_user_invalidations"] = set()
+        try:
+            yield session
+            await session.commit()
+            cache = UserCacheManager()
+            for user_id in session.info.get("post_commit_user_invalidations", set()):
+                await cache.invalidate_user_profile(user_id)
+        except Exception:
+            await session.rollback()
+            raise
