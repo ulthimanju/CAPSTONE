@@ -39,11 +39,18 @@ async def publish_platform_event(event: PlatformEvent):
     return {"status": "broadcasted", "event_id": str(event.event_id)}
 
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+
 @router.get("", response_model=NotificationListResponse)
-async def list_notifications(user_id: uuid.UUID = Depends(get_current_user_id)):
+async def list_notifications(
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+):
     items = notification_store.get_user_notifications(user_id)
     unread = notification_store.get_unread_count(user_id)
-    return NotificationListResponse(notifications=items, unread_count=unread)
+    paginated = items[offset : offset + limit]
+    return NotificationListResponse(notifications=paginated, unread_count=unread)
 
 
 @router.patch("/{notification_id}/read")

@@ -39,6 +39,9 @@ class PlatformSettings(BaseSettings):
     http_pool_size: int = 100
     max_upload_size_mb: int = 50
     max_json_request_size_mb: int = 10
+    # Pagination Config
+    default_page_size: int = 20
+    max_page_size: int = 100
     # RAG Config
     rag_default_top_k: int = 10
     rag_max_top_k: int = 20

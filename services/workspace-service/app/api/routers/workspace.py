@@ -41,21 +41,29 @@ async def create_workspace(
 @router.get("", response_model=WorkspaceListResponse)
 async def list_workspaces(
     user_id: UUID = Depends(get_current_user_id),
+    limit: int = Query(default=getattr(settings, "default_page_size", 20), ge=1, le=getattr(settings, "max_page_size", 100)),
+    offset: int = Query(default=0, ge=0),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
 ):
     use_case = ListWorkspacesUseCase(ws_repo, mem_repo)
-    return await use_case.execute(user_id)
+    result = await use_case.execute(user_id)
+    ws_list = result.workspaces if hasattr(result, "workspaces") else result
+    paginated = ws_list[offset : offset + limit]
+    return WorkspaceListResponse(workspaces=paginated, total=len(ws_list))
 
 
 @router.get("/archived/list", response_model=WorkspaceListResponse)
 async def list_archived_workspaces(
     user_id: UUID = Depends(get_current_user_id),
+    limit: int = Query(default=getattr(settings, "default_page_size", 20), ge=1, le=getattr(settings, "max_page_size", 100)),
+    offset: int = Query(default=0, ge=0),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
 ):
     archived = await ws_repo.list_archived_by_user_id(user_id)
+    paginated = archived[offset : offset + limit]
     return WorkspaceListResponse(
-        workspaces=[WorkspaceResponse.model_validate(w) for w in archived],
+        workspaces=[WorkspaceResponse.model_validate(w) for w in paginated],
         total=len(archived)
     )
 

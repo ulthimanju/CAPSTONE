@@ -256,11 +256,16 @@ async def upload_document_raw(
 @router.get("", response_model=DocumentListResponse)
 async def list_documents(
     workspace_id: UUID = Query(...),
+    limit: int = Query(default=settings.default_page_size, ge=1, le=settings.max_page_size),
+    offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_db_session),
 ):
     repo = get_document_repository(session)
     use_case = ListDocumentsUseCase(repo)
-    return await use_case.execute(workspace_id)
+    result = await use_case.execute(workspace_id)
+    doc_list = result.documents if hasattr(result, "documents") else result
+    paginated = doc_list[offset : offset + limit]
+    return DocumentListResponse(documents=paginated, total=len(doc_list))
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)
@@ -406,6 +411,8 @@ async def list_chunks(
 @router.get("/workspaces/{workspace_id}/chunks")
 async def list_workspace_chunks(
     workspace_id: UUID,
+    limit: int = Query(default=settings.default_page_size, ge=1, le=settings.max_page_size),
+    offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_db_session),
 ):
     doc_repo = get_document_repository(session)
@@ -425,7 +432,7 @@ async def list_workspace_chunks(
                 "content": c.content,
                 "token_count": c.token_count,
             })
-    return {"chunks": all_chunks, "total": len(all_chunks)}
+    return {"chunks": all_chunks[offset : offset + limit], "total": len(all_chunks)}
 
 
 import re
