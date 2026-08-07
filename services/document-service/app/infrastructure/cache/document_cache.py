@@ -15,6 +15,9 @@ class DocumentCacheManager:
     def _get_workspace_documents_key(self, workspace_id: uuid.UUID) -> str:
         return f"workspace_documents:{workspace_id}"
 
+    def _get_document_status_key(self, document_id: uuid.UUID) -> str:
+        return f"document_status:{document_id}"
+
     async def get_workspace_documents(self, workspace_id: uuid.UUID) -> list[Document] | None:
         if not self.redis:
             return None
@@ -126,5 +129,33 @@ class DocumentCacheManager:
             return
         try:
             await self.redis.delete(self._get_workspace_documents_key(workspace_id))
+        except Exception:
+            pass
+
+    async def get_document_status(self, document_id: uuid.UUID) -> dict[str, Any] | None:
+        if not self.redis:
+            return None
+        try:
+            val = await self.redis.get(self._get_document_status_key(document_id))
+            if not val:
+                return None
+            return json.loads(val)
+        except Exception:
+            return None
+
+    async def set_document_status(self, document_id: uuid.UUID, status_data: dict[str, Any], ttl: int = 60):
+        if not self.redis:
+            return
+        try:
+            key = self._get_document_status_key(document_id)
+            await self.redis.setex(key, ttl, json.dumps(status_data, default=str))
+        except Exception:
+            pass
+
+    async def invalidate_document_status(self, document_id: uuid.UUID):
+        if not self.redis:
+            return
+        try:
+            await self.redis.delete(self._get_document_status_key(document_id))
         except Exception:
             pass

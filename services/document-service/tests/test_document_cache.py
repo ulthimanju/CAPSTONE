@@ -100,7 +100,12 @@ async def test_document_cache_aside_pattern_and_invalidation():
     assert docs[0].original_filename == "test_doc.pdf"
     assert redis_mock.setex.called
 
-    # 2. UploadDocumentUseCase invalidates workspace_documents:{ws_id}
+    # 2. Get document status: Cache MISS -> sets document_status:{doc_id} with 60s TTL
+    redis_mock.get.return_value = None
+    await cache.set_document_status(doc_id, {"status": "PARSING", "is_processing": True}, ttl=60)
+    assert redis_mock.setex.called
+
+    # 3. UploadDocumentUseCase invalidates workspace_documents:{ws_id}
     upload_req = UploadDocumentRequest(
         workspace_id=ws_id,
         original_filename="new_doc.pdf",
@@ -114,7 +119,7 @@ async def test_document_cache_aside_pattern_and_invalidation():
     await upload_uc.execute(user_id, upload_req)
     assert redis_mock.delete.called
 
-    # 3. DeleteDocumentUseCase invalidates workspace_documents:{ws_id}
+    # 4. DeleteDocumentUseCase invalidates workspace_documents:{ws_id} and document_status:{doc_id}
     delete_uc = DeleteDocumentUseCase(repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
     await delete_uc.execute(doc_id)

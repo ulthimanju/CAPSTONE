@@ -349,6 +349,40 @@ async def validate_document(
     return await use_case.execute(document_id)
 
 
+from app.infrastructure.cache.document_cache import DocumentCacheManager
+
+
+@router.get("/{document_id}/status")
+async def get_document_status(
+    document_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+):
+    cache = DocumentCacheManager()
+    cached = await cache.get_document_status(document_id)
+    if cached is not None:
+        return cached
+
+    repo = get_document_repository(session)
+    doc = await repo.get_by_id(document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    status_data = {
+        "id": str(doc.id),
+        "status": doc.status.value if hasattr(doc.status, "value") else str(doc.status),
+        "is_processing": doc.is_processing,
+        "parse_status": doc.parse_status.value if hasattr(doc.parse_status, "value") else str(doc.parse_status),
+        "chunk_status": doc.chunk_status.value if hasattr(doc.chunk_status, "value") else str(doc.chunk_status),
+        "chunk_count": doc.chunk_count,
+        "processing_error": doc.processing_error,
+        "parse_error": doc.parse_error,
+        "chunk_error": doc.chunk_error,
+        "updated_at": doc.updated_at.isoformat() if doc.updated_at else None,
+    }
+    await cache.set_document_status(document_id, status_data, ttl=60)
+    return status_data
+
+
 @router.get("/{document_id}/processing", response_model=ProcessingJobResponse)
 async def get_processing_job(
     document_id: UUID,

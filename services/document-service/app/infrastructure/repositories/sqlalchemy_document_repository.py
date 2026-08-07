@@ -202,6 +202,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         if "post_commit_invalidations" in self.session.info:
             self.session.info["post_commit_invalidations"].add(document.workspace_id)
         await self.cache.invalidate_workspace_documents(document.workspace_id)
+        await self.cache.invalidate_document_status(document.id)
         return document
 
     async def update_processing_status_with_version(
@@ -254,6 +255,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             if "post_commit_invalidations" in self.session.info:
                 self.session.info["post_commit_invalidations"].add(updated_doc.workspace_id)
             await self.cache.invalidate_workspace_documents(updated_doc.workspace_id)
+            await self.cache.invalidate_document_status(document_id)
         return updated_doc
 
     async def delete(self, document_id: UUID) -> bool:
@@ -268,6 +270,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             if "post_commit_invalidations" in self.session.info:
                 self.session.info["post_commit_invalidations"].add(model.workspace_id)
             await self.cache.invalidate_workspace_documents(model.workspace_id)
+            await self.cache.invalidate_document_status(document_id)
             return True
         return False
 
