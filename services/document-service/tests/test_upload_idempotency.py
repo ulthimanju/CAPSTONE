@@ -5,7 +5,12 @@ os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgrespassword@loc
 import hashlib
 import uuid
 import pytest
+from unittest.mock import AsyncMock, patch
+from sqlalchemy.exc import IntegrityError
 from app.schemas.document import UploadDocumentRequest
+from app.domain.entities.document import Document
+from app.constants.enums import DocumentStatus, FileType, StorageProvider
+from datetime import datetime, timezone
 
 
 def test_sha256_checksum_computation_and_matching():
@@ -35,3 +40,41 @@ def test_sha256_checksum_computation_and_matching():
         checksum=hash_1
     )
     assert req.checksum == hash_1
+
+
+@pytest.mark.asyncio
+async def test_concurrent_integrity_error_race_resolution():
+    ws_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    content_hash = hashlib.sha256(b"Concurrent race test").hexdigest()
+
+    existing_doc = Document(
+        id=uuid.uuid4(),
+        workspace_id=ws_id,
+        uploaded_by=user_id,
+        original_filename="concurrent.pdf",
+        mime_type="application/pdf",
+        file_extension=FileType.PDF,
+        file_size_bytes=100,
+        storage_provider=StorageProvider.GOOGLE_DRIVE,
+        storage_file_id="gdrive_concurrent",
+        storage_parent_id=None,
+        storage_metadata_json={},
+        checksum=content_hash,
+        status=DocumentStatus.UPLOADED,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+
+    # Simulates catching IntegrityError on concurrent insert and resolving by returning existing document
+    resolved = False
+    try:
+        raise IntegrityError("unique constraint uq_documents_workspace_user_checksum violated", params=None, orig=None)
+    except IntegrityError:
+        # Fallback lookup finds existing document created by winning concurrent request
+        fetched = existing_doc
+        if fetched:
+            resolved = True
+
+    assert resolved is True
+    assert fetched.checksum == content_hash

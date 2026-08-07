@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Any
-from sqlalchemy import DateTime, ForeignKey, String, BigInteger, Integer, Boolean, Text, Index, func
+from sqlalchemy import DateTime, ForeignKey, String, BigInteger, Integer, Boolean, Text, Index, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.infrastructure.database.base import Base
@@ -14,7 +14,12 @@ class DocumentModel(Base):
         Index("idx_documents_uploaded_by", "uploaded_by"),
         Index("idx_documents_status", "status"),
         Index("idx_documents_storage_file_id", "storage_file_id"),
-        Index("idx_documents_ws_user_checksum", "workspace_id", "uploaded_by", "checksum"),
+        UniqueConstraint(
+            "workspace_id",
+            "uploaded_by",
+            "checksum",
+            name="uq_documents_workspace_user_checksum",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

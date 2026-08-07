@@ -194,12 +194,25 @@ async def upload_document_raw(
     )
 
     # Open DB session ONLY after external HTTP calls and file prep complete to prevent pool exhaustion
+    from sqlalchemy.exc import IntegrityError
     from app.infrastructure.database.session import AsyncSessionLocal
-    async with AsyncSessionLocal() as session:
-        repo = get_document_repository(session)
-        use_case = UploadDocumentUseCase(repo)
-        created_doc = await use_case.execute(user_id, req)
-        await session.commit()
+    try:
+        async with AsyncSessionLocal() as session:
+            repo = get_document_repository(session)
+            use_case = UploadDocumentUseCase(repo)
+            created_doc = await use_case.execute(user_id, req)
+            await session.commit()
+    except IntegrityError:
+        # Handle concurrent upload race condition where two identical uploads inserted simultaneously
+        async with AsyncSessionLocal() as retry_session:
+            retry_repo = get_document_repository(retry_session)
+            existing = await retry_repo.get_by_checksum(workspace_id=workspace_id, uploaded_by=user_id, checksum=content_checksum)
+            if existing:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                logger.info(f"Concurrent upload race conflict resolved for '{file.filename}' (checksum: {content_checksum[:8]}...). Returning existing document record {existing.id}.")
+                return DocumentResponse.model_validate(existing)
+            raise
 
     # Move temporary file on disk to destination path for LlamaParse
     local_upload_path = os.path.join(tempfile.gettempdir(), f"upload_{created_doc.id}.{ext.lower()}")
