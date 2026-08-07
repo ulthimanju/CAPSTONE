@@ -45,6 +45,7 @@ class PlatformSettings(BaseSettings):
     database_pool_size: int = 20
     database_max_overflow: int = 10
     database_echo: bool = False
+    db_statement_timeout_ms: int = 30000
 
     def get_httpx_timeout(self, read_override: float | None = None) -> httpx.Timeout:
         """Returns a structured httpx.Timeout policy sourced from settings."""

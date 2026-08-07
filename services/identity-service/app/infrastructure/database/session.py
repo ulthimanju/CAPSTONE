@@ -2,7 +2,15 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from app.config.settings import settings
 
-engine = create_async_engine(settings.database_url, echo=settings.debug)
+engine = create_async_engine(
+    settings.database_url,
+    echo=settings.debug,
+    connect_args={
+        "server_settings": {
+            "statement_timeout": str(getattr(settings, "db_statement_timeout_ms", 30000)),
+        }
+    },
+)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 

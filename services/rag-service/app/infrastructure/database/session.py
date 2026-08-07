@@ -8,7 +8,16 @@ DATABASE_URL = os.environ.get(
     "postgresql+asyncpg://postgres:postgrespassword@pgvector:5432/rag_db",
 )
 
-engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    future=True,
+    connect_args={
+        "server_settings": {
+            "statement_timeout": "30000",
+        }
+    },
+)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
