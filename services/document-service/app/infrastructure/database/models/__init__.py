@@ -11,8 +11,10 @@ class DocumentModel(Base):
     __tablename__ = "documents"
     __table_args__ = (
         Index("idx_documents_ws_created", "workspace_id", "created_at"),
+        Index("idx_documents_workspace_status", "workspace_id", "status"),
         Index("idx_documents_uploaded_by", "uploaded_by"),
         Index("idx_documents_status", "status"),
+        Index("idx_documents_parse_status", "parse_status"),
         Index("idx_documents_storage_file_id", "storage_file_id"),
         UniqueConstraint(
             "workspace_id",
