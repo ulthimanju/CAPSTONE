@@ -161,6 +161,11 @@ async def save_workspace_summary(
     ws.summary_json = req.summary_json
     await ws_repo.update(ws)
     await cache.invalidate_workspace_summary(workspace_id)
+    try:
+        from shared.events import publish_workspace_event
+        await publish_workspace_event(workspace_id, "workspace.summary.updated")
+    except Exception:
+        pass
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
 
@@ -203,6 +208,11 @@ async def save_workspace_learning_path(
     ws.learning_path_json = req.learning_path_json
     await ws_repo.update(ws)
     await cache.invalidate_workspace_learning_path(workspace_id)
+    try:
+        from shared.events import publish_workspace_event
+        await publish_workspace_event(workspace_id, "workspace.learning_path.updated")
+    except Exception:
+        pass
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
 

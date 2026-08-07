@@ -110,6 +110,12 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         await self.session.flush()
         if "post_commit_invalidations" in self.session.info:
             self.session.info["post_commit_invalidations"].add(document.workspace_id)
+        if "post_commit_events" in self.session.info:
+            self.session.info["post_commit_events"].append({
+                "workspace_id": str(document.workspace_id),
+                "event": "workspace.document.updated",
+                "payload": {"document_id": str(document.id), "status": str(document.status.value if hasattr(document.status, "value") else document.status)}
+            })
         await self.cache.invalidate_workspace_documents(document.workspace_id)
         return document
 
@@ -201,6 +207,12 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         document.version = model.version
         if "post_commit_invalidations" in self.session.info:
             self.session.info["post_commit_invalidations"].add(document.workspace_id)
+        if "post_commit_events" in self.session.info:
+            self.session.info["post_commit_events"].append({
+                "workspace_id": str(document.workspace_id),
+                "event": "workspace.document.updated",
+                "payload": {"document_id": str(document.id), "status": str(document.status.value if hasattr(document.status, "value") else document.status)}
+            })
         await self.cache.invalidate_workspace_documents(document.workspace_id)
         await self.cache.invalidate_document_status(document.id)
         return document
@@ -254,6 +266,12 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         if updated_doc:
             if "post_commit_invalidations" in self.session.info:
                 self.session.info["post_commit_invalidations"].add(updated_doc.workspace_id)
+            if "post_commit_events" in self.session.info:
+                self.session.info["post_commit_events"].append({
+                    "workspace_id": str(updated_doc.workspace_id),
+                    "event": "workspace.document.updated",
+                    "payload": {"document_id": str(document_id), "status": str(status)}
+                })
             await self.cache.invalidate_workspace_documents(updated_doc.workspace_id)
             await self.cache.invalidate_document_status(document_id)
         return updated_doc
@@ -269,6 +287,12 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             await self.session.flush()
             if "post_commit_invalidations" in self.session.info:
                 self.session.info["post_commit_invalidations"].add(model.workspace_id)
+            if "post_commit_events" in self.session.info:
+                self.session.info["post_commit_events"].append({
+                    "workspace_id": str(model.workspace_id),
+                    "event": "workspace.document.deleted",
+                    "payload": {"document_id": str(document_id)}
+                })
             await self.cache.invalidate_workspace_documents(model.workspace_id)
             await self.cache.invalidate_document_status(document_id)
             return True

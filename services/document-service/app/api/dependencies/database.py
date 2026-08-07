@@ -28,12 +28,19 @@ def get_document_cache() -> DocumentCacheManager:
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         session.info["post_commit_invalidations"] = set()
+        session.info["post_commit_events"] = []
         try:
             yield session
             await session.commit()
             cache = get_document_cache()
             for ws_id in session.info.get("post_commit_invalidations", set()):
                 await cache.invalidate_workspace_documents(ws_id)
+            for evt in session.info.get("post_commit_events", []):
+                try:
+                    from shared.events import publish_workspace_event
+                    await publish_workspace_event(evt["workspace_id"], evt["event"], evt.get("payload"))
+                except Exception:
+                    pass
         except Exception:
             await session.rollback()
             raise

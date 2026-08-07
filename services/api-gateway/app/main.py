@@ -177,6 +177,71 @@ async def proxy_request(service_url: str, request: Request):
     )
 
 
+# Centralized SSE Event Stream Endpoint
+from fastapi import Query
+import json
+import redis.asyncio as aioredis
+
+
+@app.get("/api/v1/events/sse")
+@app.get("/api/v1/workspaces/{workspace_id}/events")
+async def workspace_events_sse(
+    request: Request,
+    workspace_id: str | None = None,
+    token: str | None = Query(None),
+    authorization: str | None = Header(None),
+):
+    auth_token = authorization or (f"Bearer {token}" if token else None)
+    try:
+        user_id = verify_user_identity(
+            authorization=auth_token,
+            jwt_secret=settings.jwt_secret,
+            jwt_algorithm=settings.jwt_algorithm,
+            jwt_issuer=settings.jwt_issuer,
+        )
+    except Exception:
+        raise HTTPException(status_code=401, detail="Unauthorized SSE connection")
+
+    async def event_generator():
+        redis_url = getattr(settings, "redis_url", "redis://redis:6379/0")
+        r = aioredis.from_url(redis_url, decode_responses=True)
+        pubsub = r.pubsub()
+        channel = f"workspace_events:{workspace_id}" if workspace_id else "workspace_events:global"
+        await pubsub.subscribe(channel)
+
+        try:
+            yield f"event: connected\ndata: {json.dumps({'status': 'connected', 'user_id': str(user_id)})}\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                if message and message.get("type") == "message":
+                    data_str = message.get("data", "")
+                    try:
+                        parsed = json.loads(data_str)
+                        evt_type = parsed.get("event", "workspace.event")
+                        yield f"event: {evt_type}\ndata: {data_str}\n\n"
+                    except Exception:
+                        yield f"event: workspace.event\ndata: {data_str}\n\n"
+                else:
+                    yield ": ping\n\n"
+                await asyncio.sleep(0.5)
+        finally:
+            await pubsub.unsubscribe(channel)
+            await pubsub.close()
+            await r.close()
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 # Phase 4: Request Aggregation Endpoints
 @app.get("/api/v1/dashboard")
 async def get_dashboard_aggregation(request: Request, user_id: uuid.UUID = Depends(get_current_user_id)):

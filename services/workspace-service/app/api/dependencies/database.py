@@ -22,6 +22,7 @@ def get_workspace_cache() -> WorkspaceCacheManager:
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         session.info["post_commit_invalidations"] = set()
+        session.info["post_commit_events"] = []
         try:
             yield session
             await session.commit()
@@ -29,6 +30,12 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             for ws_id in session.info.get("post_commit_invalidations", set()):
                 await cache.invalidate(ws_id)
                 await cache.invalidate_workspace_activity(ws_id)
+            for evt in session.info.get("post_commit_events", []):
+                try:
+                    from shared.events import publish_workspace_event
+                    await publish_workspace_event(evt["workspace_id"], evt["event"], evt.get("payload"))
+                except Exception:
+                    pass
         except Exception:
             await session.rollback()
             raise
