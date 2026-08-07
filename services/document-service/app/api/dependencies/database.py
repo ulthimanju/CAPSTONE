@@ -12,6 +12,7 @@ from app.infrastructure.clients.google_drive_client import GoogleDriveClient
 from app.infrastructure.services.document_validator import DocumentValidator
 from app.infrastructure.services.parser_services import LlamaParseClient
 from app.config.settings import settings
+from app.infrastructure.cache.document_cache import DocumentCacheManager
 
 
 _document_cache_instance: DocumentCacheManager | None = None

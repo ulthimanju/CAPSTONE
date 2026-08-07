@@ -6,6 +6,7 @@ from app.infrastructure.repositories.sqlalchemy_workspace_repository import SQLA
 from app.infrastructure.repositories.sqlalchemy_member_repository import SQLAlchemyMemberRepository
 from app.infrastructure.repositories.sqlalchemy_invitation_repository import SQLAlchemyInvitationRepository
 from app.infrastructure.repositories.sqlalchemy_activity_repository import SQLAlchemyActivityRepository
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 
 
 _workspace_cache_instance: WorkspaceCacheManager | None = None
