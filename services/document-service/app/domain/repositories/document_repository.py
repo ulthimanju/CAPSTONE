@@ -21,6 +21,17 @@ class DocumentRepository(ABC):
         pass
 
     @abstractmethod
+    async def update_processing_status_with_version(
+        self,
+        document_id: UUID,
+        parse_status: str,
+        chunk_status: str,
+        status: str,
+        expected_version: int,
+    ) -> Document | None:
+        pass
+
+    @abstractmethod
     async def delete(self, document_id: UUID) -> bool:
         pass
 

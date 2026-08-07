@@ -183,6 +183,40 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         document.version = model.version
         return document
 
+    async def update_processing_status_with_version(
+        self,
+        document_id: UUID,
+        parse_status: str,
+        chunk_status: str,
+        status: str,
+        expected_version: int,
+    ) -> Document | None:
+        from sqlalchemy import update, func
+        from fastapi import HTTPException, status as http_status
+
+        stmt = (
+            update(DocumentModel)
+            .where(
+                DocumentModel.id == document_id,
+                DocumentModel.version == expected_version,
+            )
+            .values(
+                parse_status=parse_status,
+                chunk_status=chunk_status,
+                status=status,
+                version=DocumentModel.version + 1,
+                updated_at=func.now(),
+            )
+        )
+        res = await self.session.execute(stmt)
+        await self.session.flush()
+        if res.rowcount == 0:
+            raise HTTPException(
+                status_code=http_status.HTTP_409_CONFLICT,
+                detail="Document processing state transition conflict. Document was modified by another worker.",
+            )
+        return await self.get_by_id(document_id)
+
     async def delete(self, document_id: UUID) -> bool:
         stmt = select(DocumentModel).where(DocumentModel.id == document_id)
         result = await self.session.execute(stmt)
