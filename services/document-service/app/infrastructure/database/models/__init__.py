@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from sqlalchemy import DateTime, ForeignKey, String, BigInteger, Integer, Boolean, Text, Index, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.base import Base
 
 
@@ -66,7 +66,7 @@ class DocumentModel(Base):
 
     # Lifecycle & Versioning columns (Phase 5)
     version: Mapped[int] = mapped_column(Integer, default=1)
-    parent_document_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    parent_document_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="SET NULL"))
     is_latest: Mapped[bool] = mapped_column(Boolean, default=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
@@ -74,6 +74,14 @@ class DocumentModel(Base):
     last_processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_indexed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # ORM Cascading Deletes
+    processing_jobs = relationship("DocumentProcessingJobModel", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
+    parse_results = relationship("DocumentParseResultModel", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
+    parts = relationship("DocumentPartModel", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
+    chunks = relationship("DocumentChunkModel", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
+    versions = relationship("DocumentVersionModel", back_populates="document", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="DocumentVersionModel.document_id")
+    processing_history = relationship("DocumentProcessingHistoryModel", back_populates="document", cascade="all, delete-orphan", passive_deletes=True)
 
 
 class DocumentProcessingJobModel(Base):
@@ -86,7 +94,7 @@ class DocumentProcessingJobModel(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     job_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="PENDING")
     priority: Mapped[int] = mapped_column(Integer, default=0)
@@ -97,6 +105,8 @@ class DocumentProcessingJobModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    document = relationship("DocumentModel", back_populates="processing_jobs")
+
 
 class DocumentParseResultModel(Base):
     __tablename__ = "document_parse_results"
@@ -106,7 +116,7 @@ class DocumentParseResultModel(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     parser: Mapped[str] = mapped_column(String(50), nullable=False, default="LLAMA_PARSE")
     parser_version: Mapped[str] = mapped_column(String(20), nullable=False, default="v1")
     markdown_content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -119,6 +129,8 @@ class DocumentParseResultModel(Base):
     processing_time_ms: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    document = relationship("DocumentModel", back_populates="parse_results")
+
 
 class DocumentPartModel(Base):
     __tablename__ = "document_parts"
@@ -128,13 +140,15 @@ class DocumentPartModel(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     part_number: Mapped[int] = mapped_column(Integer, nullable=False)
     page_start: Mapped[int] = mapped_column(Integer, nullable=False)
     page_end: Mapped[int] = mapped_column(Integer, nullable=False)
     file_size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
     parse_status: Mapped[str] = mapped_column(String(50), nullable=False, default="PENDING")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    document = relationship("DocumentModel", back_populates="parts")
 
 
 class DocumentChunkModel(Base):
@@ -146,7 +160,7 @@ class DocumentChunkModel(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     chunk_type: Mapped[str] = mapped_column(String(50), nullable=False, default="TEXT")
     title: Mapped[str | None] = mapped_column(String(255))
@@ -160,6 +174,8 @@ class DocumentChunkModel(Base):
     checksum: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    document = relationship("DocumentModel", back_populates="chunks")
+
 
 class DocumentVersionModel(Base):
     __tablename__ = "document_versions"
@@ -169,12 +185,14 @@ class DocumentVersionModel(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     uploaded_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     change_reason: Mapped[str | None] = mapped_column(String(255))
     google_drive_revision_id: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    document = relationship("DocumentModel", back_populates="versions", foreign_keys=[document_id])
 
 
 class DocumentProcessingHistoryModel(Base):
@@ -185,7 +203,7 @@ class DocumentProcessingHistoryModel(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     stage: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -193,3 +211,5 @@ class DocumentProcessingHistoryModel(Base):
     duration_ms: Mapped[int | None] = mapped_column(Integer)
     error_message: Mapped[str | None] = mapped_column(String(500))
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    document = relationship("DocumentModel", back_populates="processing_history")
