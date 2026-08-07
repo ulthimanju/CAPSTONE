@@ -50,6 +50,9 @@ const WorkspaceDetailPageContent = () => {
     docsLoading,
     summaryLoaded,
     learningPathLoaded,
+    addOptimisticDoc,
+    updateOptimisticDoc,
+    removeOptimisticDoc,
     refetchWorkspaces: fetchWorkspaceList,
     refetchDocuments: fetchDocuments,
     refetchSummary: fetchSummary,
@@ -60,6 +63,50 @@ const WorkspaceDetailPageContent = () => {
   } = useWorkspaceStore();
 
   const [error, setError] = useState(null);
+
+  const renderStatusBadge = (status) => {
+    switch (status) {
+      case 'UPLOADING':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#60a5fa', background: 'rgba(96, 165, 250, 0.12)', border: '1px solid rgba(96, 165, 250, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+            <Spinner size="sm" /> Uploading...
+          </span>
+        );
+      case 'PARSING':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+            <Spinner size="sm" /> Parsing...
+          </span>
+        );
+      case 'CHUNKING':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#c084fc', background: 'rgba(192, 132, 252, 0.12)', border: '1px solid rgba(192, 132, 252, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+            <Spinner size="sm" /> Chunking...
+          </span>
+        );
+      case 'EMBEDDING':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+            <Spinner size="sm" /> Embedding...
+          </span>
+        );
+      case 'READY_FOR_RAG':
+      case 'READY':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#3ecf8e', background: 'rgba(62, 207, 142, 0.12)', border: '1px solid rgba(62, 207, 142, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+            <i className="ti ti-check" style={{ fontSize: '12px' }}></i> Ready
+          </span>
+        );
+      case 'FAILED':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#f87171', background: 'rgba(248, 113, 113, 0.12)', border: '1px solid rgba(248, 113, 113, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+            <i className="ti ti-alert-triangle" style={{ fontSize: '12px' }}></i> Failed
+          </span>
+        );
+      default:
+        return <span className="doc-status">{status}</span>;
+    }
+  };
 
   // Summary generation state
   const [summaryStatus, setSummaryStatus] = useState(null); // 'QUEUED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
@@ -451,6 +498,13 @@ const WorkspaceDetailPageContent = () => {
     };
 
     const uploadPromises = validFiles.map(async (file) => {
+      const tempId = addOptimisticDoc({
+        filename: file.name,
+        original_filename: file.name,
+        status: 'UPLOADING',
+        file_size_bytes: file.size,
+      });
+
       try {
         const formData = new FormData();
         formData.append('workspace_id', workspaceId);
@@ -462,17 +516,19 @@ const WorkspaceDetailPageContent = () => {
             'Content-Type': 'multipart/form-data',
           },
         });
-        return { file, doc: uploadRes.data };
+        updateOptimisticDoc(tempId, { status: 'PARSING' });
+        return { file, doc: uploadRes.data, tempId };
       } catch (err) {
+        updateOptimisticDoc(tempId, { status: 'FAILED' });
+        setTimeout(() => removeOptimisticDoc(tempId), 4000);
         const detail = err.response?.data?.detail || err.message;
         alert(`Failed to upload "${file.name}": ${detail}`);
         console.error(`Error uploading ${file.name}:`, err);
-        return { file, doc: null };
+        return { file, doc: null, tempId };
       }
     });
 
     const uploadedResults = await Promise.all(uploadPromises);
-    await fetchWorkspaceAndDocs(true);
 
     uploadedResults.forEach(async (item) => {
       if (!item.doc) return;
@@ -481,9 +537,22 @@ const WorkspaceDetailPageContent = () => {
 
       try {
         apiClient.post(`/api/v1/documents/${createdDoc.id}/validate`, {}, { headers })
-          .then(() => apiClient.post(`/api/v1/documents/${createdDoc.id}/parse`, {}, { headers }))
-          .then(() => apiClient.post(`/api/v1/documents/${createdDoc.id}/chunks`, {}, { headers }))
-          .catch((err) => console.error(`Background ingestion error for ${filename}:`, err));
+          .then(() => {
+            updateOptimisticDoc(item.tempId, { status: 'PARSING' });
+            return apiClient.post(`/api/v1/documents/${createdDoc.id}/parse`, {}, { headers });
+          })
+          .then(() => {
+            updateOptimisticDoc(item.tempId, { status: 'CHUNKING' });
+            return apiClient.post(`/api/v1/documents/${createdDoc.id}/chunks`, {}, { headers });
+          })
+          .then(() => {
+            updateOptimisticDoc(item.tempId, { status: 'EMBEDDING' });
+            return fetchDocuments(workspaceId);
+          })
+          .catch((err) => {
+            console.error(`Background ingestion error for ${filename}:`, err);
+            updateOptimisticDoc(item.tempId, { status: 'FAILED' });
+          });
       } catch (fileErr) {
         console.error(`Error initiating background processing for ${filename}:`, fileErr);
       }
@@ -669,14 +738,12 @@ const WorkspaceDetailPageContent = () => {
                       </svg>
                     </div>
                     <div className="doc-info">
-                      <div className="doc-name">{doc.original_filename}</div>
+                      <div className="doc-name">{doc.original_filename || doc.filename}</div>
                       <div className="doc-meta">
-                        {formatBytes(doc.file_size_bytes)} · {new Date(doc.created_at).toLocaleDateString()}
+                        {formatBytes(doc.file_size_bytes)} · {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Just now'}
                       </div>
                     </div>
-                    <span className="doc-status">
-                      {doc.status === 'READY_FOR_RAG' ? 'READY' : doc.status}
-                    </span>
+                    {renderStatusBadge(doc.status)}
                     <div className="doc-actions">
                       {doc.storage_metadata_json?.web_view_link && (
                         <a
