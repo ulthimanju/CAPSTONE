@@ -24,11 +24,26 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
   const [optimisticDocs, setOptimisticDocs] = useState([]);
   const [optimisticOps, setOptimisticOps] = useState([]);
 
+  // Helper function to check if a server document matches an optimistic entry
+  const isDocReconciled = (optDoc, serverDocs) => {
+    return serverDocs.some((d) => {
+      if (optDoc.upload_id && (d.upload_id || d.storage_metadata_json?.upload_id)) {
+        const serverUploadId = d.upload_id || d.storage_metadata_json?.upload_id;
+        if (serverUploadId === optDoc.upload_id) return true;
+      }
+      if (d.id === optDoc.id) return true;
+      // Fallback matching
+      return d.filename === optDoc.filename || d.original_filename === optDoc.filename;
+    });
+  };
+
   // Optimistic Doc Helpers
   const addOptimisticDoc = useCallback((doc) => {
+    const uploadId = doc.upload_id || `upl-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const tempId = doc.id || `opt-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const optEntry = {
       id: tempId,
+      upload_id: uploadId,
       filename: doc.filename,
       original_filename: doc.filename,
       status: doc.status || 'UPLOADING',
@@ -38,17 +53,23 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
       ...doc,
     };
     setOptimisticDocs((prev) => [...prev, optEntry]);
-    return tempId;
+    return optEntry;
   }, []);
 
-  const updateOptimisticDoc = useCallback((id, patch) => {
+  const updateOptimisticDoc = useCallback((idOrUploadId, patch) => {
     setOptimisticDocs((prev) =>
-      prev.map((doc) => (doc.id === id ? { ...doc, ...patch } : doc))
+      prev.map((doc) =>
+        doc.id === idOrUploadId || doc.upload_id === idOrUploadId
+          ? { ...doc, ...patch }
+          : doc
+      )
     );
   }, []);
 
-  const removeOptimisticDoc = useCallback((id) => {
-    setOptimisticDocs((prev) => prev.filter((doc) => doc.id !== id));
+  const removeOptimisticDoc = useCallback((idOrUploadId) => {
+    setOptimisticDocs((prev) =>
+      prev.filter((doc) => doc.id !== idOrUploadId && doc.upload_id !== idOrUploadId)
+    );
   }, []);
 
   // Optimistic Operation Helpers (Summary, Learning Path, Workspace Create/Rename)
@@ -90,11 +111,9 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
       const serverDocs = res.data.documents || [];
       setDocuments(serverDocs);
 
-      // Reconcile optimistic docs: remove optimistic entries if server has reconciled them
+      // Reconcile optimistic docs: remove entries that match server state by upload_id or fallback
       setOptimisticDocs((prevOpt) =>
-        prevOpt.filter(
-          (opt) => !serverDocs.some((d) => d.filename === opt.filename || d.original_filename === opt.filename)
-        )
+        prevOpt.filter((opt) => !isDocReconciled(opt, serverDocs))
       );
     } catch (err) {
       console.error('Failed to load documents:', err);
@@ -149,11 +168,9 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     };
   }, [activeWorkspaceId, registerRefreshHandler, refetchDocuments, refetchSummary, refetchLearningPath, refetchWorkspaces]);
 
-  // Merge server documents with optimistic document placeholders
+  // Merge server documents with unreconciled optimistic document placeholders
   const mergedDocuments = useMemo(() => {
-    const filterOptimistic = optimisticDocs.filter(
-      (opt) => !documents.some((d) => d.filename === opt.filename || d.original_filename === opt.filename)
-    );
+    const filterOptimistic = optimisticDocs.filter((opt) => !isDocReconciled(opt, documents));
     return [...filterOptimistic, ...documents];
   }, [optimisticDocs, documents]);
 

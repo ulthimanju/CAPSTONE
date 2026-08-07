@@ -498,25 +498,30 @@ const WorkspaceDetailPageContent = () => {
     };
 
     const uploadPromises = validFiles.map(async (file) => {
-      const tempId = addOptimisticDoc({
+      const clientUploadId = `upl-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      const optEntry = addOptimisticDoc({
+        upload_id: clientUploadId,
         filename: file.name,
         original_filename: file.name,
         status: 'UPLOADING',
         file_size_bytes: file.size,
       });
+      const tempId = optEntry.id;
 
       try {
         const formData = new FormData();
         formData.append('workspace_id', workspaceId);
         formData.append('file', file);
+        formData.append('upload_id', clientUploadId);
 
         const uploadRes = await apiClient.post('/api/v1/documents/raw', formData, {
           headers: {
             ...headers,
             'Content-Type': 'multipart/form-data',
+            'X-Upload-ID': clientUploadId,
           },
         });
-        updateOptimisticDoc(tempId, { status: 'PARSING' });
+        updateOptimisticDoc(tempId, { status: 'PARSING', upload_id: clientUploadId });
         return { file, doc: uploadRes.data, tempId };
       } catch (err) {
         updateOptimisticDoc(tempId, { status: 'FAILED' });
