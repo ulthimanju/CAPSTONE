@@ -9,6 +9,7 @@ from sqlalchemy import select, update, delete
 from app.schemas.notification import NotificationItem, PlatformEvent
 from app.constants.enums import NotificationStatus, NotificationType
 from app.infrastructure.database.models import ProcessedNotificationEventModel, NotificationHistoryModel
+from shared.constants import SYSTEM_USER_ID
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class NotificationStore:
             return False, None
 
         # 2. Insert notification record
-        user_id = event.user_id or uuid.UUID("00000000-0000-0000-0000-000000000000")
+        user_id = event.user_id or SYSTEM_USER_ID
         item = NotificationItem(
             id=uuid.uuid4(),
             event_id=event.event_id,
@@ -71,7 +72,7 @@ class NotificationStore:
             return False, None
 
         self._memory_processed.add(event.event_id)
-        user_id = event.user_id or uuid.UUID("00000000-0000-0000-0000-000000000000")
+        user_id = event.user_id or SYSTEM_USER_ID
         item = NotificationItem(
             id=uuid.uuid4(),
             event_id=event.event_id,
@@ -85,10 +86,9 @@ class NotificationStore:
         return True, item
 
     def get_user_notifications(self, user_id: uuid.UUID) -> List[NotificationItem]:
-        zero_uuid = uuid.UUID("00000000-0000-0000-0000-000000000000")
-        if user_id == zero_uuid:
+        if user_id == SYSTEM_USER_ID:
             return list(self._memory_items.values())
-        return [n for n in self._memory_items.values() if n.user_id == user_id or n.user_id == zero_uuid]
+        return [n for n in self._memory_items.values() if n.user_id == user_id or n.user_id == SYSTEM_USER_ID]
 
     def get_unread_count(self, user_id: uuid.UUID) -> int:
         return len([n for n in self.get_user_notifications(user_id) if n.status == NotificationStatus.UNREAD])
