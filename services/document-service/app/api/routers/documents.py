@@ -68,6 +68,7 @@ import os, tempfile, json
 async def upload_document_raw(
     workspace_id: UUID = Form(...),
     file: UploadFile = File(...),
+    authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -83,9 +84,10 @@ async def upload_document_raw(
         import httpx
         identity_service_url = os.environ.get("IDENTITY_SERVICE_URL", "http://identity-service:8000")
         async with httpx.AsyncClient(timeout=15.0) as client:
+            req_headers = {"Authorization": authorization} if authorization else {}
             token_res = await client.get(
                 f"{identity_service_url}/api/v1/profile/google-token",
-                headers={"X-User-ID": str(user_id)}
+                headers=req_headers
             )
 
             if token_res.status_code == 200:

@@ -111,10 +111,8 @@ async def proxy_request(service_url: str, request: Request):
 # Phase 4: Request Aggregation Endpoints
 @app.get("/api/v1/dashboard")
 async def get_dashboard_aggregation(request: Request, user_id: uuid.UUID = Depends(get_current_user_id)):
-    headers = {"X-User-ID": str(user_id)}
     auth_header = request.headers.get("authorization")
-    if auth_header:
-        headers["Authorization"] = auth_header
+    headers = {"Authorization": auth_header} if auth_header else {}
 
     async def fetch_ws():
         try:
@@ -142,10 +140,8 @@ async def get_dashboard_aggregation(request: Request, user_id: uuid.UUID = Depen
 
 @app.get("/api/v1/workspaces/{workspace_id}/overview")
 async def get_workspace_overview_aggregation(request: Request, workspace_id: uuid.UUID, user_id: uuid.UUID = Depends(get_current_user_id)):
-    headers = {"X-User-ID": str(user_id)}
     auth_header = request.headers.get("authorization")
-    if auth_header:
-        headers["Authorization"] = auth_header
+    headers = {"Authorization": auth_header} if auth_header else {}
 
     async def fetch_detail():
         res = await client.get(f"{settings.service_workspace_url}/api/v1/workspaces/{workspace_id}", headers=headers)

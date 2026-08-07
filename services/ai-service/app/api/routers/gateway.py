@@ -3,7 +3,8 @@ import time
 import uuid
 import httpx
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Header, status
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 from app.infrastructure.clients.providers.gemini_provider import GeminiClient, TokenCounter
 from app.schemas.gateway import (
     EmbeddingRequest,
@@ -17,6 +18,7 @@ from app.schemas.gateway import (
 )
 from app.utils.ids import generate_uuid
 from app.config.settings import settings
+from app.api.dependencies.auth import get_current_user_id
 
 router = APIRouter(prefix="/api/v1/ai", tags=["AI Gateway"])
 gemini_client = GeminiClient()
@@ -129,20 +131,25 @@ async def _publish_summary_event(workspace_id: str, status: str, user_id: str | 
 
 
 @router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
-async def generate_workspace_summary_endpoint(workspace_id: str, x_user_id: str | None = Header(None)):
+async def generate_workspace_summary_endpoint(
+    workspace_id: str,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
+):
     ws_id = workspace_id
-    await _publish_summary_event(ws_id, "QUEUED", user_id=x_user_id)
-    await _publish_summary_event(ws_id, "STARTED", user_id=x_user_id)
+    user_id_str = str(user_id)
+    await _publish_summary_event(ws_id, "QUEUED", user_id=user_id_str)
+    await _publish_summary_event(ws_id, "STARTED", user_id=user_id_str)
 
     workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
     document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
 
     try:
-        await _publish_summary_event(ws_id, "IN_PROGRESS", user_id=x_user_id)
+        await _publish_summary_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            # 1. Fetch Workspace Metadata (forward the X-User-ID header)
-            headers = {"X-User-ID": x_user_id} if x_user_id else {}
+            # 1. Fetch Workspace Metadata (forward Authorization header)
+            headers = {"Authorization": authorization} if authorization else {}
             ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
             if ws_res.status_code != 200:
                 raise HTTPException(status_code=404, detail="Workspace metadata not found")
@@ -194,7 +201,7 @@ async def generate_workspace_summary_endpoint(workspace_id: str, x_user_id: str 
 
         # 7. Persist Summary via workspace-service
         async with httpx.AsyncClient(timeout=15.0) as client:
-            headers = {"X-User-ID": x_user_id} if x_user_id else {}
+            headers = {"Authorization": authorization} if authorization else {}
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/summary",
                 json={"summary_json": summary_validated.model_dump()},
@@ -202,12 +209,12 @@ async def generate_workspace_summary_endpoint(workspace_id: str, x_user_id: str 
             )
 
         # 8. Publish COMPLETED event
-        await _publish_summary_event(ws_id, "COMPLETED", user_id=x_user_id)
+        await _publish_summary_event(ws_id, "COMPLETED", user_id=user_id_str)
 
         return summary_validated
 
     except Exception as e:
-        await _publish_summary_event(ws_id, "FAILED", user_id=x_user_id, error=str(e))
+        await _publish_summary_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
         print(f"Error generating workspace summary: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate workspace summary: {str(e)}")
 
@@ -235,20 +242,25 @@ async def _publish_learning_path_event(workspace_id: str, status: str, user_id: 
 
 
 @router.post("/workspaces/{workspace_id}/learning-path", response_model=LearningPathResponse)
-async def generate_workspace_learning_path_endpoint(workspace_id: str, x_user_id: str | None = Header(None)):
+async def generate_workspace_learning_path_endpoint(
+    workspace_id: str,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
+):
     ws_id = workspace_id
-    await _publish_learning_path_event(ws_id, "QUEUED", user_id=x_user_id)
-    await _publish_learning_path_event(ws_id, "STARTED", user_id=x_user_id)
+    user_id_str = str(user_id)
+    await _publish_learning_path_event(ws_id, "QUEUED", user_id=user_id_str)
+    await _publish_learning_path_event(ws_id, "STARTED", user_id=user_id_str)
 
     workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
     document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
 
     try:
-        await _publish_learning_path_event(ws_id, "IN_PROGRESS", user_id=x_user_id)
+        await _publish_learning_path_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             # 1. Fetch Workspace Metadata
-            headers = {"X-User-ID": x_user_id} if x_user_id else {}
+            headers = {"Authorization": authorization} if authorization else {}
             ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
             if ws_res.status_code != 200:
                 raise HTTPException(status_code=404, detail="Workspace metadata not found")
@@ -293,7 +305,7 @@ async def generate_workspace_learning_path_endpoint(workspace_id: str, x_user_id
 
         # 7. Persist Learning Path via workspace-service
         async with httpx.AsyncClient(timeout=15.0) as client:
-            headers = {"X-User-ID": x_user_id} if x_user_id else {}
+            headers = {"Authorization": authorization} if authorization else {}
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/learning-path",
                 json={"learning_path_json": lp_validated.model_dump()},
@@ -301,12 +313,12 @@ async def generate_workspace_learning_path_endpoint(workspace_id: str, x_user_id
             )
 
         # 8. Publish COMPLETED event
-        await _publish_learning_path_event(ws_id, "COMPLETED", user_id=x_user_id)
+        await _publish_learning_path_event(ws_id, "COMPLETED", user_id=user_id_str)
 
         return lp_validated
 
     except Exception as e:
-        await _publish_learning_path_event(ws_id, "FAILED", user_id=x_user_id, error=str(e))
+        await _publish_learning_path_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
         print(f"Error generating workspace learning path: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate workspace learning path: {str(e)}")
 
