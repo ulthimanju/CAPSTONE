@@ -13,6 +13,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
         self.session = session
 
     async def add_member(self, member: WorkspaceMember) -> WorkspaceMember:
+        from sqlalchemy.exc import IntegrityError
         model = WorkspaceMemberModel(
             id=member.id,
             workspace_id=member.workspace_id,
@@ -22,9 +23,16 @@ class SQLAlchemyMemberRepository(MemberRepository):
             joined_at=member.joined_at,
             last_accessed_at=member.last_accessed_at
         )
-        self.session.add(model)
-        await self.session.flush()
-        return member
+        try:
+            self.session.add(model)
+            await self.session.flush()
+            return member
+        except IntegrityError:
+            await self.session.rollback()
+            existing = await self.get_member(member.workspace_id, member.user_id)
+            if existing:
+                return existing
+            raise HTTPException(status_code=409, detail="Workspace membership already exists.")
 
     async def get_member(self, workspace_id: UUID, user_id: UUID) -> WorkspaceMember | None:
         stmt = select(WorkspaceMemberModel).where(
