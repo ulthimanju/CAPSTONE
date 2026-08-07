@@ -129,10 +129,18 @@ async def get_workspace_summary(
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
 ):
+    cache = WorkspaceCacheManager()
+    cached_summary = await cache.get_workspace_summary(workspace_id)
+    if cached_summary is not None:
+        return {"summary": cached_summary}
+
     ws = await ws_repo.get_by_id(workspace_id)
     if not ws:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Workspace not found")
+
+    if ws.summary_json:
+        await cache.set_workspace_summary(workspace_id, ws.summary_json)
     return {"summary": ws.summary_json}
 
 
@@ -149,6 +157,8 @@ async def save_workspace_summary(
         raise HTTPException(status_code=404, detail="Workspace not found")
     ws.summary_json = req.summary_json
     await ws_repo.update(ws)
+    cache = WorkspaceCacheManager()
+    await cache.invalidate_workspace_summary(workspace_id)
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
 

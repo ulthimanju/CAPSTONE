@@ -45,6 +45,7 @@ class DeleteWorkspaceUseCase:
         await self.cache.invalidate(workspace_id)
         await self.cache.invalidate_workspace_members(workspace_id)
         await self.cache.invalidate_workspace_permissions(workspace_id)
+        await self.cache.invalidate_workspace_summary(workspace_id)
         await self.cache.invalidate_user_workspaces(workspace.owner_id)
         if user_id != workspace.owner_id:
             await self.cache.invalidate_user_workspaces(user_id)
