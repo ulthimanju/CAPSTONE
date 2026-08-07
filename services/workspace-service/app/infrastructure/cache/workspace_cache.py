@@ -340,3 +340,7 @@ class WorkspaceCacheManager:
             await self.redis.delete(self._get_workspace_learning_path_key(workspace_id))
         except Exception:
             pass
+
+    async def invalidate_workspace_generated_content(self, workspace_id: uuid.UUID):
+        await self.invalidate_workspace_summary(workspace_id)
+        await self.invalidate_workspace_learning_path(workspace_id)
