@@ -11,63 +11,87 @@ export function SSEProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState(null);
   const listenersRef = useRef(new Set());
-  const eventSourceRef = useRef(null);
 
   useEffect(() => {
     const token = tokenStorage.getAccessToken();
     if (!token) {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-        setConnected(false);
-      }
+      setConnected(false);
       return;
     }
 
-    const sseUrl = `/api/v1/events/sse?token=${encodeURIComponent(token)}`;
-    const es = new EventSource(sseUrl);
-    eventSourceRef.current = es;
+    let isAborted = false;
+    const controller = new AbortController();
 
-    es.onopen = () => {
-      setConnected(true);
-    };
-
-    es.onmessage = (e) => {
+    const connectSSE = async () => {
       try {
-        const payload = JSON.parse(e.data);
-        setLastEvent(payload);
-        listenersRef.current.forEach((fn) => fn(payload));
+        const response = await fetch('/api/v1/events/sse', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'text/event-stream',
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok || !response.body) {
+          setConnected(false);
+          return;
+        }
+
+        setConnected(true);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (!isAborted) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
+
+          for (const part of parts) {
+            if (!part.trim() || part.startsWith(':')) continue;
+
+            let eventName = 'message';
+            let dataStr = '';
+
+            const lines = part.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                eventName = line.slice(6).trim();
+              } else if (line.startsWith('data:')) {
+                dataStr += line.slice(5).trim();
+              }
+            }
+
+            if (dataStr) {
+              try {
+                const payload = JSON.parse(dataStr);
+                payload.eventType = eventName;
+                setLastEvent(payload);
+                listenersRef.current.forEach((fn) => fn(payload));
+              } catch (err) {
+                // ignore parse error
+              }
+            }
+          }
+        }
       } catch (err) {
-        // ignore raw ping strings
+        if (!isAborted) {
+          setConnected(false);
+          setTimeout(() => {
+            if (!isAborted) connectSSE();
+          }, 3000);
+        }
       }
     };
 
-    const handleEvent = (type) => (e) => {
-      try {
-        const payload = JSON.parse(e.data);
-        payload.eventType = type;
-        setLastEvent(payload);
-        listenersRef.current.forEach((fn) => fn(payload));
-      } catch (err) {
-        // ping or parsing error
-      }
-    };
-
-    es.addEventListener('connected', handleEvent('connected'));
-    es.addEventListener('workspace.document.updated', handleEvent('workspace.document.updated'));
-    es.addEventListener('workspace.document.created', handleEvent('workspace.document.created'));
-    es.addEventListener('workspace.document.deleted', handleEvent('workspace.document.deleted'));
-    es.addEventListener('workspace.summary.updated', handleEvent('workspace.summary.updated'));
-    es.addEventListener('workspace.learning_path.updated', handleEvent('workspace.learning_path.updated'));
-    es.addEventListener('workspace.updated', handleEvent('workspace.updated'));
-
-    es.onerror = () => {
-      setConnected(false);
-    };
+    connectSSE();
 
     return () => {
-      es.close();
-      eventSourceRef.current = null;
+      isAborted = true;
+      controller.abort();
       setConnected(false);
     };
   }, []);
