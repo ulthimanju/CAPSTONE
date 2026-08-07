@@ -490,13 +490,27 @@ export const WorkspaceDetailPage = () => {
   const handleUploadFiles = async (filesToUpload) => {
     if (!filesToUpload || filesToUpload.length === 0) return;
 
+    const MAX_SIZE_MB = 50;
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    const validFiles = [];
+
+    for (const file of Array.from(filesToUpload)) {
+      if (file.size > MAX_SIZE_BYTES) {
+        alert(`File "${file.name}" exceeds the maximum allowed upload limit of ${MAX_SIZE_MB} MB.`);
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    if (validFiles.length === 0) return;
+
     const token = localStorage.getItem('access_token');
     const headers = {
       ...(user?.id ? { 'X-User-ID': user.id } : {}),
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     };
 
-    const uploadPromises = Array.from(filesToUpload).map(async (file) => {
+    const uploadPromises = validFiles.map(async (file) => {
       try {
         const formData = new FormData();
         formData.append('workspace_id', workspaceId);
@@ -510,6 +524,8 @@ export const WorkspaceDetailPage = () => {
         });
         return { file, doc: uploadRes.data };
       } catch (err) {
+        const detail = err.response?.data?.detail || err.message;
+        alert(`Failed to upload "${file.name}": ${detail}`);
         console.error(`Error uploading ${file.name}:`, err);
         return { file, doc: null };
       }

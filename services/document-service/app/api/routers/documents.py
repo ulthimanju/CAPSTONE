@@ -58,6 +58,14 @@ async def upload_document(
     user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
+    from app.config.settings import settings
+    max_bytes = settings.max_upload_size_mb * 1024 * 1024
+    if req.file_size_bytes > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB",
+        )
+
     repo = get_document_repository(session)
     use_case = UploadDocumentUseCase(repo)
     return await use_case.execute(user_id, req)
@@ -75,8 +83,15 @@ async def upload_document_raw(
     user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
-
+    from app.config.settings import settings
+    max_bytes = settings.max_upload_size_mb * 1024 * 1024
     file_bytes = await file.read()
+    if len(file_bytes) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB",
+        )
+
     ext = file.filename.split(".")[-1].upper() if "." in file.filename else "PDF"
 
     # Attempt upload to real Google Drive if user has an active Google OAuth token
