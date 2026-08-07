@@ -6,12 +6,12 @@ from jose import JWTError, jwt
 from shared.security.claims import JWTClaims
 
 
-
 @dataclass
 class JWTSettings:
     secret_key: str
     algorithm: str = "HS256"
     issuer: str = "identity-service"
+    audience: str | None = None
 
 
 class JWTManager:
@@ -44,8 +44,35 @@ class JWTManager:
         return secrets.token_urlsafe(64)
 
     def decode_token(self, token: str) -> dict:
+        if not self.settings.secret_key:
+            raise ValueError("JWT secret_key is required for verification")
+
+        # Explicitly whitelist EXACTLY the configured algorithm in list format
+        allowed_algorithms = [self.settings.algorithm] if isinstance(self.settings.algorithm, str) else list(self.settings.algorithm)
+
+        # Enforce strict verification of signature, expiration, issued-at, not-before, issuer
+        options = {
+            "verify_signature": True,
+            "verify_exp": True,
+            "verify_iat": True,
+            "verify_nbf": True,
+            "verify_iss": bool(self.settings.issuer),
+            "verify_aud": bool(self.settings.audience),
+        }
+
         try:
-            return jwt.decode(token, self.settings.secret_key, algorithms=[self.settings.algorithm], issuer=self.settings.issuer)
+            kwargs = {
+                "token": token,
+                "key": self.settings.secret_key,
+                "algorithms": allowed_algorithms,
+                "options": options,
+            }
+            if self.settings.issuer:
+                kwargs["issuer"] = self.settings.issuer
+            if self.settings.audience:
+                kwargs["audience"] = self.settings.audience
+
+            return jwt.decode(**kwargs)
         except JWTError as exc:
             raise ValueError(f"Invalid JWT token: {exc}") from exc
 
