@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 import redis.asyncio as aioredis
 
@@ -19,19 +20,23 @@ async def publish_workspace_event(
     workspace_id: uuid.UUID | str,
     event_type: str,
     payload: dict[str, Any] | None = None,
+    version: int = 1,
     redis_url: str = "redis://redis:6379/0"
 ):
     try:
         redis = get_pub_redis(redis_url)
         ws_str = str(workspace_id)
         data = {
+            "version": version,
             "event": event_type,
             "workspace_id": ws_str,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "payload": payload or {},
             **(payload or {})
         }
         json_payload = json.dumps(data, default=str)
         await redis.publish(f"workspace_events:{ws_str}", json_payload)
         await redis.publish("workspace_events:global", json_payload)
-        logger.info(f"Published SSE event '{event_type}' for workspace {ws_str}")
+        logger.info(f"Published SSE event '{event_type}' (v{version}) for workspace {ws_str}")
     except Exception as exc:
         logger.warning(f"Failed to publish SSE event '{event_type}': {exc}")

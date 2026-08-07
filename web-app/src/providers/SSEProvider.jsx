@@ -9,6 +9,8 @@ const SSEContext = createContext({
   invalidateDomain: () => {},
 });
 
+const SUPPORTED_EVENT_VERSIONS = new Set([1]);
+
 const ROUTE_MAP = {
   'workspace.document.updated': 'documents',
   'workspace.document.created': 'documents',
@@ -92,6 +94,13 @@ export function SSEProvider({ children }) {
   };
 
   const dispatchEventToSubscribers = (payload) => {
+    // Validate SSE schema version
+    const version = payload.version || 1;
+    if (!SUPPORTED_EVENT_VERSIONS.has(version)) {
+      console.warn(`[SSEProvider] Unsupported event schema version v${version}. Gracefully ignoring:`, payload);
+      return;
+    }
+
     setLastEvent(payload);
 
     // Notify raw listeners
