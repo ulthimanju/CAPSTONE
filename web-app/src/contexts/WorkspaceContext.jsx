@@ -198,6 +198,8 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     setSummary,
     setLearningPath,
     setDocuments,
+    setSummaryLoaded,
+    setLearningPathLoaded,
   };
 
   return (

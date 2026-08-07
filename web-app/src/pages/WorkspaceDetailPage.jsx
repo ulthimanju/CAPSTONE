@@ -66,6 +66,8 @@ const WorkspaceDetailPageContent = () => {
     setSummary: setSummaryData,
     setLearningPath: setLearningPathData,
     setDocuments,
+    setSummaryLoaded,
+    setLearningPathLoaded,
   } = useWorkspaceStore();
 
   const [error, setError] = useState(null);

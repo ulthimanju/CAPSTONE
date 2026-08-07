@@ -41,7 +41,7 @@ export const AppLayout = ({
         const headers = {};
         if (user?.id) headers['X-User-ID'] = user.id;
         if (user?.email) headers['X-User-Email'] = user.email;
-        const res = await apiClient.get('/workspaces', { headers });
+        const res = await apiClient.get('/api/v1/workspaces', { headers });
         if (res.data && res.data.workspaces) {
           setWorkspacesList(res.data.workspaces);
         } else if (Array.isArray(res.data)) {
