@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.base import Base
@@ -53,6 +53,10 @@ class SessionModel(Base):
 
 class RefreshTokenModel(Base):
     __tablename__ = "refresh_tokens"
+    __table_args__ = (
+        Index("idx_refresh_tokens_expires_at", "expires_at"),
+        Index("idx_refresh_tokens_revoked_expires", "revoked_at", "expires_at"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("sessions.id", ondelete="CASCADE"))
