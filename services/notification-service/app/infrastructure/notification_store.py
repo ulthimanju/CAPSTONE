@@ -99,5 +99,35 @@ class NotificationStore:
             return True
         return False
 
+    async def update_notification_status_with_version(
+        self,
+        notification_id: uuid.UUID,
+        new_status: NotificationStatus,
+        expected_version: int,
+        session: AsyncSession,
+    ) -> bool:
+        from fastapi import HTTPException, status as http_status
+
+        status_val = new_status.value if hasattr(new_status, "value") else str(new_status)
+        stmt = (
+            update(NotificationHistoryModel)
+            .where(
+                NotificationHistoryModel.id == notification_id,
+                NotificationHistoryModel.version == expected_version,
+            )
+            .values(
+                status=status_val,
+                version=NotificationHistoryModel.version + 1,
+            )
+        )
+        res = await session.execute(stmt)
+        await session.flush()
+        if res.rowcount == 0:
+            raise HTTPException(
+                status_code=http_status.HTTP_409_CONFLICT,
+                detail="Notification history record was modified by another process.",
+            )
+        return True
+
 
 notification_store = NotificationStore()

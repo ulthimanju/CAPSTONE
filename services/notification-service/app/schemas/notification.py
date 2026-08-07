@@ -28,6 +28,7 @@ class NotificationItem(BaseModel):
     type: NotificationType = NotificationType.SYSTEM
     priority: NotificationPriority = NotificationPriority.NORMAL
     status: NotificationStatus = NotificationStatus.UNREAD
+    version: int = 1
     payload: dict = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     read_at: datetime | None = None
