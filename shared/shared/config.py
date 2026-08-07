@@ -42,6 +42,9 @@ class PlatformSettings(BaseSettings):
     # Pagination Config
     default_page_size: int = 20
     max_page_size: int = 100
+    # Background Worker Retry Config
+    max_job_retries: int = 3
+    job_retry_backoff_sec: float = 2.0
     # RAG Config
     rag_default_top_k: int = 10
     rag_max_top_k: int = 20
