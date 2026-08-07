@@ -36,6 +36,7 @@ class PlatformSettings(BaseSettings):
     http_connect_timeout: float = 5.0
     http_read_timeout: float = 30.0
     http_write_timeout: float = 30.0
+    http_pool_timeout: float = 5.0
     http_pool_size: int = 100
     max_upload_size_mb: int = 50
     max_json_request_size_mb: int = 10

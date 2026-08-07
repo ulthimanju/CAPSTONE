@@ -5,7 +5,7 @@ import httpx
 from fastapi import FastAPI, Request, Response, HTTPException, Header, Depends, status
 from fastapi.responses import StreamingResponse
 from shared.config import PlatformSettings
-from shared.security.auth import verify_user_identity
+from shared.security import verify_user_identity
 
 
 class GatewaySettings(PlatformSettings):

@@ -18,6 +18,8 @@ from shared.enums.workspace import (
     WorkspaceStatus,
     WorkspaceVisibility,
     WorkspaceRole,
+    InvitationStatus,
+    ActivityType,
 )
 from shared.enums.notification import (
     NotificationStatus,
