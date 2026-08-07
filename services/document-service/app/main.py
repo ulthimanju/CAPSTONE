@@ -13,7 +13,10 @@ app.add_middleware(RequestSizeLimitMiddleware)
 app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=60.0)
 register_global_exception_handlers(app)
 
+from app.api.routers.health import router as health_router
+
 app.include_router(documents_router)
+app.include_router(health_router, prefix="/api/v1")
 
 
 import asyncio

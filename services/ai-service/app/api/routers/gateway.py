@@ -26,14 +26,22 @@ router = APIRouter(prefix="/api/v1/ai", tags=["AI Gateway"])
 gemini_client = GeminiClient()
 
 
+from fastapi.responses import JSONResponse
+
 @router.get("/health")
 async def health_check():
     has_key = bool(gemini_client.api_key)
-    return {
-        "status": "healthy" if has_key else "unconfigured",
-        "provider": "GEMINI",
-        "configured": has_key,
-    }
+    checks = {"gemini_api": "ok" if has_key else "unconfigured"}
+    status_code = 200 if has_key else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ready" if has_key else "degraded",
+            "provider": "GEMINI",
+            "configured": has_key,
+            "checks": checks,
+        },
+    )
 
 
 @router.get("/models")
