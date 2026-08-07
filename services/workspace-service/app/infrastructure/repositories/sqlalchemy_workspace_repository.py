@@ -31,7 +31,10 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         return workspace
 
     async def get_by_id(self, workspace_id: UUID) -> Workspace | None:
-        stmt = select(WorkspaceModel).where(WorkspaceModel.id == workspace_id)
+        stmt = select(WorkspaceModel).where(
+            WorkspaceModel.id == workspace_id,
+            WorkspaceModel.status != WorkspaceStatus.DELETED.value,
+        )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         if not model:

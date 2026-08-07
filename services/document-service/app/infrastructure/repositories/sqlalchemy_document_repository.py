@@ -107,7 +107,12 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         return document
 
     async def get_by_id(self, document_id: UUID) -> Document | None:
-        stmt = select(DocumentModel).where(DocumentModel.id == document_id)
+        stmt = select(DocumentModel).where(
+            DocumentModel.id == document_id,
+            DocumentModel.is_deleted.is_(False),
+            DocumentModel.status != DocumentStatus.DELETED.value,
+            DocumentModel.lifecycle_status != LifecycleStatus.DELETED.value,
+        )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         return self._to_domain(model) if model else None
@@ -117,6 +122,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             select(DocumentModel)
             .where(
                 DocumentModel.workspace_id == workspace_id,
+                DocumentModel.is_deleted.is_(False),
                 DocumentModel.status != DocumentStatus.DELETED.value,
                 DocumentModel.lifecycle_status != LifecycleStatus.DELETED.value,
             )
@@ -236,7 +242,10 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
                 DocumentModel.workspace_id == workspace_id,
                 DocumentModel.uploaded_by == uploaded_by,
                 DocumentModel.checksum == checksum,
-                DocumentModel.deleted_at.is_(None)
+                DocumentModel.is_deleted.is_(False),
+                DocumentModel.status != DocumentStatus.DELETED.value,
+                DocumentModel.lifecycle_status != LifecycleStatus.DELETED.value,
+                DocumentModel.deleted_at.is_(None),
             )
             .order_by(DocumentModel.created_at.desc())
             .limit(1)
