@@ -44,5 +44,8 @@ def get_invitation_repository(session: AsyncSession = Depends(get_db)) -> SQLAlc
     return SQLAlchemyInvitationRepository(session)
 
 
-def get_activity_repository(session: AsyncSession = Depends(get_db)) -> SQLAlchemyActivityRepository:
-    return SQLAlchemyActivityRepository(session)
+def get_activity_repository(
+    session: AsyncSession = Depends(get_db),
+    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
+) -> SQLAlchemyActivityRepository:
+    return SQLAlchemyActivityRepository(session, cache_manager=cache)
