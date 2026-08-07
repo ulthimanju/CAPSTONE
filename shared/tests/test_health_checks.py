@@ -11,15 +11,18 @@ from shared.health import check_postgres, check_redis, check_rabbitmq, check_mon
 
 app = FastAPI()
 
+mock_engine = AsyncMock()
+
 
 @app.get("/health/live")
 async def liveness_check():
     return {"status": "live", "service": "test-service"}
 
 
+@app.get("/health")
 @app.get("/health/ready")
 async def readiness_check():
-    pg_ok, pg_status = await check_postgres(AsyncMock())
+    pg_ok, pg_status = await check_postgres(mock_engine)
     checks = {"postgres": pg_status}
     status_code = 200 if pg_ok else 503
     return JSONResponse(
@@ -35,6 +38,25 @@ def test_liveness_check_returns_200():
     response = client.get("/health/live")
     assert response.status_code == 200
     assert response.json()["status"] == "live"
+
+
+def test_readiness_check_healthy_returns_200():
+    conn = AsyncMock()
+    mock_engine.connect.return_value = conn
+
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+    assert response.json()["checks"]["postgres"] == "ok"
+
+
+def test_readiness_check_degraded_returns_503():
+    mock_engine.connect.side_effect = RuntimeError("Database offline")
+
+    response = client.get("/health/ready")
+    assert response.status_code == 503
+    assert response.json()["status"] == "degraded"
+    assert "error" in response.json()["checks"]["postgres"]
 
 
 @pytest.mark.asyncio

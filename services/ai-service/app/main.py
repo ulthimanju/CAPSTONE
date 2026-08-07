@@ -18,12 +18,12 @@ app.include_router(gateway_router)
 from fastapi.responses import JSONResponse
 
 
-@app.get("/health")
 @app.get("/health/live")
 async def liveness_check():
     return {"status": "live", "service": "ai-service"}
 
 
+@app.get("/health")
 @app.get("/health/ready")
 async def readiness_check():
     return JSONResponse(

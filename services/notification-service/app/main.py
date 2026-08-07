@@ -21,12 +21,12 @@ from app.config.settings import settings
 from shared.health import check_redis, check_rabbitmq
 
 
-@app.get("/health")
 @app.get("/health/live")
 async def liveness_check():
     return {"status": "live", "service": "notification-service"}
 
 
+@app.get("/health")
 @app.get("/health/ready")
 async def readiness_check():
     rabbit_task = check_rabbitmq(settings.rabbitmq_url)

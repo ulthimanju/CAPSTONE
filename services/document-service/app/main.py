@@ -23,12 +23,12 @@ from app.config.settings import settings
 from shared.health import check_postgres, check_mongo, check_rabbitmq
 
 
-@app.get("/health")
 @app.get("/health/live")
 async def liveness_check():
     return {"status": "live", "service": "document-service"}
 
 
+@app.get("/health")
 @app.get("/health/ready")
 async def readiness_check():
     pg_task = check_postgres(engine)

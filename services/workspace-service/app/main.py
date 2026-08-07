@@ -34,12 +34,12 @@ app.include_router(api_router)
 from fastapi.responses import JSONResponse
 from shared.health import check_postgres
 
-@app.get("/health")
 @app.get("/health/live")
 async def liveness_check():
     return {"status": "live", "service": "workspace-service"}
 
 
+@app.get("/health")
 @app.get("/health/ready")
 async def readiness_check():
     pg_ok, pg_status = await check_postgres(engine)

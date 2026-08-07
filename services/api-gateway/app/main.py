@@ -74,12 +74,12 @@ async def platform_middleware(request: Request, call_next):
 from fastapi.responses import JSONResponse
 
 
-@app.get("/health")
 @app.get("/health/live")
 async def liveness_check():
     return {"status": "live", "service": "api-gateway"}
 
 
+@app.get("/health")
 @app.get("/health/ready")
 async def readiness_check():
     services = {
