@@ -1,33 +1,109 @@
-# Environment files — never commit real secrets
-.env.common
-services/**/.env
-scratch/
+# ==========================================
+# CPA-V2 Root .gitignore
+# Comprehensive rules for Python, Node, Docker,
+# Environment Secrets, IDEs, and OS Files.
+# ==========================================
 
-
-# Keep examples
+# Environment & Secrets (Never commit credentials)
+.env
+.env.*
 !.env.example
+!.env.common.example
+
+# Archives & Compressed Files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+services.zip
 
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-.venv/
-*.egg-info/
-dist/
+*$py.class
+*.so
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Node
-node_modules/
-web-app/dist/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# uv
+# Python Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
 .python-version
+
+# Python Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Node.js / Web-App Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm/
+.eslintcache
+.vite/
+web-app/dist/
+web-app/node_modules/
+
+# Database & Persistent Storage Mounts
+postgres_data/
+pgvector_data/
+mongo_data/
+redis_data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary & Scratch Files
+scratch/
+tmp/
+temp/
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# IDE & Editor Settings (PyCharm, VSCode)
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
