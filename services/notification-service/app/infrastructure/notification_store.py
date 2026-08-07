@@ -129,5 +129,24 @@ class NotificationStore:
             )
         return True
 
+    async def cleanup_expired_processed_events(
+        self,
+        retention_days: int = 30,
+        session: AsyncSession | None = None,
+    ) -> int:
+        from datetime import datetime, timezone, timedelta
+        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+
+        sess = session or self.session
+        if not sess:
+            return 0
+
+        stmt = delete(ProcessedNotificationEventModel).where(
+            ProcessedNotificationEventModel.processed_at < cutoff
+        )
+        res = await sess.execute(stmt)
+        await sess.flush()
+        return res.rowcount or 0
+
 
 notification_store = NotificationStore()
