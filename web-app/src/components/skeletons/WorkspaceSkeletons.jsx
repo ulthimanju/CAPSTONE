@@ -3,13 +3,7 @@ import React from 'react';
 export const Shimmer = ({ style, className = '' }) => (
   <div
     className={`skeleton-shimmer ${className}`}
-    style={{
-      background: 'linear-gradient(90deg, #1c1c21 25%, #2a2a32 50%, #1c1c21 75%)',
-      backgroundSize: '200% 100%',
-      animation: 'skeleton-wave 1.5s infinite linear',
-      borderRadius: '6px',
-      ...style,
-    }}
+    style={style}
   />
 );
 
@@ -43,7 +37,7 @@ export const DocumentListSkeleton = ({ count = 4 }) => (
 
 export const SummarySkeleton = () => (
   <div className="island" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #222226', paddingBottom: '16px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-soft)', paddingBottom: '16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <Shimmer style={{ width: '36px', height: '36px', borderRadius: '10px' }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -66,7 +60,7 @@ export const SummarySkeleton = () => (
 
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '8px' }}>
       {Array.from({ length: 3 }).map((_, idx) => (
-        <div key={idx} style={{ background: '#0c0c0e', border: '1px solid #222226', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div key={idx} style={{ background: 'var(--bg-2)', border: '1px solid var(--border-soft)', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <Shimmer style={{ width: '50%', height: '15px' }} />
           <Shimmer style={{ width: '100%', height: '12px' }} />
           <Shimmer style={{ width: '85%', height: '12px' }} />
