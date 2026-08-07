@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, Text, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
@@ -29,4 +29,4 @@ class ChunkEmbeddingModel(Base):
 
     is_active = Column(Boolean, nullable=False, default=True)
     status = Column(String(50), nullable=False, default="COMPLETED")
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
