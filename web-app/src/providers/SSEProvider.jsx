@@ -24,9 +24,9 @@ export function SSEProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState(null);
   const listenersRef = useRef(new Set());
-  const refreshRegistryRef = useRef(new Map()); // Map<key: "domain:workspaceId", Set<refreshFn>>
+  const refreshRegistryRef = useRef(new Map()); // Map<key: "domain:workspaceId", Set<HandlerEntry>>
 
-  // Invalidate domain & execute registered refresh handlers
+  // Invalidate domain & execute registered refresh handlers (with debouncing, priority, enabled filters)
   const invalidateDomain = (domain, workspaceId) => {
     const targetKeys = [
       `${domain}:${workspaceId}`,
@@ -36,11 +36,28 @@ export function SSEProvider({ children }) {
     targetKeys.forEach((key) => {
       const handlers = refreshRegistryRef.current.get(key);
       if (handlers) {
-        handlers.forEach((fn) => {
-          try {
-            fn(workspaceId);
-          } catch (err) {
-            console.error(`Error executing refresh handler for ${key}:`, err);
+        const sorted = Array.from(handlers)
+          .filter((entry) => entry.enabled !== false)
+          .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+        sorted.forEach((entry) => {
+          if (entry.debounceMs && entry.debounceMs > 0) {
+            if (entry.timerId) {
+              clearTimeout(entry.timerId);
+            }
+            entry.timerId = setTimeout(() => {
+              try {
+                entry.refresh(workspaceId);
+              } catch (err) {
+                console.error(`Error executing debounced refresh for ${key}:`, err);
+              }
+            }, entry.debounceMs);
+          } else {
+            try {
+              entry.refresh(workspaceId);
+            } catch (err) {
+              console.error(`Error executing refresh for ${key}:`, err);
+            }
           }
         });
       }
@@ -167,16 +184,29 @@ export function SSEProvider({ children }) {
     };
   };
 
-  const registerRefreshHandler = (domain, workspaceId, refreshFn) => {
+  const registerRefreshHandler = (domain, workspaceId, refreshFnOrConfig, options = {}) => {
     const key = `${domain}:${workspaceId || 'global'}`;
     if (!refreshRegistryRef.current.has(key)) {
       refreshRegistryRef.current.set(key, new Set());
     }
+
+    const config = typeof refreshFnOrConfig === 'function'
+      ? { refresh: refreshFnOrConfig, debounceMs: options.debounceMs ?? 200, priority: options.priority ?? 0, enabled: options.enabled ?? true }
+      : { debounceMs: 200, priority: 0, enabled: true, ...refreshFnOrConfig };
+
+    const handlerEntry = {
+      ...config,
+      timerId: null,
+    };
+
     const set = refreshRegistryRef.current.get(key);
-    set.add(refreshFn);
+    set.add(handlerEntry);
 
     return () => {
-      set.delete(refreshFn);
+      if (handlerEntry.timerId) {
+        clearTimeout(handlerEntry.timerId);
+      }
+      set.delete(handlerEntry);
       if (set.size === 0) {
         refreshRegistryRef.current.delete(key);
       }
