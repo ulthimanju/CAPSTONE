@@ -44,8 +44,11 @@ class PlatformSettings(BaseSettings):
 
     # Database Tuning Configs (Optional defaults for services using DB)
     database_url: Optional[str] = None
-    database_pool_size: int = 20
-    database_max_overflow: int = 10
+    database_pool_size: int = 10
+    database_max_overflow: int = 20
+    database_pool_timeout: float = 30.0
+    database_pool_recycle: int = 1800
+    database_pool_pre_ping: bool = True
     database_echo: bool = False
     db_statement_timeout_ms: int = 30000
 
