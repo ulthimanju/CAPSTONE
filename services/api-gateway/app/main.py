@@ -2,9 +2,10 @@ import uuid
 import time
 import asyncio
 import httpx
-from fastapi import FastAPI, Request, Response, HTTPException, Header, status
+from fastapi import FastAPI, Request, Response, HTTPException, Header, Depends, status
 from fastapi.responses import StreamingResponse
 from shared.config import PlatformSettings
+from shared.security.auth import verify_user_identity
 
 
 class GatewaySettings(PlatformSettings):
@@ -21,6 +22,19 @@ settings = GatewaySettings()
 
 app = FastAPI(title="API Gateway", version="1.0.0")
 client = httpx.AsyncClient(timeout=300.0)
+
+
+def get_current_user_id(
+    authorization: str | None = Header(None),
+    x_user_id: str | None = Header(None),
+) -> uuid.UUID:
+    return verify_user_identity(
+        authorization=authorization,
+        x_user_id=x_user_id,
+        jwt_secret=settings.jwt_secret,
+        jwt_algorithm=settings.jwt_algorithm,
+        jwt_issuer=settings.jwt_issuer,
+    )
 
 
 # Phase 5: Platform Middleware (Correlation ID, Request Timer, Security Headers)
@@ -96,9 +110,11 @@ async def proxy_request(service_url: str, request: Request):
 
 # Phase 4: Request Aggregation Endpoints
 @app.get("/api/v1/dashboard")
-async def get_dashboard_aggregation(request: Request, x_user_id: str | None = Header(None)):
-    user_id = x_user_id or "00000000-0000-0000-0000-000000000000"
-    headers = {"X-User-ID": user_id}
+async def get_dashboard_aggregation(request: Request, user_id: uuid.UUID = Depends(get_current_user_id)):
+    headers = {"X-User-ID": str(user_id)}
+    auth_header = request.headers.get("authorization")
+    if auth_header:
+        headers["Authorization"] = auth_header
 
     async def fetch_ws():
         try:
@@ -117,7 +133,7 @@ async def get_dashboard_aggregation(request: Request, x_user_id: str | None = He
     ws_data, notify_data = await asyncio.gather(fetch_ws(), fetch_notifications())
 
     return {
-        "user_id": user_id,
+        "user_id": str(user_id),
         "workspaces": ws_data,
         "notifications": notify_data.get("notifications", []),
         "unread_notifications": notify_data.get("unread_count", 0),
@@ -125,8 +141,11 @@ async def get_dashboard_aggregation(request: Request, x_user_id: str | None = He
 
 
 @app.get("/api/v1/workspaces/{workspace_id}/overview")
-async def get_workspace_overview_aggregation(workspace_id: uuid.UUID, x_user_id: str | None = Header(None)):
-    headers = {"X-User-ID": x_user_id} if x_user_id else {}
+async def get_workspace_overview_aggregation(request: Request, workspace_id: uuid.UUID, user_id: uuid.UUID = Depends(get_current_user_id)):
+    headers = {"X-User-ID": str(user_id)}
+    auth_header = request.headers.get("authorization")
+    if auth_header:
+        headers["Authorization"] = auth_header
 
     async def fetch_detail():
         res = await client.get(f"{settings.service_workspace_url}/api/v1/workspaces/{workspace_id}", headers=headers)

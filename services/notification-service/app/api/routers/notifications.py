@@ -1,18 +1,19 @@
 import uuid
 import asyncio
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.schemas.notification import PlatformEvent, NotificationListResponse
 from app.infrastructure.sse_manager import sse_manager
 from app.infrastructure.notification_store import notification_store
+from app.api.dependencies.auth import get_current_user_id
 
 router = APIRouter(prefix="/api/v1/notifications", tags=["Notifications"])
 
 
 @router.get("/stream")
-async def stream_notifications(x_user_id: str | None = Header(None)):
-    channel_id = x_user_id or "global"
+async def stream_notifications(user_id: uuid.UUID = Depends(get_current_user_id)):
+    channel_id = str(user_id)
     queue = sse_manager.subscribe(channel_id)
 
     async def event_generator():
@@ -39,10 +40,9 @@ async def publish_platform_event(event: PlatformEvent):
 
 
 @router.get("", response_model=NotificationListResponse)
-async def list_notifications(x_user_id: str | None = Header(None)):
-    uid = uuid.UUID(x_user_id) if x_user_id else uuid.UUID("00000000-0000-0000-0000-000000000000")
-    items = notification_store.get_user_notifications(uid)
-    unread = notification_store.get_unread_count(uid)
+async def list_notifications(user_id: uuid.UUID = Depends(get_current_user_id)):
+    items = notification_store.get_user_notifications(user_id)
+    unread = notification_store.get_unread_count(user_id)
     return NotificationListResponse(notifications=items, unread_count=unread)
 
 

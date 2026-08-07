@@ -1,6 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.dependencies.auth import get_current_user_id
 from app.api.dependencies.database import (
     get_db_session,
     get_document_repository,
@@ -51,10 +52,9 @@ router = APIRouter(prefix="/api/v1/documents", tags=["Documents"])
 @router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     req: UploadDocumentRequest,
-    x_user_id: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
-    user_id = UUID(x_user_id) if x_user_id else UUID("00000000-0000-0000-0000-000000000000")
     repo = get_document_repository(session)
     use_case = UploadDocumentUseCase(repo)
     return await use_case.execute(user_id, req)
@@ -68,30 +68,9 @@ import os, tempfile, json
 async def upload_document_raw(
     workspace_id: UUID = Form(...),
     file: UploadFile = File(...),
-    x_user_id: str | None = Header(None),
-    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
-    user_id = None
-    if x_user_id:
-        try:
-            user_id = UUID(x_user_id)
-        except Exception:
-            pass
-
-    if not user_id and authorization and authorization.startswith("Bearer "):
-        try:
-            from shared.security.jwt import JWTManager, JWTSettings
-            from app.config.settings import settings
-            jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm))
-            token = authorization.split(" ")[1]
-            claims = jwt_mgr.get_claims(token)
-            user_id = UUID(claims.sub)
-        except Exception as jwt_err:
-            print(f"Notice: JWT decode in document-service failed: {jwt_err}")
-
-    if not user_id:
-        user_id = UUID("00000000-0000-0000-0000-000000000000")
 
     file_bytes = await file.read()
     ext = file.filename.split(".")[-1].upper() if "." in file.filename else "PDF"
@@ -432,10 +411,9 @@ async def list_versions(
 async def create_version(
     document_id: UUID,
     req: CreateVersionRequest,
-    x_user_id: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
-    user_id = UUID(x_user_id) if x_user_id else UUID("00000000-0000-0000-0000-000000000000")
     doc_repo = get_document_repository(session)
     ver_repo = get_document_version_repository(session)
     hist_repo = get_document_processing_history_repository(session)
