@@ -74,43 +74,43 @@ const WorkspaceDetailPageContent = () => {
     switch (status) {
       case 'UPLOADING':
         return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#60a5fa', background: 'rgba(96, 165, 250, 0.12)', border: '1px solid rgba(96, 165, 250, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#60a5fa', background: 'rgba(96, 165, 250, 0.12)', border: '1px solid rgba(96, 165, 250, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
             <Spinner size="sm" /> Uploading...
           </span>
         );
       case 'PARSING':
         return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
             <Spinner size="sm" /> Parsing...
           </span>
         );
       case 'CHUNKING':
         return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#c084fc', background: 'rgba(192, 132, 252, 0.12)', border: '1px solid rgba(192, 132, 252, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#c084fc', background: 'rgba(192, 132, 252, 0.12)', border: '1px solid rgba(192, 132, 252, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
             <Spinner size="sm" /> Chunking...
           </span>
         );
       case 'EMBEDDING':
         return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
             <Spinner size="sm" /> Embedding...
           </span>
         );
       case 'READY_FOR_RAG':
       case 'READY':
         return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#3ecf8e', background: 'rgba(62, 207, 142, 0.12)', border: '1px solid rgba(62, 207, 142, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#3ecf8e', background: 'rgba(62, 207, 142, 0.12)', border: '1px solid rgba(62, 207, 142, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
             <i className="ti ti-check" style={{ fontSize: '12px' }}></i> Ready
           </span>
         );
       case 'FAILED':
         return (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#f87171', background: 'rgba(248, 113, 113, 0.12)', border: '1px solid rgba(248, 113, 113, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#f87171', background: 'rgba(248, 113, 113, 0.12)', border: '1px solid rgba(248, 113, 113, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
             <i className="ti ti-alert-triangle" style={{ fontSize: '12px' }}></i> Failed
           </span>
         );
       default:
-        return <span className="doc-status">{status}</span>;
+        return <span className="doc-status doc-status-badge animate-fade-in">{status}</span>;
     }
   };
 
@@ -859,7 +859,7 @@ const WorkspaceDetailPageContent = () => {
               </div>
             ) : summaryData ? (
               /* ONE SINGLE UNIFIED ISLAND CARD */
-              <div className="island" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="island animate-cross-fade" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
                 {/* Header Actions Row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-soft)', paddingBottom: '16px' }}>
@@ -962,7 +962,7 @@ const WorkspaceDetailPageContent = () => {
                 <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Building progressive curriculum units from document outlines using Gemini...</p>
               </div>
             ) : learningPathData ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '1rem 0' }}>
+              <div className="animate-cross-fade" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '1rem 0' }}>
                 {/* Units List */}
                 {learningPathData.units && learningPathData.units.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>

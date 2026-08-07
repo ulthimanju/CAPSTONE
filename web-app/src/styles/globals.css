@@ -73,6 +73,44 @@ html[data-theme="dark"] {
   border-radius: 6px;
 }
 
+/* State Transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes crossFade {
+  0% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+.animate-cross-fade {
+  animation: crossFade 0.25s ease-in-out forwards;
+}
+
+.doc-row {
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+.doc-status-badge {
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.2s ease;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
