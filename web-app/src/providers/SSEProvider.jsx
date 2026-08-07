@@ -20,15 +20,24 @@ const ROUTE_MAP = {
   'workspace.activity.recorded': 'activity',
 };
 
-const COALESCE_WINDOW_MS = 150; // 150ms event buffering window
+const COALESCE_WINDOWS = {
+  notifications: 50,    // Latency-sensitive (instant UI response)
+  documents: 100,        // High priority
+  summary: 150,          // Standard
+  learning_path: 150,    // Standard
+  workspace: 150,        // Standard
+  activity: 300,         // Low priority (background feed)
+};
+
+const DEFAULT_COALESCE_WINDOW_MS = 150;
 
 export function SSEProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState(null);
   const listenersRef = useRef(new Set());
   const refreshRegistryRef = useRef(new Map()); // Map<key: "domain:workspaceId", Set<HandlerEntry>>
-  const coalescingBufferRef = useRef(new Map()); // Map<key: "domain:workspaceId", { domain, workspaceId }>
-  const coalesceTimerRef = useRef(null);
+  const coalescingBufferRef = useRef(new Map()); // Map<domain, Map<workspaceId, workspaceId>>
+  const domainTimersRef = useRef(new Map()); // Map<domain, timerId>
 
   // Invalidate domain & execute registered refresh handlers (with priority, enabled filters)
   const invalidateDomain = (domain, workspaceId) => {
@@ -68,14 +77,17 @@ export function SSEProvider({ children }) {
     });
   };
 
-  // Flush buffered coalesced events into single domain invalidations
-  const flushCoalescedEvents = () => {
-    coalesceTimerRef.current = null;
-    const pendingEvents = Array.from(coalescingBufferRef.current.values());
-    coalescingBufferRef.current.clear();
+  // Flush buffered events for a specific domain based on its window timer
+  const flushDomainEvents = (domain) => {
+    domainTimersRef.current.delete(domain);
+    const domainBuffer = coalescingBufferRef.current.get(domain);
+    if (!domainBuffer) return;
 
-    pendingEvents.forEach(({ domain, workspaceId }) => {
-      invalidateDomain(domain, workspaceId);
+    const workspaceIds = Array.from(domainBuffer.values());
+    coalescingBufferRef.current.delete(domain);
+
+    workspaceIds.forEach((wsId) => {
+      invalidateDomain(domain, wsId);
     });
   };
 
@@ -85,16 +97,21 @@ export function SSEProvider({ children }) {
     // Notify raw listeners
     listenersRef.current.forEach((fn) => fn(payload));
 
-    // Event Coalescing (Burst Protection)
+    // Per-Domain Event Coalescing
     const evtName = payload.eventType || payload.event;
     const domain = ROUTE_MAP[evtName];
     if (domain) {
-      const wsId = payload.workspace_id;
-      const bufferKey = `${domain}:${wsId || 'global'}`;
-      coalescingBufferRef.current.set(bufferKey, { domain, workspaceId: wsId });
+      const wsId = payload.workspace_id || 'global';
+      
+      if (!coalescingBufferRef.current.has(domain)) {
+        coalescingBufferRef.current.set(domain, new Map());
+      }
+      coalescingBufferRef.current.get(domain).set(wsId, wsId);
 
-      if (!coalesceTimerRef.current) {
-        coalesceTimerRef.current = setTimeout(flushCoalescedEvents, COALESCE_WINDOW_MS);
+      if (!domainTimersRef.current.has(domain)) {
+        const windowMs = COALESCE_WINDOWS[domain] ?? DEFAULT_COALESCE_WINDOW_MS;
+        const timerId = setTimeout(() => flushDomainEvents(domain), windowMs);
+        domainTimersRef.current.set(domain, timerId);
       }
     }
   };
@@ -194,9 +211,8 @@ export function SSEProvider({ children }) {
     return () => {
       isAborted = true;
       controller.abort();
-      if (coalesceTimerRef.current) {
-        clearTimeout(coalesceTimerRef.current);
-      }
+      domainTimersRef.current.forEach((t) => clearTimeout(t));
+      domainTimersRef.current.clear();
       setConnected(false);
     };
   }, []);
