@@ -71,10 +71,48 @@ async def platform_middleware(request: Request, call_next):
         _request_id_ctx.reset(token)
 
 
-# Phase 1: Gateway Infrastructure & Service Status Monitoring
+from fastapi.responses import JSONResponse
+
+
 @app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "api-gateway"}
+@app.get("/health/live")
+async def liveness_check():
+    return {"status": "live", "service": "api-gateway"}
+
+
+@app.get("/health/ready")
+async def readiness_check():
+    services = {
+        "identity-service": f"{settings.service_identity_url}/health/ready",
+        "workspace-service": f"{settings.service_workspace_url}/health/ready",
+        "document-service": f"{settings.service_document_url}/health/ready",
+        "rag-service": f"{settings.service_rag_url}/health/ready",
+        "ai-service": f"{settings.service_ai_url}/health/ready",
+        "notification-service": f"{settings.service_notification_url}/health/ready",
+    }
+
+    results = {}
+    all_ok = True
+    for s_name, health_url in services.items():
+        try:
+            res = await client.get(health_url, headers=get_tracing_headers(), timeout=3.0)
+            ok = res.status_code == 200
+            results[s_name] = "ok" if ok else f"error ({res.status_code})"
+            if not ok:
+                all_ok = False
+        except Exception as exc:
+            results[s_name] = f"unreachable: {exc}"
+            all_ok = False
+
+    status_code = 200 if all_ok else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ready" if all_ok else "degraded",
+            "service": "api-gateway",
+            "checks": results,
+        },
+    )
 
 
 @app.get("/services/status")
@@ -87,7 +125,7 @@ async def services_status():
         "ai-service": f"{settings.service_ai_url}/health",
         "notification-service": f"{settings.service_notification_url}/health",
     }
-    
+
     results = {}
     for s_name, health_url in services.items():
         try:

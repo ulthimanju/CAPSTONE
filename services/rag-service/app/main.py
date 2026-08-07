@@ -25,6 +25,39 @@ register_global_exception_handlers(app)
 app.include_router(rag_router)
 
 
+import asyncio
+from fastapi.responses import JSONResponse
+from app.infrastructure.database.session import engine
+from app.config.settings import settings
+from shared.health import check_postgres, check_rabbitmq
+
+
 @app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "rag-service"}
+@app.get("/health/live")
+async def liveness_check():
+    return {"status": "live", "service": "rag-service"}
+
+
+@app.get("/health/ready")
+async def readiness_check():
+    pg_task = check_postgres(engine)
+    rabbit_task = check_rabbitmq(settings.rabbitmq_url)
+
+    (pg_ok, pg_status), (rabbit_ok, rabbit_status) = await asyncio.gather(
+        pg_task, rabbit_task
+    )
+
+    checks = {
+        "postgres": pg_status,
+        "rabbitmq": rabbit_status,
+    }
+    all_ok = pg_ok and rabbit_ok
+    status_code = 200 if all_ok else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ready" if all_ok else "degraded",
+            "service": "rag-service",
+            "checks": checks,
+        },
+    )
