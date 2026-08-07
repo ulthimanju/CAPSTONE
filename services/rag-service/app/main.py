@@ -13,10 +13,12 @@ async def lifespan(app: FastAPI):
 
 from shared.logging.correlation_id import CorrelationIdMiddleware
 from shared.middleware.request_size import RequestSizeLimitMiddleware
+from shared.middleware.request_timeout import RequestTimeoutMiddleware
 
 app = FastAPI(title="RAG Service", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(RequestSizeLimitMiddleware)
+app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=60.0)
 
 app.include_router(rag_router)
 
