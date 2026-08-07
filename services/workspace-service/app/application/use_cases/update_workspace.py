@@ -50,6 +50,7 @@ class UpdateWorkspaceUseCase:
         workspace.updated_at = datetime.now(timezone.utc)
         updated = await self.workspace_repo.update(workspace)
         await self.cache.invalidate(workspace_id)
+        await self.cache.invalidate_workspace_permissions(workspace_id)
         await self.cache.invalidate_user_workspaces(workspace.owner_id)
         if user_id != workspace.owner_id:
             await self.cache.invalidate_user_workspaces(user_id)
