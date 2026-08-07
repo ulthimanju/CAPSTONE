@@ -20,6 +20,7 @@ export function SSEProvider({ children }) {
     }
 
     let isAborted = false;
+    let retryDelay = 1000; // Start at 1s
     const controller = new AbortController();
 
     const connectSSE = async () => {
@@ -34,10 +35,14 @@ export function SSEProvider({ children }) {
 
         if (!response.ok || !response.body) {
           setConnected(false);
+          scheduleReconnect();
           return;
         }
 
+        // Successfully connected: reset backoff delay to 1s
+        retryDelay = 1000;
         setConnected(true);
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
@@ -77,14 +82,27 @@ export function SSEProvider({ children }) {
             }
           }
         }
+        // Stream completed cleanly
+        if (!isAborted) {
+          setConnected(false);
+          scheduleReconnect();
+        }
       } catch (err) {
         if (!isAborted) {
           setConnected(false);
-          setTimeout(() => {
-            if (!isAborted) connectSSE();
-          }, 3000);
+          scheduleReconnect();
         }
       }
+    };
+
+    const scheduleReconnect = () => {
+      if (isAborted) return;
+      const currentDelay = retryDelay;
+      // Exponential backoff capped at 15s
+      retryDelay = Math.min(retryDelay * 2, 15000);
+      setTimeout(() => {
+        if (!isAborted) connectSSE();
+      }, currentDelay);
     };
 
     connectSSE();
