@@ -73,3 +73,17 @@ class SQLAlchemyProcessingJobRepository(DocumentProcessingJobRepository):
             model.updated_at = job.updated_at
             await self.session.flush()
         return job
+
+    async def try_atomic_acquire(self, job_id: UUID) -> bool:
+        from sqlalchemy import update, func
+        stmt = (
+            update(DocumentProcessingJobModel)
+            .where(
+                DocumentProcessingJobModel.id == job_id,
+                DocumentProcessingJobModel.status.in_(["PENDING", "RETRYABLE", "UPLOADED"]),
+            )
+            .values(status="PROCESSING", started_at=func.now())
+        )
+        res = await self.session.execute(stmt)
+        await self.session.flush()
+        return res.rowcount == 1

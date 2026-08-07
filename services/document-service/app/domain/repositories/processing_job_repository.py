@@ -19,3 +19,7 @@ class DocumentProcessingJobRepository(ABC):
     @abstractmethod
     async def update(self, job: DocumentProcessingJob) -> DocumentProcessingJob:
         pass
+
+    @abstractmethod
+    async def try_atomic_acquire(self, job_id: UUID) -> bool:
+        pass
