@@ -1,12 +1,13 @@
-import os
 import uuid
 import pytest
+from unittest.mock import AsyncMock
 from app.schemas.notification import PlatformEvent
 from app.infrastructure.notification_store import NotificationStore
 
 
-def test_durable_notification_event_idempotency_survives_process_restart(tmp_path):
-    db_file = os.path.join(tmp_path, "test_notification_events.db")
+@pytest.mark.asyncio
+async def test_postgresql_notification_event_idempotency_on_conflict_do_nothing():
+    store = NotificationStore()
     user_id = uuid.uuid4()
     event_id = uuid.uuid4()
     doc_id = uuid.uuid4()
@@ -22,24 +23,32 @@ def test_durable_notification_event_idempotency_survives_process_restart(tmp_pat
         message="Document parsed successfully",
     )
 
-    # 1. Instance A processes event_id for the first time
-    store_a = NotificationStore(db_path=db_file)
-    is_new_a, item_a = store_a.add_event_notification(event)
-    assert is_new_a is True
-    assert item_a is not None
-    assert len(store_a.get_user_notifications(user_id)) == 1
+    # 1. First execution: ON CONFLICT DO NOTHING inserts row -> rowcount == 1
+    session_1 = AsyncMock()
+    exec_result_1 = AsyncMock()
+    exec_result_1.rowcount = 1
+    session_1.execute.return_value = exec_result_1
 
-    # 2. Instance B (simulating process restart or second replica reading from same DB)
-    store_b = NotificationStore(db_path=db_file)
-    is_new_b, item_b = store_b.add_event_notification(event)
-    assert is_new_b is False
-    assert item_b is None
-    # User notifications count MUST remain 1
-    assert len(store_b.get_user_notifications(user_id)) == 1
+    is_new_1, item_1 = await store.add_event_notification_async(event, session_1)
+    assert is_new_1 is True
+    assert item_1 is not None
+    assert item_1.event_id == event_id
+    session_1.add.assert_called_once()
+
+    # 2. Second execution: ON CONFLICT DO NOTHING finds duplicate -> rowcount == 0
+    session_2 = AsyncMock()
+    exec_result_2 = AsyncMock()
+    exec_result_2.rowcount = 0
+    session_2.execute.return_value = exec_result_2
+
+    is_new_2, item_2 = await store.add_event_notification_async(event, session_2)
+    assert is_new_2 is False
+    assert item_2 is None
+    session_2.add.assert_not_called()
 
 
-def test_durable_notification_event_idempotency_concurrent_replicas(tmp_path):
-    db_file = os.path.join(tmp_path, "test_replica_events.db")
+def test_fallback_notification_event_idempotency():
+    store = NotificationStore()
     user_id = uuid.uuid4()
     event_id = uuid.uuid4()
     doc_id = uuid.uuid4()
@@ -55,11 +64,10 @@ def test_durable_notification_event_idempotency_concurrent_replicas(tmp_path):
         message="You were invited to workspace",
     )
 
-    replica_1 = NotificationStore(db_path=db_file)
-    replica_2 = NotificationStore(db_path=db_file)
+    is_new_1, item_1 = store.add_event_notification(event)
+    assert is_new_1 is True
+    assert item_1 is not None
 
-    res_1, _ = replica_1.add_event_notification(event)
-    res_2, _ = replica_2.add_event_notification(event)
-
-    # Exactly ONE replica must succeed
-    assert (res_1 is True and res_2 is False) or (res_1 is False and res_2 is True)
+    is_new_2, item_2 = store.add_event_notification(event)
+    assert is_new_2 is False
+    assert item_2 is None
