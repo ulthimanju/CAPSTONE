@@ -108,6 +108,8 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         )
         self.session.add(model)
         await self.session.flush()
+        if "post_commit_invalidations" in self.session.info:
+            self.session.info["post_commit_invalidations"].add(document.workspace_id)
         await self.cache.invalidate_workspace_documents(document.workspace_id)
         return document
 
@@ -197,6 +199,8 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         model.last_accessed_at = document.last_accessed_at
         await self.session.flush()
         document.version = model.version
+        if "post_commit_invalidations" in self.session.info:
+            self.session.info["post_commit_invalidations"].add(document.workspace_id)
         await self.cache.invalidate_workspace_documents(document.workspace_id)
         return document
 
@@ -247,6 +251,8 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             )
         updated_doc = await self.get_by_id(document_id)
         if updated_doc:
+            if "post_commit_invalidations" in self.session.info:
+                self.session.info["post_commit_invalidations"].add(updated_doc.workspace_id)
             await self.cache.invalidate_workspace_documents(updated_doc.workspace_id)
         return updated_doc
 
@@ -259,6 +265,8 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             model.lifecycle_status = LifecycleStatus.DELETED.value
             model.is_deleted = True
             await self.session.flush()
+            if "post_commit_invalidations" in self.session.info:
+                self.session.info["post_commit_invalidations"].add(model.workspace_id)
             await self.cache.invalidate_workspace_documents(model.workspace_id)
             return True
         return False

@@ -14,11 +14,18 @@ from app.infrastructure.services.parser_services import LlamaParseClient
 from app.config.settings import settings
 
 
+from app.infrastructure.cache.document_cache import DocumentCacheManager
+
+
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
+        session.info["post_commit_invalidations"] = set()
         try:
             yield session
             await session.commit()
+            cache = DocumentCacheManager()
+            for ws_id in session.info.get("post_commit_invalidations", set()):
+                await cache.invalidate_workspace_documents(ws_id)
         except Exception:
             await session.rollback()
             raise
