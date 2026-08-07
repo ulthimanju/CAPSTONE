@@ -11,4 +11,5 @@ class WorkspaceMember:
     user_id: UUID
     role: WorkspaceRole
     joined_at: datetime
+    version: int = 1
     last_accessed_at: datetime | None = None

@@ -10,6 +10,11 @@ class InviteMemberRequest(BaseModel):
     role: WorkspaceRole = WorkspaceRole.VIEWER
 
 
+class UpdateMemberRoleRequest(BaseModel):
+    role: WorkspaceRole
+    version: int = 1
+
+
 class TransferOwnershipRequest(BaseModel):
     new_owner_id: UUID
 
@@ -21,5 +26,6 @@ class MemberResponse(BaseModel):
     workspace_id: UUID
     user_id: UUID
     role: WorkspaceRole
+    version: int = 1
     joined_at: datetime
     last_accessed_at: datetime | None

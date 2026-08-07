@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Any
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint, Index, func
+from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint, Index, Integer, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.base import Base
@@ -38,6 +38,7 @@ class WorkspaceMemberModel(Base):
     workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     role: Mapped[str] = mapped_column(String(50), nullable=False, default="VIEWER")
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

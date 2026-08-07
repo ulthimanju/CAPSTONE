@@ -21,5 +21,9 @@ class MemberRepository(ABC):
         pass
 
     @abstractmethod
+    async def update_role_with_version(self, member: WorkspaceMember, expected_version: int) -> WorkspaceMember:
+        pass
+
+    @abstractmethod
     async def remove_member(self, workspace_id: UUID, user_id: UUID) -> bool:
         pass

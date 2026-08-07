@@ -1,6 +1,7 @@
 from uuid import UUID
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 from app.domain.entities.workspace_member import WorkspaceMember
 from app.domain.repositories.member_repository import MemberRepository
 from app.infrastructure.database.models import WorkspaceMemberModel
@@ -17,6 +18,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
             workspace_id=member.workspace_id,
             user_id=member.user_id,
             role=member.role.value if hasattr(member.role, "value") else str(member.role),
+            version=getattr(member, "version", 1),
             joined_at=member.joined_at,
             last_accessed_at=member.last_accessed_at
         )
@@ -38,6 +40,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
             workspace_id=model.workspace_id,
             user_id=model.user_id,
             role=WorkspaceRole(model.role),
+            version=model.version,
             joined_at=model.joined_at,
             last_accessed_at=model.last_accessed_at
         )
@@ -52,21 +55,34 @@ class SQLAlchemyMemberRepository(MemberRepository):
                 workspace_id=m.workspace_id,
                 user_id=m.user_id,
                 role=WorkspaceRole(m.role),
+                version=m.version,
                 joined_at=m.joined_at,
                 last_accessed_at=m.last_accessed_at
             ) for m in models
         ]
 
     async def update_role(self, member: WorkspaceMember) -> WorkspaceMember:
-        stmt = select(WorkspaceMemberModel).where(
-            WorkspaceMemberModel.workspace_id == member.workspace_id,
-            WorkspaceMemberModel.user_id == member.user_id
+        return await self.update_role_with_version(member, getattr(member, "version", 1))
+
+    async def update_role_with_version(self, member: WorkspaceMember, expected_version: int) -> WorkspaceMember:
+        role_val = member.role.value if hasattr(member.role, "value") else str(member.role)
+        stmt = (
+            update(WorkspaceMemberModel)
+            .where(
+                WorkspaceMemberModel.workspace_id == member.workspace_id,
+                WorkspaceMemberModel.user_id == member.user_id,
+                WorkspaceMemberModel.version == expected_version,
+            )
+            .values(
+                role=role_val,
+                version=WorkspaceMemberModel.version + 1,
+            )
         )
         result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-        if model:
-            model.role = member.role.value if hasattr(member.role, "value") else str(member.role)
-            await self.session.flush()
+        await self.session.flush()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=409, detail="Workspace membership was modified by another request")
+        member.version = expected_version + 1
         return member
 
     async def remove_member(self, workspace_id: UUID, user_id: UUID) -> bool:
