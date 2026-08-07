@@ -31,8 +31,11 @@ async def stream_notifications(user_id: uuid.UUID = Depends(get_current_user_id)
 
 @router.post("/events")
 async def publish_platform_event(event: PlatformEvent):
-    # Store notification history
-    notification_store.add_event_notification(event)
+    # Enforce notification event idempotency
+    is_new, item = notification_store.add_event_notification(event)
+    if not is_new:
+        return {"status": "skipped_duplicate", "event_id": str(event.event_id)}
+
     # Stream real-time event to connected SSE clients
     channel_id = str(event.user_id) if event.user_id else "global"
     await sse_manager.broadcast_event(event, channel_id=channel_id)
