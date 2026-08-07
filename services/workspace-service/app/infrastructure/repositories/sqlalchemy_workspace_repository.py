@@ -142,7 +142,10 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             model.archived_at = workspace.archived_at
             model.updated_at = workspace.updated_at
             await self.session.flush()
-            await self.cache.invalidate(workspace.id)
+            if "post_commit_invalidations" in self.session.info:
+                self.session.info["post_commit_invalidations"].add(workspace.id)
+            else:
+                await self.cache.invalidate(workspace.id)
         return workspace
 
     async def delete(self, workspace_id: UUID) -> bool:
@@ -150,8 +153,11 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         if model:
-            model.status = WorkspaceStatus.DELETED.value
+            await self.session.delete(model)
             await self.session.flush()
-            await self.cache.invalidate(workspace_id)
+            if "post_commit_invalidations" in self.session.info:
+                self.session.info["post_commit_invalidations"].add(workspace_id)
+            else:
+                await self.cache.invalidate(workspace_id)
             return True
         return False

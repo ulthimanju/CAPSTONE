@@ -49,7 +49,8 @@ class SQLAlchemyUserRepository(UserRepository):
         await self._db.refresh(m)
         if "post_commit_user_invalidations" in self._db.info:
             self._db.info["post_commit_user_invalidations"].add(user.id)
-        await self.cache.invalidate_user_profile(user.id)
+        else:
+            await self.cache.invalidate_user_profile(user.id)
         return _to_entity(m)
 
     async def update(self, user: User) -> User:
@@ -62,5 +63,6 @@ class SQLAlchemyUserRepository(UserRepository):
         updated_user = _to_entity(m)
         if "post_commit_user_invalidations" in self._db.info:
             self._db.info["post_commit_user_invalidations"].add(user.id)
-        await self.cache.invalidate_user_profile(user.id)
+        else:
+            await self.cache.invalidate_user_profile(user.id)
         return updated_user
