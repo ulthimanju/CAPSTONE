@@ -29,6 +29,15 @@ class SQLAlchemyRefreshTokenRepository(RefreshTokenRepository):
         m = result.scalar_one_or_none()
         return _to_entity(m) if m else None
 
+    async def get_by_hash_for_update(self, token_hash: str) -> RefreshToken | None:
+        result = await self._db.execute(
+            select(RefreshTokenModel)
+            .where(RefreshTokenModel.token_hash == token_hash)
+            .with_for_update()
+        )
+        m = result.scalar_one_or_none()
+        return _to_entity(m) if m else None
+
     async def create(self, token: RefreshToken) -> RefreshToken:
         m = RefreshTokenModel(
             id=token.id,

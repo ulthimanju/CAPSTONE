@@ -8,6 +8,9 @@ class RefreshTokenRepository(ABC):
     async def get_by_hash(self, token_hash: str) -> RefreshToken | None: ...
 
     @abstractmethod
+    async def get_by_hash_for_update(self, token_hash: str) -> RefreshToken | None: ...
+
+    @abstractmethod
     async def create(self, token: RefreshToken) -> RefreshToken: ...
 
     @abstractmethod

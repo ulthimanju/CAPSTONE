@@ -1,13 +1,18 @@
 import hashlib
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Cookie, HTTPException, status
 from app.config.settings import settings
 from app.schemas.auth import TokenRefreshRequest, TokenResponse
+from app.utils.ids import generate_uuid
 from shared.security.jwt import JWTManager, JWTSettings
+from app.domain.entities.refresh_token import RefreshToken
+from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 from app.api.dependencies.database import (
     get_refresh_token_repository,
     get_session_repository,
     get_user_repository,
+    get_unit_of_work,
 )
 
 router = APIRouter(prefix="/tokens", tags=["Tokens"])
@@ -22,6 +27,7 @@ async def refresh_token(
     refresh_repo=Depends(get_refresh_token_repository),
     session_repo=Depends(get_session_repository),
     user_repo=Depends(get_user_repository),
+    uow: UnitOfWorkInterface = Depends(get_unit_of_work),
 ):
     token_str = body.refresh_token if body and body.refresh_token else refresh_token
     if not token_str:
@@ -30,32 +36,47 @@ async def refresh_token(
     # 1. Compute SHA-256 hash of incoming refresh token
     presented_hash = hashlib.sha256(token_str.encode("utf-8")).hexdigest()
 
-    # 2. Look up stored RefreshToken entity by SHA-256 hash
-    stored_token = await refresh_repo.get_by_hash(presented_hash)
-    if not stored_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+    async with uow:
+        # 2. Lock & fetch RefreshToken row with FOR UPDATE to prevent concurrent race conditions
+        stored_token = await refresh_repo.get_by_hash_for_update(presented_hash)
+        if not stored_token or stored_token.revoked_at is not None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or revoked refresh token")
 
-    # 3. Check revocation status
-    if stored_token.revoked_at is not None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has been revoked")
+        now = datetime.now(timezone.utc)
+        if stored_token.expires_at < now:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has expired")
 
-    # 4. Check expiration status
-    now = datetime.now(timezone.utc)
-    if stored_token.expires_at < now:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has expired")
+        # 3. Atomically revoke consumed refresh token (single-use rotation)
+        await refresh_repo.revoke(presented_hash)
 
-    # 5. Fetch associated Session & User entities
-    session = await session_repo.get_by_id(stored_token.session_id)
-    if not session:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired or not found")
+        # 4. Generate new high-entropy refresh token & store its SHA-256 hash
+        new_raw_refresh_token = secrets.token_urlsafe(64)
+        new_token_hash = hashlib.sha256(new_raw_refresh_token.encode("utf-8")).hexdigest()
+        new_expires_at = now + timedelta(days=settings.refresh_token_expire_days)
 
-    user = await user_repo.get_by_id(session.user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        new_refresh_entity = RefreshToken(
+            id=generate_uuid(),
+            session_id=stored_token.session_id,
+            token_hash=new_token_hash,
+            expires_at=new_expires_at,
+            revoked_at=None,
+        )
+        await refresh_repo.create(new_refresh_entity)
 
-    # 6. Generate and return new access token for authenticated session
-    new_access_token = jwt_manager.create_access_token(
-        user.id, user.email, user.role, session.id
-    )
+        # 5. Fetch associated Session & User entities
+        session = await session_repo.get_by_id(stored_token.session_id)
+        if not session:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired or not found")
 
-    return TokenResponse(access_token=new_access_token, refresh_token=token_str)
+        user = await user_repo.get_by_id(session.user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+        # 6. Issue new access token for authenticated session
+        new_access_token = jwt_manager.create_access_token(
+            user.id, user.email, user.role, session.id
+        )
+
+        # Leaving 'async with uow:' automatically commits the transaction atomically!
+
+    return TokenResponse(access_token=new_access_token, refresh_token=new_raw_refresh_token)
