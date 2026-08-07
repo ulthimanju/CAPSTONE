@@ -82,16 +82,28 @@ async def upload_document_raw(
     authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
 ):
-    from app.config.settings import settings
-    max_bytes = settings.max_upload_size_mb * 1024 * 1024
-    file_bytes = await file.read()
-    if len(file_bytes) > max_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB",
-        )
-
     ext = file.filename.split(".")[-1].upper() if "." in file.filename else "PDF"
+    max_bytes = settings.max_upload_size_mb * 1024 * 1024
+    current_size = 0
+
+    # Stream file contents incrementally in 1MB chunks directly to disk
+    temp_upload = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext.lower()}")
+    try:
+        while chunk := await file.read(1024 * 1024):
+            current_size += len(chunk)
+            if current_size > max_bytes:
+                temp_upload.close()
+                if os.path.exists(temp_upload.name):
+                    os.remove(temp_upload.name)
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB",
+                )
+            temp_upload.write(chunk)
+    finally:
+        temp_upload.close()
+
+    temp_path = temp_upload.name
 
     # Attempt upload to real Google Drive if user has an active Google OAuth token
     gdrive_file_id = f"gdrive_{os.urandom(6).hex()}"
@@ -110,7 +122,10 @@ async def upload_document_raw(
             if token_res.status_code == 200:
                 access_token = token_res.json().get("access_token")
                 if access_token:
-                    # Upload to real Google Drive via v3 Multipart Upload API using multipart/related format
+                    # Stream file payload to Google Drive v3 Multipart API
+                    with open(temp_path, "rb") as disk_file:
+                        file_bytes = disk_file.read()
+
                     metadata = {"name": file.filename, "mimeType": file.content_type or "application/pdf"}
                     boundary = "----GoogleDriveBoundary7MA4YW"
                     body = (
@@ -120,7 +135,6 @@ async def upload_document_raw(
                         f"--{boundary}\r\n"
                         f"Content-Type: {file.content_type or 'application/pdf'}\r\n\r\n"
                     ).encode("utf-8") + file_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
-
 
                     drive_res = await client.post(
                         "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
@@ -136,7 +150,6 @@ async def upload_document_raw(
                         raw_link = drive_data.get("webViewLink", web_view_link)
                         web_view_link = raw_link.replace("/edit", "/preview").replace("/view", "/preview") if raw_link else web_view_link
 
-                        
                         # Lock file content as readOnly in Google Drive so it cannot be edited
                         try:
                             await client.patch(
@@ -154,12 +167,11 @@ async def upload_document_raw(
     except Exception as drive_err:
         logger.warning(f"Google Drive upload fallback to local temp: {drive_err}")
 
-
     req = UploadDocumentRequest(
         workspace_id=workspace_id,
         original_filename=file.filename,
         mime_type=file.content_type or "application/pdf",
-        file_size_bytes=len(file_bytes),
+        file_size_bytes=current_size,
         storage_provider="GOOGLE_DRIVE",
         storage_file_id=gdrive_file_id,
         storage_metadata_json={"web_view_link": web_view_link},
@@ -173,10 +185,12 @@ async def upload_document_raw(
         created_doc = await use_case.execute(user_id, req)
         await session.commit()
 
-    # Save actual raw binary file bytes to temp directory for LlamaParse
+    # Move temporary file on disk to destination path for LlamaParse
     local_upload_path = os.path.join(tempfile.gettempdir(), f"upload_{created_doc.id}.{ext.lower()}")
-    with open(local_upload_path, "wb") as f:
-        f.write(file_bytes)
+    if os.path.exists(temp_path):
+        if os.path.exists(local_upload_path):
+            os.remove(local_upload_path)
+        os.replace(temp_path, local_upload_path)
 
     return created_doc
 
