@@ -61,19 +61,13 @@ const WorkspaceDetailPageContent = () => {
 
   const [error, setError] = useState(null);
 
-  // Lazy-load flags
-  const [summaryLoaded, setSummaryLoaded] = useState(false);
-  const [learningPathLoaded, setLearningPathLoaded] = useState(false);
-
   // Summary generation state
-  const [summaryData, setSummaryData] = useState(null);
   const [summaryStatus, setSummaryStatus] = useState(null); // 'QUEUED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
   const [summaryProgressText, setSummaryProgressText] = useState('');
   const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
 
   // Learning Path state
-  const [learningPathData, setLearningPathData] = useState(null);
   const [learningPathStatus, setLearningPathStatus] = useState(null); // 'QUEUED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
   const [learningPathProgressText, setLearningPathProgressText] = useState('');
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -92,6 +86,14 @@ const WorkspaceDetailPageContent = () => {
       setActiveTab(tabFromUrl);
     }
   }, [searchParams, location.state]);
+
+  // Initial load on mount or workspace change
+  useEffect(() => {
+    fetchWorkspaceList();
+    if (workspaceId) {
+      fetchDocuments(workspaceId);
+    }
+  }, [workspaceId, fetchWorkspaceList, fetchDocuments]);
 
   // Custom Dropdown open state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -117,83 +119,6 @@ const WorkspaceDetailPageContent = () => {
   const [renameTarget, setRenameTarget] = useState(null); // { id, name }
   const [renameValue, setRenameValue] = useState('');
   const [renamingWs, setRenamingWs] = useState(false);
-
-  // Step 1: Fetch workspace list only
-  const fetchWorkspaceList = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const allWsRes = await apiClient.get('/api/v1/workspaces', { headers });
-      const wsList = allWsRes.data.workspaces || [];
-      setAllWorkspaces(wsList);
-
-      const isArchivedTab = searchParams.get('tab') === 'archived';
-      if (!workspaceId && !isArchivedTab && wsList.length > 0) {
-        // Redirect to first workspace for active workspace tabs
-        navigate(`/workspaces/${wsList[0].id}`, { replace: true });
-        return;
-      }
-
-      // Populate workspace info from list without extra API call
-      if (workspaceId) {
-        const found = wsList.find((w) => w.id === workspaceId) || null;
-        setWorkspace(found);
-        await fetchDocuments(workspaceId, headers);
-      }
-    } catch (err) {
-      console.error('Failed to load workspaces:', err);
-      setError('Unable to load workspaces.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2: Fetch documents for selected workspace
-  const fetchDocuments = async (wsId, headers) => {
-    if (!wsId) return;
-    const h = headers || (user?.id ? { 'X-User-ID': user.id } : {});
-    try {
-      setDocsLoading(true);
-      const docsRes = await apiClient.get(`/api/v1/documents?workspace_id=${wsId}`, { headers: h });
-      setDocuments(docsRes.data.documents || []);
-    } catch (err) {
-      console.error('Failed to load documents:', err);
-      setDocuments([]);
-    } finally {
-      setDocsLoading(false);
-    }
-  };
-
-  // Step 3: Fetch summary — called lazily when summary tab is opened
-  const fetchSummary = async () => {
-    if (!workspaceId || summaryLoaded) return;
-    const headers = user?.id ? { 'X-User-ID': user.id } : {};
-    try {
-      const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers });
-      setSummaryData((res.data && res.data.summary) || null);
-    } catch (err) {
-      console.error('Failed to load summary:', err);
-      setSummaryData(null);
-    } finally {
-      setSummaryLoaded(true);
-    }
-  };
-
-  // Step 4: Fetch learning path — called lazily when learning tab is opened
-  const fetchLearningPath = async () => {
-    if (!workspaceId || learningPathLoaded) return;
-    const headers = user?.id ? { 'X-User-ID': user.id } : {};
-    try {
-      const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
-      setLearningPathData((res.data && res.data.learning_path) || null);
-    } catch (err) {
-      console.error('Failed to load learning path:', err);
-      setLearningPathData(null);
-    } finally {
-      setLearningPathLoaded(true);
-    }
-  };
 
   // Step 5: Fetch archived workspaces list
   const fetchArchivedWorkspaces = async () => {
