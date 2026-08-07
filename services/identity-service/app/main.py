@@ -20,6 +20,10 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
 
 
 

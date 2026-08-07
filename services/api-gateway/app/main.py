@@ -18,9 +18,19 @@ class GatewaySettings(PlatformSettings):
     service_notification_url: str = "http://notification-service:8000"
 
 
+from contextlib import asynccontextmanager
+
 settings = GatewaySettings()
 
-app = FastAPI(title="API Gateway", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    try:
+        await client.aclose()
+    except Exception as exc:
+        pass
+
+app = FastAPI(title="API Gateway", version="1.0.0", lifespan=lifespan)
 client = httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0))
 
 

@@ -9,6 +9,11 @@ async def lifespan(app: FastAPI):
     # Initialize pgvector database schema on startup
     await init_db()
     yield
+    try:
+        from app.infrastructure.database.session import engine
+        await engine.dispose()
+    except Exception:
+        pass
 
 
 from shared.logging.correlation_id import CorrelationIdMiddleware
