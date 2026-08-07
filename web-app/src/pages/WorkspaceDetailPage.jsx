@@ -4,7 +4,12 @@ import { apiClient } from '../services/api/client';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
-import { useSSE } from '../providers/SSEProvider';
+import {
+  useDocumentEvents,
+  useSummaryEvents,
+  useLearningPathEvents,
+  useWorkspaceEvents,
+} from '../providers/SSEProvider';
 import { AppLayout } from '../layouts/AppLayout';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 import { LearningUnitModal } from '../components/unit/LearningUnitModal';
@@ -39,7 +44,6 @@ export const WorkspaceDetailPage = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { subscribe } = useSSE();
 
   const [workspace, setWorkspace] = useState(null);
   const [allWorkspaces, setAllWorkspaces] = useState([]);
@@ -48,23 +52,11 @@ export const WorkspaceDetailPage = () => {
   const [docsLoading, setDocsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const unsubscribe = subscribe((evt) => {
-      if (!workspaceId) return;
-      if (!evt.workspace_id || evt.workspace_id === workspaceId) {
-        if (evt.event?.startsWith('workspace.document')) {
-          fetchDocuments(workspaceId);
-        } else if (evt.event === 'workspace.summary.updated') {
-          setSummaryLoaded(false);
-        } else if (evt.event === 'workspace.learning_path.updated') {
-          setLearningPathLoaded(false);
-        } else if (evt.event === 'workspace.updated') {
-          fetchWorkspaceList();
-        }
-      }
-    });
-    return unsubscribe;
-  }, [workspaceId, subscribe]);
+  // Centralized Domain Event Router Hooks
+  useDocumentEvents(workspaceId, () => fetchDocuments(workspaceId));
+  useSummaryEvents(workspaceId, () => setSummaryLoaded(false));
+  useLearningPathEvents(workspaceId, () => setLearningPathLoaded(false));
+  useWorkspaceEvents(workspaceId, () => fetchWorkspaceList());
 
   // Lazy-load flags
   const [summaryLoaded, setSummaryLoaded] = useState(false);

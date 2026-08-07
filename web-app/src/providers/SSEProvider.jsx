@@ -5,12 +5,52 @@ const SSEContext = createContext({
   connected: false,
   lastEvent: null,
   subscribe: () => () => {},
+  subscribeToDomain: () => () => {},
 });
+
+const ROUTE_MAP = {
+  'workspace.document.updated': 'documents',
+  'workspace.document.created': 'documents',
+  'workspace.document.deleted': 'documents',
+  'workspace.summary.updated': 'summary',
+  'workspace.learning_path.updated': 'learning_path',
+  'workspace.updated': 'workspace',
+  'workspace.member.updated': 'workspace',
+  'workspace.activity.recorded': 'activity',
+};
 
 export function SSEProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState(null);
   const listenersRef = useRef(new Set());
+  const domainListenersRef = useRef(new Map()); // Map<key: "domain:workspaceId", Set<fn>>
+
+  const dispatchEventToSubscribers = (payload) => {
+    setLastEvent(payload);
+
+    // Notify raw global listeners
+    listenersRef.current.forEach((fn) => fn(payload));
+
+    // Route event through Central Domain Router
+    const evtName = payload.eventType || payload.event;
+    const domain = ROUTE_MAP[evtName];
+    if (!domain) return;
+
+    const wsId = payload.workspace_id;
+
+    // Notify domain-specific subscribers for matching workspace or global domain subscribers
+    const targetKeys = [
+      `${domain}:${wsId}`,
+      `${domain}:global`,
+    ];
+
+    targetKeys.forEach((key) => {
+      const subscribers = domainListenersRef.current.get(key);
+      if (subscribers) {
+        subscribers.forEach((fn) => fn(payload));
+      }
+    });
+  };
 
   useEffect(() => {
     const token = tokenStorage.getAccessToken();
@@ -20,7 +60,7 @@ export function SSEProvider({ children }) {
     }
 
     let isAborted = false;
-    let retryDelay = 1000; // Start at 1s
+    let retryDelay = 1000;
     const controller = new AbortController();
 
     const connectSSE = async () => {
@@ -39,7 +79,6 @@ export function SSEProvider({ children }) {
           return;
         }
 
-        // Successfully connected: reset backoff delay to 1s
         retryDelay = 1000;
         setConnected(true);
 
@@ -74,15 +113,14 @@ export function SSEProvider({ children }) {
               try {
                 const payload = JSON.parse(dataStr);
                 payload.eventType = eventName;
-                setLastEvent(payload);
-                listenersRef.current.forEach((fn) => fn(payload));
+                dispatchEventToSubscribers(payload);
               } catch (err) {
                 // ignore parse error
               }
             }
           }
         }
-        // Stream completed cleanly
+
         if (!isAborted) {
           setConnected(false);
           scheduleReconnect();
@@ -98,7 +136,6 @@ export function SSEProvider({ children }) {
     const scheduleReconnect = () => {
       if (isAborted) return;
       const currentDelay = retryDelay;
-      // Exponential backoff capped at 15s
       retryDelay = Math.min(retryDelay * 2, 15000);
       setTimeout(() => {
         if (!isAborted) connectSSE();
@@ -121,8 +158,24 @@ export function SSEProvider({ children }) {
     };
   };
 
+  const subscribeToDomain = (domain, workspaceId, callback) => {
+    const key = `${domain}:${workspaceId || 'global'}`;
+    if (!domainListenersRef.current.has(key)) {
+      domainListenersRef.current.set(key, new Set());
+    }
+    const set = domainListenersRef.current.get(key);
+    set.add(callback);
+
+    return () => {
+      set.delete(callback);
+      if (set.size === 0) {
+        domainListenersRef.current.delete(key);
+      }
+    };
+  };
+
   return (
-    <SSEContext.Provider value={{ connected, lastEvent, subscribe }}>
+    <SSEContext.Provider value={{ connected, lastEvent, subscribe, subscribeToDomain }}>
       {children}
     </SSEContext.Provider>
   );
@@ -130,4 +183,37 @@ export function SSEProvider({ children }) {
 
 export function useSSE() {
   return useContext(SSEContext);
+}
+
+// Domain-Specific Hooks
+export function useDocumentEvents(workspaceId, callback) {
+  const { subscribeToDomain } = useSSE();
+  useEffect(() => {
+    if (!callback) return;
+    return subscribeToDomain('documents', workspaceId, callback);
+  }, [workspaceId, callback, subscribeToDomain]);
+}
+
+export function useSummaryEvents(workspaceId, callback) {
+  const { subscribeToDomain } = useSSE();
+  useEffect(() => {
+    if (!callback) return;
+    return subscribeToDomain('summary', workspaceId, callback);
+  }, [workspaceId, callback, subscribeToDomain]);
+}
+
+export function useLearningPathEvents(workspaceId, callback) {
+  const { subscribeToDomain } = useSSE();
+  useEffect(() => {
+    if (!callback) return;
+    return subscribeToDomain('learning_path', workspaceId, callback);
+  }, [workspaceId, callback, subscribeToDomain]);
+}
+
+export function useWorkspaceEvents(workspaceId, callback) {
+  const { subscribeToDomain } = useSSE();
+  useEffect(() => {
+    if (!callback) return;
+    return subscribeToDomain('workspace', workspaceId, callback);
+  }, [workspaceId, callback, subscribeToDomain]);
 }
