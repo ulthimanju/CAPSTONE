@@ -434,7 +434,65 @@ class WorkspaceCacheManager:
         except Exception:
             pass
 
+    def _get_workspace_activity_key(self, workspace_id: uuid.UUID) -> str:
+        return f"workspace_activity:{workspace_id}"
+
+    async def get_workspace_activity(self, workspace_id: uuid.UUID) -> Any | None:
+        if not self.redis:
+            return None
+        try:
+            val = await self.redis.get(self._get_workspace_activity_key(workspace_id))
+            if not val:
+                return None
+            items = json.loads(val)
+            from app.domain.entities.workspace_activity import WorkspaceActivity
+            from app.constants.enums import ActivityType
+            return [
+                WorkspaceActivity(
+                    id=uuid.UUID(a["id"]),
+                    workspace_id=uuid.UUID(a["workspace_id"]),
+                    actor_id=uuid.UUID(a["actor_id"]) if a.get("actor_id") else None,
+                    activity_type=ActivityType(a["activity_type"]),
+                    entity_type=a.get("entity_type"),
+                    entity_id=uuid.UUID(a["entity_id"]) if a.get("entity_id") else None,
+                    metadata_json=a.get("metadata_json", {}),
+                    created_at=datetime.fromisoformat(a["created_at"]) if a.get("created_at") else datetime.now(timezone.utc),
+                ) for a in items
+            ]
+        except Exception:
+            return None
+
+    async def set_workspace_activity(self, workspace_id: uuid.UUID, activities: Any, ttl: int = 120):
+        if not self.redis:
+            return
+        try:
+            key = self._get_workspace_activity_key(workspace_id)
+            items = [
+                {
+                    "id": str(a.id),
+                    "workspace_id": str(a.workspace_id),
+                    "actor_id": str(a.actor_id) if a.actor_id else None,
+                    "activity_type": a.activity_type.value if hasattr(a.activity_type, "value") else str(a.activity_type),
+                    "entity_type": a.entity_type,
+                    "entity_id": str(a.entity_id) if a.entity_id else None,
+                    "metadata_json": a.metadata_json,
+                    "created_at": a.created_at.isoformat() if a.created_at else None,
+                } for a in activities
+            ]
+            await self.redis.setex(key, ttl, json.dumps(items))
+        except Exception:
+            pass
+
+    async def invalidate_workspace_activity(self, workspace_id: uuid.UUID):
+        if not self.redis:
+            return
+        try:
+            await self.redis.delete(self._get_workspace_activity_key(workspace_id))
+        except Exception:
+            pass
+
     async def invalidate_workspace_generated_content(self, workspace_id: uuid.UUID):
         await self.invalidate_workspace_summary(workspace_id)
         await self.invalidate_workspace_learning_path(workspace_id)
         await self.invalidate_workspace_learning_units(workspace_id)
+        await self.invalidate_workspace_activity(workspace_id)

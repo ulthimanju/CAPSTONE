@@ -7,9 +7,13 @@ from app.infrastructure.database.models import WorkspaceActivityModel
 from app.constants.enums import ActivityType
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 class SQLAlchemyActivityRepository(ActivityRepository):
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, cache_manager: WorkspaceCacheManager | None = None):
         self.session = session
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def record_activity(self, activity: WorkspaceActivity) -> WorkspaceActivity:
         model = WorkspaceActivityModel(
@@ -24,9 +28,16 @@ class SQLAlchemyActivityRepository(ActivityRepository):
         )
         self.session.add(model)
         await self.session.flush()
+        if "post_commit_invalidations" in self.session.info:
+            self.session.info["post_commit_invalidations"].add(activity.workspace_id)
+        await self.cache.invalidate_workspace_activity(activity.workspace_id)
         return activity
 
     async def list_activities(self, workspace_id: UUID, limit: int = 50) -> list[WorkspaceActivity]:
+        cached = await self.cache.get_workspace_activity(workspace_id)
+        if cached is not None:
+            return cached[:limit]
+
         stmt = (
             select(WorkspaceActivityModel)
             .where(WorkspaceActivityModel.workspace_id == workspace_id)
@@ -35,7 +46,7 @@ class SQLAlchemyActivityRepository(ActivityRepository):
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        return [
+        activities = [
             WorkspaceActivity(
                 id=m.id,
                 workspace_id=m.workspace_id,
@@ -47,3 +58,5 @@ class SQLAlchemyActivityRepository(ActivityRepository):
                 created_at=m.created_at
             ) for m in models
         ]
+        await self.cache.set_workspace_activity(workspace_id, activities, ttl=120)
+        return activities[:limit]

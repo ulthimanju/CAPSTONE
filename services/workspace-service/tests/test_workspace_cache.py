@@ -120,7 +120,12 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     await cache.set_learning_unit_content(ws_id, "Module 1", {"summary": "Content"})
     assert redis_mock.setex.called
 
-    # 8. CreateWorkspaceUseCase invalidates user_workspaces:{user_id}
+    # 8. Get workspace activity feed: Cache MISS -> sets workspace_activity:{ws_id} with 120s TTL
+    redis_mock.get.return_value = None
+    await cache.set_workspace_activity(ws_id, [], ttl=120)
+    assert redis_mock.setex.called
+
+    # 9. CreateWorkspaceUseCase invalidates user_workspaces:{user_id}
     act_repo = AsyncMock()
     mock_mem_repo = AsyncMock()
     create_uc = CreateWorkspaceUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
