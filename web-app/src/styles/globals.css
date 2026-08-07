@@ -9,6 +9,12 @@
   --radius: 16px;
   --radius-sm: 10px;
   --gap: 20px;
+
+  /* Centralized Transition Timing Tokens */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes skeleton-wave {
@@ -95,20 +101,20 @@ html[data-theme="dark"] {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.25s ease-out forwards;
+  animation: fadeIn var(--transition-normal) ease-out forwards;
 }
 
 .animate-cross-fade {
-  animation: crossFade 0.25s ease-in-out forwards;
+  animation: crossFade var(--transition-normal) ease-in-out forwards;
 }
 
 .doc-row {
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
-  animation: fadeIn 0.25s ease-out forwards;
+  transition: background var(--transition-fast) ease, border-color var(--transition-fast) ease, transform var(--transition-fast) ease;
+  animation: fadeIn var(--transition-normal) ease-out forwards;
 }
 
 .doc-status-badge {
-  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.2s ease;
+  transition: background var(--transition-normal) ease, border-color var(--transition-normal) ease, color var(--transition-normal) ease, transform var(--transition-fast) ease;
 }
 
 * {
