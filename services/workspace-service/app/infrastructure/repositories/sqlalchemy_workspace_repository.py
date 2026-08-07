@@ -5,11 +5,13 @@ from app.domain.entities.workspace import Workspace
 from app.domain.repositories.workspace_repository import WorkspaceRepository
 from app.infrastructure.database.models import WorkspaceModel, WorkspaceMemberModel
 from app.constants.enums import WorkspaceStatus, WorkspaceVisibility
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 
 
 class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, cache_manager: WorkspaceCacheManager | None = None):
         self.session = session
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def create(self, workspace: Workspace) -> Workspace:
         model = WorkspaceModel(
@@ -31,6 +33,10 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         return workspace
 
     async def get_by_id(self, workspace_id: UUID) -> Workspace | None:
+        cached_ws = await self.cache.get(workspace_id)
+        if cached_ws:
+            return cached_ws
+
         stmt = select(WorkspaceModel).where(
             WorkspaceModel.id == workspace_id,
             WorkspaceModel.status != WorkspaceStatus.DELETED.value,
@@ -39,7 +45,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         model = result.scalar_one_or_none()
         if not model:
             return None
-        return Workspace(
+        ws = Workspace(
             id=model.id,
             owner_id=model.owner_id,
             name=model.name,
@@ -53,9 +59,10 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             summary_json=model.summary_json,
             learning_path_json=model.learning_path_json,
         )
+        await self.cache.set(ws)
+        return ws
 
     async def list_by_user_id(self, user_id: UUID) -> list[Workspace]:
-        # Workspaces owned by user OR where user is a member
         stmt = (
             select(WorkspaceModel)
             .join(WorkspaceMemberModel, WorkspaceModel.id == WorkspaceMemberModel.workspace_id)
@@ -129,6 +136,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             model.archived_at = workspace.archived_at
             model.updated_at = workspace.updated_at
             await self.session.flush()
+            await self.cache.invalidate(workspace.id)
         return workspace
 
     async def delete(self, workspace_id: UUID) -> bool:
@@ -138,5 +146,6 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         if model:
             model.status = WorkspaceStatus.DELETED.value
             await self.session.flush()
+            await self.cache.invalidate(workspace_id)
             return True
         return False
