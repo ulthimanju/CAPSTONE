@@ -38,6 +38,7 @@ class PlatformSettings(BaseSettings):
     http_write_timeout: float = 30.0
     http_pool_size: int = 100
     max_upload_size_mb: int = 50
+    max_json_request_size_mb: int = 10
     # RAG Config
     rag_default_top_k: int = 10
     rag_max_top_k: int = 20

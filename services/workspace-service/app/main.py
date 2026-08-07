@@ -14,6 +14,7 @@ async def lifespan(app: FastAPI):
 
 
 from shared.logging.correlation_id import CorrelationIdMiddleware
+from shared.middleware.request_size import RequestSizeLimitMiddleware
 
 app = FastAPI(
     title="Workspace Service",
@@ -21,6 +22,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(RequestSizeLimitMiddleware)
 
 app.include_router(api_router)
 
