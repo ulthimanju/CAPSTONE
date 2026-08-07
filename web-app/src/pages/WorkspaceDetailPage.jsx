@@ -340,11 +340,6 @@ const WorkspaceDetailPageContent = () => {
       setActiveTab('documents');
     }
 
-    setAllWorkspaces((prev) => {
-      const found = prev.find((w) => w.id === workspaceId) || null;
-      setWorkspace(found);
-      return prev;
-    });
     fetchDocuments(workspaceId);
   }, [workspaceId]);
 
