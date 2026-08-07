@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.dependencies.auth import get_current_user_id
 from app.api.dependencies.database import (
     get_workspace_repository,
@@ -11,7 +11,7 @@ from app.domain.repositories.workspace_repository import WorkspaceRepository
 from app.domain.repositories.member_repository import MemberRepository
 from app.domain.repositories.invitation_repository import InvitationRepository
 from app.domain.repositories.activity_repository import ActivityRepository
-from app.schemas.member import InviteMemberRequest, TransferOwnershipRequest, MemberResponse
+from app.schemas.member import InviteMemberRequest, TransferOwnershipRequest, MemberResponse, UpdateMemberRoleRequest
 from app.schemas.invitation import InvitationResponse
 from app.application.use_cases.invite_member import InviteMemberUseCase
 from app.application.use_cases.remove_member import RemoveMemberUseCase
