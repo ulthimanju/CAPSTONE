@@ -47,10 +47,19 @@ class ContextBuilder:
         return formatted_context, citations
 
 
+from app.infrastructure.cache.rag_cache import RAGCacheManager
+
+
 class RAGChatOrchestrator:
-    def __init__(self, vector_repo: VectorRepository, ai_client: AIServiceClient):
+    def __init__(
+        self,
+        vector_repo: VectorRepository,
+        ai_client: AIServiceClient,
+        rag_cache: RAGCacheManager | None = None,
+    ):
         self.vector_repo = vector_repo
         self.ai_client = ai_client
+        self.rag_cache = rag_cache or RAGCacheManager()
 
     async def ask_question(
         self,
@@ -59,18 +68,20 @@ class RAGChatOrchestrator:
         top_k: int = 5,
         system_instruction: str | None = None,
     ) -> tuple[str, list[CitationItem]]:
-        # Step 1: Embed question using ai-service
-        query_vectors = await self.ai_client.get_embeddings([question])
-        if not query_vectors:
-            raise RuntimeError("Failed to generate embedding vector for user question.")
-        query_vector = query_vectors[0]
+        # Step 1 & 2: Check RAG Retrieval Cache (bypasses embedding + pgvector on hit)
+        retrieved_chunks = await self.rag_cache.get_retrieved_chunks(workspace_id, question, top_k)
+        if retrieved_chunks is None:
+            query_vectors = await self.ai_client.get_embeddings([question])
+            if not query_vectors:
+                raise RuntimeError("Failed to generate embedding vector for user question.")
+            query_vector = query_vectors[0]
 
-        # Step 2: Semantic retrieval from pgvector
-        retrieved_chunks = await self.vector_repo.similarity_search(
-            workspace_id=workspace_id,
-            query_vector=query_vector,
-            top_k=top_k,
-        )
+            retrieved_chunks = await self.vector_repo.similarity_search(
+                workspace_id=workspace_id,
+                query_vector=query_vector,
+                top_k=top_k,
+            )
+            await self.rag_cache.set_retrieved_chunks(workspace_id, question, top_k, retrieved_chunks)
 
         # Step 3: Build Prompt Context
         context_str, citations = ContextBuilder.build_rag_prompt_context(
@@ -90,7 +101,7 @@ class RAGChatOrchestrator:
             f"Answer the question concisely with references to the sources provided above:"
         )
 
-        # Step 5: Generate RAG response via ai-service
+        # Step 5: Generate RAG response via ai-service (LLM always runs)
         answer = await self.ai_client.generate_text(
             prompt=prompt,
             system_instruction=rag_sys_instruction,

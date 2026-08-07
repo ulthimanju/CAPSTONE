@@ -9,6 +9,7 @@ from app.infrastructure.database.session import get_db_session
 from app.infrastructure.repositories.vector_repository import VectorRepository
 from app.infrastructure.clients.embedding.ai_service_client import AIServiceClient
 from app.application.use_cases.rag_chat import RAGChatOrchestrator
+from app.infrastructure.cache.rag_cache import RAGCacheManager
 from app.schemas.rag import (
     GenerateChunkEmbeddingsRequest,
     ChunkEmbeddingStatusResponse,
@@ -62,6 +63,9 @@ async def generate_chunk_embeddings(
         chunks_with_vectors=chunks_with_vectors,
         document_name=req.document_name,
     )
+
+    rag_cache = RAGCacheManager()
+    await rag_cache.invalidate_workspace_retrievals(req.workspace_id)
 
     return ChunkEmbeddingStatusResponse(
         document_id=req.document_id,
@@ -143,3 +147,10 @@ async def delete_document_vectors(
     vector_repo = VectorRepository(session)
     deleted_count = await vector_repo.delete_by_document(document_id)
     return {"status": "success", "deleted_embeddings": deleted_count}
+
+
+@router.delete("/workspaces/{workspace_id}/cache")
+async def invalidate_rag_cache(workspace_id: uuid.UUID):
+    rag_cache = RAGCacheManager()
+    await rag_cache.invalidate_workspace_retrievals(workspace_id)
+    return {"status": "success", "message": f"RAG retrieval cache invalidated for workspace {workspace_id}"}
