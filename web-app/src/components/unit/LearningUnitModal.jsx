@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../services/api/client';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { Spinner } from '../ui/Spinner';
 import { RichMarkdownRenderer } from '../ui/RichMarkdownRenderer';
@@ -64,7 +64,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
     try {
       setLoading(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.get(
+      const res = await apiClient.get(
         `/api/v1/workspaces/${workspaceId}/units/content?unit_title=${encodeURIComponent(unit.title)}`,
         { headers }
       );
@@ -102,7 +102,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
       setGenerating(true);
       setGenerationProgressText('Starting generation pipeline...');
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(
+      await apiClient.post(
         `/api/v1/ai/workspaces/${workspaceId}/units/generate`,
         {
           unit_title: unit.title,
@@ -150,7 +150,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
 
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.patch(`/api/v1/workspaces/${workspaceId}/units/quiz-progress`, {
+      await apiClient.patch(`/api/v1/workspaces/${workspaceId}/units/quiz-progress`, {
         unit_title: unit.title,
         quiz_json: updatedQuiz,
       }, { headers });
@@ -172,7 +172,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
 
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.patch(`/api/v1/workspaces/${workspaceId}/units/quiz-progress`, {
+      await apiClient.patch(`/api/v1/workspaces/${workspaceId}/units/quiz-progress`, {
         unit_title: unit.title,
         quiz_json: resetQuiz,
       }, { headers });

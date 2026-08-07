@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../services/api/client';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
@@ -109,7 +109,7 @@ export const WorkspaceDetailPage = () => {
       setLoading(true);
       setError(null);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const allWsRes = await axios.get('/api/v1/workspaces', { headers });
+      const allWsRes = await apiClient.get('/api/v1/workspaces', { headers });
       const wsList = allWsRes.data.workspaces || [];
       setAllWorkspaces(wsList);
 
@@ -140,7 +140,7 @@ export const WorkspaceDetailPage = () => {
     const h = headers || (user?.id ? { 'X-User-ID': user.id } : {});
     try {
       setDocsLoading(true);
-      const docsRes = await axios.get(`/api/v1/documents?workspace_id=${wsId}`, { headers: h });
+      const docsRes = await apiClient.get(`/api/v1/documents?workspace_id=${wsId}`, { headers: h });
       setDocuments(docsRes.data.documents || []);
     } catch (err) {
       console.error('Failed to load documents:', err);
@@ -155,7 +155,7 @@ export const WorkspaceDetailPage = () => {
     if (!workspaceId || summaryLoaded) return;
     const headers = user?.id ? { 'X-User-ID': user.id } : {};
     try {
-      const res = await axios.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers });
+      const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers });
       setSummaryData((res.data && res.data.summary) || null);
     } catch (err) {
       console.error('Failed to load summary:', err);
@@ -170,7 +170,7 @@ export const WorkspaceDetailPage = () => {
     if (!workspaceId || learningPathLoaded) return;
     const headers = user?.id ? { 'X-User-ID': user.id } : {};
     try {
-      const res = await axios.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
+      const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
       setLearningPathData((res.data && res.data.learning_path) || null);
     } catch (err) {
       console.error('Failed to load learning path:', err);
@@ -185,7 +185,7 @@ export const WorkspaceDetailPage = () => {
     try {
       setArchivedLoading(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.get('/api/v1/workspaces/archived/list', { headers });
+      const res = await apiClient.get('/api/v1/workspaces/archived/list', { headers });
       setArchivedWorkspaces(res.data.workspaces || []);
     } catch (err) {
       console.error('Failed to fetch archived workspaces:', err);
@@ -198,7 +198,7 @@ export const WorkspaceDetailPage = () => {
   const handleRestoreWorkspace = async (wsId) => {
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(`/api/v1/workspaces/${wsId}/restore`, {}, { headers });
+      await apiClient.post(`/api/v1/workspaces/${wsId}/restore`, {}, { headers });
       await fetchArchivedWorkspaces();
       await fetchWorkspaceList();
     } catch (err) {
@@ -211,7 +211,7 @@ export const WorkspaceDetailPage = () => {
     if (!confirm(`Permanently delete "${wsName}"? This cannot be undone.`)) return;
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.delete(`/api/v1/workspaces/${wsId}`, { headers });
+      await apiClient.delete(`/api/v1/workspaces/${wsId}`, { headers });
       await fetchArchivedWorkspaces();
       await fetchWorkspaceList();
     } catch (err) {
@@ -235,7 +235,7 @@ export const WorkspaceDetailPage = () => {
     try {
       setCreatingWs(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.post(
+      const res = await apiClient.post(
         '/api/v1/workspaces',
         {
           name: newWsName.trim(),
@@ -275,7 +275,7 @@ export const WorkspaceDetailPage = () => {
     try {
       setRenamingWs(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.patch(`/api/v1/workspaces/${renameTarget.id}`, { name: renameValue.trim() }, { headers });
+      await apiClient.patch(`/api/v1/workspaces/${renameTarget.id}`, { name: renameValue.trim() }, { headers });
       setIsRenameOpen(false);
       setRenameTarget(null);
       await fetchWorkspaceAndDocs(true);
@@ -292,7 +292,7 @@ export const WorkspaceDetailPage = () => {
     if (!confirm(`Archive "${ws.name}"? It will be hidden from your workspace list.`)) return;
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(`/api/v1/workspaces/${ws.id}/archive`, {}, { headers });
+      await apiClient.post(`/api/v1/workspaces/${ws.id}/archive`, {}, { headers });
       setIsDropdownOpen(false);
       // If archiving the currently viewed workspace, navigate away
       if (ws.id === workspaceId) {
@@ -313,7 +313,7 @@ export const WorkspaceDetailPage = () => {
     if (!confirm(`Permanently delete "${ws.name}"? This cannot be undone.`)) return;
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.delete(`/api/v1/workspaces/${ws.id}`, { headers });
+      await apiClient.delete(`/api/v1/workspaces/${ws.id}`, { headers });
       setIsDropdownOpen(false);
       if (ws.id === workspaceId) {
         const remaining = allWorkspaces.filter(w => w.id !== ws.id);
@@ -398,7 +398,7 @@ export const WorkspaceDetailPage = () => {
           else if (data.status === 'COMPLETED') {
             setSummaryProgressText('Completed');
             const headers = user?.id ? { 'X-User-ID': user.id } : {};
-            axios.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers }).then((res) => {
+            apiClient.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers }).then((res) => {
               if (res.data && res.data.summary) {
                 setSummaryData(res.data.summary);
                 setSummaryLoaded(true);
@@ -417,7 +417,7 @@ export const WorkspaceDetailPage = () => {
           else if (data.status === 'COMPLETED') {
             setLearningPathProgressText('Completed');
             const headers = user?.id ? { 'X-User-ID': user.id } : {};
-            axios.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers }).then((res) => {
+            apiClient.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers }).then((res) => {
               if (res.data && res.data.learning_path) {
                 setLearningPathData(res.data.learning_path);
                 setLearningPathLoaded(true);
@@ -440,7 +440,7 @@ export const WorkspaceDetailPage = () => {
       setSummaryStatus('QUEUED');
       setSummaryProgressText('Generating Summary...');
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.post(`/api/v1/ai/workspaces/${workspaceId}/summary`, {}, { headers });
+      const res = await apiClient.post(`/api/v1/ai/workspaces/${workspaceId}/summary`, {}, { headers });
       if (res.data) {
         setSummaryData(res.data);
         setSummaryLoaded(true);
@@ -459,7 +459,7 @@ export const WorkspaceDetailPage = () => {
       setLearningPathStatus('QUEUED');
       setLearningPathProgressText('Generating Learning Path...');
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.post(`/api/v1/ai/workspaces/${workspaceId}/learning-path`, {}, { headers });
+      const res = await apiClient.post(`/api/v1/ai/workspaces/${workspaceId}/learning-path`, {}, { headers });
       if (res.data) {
         setLearningPathData(res.data);
         setLearningPathLoaded(true);
@@ -516,7 +516,7 @@ export const WorkspaceDetailPage = () => {
         formData.append('workspace_id', workspaceId);
         formData.append('file', file);
 
-        const uploadRes = await axios.post('/api/v1/documents/raw', formData, {
+        const uploadRes = await apiClient.post('/api/v1/documents/raw', formData, {
           headers: {
             ...headers,
             'Content-Type': 'multipart/form-data',
@@ -540,9 +540,9 @@ export const WorkspaceDetailPage = () => {
       const filename = item.file.name;
 
       try {
-        axios.post(`/api/v1/documents/${createdDoc.id}/validate`, {}, { headers })
-          .then(() => axios.post(`/api/v1/documents/${createdDoc.id}/parse`, {}, { headers }))
-          .then(() => axios.post(`/api/v1/documents/${createdDoc.id}/chunks`, {}, { headers }))
+        apiClient.post(`/api/v1/documents/${createdDoc.id}/validate`, {}, { headers })
+          .then(() => apiClient.post(`/api/v1/documents/${createdDoc.id}/parse`, {}, { headers }))
+          .then(() => apiClient.post(`/api/v1/documents/${createdDoc.id}/chunks`, {}, { headers }))
           .catch((err) => console.error(`Background ingestion error for ${filename}:`, err));
       } catch (fileErr) {
         console.error(`Error initiating background processing for ${filename}:`, fileErr);
@@ -555,7 +555,7 @@ export const WorkspaceDetailPage = () => {
     setLoadingMarkdown(true);
     setMarkdownContent('');
     try {
-      const res = await axios.get(`/api/v1/documents/${doc.id}/markdown`);
+      const res = await apiClient.get(`/api/v1/documents/${doc.id}/markdown`);
       setMarkdownContent(res.data.markdown || 'No markdown content available.');
     } catch (err) {
       setMarkdownContent('Failed to fetch markdown content.');
@@ -569,7 +569,7 @@ export const WorkspaceDetailPage = () => {
     setLoadingChunks(true);
     setChunksList([]);
     try {
-      const res = await axios.get(`/api/v1/documents/${doc.id}/chunks`);
+      const res = await apiClient.get(`/api/v1/documents/${doc.id}/chunks`);
       setChunksList(res.data.chunks || []);
     } catch (err) {
       console.error('Failed to fetch chunks:', err);
@@ -582,7 +582,7 @@ export const WorkspaceDetailPage = () => {
     if (!confirm('Are you sure you want to remove this document reference?')) return;
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.delete(`/api/v1/documents/${docId}`, { headers });
+      await apiClient.delete(`/api/v1/documents/${docId}`, { headers });
       await fetchWorkspaceAndDocs();
     } catch (err) {
       console.error('Failed to delete document:', err);

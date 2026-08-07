@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../services/api/client';
 import { useAuth } from '../hooks/useAuth';
 
 export const AppLayout = ({
@@ -41,9 +41,11 @@ export const AppLayout = ({
         const headers = {};
         if (user?.id) headers['X-User-ID'] = user.id;
         if (user?.email) headers['X-User-Email'] = user.email;
-        const res = await axios.get('/api/v1/workspaces', { headers });
+        const res = await apiClient.get('/workspaces', { headers });
         if (res.data && res.data.workspaces) {
           setWorkspacesList(res.data.workspaces);
+        } else if (Array.isArray(res.data)) {
+          setWorkspacesList(res.data);
         }
       } catch (err) {
         console.error('Failed to fetch workspaces in AppLayout:', err);

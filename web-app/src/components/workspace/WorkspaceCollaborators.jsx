@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../services/api/client';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from '../ui/Spinner';
 import { useAuth } from '../../hooks/useAuth';
@@ -27,7 +27,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
     try {
       setLoading(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.get(`/api/v1/workspaces/${workspaceId}/members`, { headers });
+      const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/members`, { headers });
       setMembers(res.data || []);
     } catch (err) {
       console.error('Failed to load workspace members:', err);
@@ -54,7 +54,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
     try {
       setInviting(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(
+      await apiClient.post(
         `/api/v1/workspaces/${workspaceId}/members`,
         {
           email: inviteEmail.trim(),
@@ -81,7 +81,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
     try {
       setActionUserId(memberUserId);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.delete(`/api/v1/workspaces/${workspaceId}/members/${memberUserId}`, { headers });
+      await apiClient.delete(`/api/v1/workspaces/${workspaceId}/members/${memberUserId}`, { headers });
       setNotice({ type: 'success', text: 'Member removed from workspace.' });
       fetchMembers();
     } catch (err) {
@@ -97,7 +97,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
     if (!window.confirm('Are you sure you want to leave this workspace?')) return;
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(`/api/v1/workspaces/${workspaceId}/leave`, {}, { headers });
+      await apiClient.post(`/api/v1/workspaces/${workspaceId}/leave`, {}, { headers });
       navigate('/workspaces');
     } catch (err) {
       console.error('Failed to leave workspace:', err);
@@ -110,7 +110,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
     try {
       setActionUserId(newOwnerId);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(
+      await apiClient.post(
         `/api/v1/workspaces/${workspaceId}/transfer-ownership`,
         { new_owner_id: newOwnerId },
         { headers }

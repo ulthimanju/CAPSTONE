@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../services/api/client';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
 import { AppLayout } from '../layouts/AppLayout';
@@ -24,7 +24,7 @@ export const InvitationsPage = () => {
   const fetchInvitations = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/v1/invitations/pending', { headers: getHeaders() });
+      const res = await apiClient.get('/api/v1/invitations/pending', { headers: getHeaders() });
       setInvitations(res.data || []);
     } catch (err) {
       console.error('Failed to load pending invitations:', err);
@@ -40,7 +40,7 @@ export const InvitationsPage = () => {
   const handleAccept = async (invitationId, workspaceId) => {
     try {
       setActionInvId(invitationId);
-      await axios.post(`/api/v1/invitations/${invitationId}/accept`, {}, { headers: getHeaders() });
+      await apiClient.post(`/api/v1/invitations/${invitationId}/accept`, {}, { headers: getHeaders() });
       setNotice({ type: 'success', text: 'Invitation accepted! Redirecting to workspace...' });
       setTimeout(() => {
         if (workspaceId) {
@@ -60,7 +60,7 @@ export const InvitationsPage = () => {
   const handleReject = async (invitationId) => {
     try {
       setActionInvId(invitationId);
-      await axios.post(`/api/v1/invitations/${invitationId}/reject`, {}, { headers: getHeaders() });
+      await apiClient.post(`/api/v1/invitations/${invitationId}/reject`, {}, { headers: getHeaders() });
       setNotice({ type: 'info', text: 'Invitation declined.' });
       fetchInvitations();
     } catch (err) {

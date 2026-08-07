@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../services/api/client';
 import { SessionManager } from '../services/identity/sessionManager';
 
 export const useInitializeAuth = () => {

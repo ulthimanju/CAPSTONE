@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../services/api/client';
 import { sessionService } from '../services/identity/session';
 import { useSessionStore } from '../store/sessionStore';
 
@@ -15,7 +15,7 @@ export const useSessions = () => {
       const data = await sessionService.getSessions(options);
       setSessions(data);
     } catch (err) {
-      if (axios.isCancel(err) || err.name === 'CanceledError') {
+      if (apiClient.isCancel(err) || err.name === 'CanceledError') {
         return;
       }
       setError(err);

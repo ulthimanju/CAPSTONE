@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../services/api/client';
 import { Spinner } from '../components/ui/Spinner';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 import { useAuth } from '../hooks/useAuth';
@@ -72,10 +72,10 @@ export const LearningUnitDetailPage = () => {
   const fetchWorkspaceAndUnit = async () => {
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const wsRes = await axios.get(`/api/v1/workspaces/${workspaceId}`, { headers });
+      const wsRes = await apiClient.get(`/api/v1/workspaces/${workspaceId}`, { headers });
       setWorkspace(wsRes.data);
 
-      const lpRes = await axios.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
+      const lpRes = await apiClient.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
       if (lpRes.data && lpRes.data.learning_path && lpRes.data.learning_path.units) {
         const found = lpRes.data.learning_path.units.find(
           (u) => u.title.toLowerCase() === decodedTitle.toLowerCase()
@@ -93,7 +93,7 @@ export const LearningUnitDetailPage = () => {
     try {
       setLoading(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.get(
+      const res = await apiClient.get(
         `/api/v1/workspaces/${workspaceId}/units/content?unit_title=${encodeURIComponent(decodedTitle)}`,
         { headers }
       );
@@ -131,7 +131,7 @@ export const LearningUnitDetailPage = () => {
       setGenerating(true);
       setGenerationProgressText('Starting generation pipeline...');
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(
+      await apiClient.post(
         `/api/v1/ai/workspaces/${workspaceId}/units/generate`,
         {
           unit_title: decodedTitle,
@@ -179,7 +179,7 @@ export const LearningUnitDetailPage = () => {
 
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.patch(
+      await apiClient.patch(
         `/api/v1/workspaces/${workspaceId}/units/quiz-progress`,
         {
           unit_title: decodedTitle,
@@ -205,7 +205,7 @@ export const LearningUnitDetailPage = () => {
 
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.patch(
+      await apiClient.patch(
         `/api/v1/workspaces/${workspaceId}/units/quiz-progress`,
         {
           unit_title: decodedTitle,

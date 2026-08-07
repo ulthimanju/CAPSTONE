@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../services/api/client';
 import { Spinner } from '../ui/Spinner';
 import { RichMarkdownRenderer } from '../ui/RichMarkdownRenderer';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,7 +21,7 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
     const fetchChatHistory = async () => {
       try {
         const headers = user?.id ? { 'X-User-ID': user.id } : {};
-        const res = await axios.get(`/api/v1/workspaces/${workspaceId}/chat`, { headers });
+        const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/chat`, { headers });
         if (res.data && Array.isArray(res.data.messages)) {
           setMessages(res.data.messages);
         }
@@ -35,7 +35,7 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
   const saveChatHistory = async (newMessages) => {
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.put(`/api/v1/workspaces/${workspaceId}/chat`, { messages: newMessages }, { headers });
+      await apiClient.put(`/api/v1/workspaces/${workspaceId}/chat`, { messages: newMessages }, { headers });
     } catch (err) {
       console.error('Failed to persist workspace chat history:', err);
     }
@@ -59,7 +59,7 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
 
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      const res = await axios.post(
+      const res = await apiClient.post(
         '/api/v1/rag/chat',
         {
           workspace_id: workspaceId,
@@ -101,7 +101,7 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [] }) => {
     setMessages([]);
     try {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.delete(`/api/v1/workspaces/${workspaceId}/chat`, { headers });
+      await apiClient.delete(`/api/v1/workspaces/${workspaceId}/chat`, { headers });
     } catch (err) {
       console.error('Failed to clear workspace chat history:', err);
     }

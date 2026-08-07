@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../services/api/client';
 import { Button } from '../components/ui/Button';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Spinner } from '../components/ui/Spinner';
@@ -36,8 +36,9 @@ export const WorkspacesPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get('/api/v1/workspaces', { headers: getHeaders() });
-      setWorkspaces(res.data.workspaces || []);
+      const res = await apiClient.get('/workspaces', { headers: getHeaders() });
+      const wsData = res.data?.workspaces || (Array.isArray(res.data) ? res.data : []);
+      setWorkspaces(wsData);
     } catch (err) {
       console.error('Failed to load workspaces:', err);
       setError('Unable to load workspaces. Please try again.');
@@ -48,7 +49,7 @@ export const WorkspacesPage = () => {
 
   const fetchPendingInvitations = async () => {
     try {
-      const res = await axios.get('/api/v1/invitations/pending', { headers: getHeaders() });
+      const res = await apiClient.get('/invitations/pending', { headers: getHeaders() });
       setPendingInvitations(res.data || []);
     } catch (err) {
       console.error('Failed to load pending invitations:', err);
@@ -64,7 +65,7 @@ export const WorkspacesPage = () => {
     try {
       setActionInvId(invitationId);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(`/api/v1/invitations/${invitationId}/accept`, {}, { headers });
+      await apiClient.post(`/invitations/${invitationId}/accept`, {}, { headers });
       await fetchPendingInvitations();
       await fetchWorkspaces();
     } catch (err) {
@@ -79,7 +80,7 @@ export const WorkspacesPage = () => {
     try {
       setActionInvId(invitationId);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(`/api/v1/invitations/${invitationId}/reject`, {}, { headers });
+      await apiClient.post(`/invitations/${invitationId}/reject`, {}, { headers });
       await fetchPendingInvitations();
     } catch (err) {
       console.error('Failed to decline invitation:', err);
@@ -95,8 +96,8 @@ export const WorkspacesPage = () => {
     try {
       setCreating(true);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await axios.post(
-        '/api/v1/workspaces',
+      await apiClient.post(
+        '/workspaces',
         {
           name: name.trim(),
           description: description.trim() || null,
