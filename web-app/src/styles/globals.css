@@ -11,6 +11,15 @@
   --gap: 20px;
 }
 
+@keyframes skeleton-wave {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 /* Light Theme (Default) */
 html {
   --bg: #F4F1F8;

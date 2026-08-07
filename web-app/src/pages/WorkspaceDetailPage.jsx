@@ -10,6 +10,12 @@ import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 import { LearningUnitModal } from '../components/unit/LearningUnitModal';
 import { WorkspaceRagAssistant } from '../components/workspace/WorkspaceRagAssistant';
 import { WorkspaceCollaborators } from '../components/workspace/WorkspaceCollaborators';
+import {
+  DocumentListSkeleton,
+  SummarySkeleton,
+  LearningPathSkeleton,
+  WorkspaceDashboardSkeleton,
+} from '../components/skeletons/WorkspaceSkeletons';
 
 const getFileIcon = (filename) => {
   if (!filename) return 'ti-file';
@@ -612,9 +618,7 @@ const WorkspaceDetailPageContent = () => {
   if (loading) {
     return (
       <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={documents.length}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-          <Spinner size="lg" />
-        </div>
+        <WorkspaceDashboardSkeleton />
       </AppLayout>
     );
   }
@@ -729,7 +733,9 @@ const WorkspaceDetailPageContent = () => {
                 WORKSPACE DOCUMENTS
               </div>
 
-              {documents.length === 0 ? (
+              {docsLoading && documents.length === 0 ? (
+                <DocumentListSkeleton count={4} />
+              ) : documents.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-faint)', fontSize: '13px' }}>
                   No documents added yet. Drag & drop files or click upload to get started.
                 </div>
@@ -841,7 +847,9 @@ const WorkspaceDetailPageContent = () => {
         {/* ============ TAB 2: AI SUMMARY ============ */}
         {activeTab === 'summary' && (
           <section className="tab-panel active" id="panel-summary">
-            {summaryStatus ? (
+            {!summaryLoaded && !summaryData && !summaryStatus ? (
+              <SummarySkeleton />
+            ) : summaryStatus ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
                 <Spinner size="lg" />
                 <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
@@ -943,7 +951,9 @@ const WorkspaceDetailPageContent = () => {
         {/* ============ TAB 3: LEARNING PATH ============ */}
         {activeTab === 'learning' && (
           <section className="tab-panel active" id="panel-learning">
-            {learningPathStatus ? (
+            {!learningPathLoaded && !learningPathData && !learningPathStatus ? (
+              <LearningPathSkeleton />
+            ) : learningPathStatus ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
                 <Spinner size="lg" />
                 <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
