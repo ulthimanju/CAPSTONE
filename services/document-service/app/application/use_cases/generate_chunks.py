@@ -114,9 +114,10 @@ class GenerateChunksUseCase:
             # Trigger automatic embedding generation in rag-service & publish notification platform event
             try:
                 import httpx
+                from app.config.settings import settings
                 rag_service_url = os.environ.get("RAG_SERVICE_URL", "http://rag-service:8000")
                 notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
-                async with httpx.AsyncClient(timeout=30.0) as client:
+                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=30.0)) as client:
                     await client.post(
                         f"{rag_service_url}/api/v1/rag/embeddings/generate",
                         json={

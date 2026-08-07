@@ -1,8 +1,10 @@
 from authlib.integrations.starlette_client import OAuth
+import httpx
 from app.config.settings import settings
 from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
 from app.domain.exceptions.oauth import GoogleOAuthError
+from shared.config import get_default_httpx_timeout
 
 oauth = OAuth()
 oauth.register(
@@ -14,9 +16,9 @@ oauth.register(
         "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
         "access_type": "offline",
         "prompt": "consent",
+        "timeout": get_default_httpx_timeout(connect=5.0, read=30.0, write=30.0, pool=5.0),
     },
 )
-
 
 
 class GoogleOAuthClient(OAuthClientInterface):

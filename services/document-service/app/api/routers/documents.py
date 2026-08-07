@@ -82,8 +82,9 @@ async def upload_document_raw(
 
     try:
         import httpx
+        from app.config.settings import settings
         identity_service_url = os.environ.get("IDENTITY_SERVICE_URL", "http://identity-service:8000")
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             req_headers = {"Authorization": authorization} if authorization else {}
             token_res = await client.get(
                 f"{identity_service_url}/api/v1/profile/google-token",

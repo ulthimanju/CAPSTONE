@@ -1,4 +1,5 @@
 from typing import Optional
+import httpx
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +33,10 @@ class PlatformSettings(BaseSettings):
 
     # HTTP Config
     request_timeout: int = 30
+    http_connect_timeout: float = 5.0
+    http_read_timeout: float = 30.0
+    http_write_timeout: float = 30.0
+    http_pool_timeout: float = 5.0
     http_pool_size: int = 100
 
     # Database Tuning Configs (Optional defaults for services using DB)
@@ -39,3 +44,22 @@ class PlatformSettings(BaseSettings):
     database_pool_size: int = 20
     database_max_overflow: int = 10
     database_echo: bool = False
+
+    def get_httpx_timeout(self, read_override: float | None = None) -> httpx.Timeout:
+        """Returns a structured httpx.Timeout policy sourced from settings."""
+        return httpx.Timeout(
+            connect=self.http_connect_timeout,
+            read=read_override if read_override is not None else self.http_read_timeout,
+            write=self.http_write_timeout,
+            pool=self.http_pool_timeout,
+        )
+
+
+def get_default_httpx_timeout(
+    connect: float = 5.0,
+    read: float = 30.0,
+    write: float = 30.0,
+    pool: float = 5.0,
+) -> httpx.Timeout:
+    """Factory helper to construct structured httpx.Timeout instances."""
+    return httpx.Timeout(connect=connect, read=read, write=write, pool=pool)

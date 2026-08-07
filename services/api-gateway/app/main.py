@@ -21,7 +21,7 @@ class GatewaySettings(PlatformSettings):
 settings = GatewaySettings()
 
 app = FastAPI(title="API Gateway", version="1.0.0")
-client = httpx.AsyncClient(timeout=300.0)
+client = httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0))
 
 
 def get_current_user_id(

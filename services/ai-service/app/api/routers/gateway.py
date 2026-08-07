@@ -124,7 +124,7 @@ async def _publish_summary_event(workspace_id: str, status: str, user_id: str | 
             "error": error,
             "timestamp": time.time()
         }
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
         print(f"Notice: Failed to publish SummaryGeneration event: {evt_err}")
@@ -147,7 +147,7 @@ async def generate_workspace_summary_endpoint(
     try:
         await _publish_summary_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
             # 1. Fetch Workspace Metadata (forward Authorization header)
             headers = {"Authorization": authorization} if authorization else {}
             ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
@@ -200,7 +200,7 @@ async def generate_workspace_summary_endpoint(
         summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
 
         # 7. Persist Summary via workspace-service
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             headers = {"Authorization": authorization} if authorization else {}
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/summary",
@@ -235,7 +235,7 @@ async def _publish_learning_path_event(workspace_id: str, status: str, user_id: 
             "error": error,
             "timestamp": time.time(),
         }
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
         print(f"Notice: Failed to publish LearningPathGeneration event: {evt_err}")
@@ -258,7 +258,7 @@ async def generate_workspace_learning_path_endpoint(
     try:
         await _publish_learning_path_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
             # 1. Fetch Workspace Metadata
             headers = {"Authorization": authorization} if authorization else {}
             ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
@@ -304,7 +304,7 @@ async def generate_workspace_learning_path_endpoint(
         lp_validated = LearningPathResponse.model_validate_json(gemini_res["text"])
 
         # 7. Persist Learning Path via workspace-service
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             headers = {"Authorization": authorization} if authorization else {}
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/learning-path",
@@ -342,7 +342,7 @@ async def _publish_unit_generation_event(
             "error": error,
             "timestamp": time.time(),
         }
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
         print(f"Notice: Failed to publish LearningUnitGeneration event: {evt_err}")
@@ -373,7 +373,7 @@ async def generate_unit_content(
         retrieved_chunks_text = ""
 
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
                 headers = {"X-User-ID": x_user_id} if x_user_id else {}
                 rag_res = await client.post(
                     f"{rag_url}/api/v1/rag/search",
@@ -434,7 +434,7 @@ Generate a unified learning bundle containing:
 
         # 5. Persist to workspace-service
         workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             headers = {"X-User-ID": x_user_id} if x_user_id else {}
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/units/content",
