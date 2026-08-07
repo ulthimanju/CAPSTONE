@@ -99,9 +99,21 @@ class OAuthUseCase:
             )
             session = await self.session_repo.create(session)
 
-            # 4. Generate Tokens
+            # 4. Generate Tokens and store SHA-256 token_hash in DB
             access_token = jwt_manager.create_access_token(user.id, email, user.role, session.id)
             raw_refresh_token = jwt_manager.create_refresh_token()
+            token_hash = hashlib.sha256(raw_refresh_token.encode("utf-8")).hexdigest()
+
+            if self.refresh_repo:
+                from app.domain.entities.refresh_token import RefreshToken
+                refresh_token_entity = RefreshToken(
+                    id=generate_uuid(),
+                    session_id=session.id,
+                    token_hash=token_hash,
+                    expires_at=expires_at,
+                    revoked_at=None,
+                )
+                await self.refresh_repo.create(refresh_token_entity)
 
             # 5. Log structured audit events (safe, non-sensitive metadata only)
             auth_logger.oauth_completed(user_id=str(user.id), provider=OAuthProvider.GOOGLE)
