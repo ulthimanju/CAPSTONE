@@ -1,5 +1,8 @@
+import logging
 from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, status
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_user_id
 from app.api.dependencies.database import (
@@ -129,15 +132,14 @@ async def upload_document_raw(
                                 json={"contentRestrictions": [{"readOnly": True, "reason": "Protected view-only document in SYNAPSE"}]},
                             )
                         except Exception as lock_err:
-                            print(f"Notice: Could not set readOnly restriction: {lock_err}")
+                            logger.info(f"Could not set readOnly restriction: {lock_err}")
 
-                        print(f"Successfully uploaded '{file.filename}' to real Google Drive! File ID: {gdrive_file_id}")
-
+                        logger.info(f"Successfully uploaded '{file.filename}' to Google Drive! File ID: {gdrive_file_id}")
 
                     else:
-                        print(f"Notice: Google Drive upload HTTP status {drive_res.status_code}: {drive_res.text}")
+                        logger.warning(f"Google Drive upload HTTP status {drive_res.status_code}: {drive_res.text}")
     except Exception as drive_err:
-        print(f"Notice: Google Drive upload fallback to local temp: {drive_err}")
+        logger.warning(f"Google Drive upload fallback to local temp: {drive_err}")
 
 
     req = UploadDocumentRequest(

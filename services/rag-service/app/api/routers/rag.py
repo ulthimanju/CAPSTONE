@@ -1,5 +1,8 @@
+import logging
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database.session import get_db_session
@@ -38,7 +41,7 @@ async def generate_chunk_embeddings(
             sub_vectors = await ai_client.get_embeddings(sub_batch)
             vectors.extend(sub_vectors)
     except Exception as e:
-        print(f"DEBUG RAG Embeddings Error: {type(e).__name__}: {e}")
+        logger.exception("Failed to fetch embeddings from ai-service", extra={"workspace_id": req.workspace_id, "document_id": req.document_id})
         raise HTTPException(status_code=500, detail=f"Failed to fetch embeddings from ai-service: {e}")
 
 

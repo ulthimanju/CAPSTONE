@@ -1,6 +1,7 @@
 import os
 import time
 import uuid
+import logging
 import httpx
 from datetime import datetime, timezone
 from uuid import UUID
@@ -20,6 +21,7 @@ from app.utils.ids import generate_uuid
 from app.config.settings import settings
 from app.api.dependencies.auth import get_current_user_id
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/ai", tags=["AI Gateway"])
 gemini_client = GeminiClient()
 
@@ -71,7 +73,7 @@ async def generate_embeddings(req: EmbeddingRequest):
             total_tokens=total_tokens,
         )
     except Exception as e:
-        print(f"DEBUG Embedding Error: {type(e).__name__}: {e}")
+        logger.exception("Embedding generation failed", extra={"model": req.model})
         raise HTTPException(status_code=500, detail=f"Embedding generation error: {e}")
 
 
@@ -127,7 +129,7 @@ async def _publish_summary_event(workspace_id: str, status: str, user_id: str | 
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
-        print(f"Notice: Failed to publish SummaryGeneration event: {evt_err}")
+        logger.warning(f"Notice: Failed to publish SummaryGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
 
 @router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
@@ -215,7 +217,7 @@ async def generate_workspace_summary_endpoint(
 
     except Exception as e:
         await _publish_summary_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
-        print(f"Error generating workspace summary: {e}")
+        logger.exception("Error generating workspace summary", extra={"workspace_id": ws_id})
         raise HTTPException(status_code=500, detail=f"Failed to generate workspace summary: {str(e)}")
 
 
@@ -238,7 +240,7 @@ async def _publish_learning_path_event(workspace_id: str, status: str, user_id: 
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
-        print(f"Notice: Failed to publish LearningPathGeneration event: {evt_err}")
+        logger.warning(f"Notice: Failed to publish LearningPathGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
 
 @router.post("/workspaces/{workspace_id}/learning-path", response_model=LearningPathResponse)
@@ -319,7 +321,7 @@ async def generate_workspace_learning_path_endpoint(
 
     except Exception as e:
         await _publish_learning_path_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
-        print(f"Error generating workspace learning path: {e}")
+        logger.exception("Error generating workspace learning path", extra={"workspace_id": ws_id})
         raise HTTPException(status_code=500, detail=f"Failed to generate workspace learning path: {str(e)}")
 
 
@@ -345,7 +347,7 @@ async def _publish_unit_generation_event(
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
-        print(f"Notice: Failed to publish LearningUnitGeneration event: {evt_err}")
+        logger.warning(f"Notice: Failed to publish LearningUnitGeneration event: {evt_err}", extra={"workspace_id": workspace_id, "unit_title": unit_title})
 
 
 from app.domain.prompts.unit_content_prompt_builder import UnitContentPromptBuilder
@@ -388,7 +390,7 @@ async def generate_unit_content(
                         for c in chunks
                     ])
         except Exception as rag_err:
-            print(f"Warning: RAG context retrieval for unit '{req.unit_title}' failed: {rag_err}")
+            logger.warning(f"RAG context retrieval for unit '{req.unit_title}' failed: {rag_err}", extra={"workspace_id": ws_id})
 
         await _publish_unit_generation_event(ws_id, req.unit_title, "IN_PROGRESS", user_id=x_user_id)
 
@@ -456,7 +458,7 @@ Generate a unified learning bundle containing:
 
     except Exception as e:
         await _publish_unit_generation_event(ws_id, req.unit_title, "FAILED", user_id=x_user_id, error=str(e))
-        print(f"Error generating unit content for '{req.unit_title}': {e}")
+        logger.exception("Error generating unit content", extra={"workspace_id": ws_id, "unit_title": req.unit_title})
         raise HTTPException(status_code=500, detail=f"Failed to generate unit content: {str(e)}")
 
 

@@ -2,7 +2,10 @@ import os
 import re
 import tempfile
 import asyncio
+import logging
 import fitz  # PyMuPDF
+
+logger = logging.getLogger(__name__)
 
 from typing import Any
 from abc import ABC, abstractmethod
@@ -38,7 +41,7 @@ class LlamaParseClient(ParserClient):
                     if md_text and md_text.strip():
                         return md_text
             except Exception as llama_err:
-                print(f"Primary llama_parse SDK call failed, trying llama_cloud fallback: {llama_err}")
+                logger.info(f"Primary llama_parse SDK call failed, trying llama_cloud fallback: {llama_err}")
 
             # 2. Secondary: llama_cloud SDK API fallback
             try:
@@ -61,7 +64,7 @@ class LlamaParseClient(ParserClient):
                 if md_content and md_content.strip():
                     return md_content
             except Exception as cloud_err:
-                print(f"Secondary LlamaCloud API call warning: {cloud_err}")
+                logger.warning(f"Secondary LlamaCloud API call warning: {cloud_err}")
 
         raise RuntimeError("Llama parser quota exceeded")
 

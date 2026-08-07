@@ -1,6 +1,9 @@
+import logging
 import os
 from datetime import datetime, timezone
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 from fastapi import HTTPException
 
 from app.utils.ids import generate_uuid
@@ -151,7 +154,7 @@ class GenerateChunksUseCase:
                         }
                     )
             except Exception as rag_err:
-                print(f"Warning: Automatic RAG embedding trigger failed: {rag_err}")
+                logger.warning(f"Automatic RAG embedding trigger failed: {rag_err}", extra={"document_id": str(document_id)})
 
 
             responses = [ChunkResponse.model_validate(c) for c in created_chunks]

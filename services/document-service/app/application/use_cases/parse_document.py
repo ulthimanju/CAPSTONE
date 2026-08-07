@@ -2,8 +2,11 @@ import os
 import time
 import tempfile
 import asyncio
+import logging
 import fitz
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 from uuid import UUID
 from fastapi import HTTPException
@@ -202,7 +205,7 @@ class ParseDocumentUseCase:
                     retry_count=0,
                 ))
             except Exception as v_err:
-                print(f"Version/History record warning: {v_err}")
+                logger.warning(f"Version/History record warning: {v_err}", extra={"document_id": str(document_id)})
 
             # Mark Document as parsed
             doc.parse_status = ParseStatus.COMPLETED
@@ -260,7 +263,7 @@ class ParseDocumentUseCase:
                 doc.status = DocumentStatus.READY_FOR_RAG
                 await self.doc_repo.update(doc)
             except Exception as chunk_err:
-                print(f"Auto-chunking warning: {chunk_err}")
+                logger.warning(f"Auto-chunking warning: {chunk_err}", extra={"document_id": str(document_id)})
 
             job.status = ProcessingStatus.COMPLETED
             job.completed_at = done_now
