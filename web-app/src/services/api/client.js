@@ -7,7 +7,6 @@ import { ApiError } from '../../lib/apiError';
 const API_BASE_URL = apiConfig.baseUrl;
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -19,8 +18,11 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  if (config.url && config.url.startsWith('/api/v1')) {
-    config.url = config.url.replace('/api/v1', '');
+  if (config.url && !config.url.startsWith('http')) {
+    if (!config.url.startsWith('/api/v1')) {
+      const cleanUrl = config.url.startsWith('/') ? config.url : `/${config.url}`;
+      config.url = `/api/v1${cleanUrl}`;
+    }
   }
   return config;
 });
