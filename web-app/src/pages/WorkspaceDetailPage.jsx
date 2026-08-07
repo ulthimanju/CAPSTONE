@@ -4,12 +4,7 @@ import { apiClient } from '../services/api/client';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
-import {
-  useDocumentEvents,
-  useSummaryEvents,
-  useLearningPathEvents,
-  useWorkspaceEvents,
-} from '../providers/SSEProvider';
+import { WorkspaceProvider, useWorkspaceStore } from '../contexts/WorkspaceContext';
 import { AppLayout } from '../layouts/AppLayout';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 import { LearningUnitModal } from '../components/unit/LearningUnitModal';
@@ -38,25 +33,33 @@ const formatBytes = (bytes, decimals = 2) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
-export const WorkspaceDetailPage = () => {
+const WorkspaceDetailPageContent = () => {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
-  const [workspace, setWorkspace] = useState(null);
-  const [allWorkspaces, setAllWorkspaces] = useState([]);
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);       // workspace list + docs
-  const [docsLoading, setDocsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const {
+    workspaces: allWorkspaces,
+    workspace,
+    documents,
+    summary: summaryData,
+    learningPath: learningPathData,
+    loading,
+    docsLoading,
+    summaryLoaded,
+    learningPathLoaded,
+    refetchWorkspaces: fetchWorkspaceList,
+    refetchDocuments: fetchDocuments,
+    refetchSummary: fetchSummary,
+    refetchLearningPath: fetchLearningPath,
+    setSummary: setSummaryData,
+    setLearningPath: setLearningPathData,
+    setDocuments,
+  } = useWorkspaceStore();
 
-  // Centralized Domain Event Router Hooks
-  useDocumentEvents(workspaceId, () => fetchDocuments(workspaceId));
-  useSummaryEvents(workspaceId, () => setSummaryLoaded(false));
-  useLearningPathEvents(workspaceId, () => setLearningPathLoaded(false));
-  useWorkspaceEvents(workspaceId, () => fetchWorkspaceList());
+  const [error, setError] = useState(null);
 
   // Lazy-load flags
   const [summaryLoaded, setSummaryLoaded] = useState(false);
@@ -1282,6 +1285,15 @@ export const WorkspaceDetailPage = () => {
       />
 
     </AppLayout>
+  );
+};
+
+export const WorkspaceDetailPage = () => {
+  const { workspaceId } = useParams();
+  return (
+    <WorkspaceProvider activeWorkspaceId={workspaceId}>
+      <WorkspaceDetailPageContent />
+    </WorkspaceProvider>
   );
 };
 
