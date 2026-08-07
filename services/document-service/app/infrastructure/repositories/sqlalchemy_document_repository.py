@@ -176,3 +176,19 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             await self.session.flush()
             return True
         return False
+
+    async def get_by_checksum(self, workspace_id: UUID, uploaded_by: UUID, checksum: str) -> Document | None:
+        stmt = (
+            select(DocumentModel)
+            .where(
+                DocumentModel.workspace_id == workspace_id,
+                DocumentModel.uploaded_by == uploaded_by,
+                DocumentModel.checksum == checksum,
+                DocumentModel.deleted_at.is_(None)
+            )
+            .order_by(DocumentModel.created_at.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_domain(model) if model else None

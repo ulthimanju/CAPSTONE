@@ -14,6 +14,7 @@ class DocumentModel(Base):
         Index("idx_documents_uploaded_by", "uploaded_by"),
         Index("idx_documents_status", "status"),
         Index("idx_documents_storage_file_id", "storage_file_id"),
+        Index("idx_documents_ws_user_checksum", "workspace_id", "uploaded_by", "checksum"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

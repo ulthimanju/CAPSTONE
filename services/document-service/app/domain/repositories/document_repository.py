@@ -23,3 +23,7 @@ class DocumentRepository(ABC):
     @abstractmethod
     async def delete(self, document_id: UUID) -> bool:
         pass
+
+    @abstractmethod
+    async def get_by_checksum(self, workspace_id: UUID, uploaded_by: UUID, checksum: str) -> Document | None:
+        pass

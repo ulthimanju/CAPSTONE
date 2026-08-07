@@ -82,11 +82,13 @@ async def upload_document_raw(
     authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
 ):
+    import hashlib
+    sha256 = hashlib.sha256()
     ext = file.filename.split(".")[-1].upper() if "." in file.filename else "PDF"
     max_bytes = settings.max_upload_size_mb * 1024 * 1024
     current_size = 0
 
-    # Stream file contents incrementally in 1MB chunks directly to disk
+    # Stream file contents incrementally in 1MB chunks directly to disk while updating SHA-256 hash
     temp_upload = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext.lower()}")
     try:
         while chunk := await file.read(1024 * 1024):
@@ -99,11 +101,24 @@ async def upload_document_raw(
                     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                     detail=f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB",
                 )
+            sha256.update(chunk)
             temp_upload.write(chunk)
     finally:
         temp_upload.close()
 
     temp_path = temp_upload.name
+    content_checksum = sha256.hexdigest()
+
+    # Idempotency Check BEFORE performing external Google Drive upload or DB creation
+    from app.infrastructure.database.session import AsyncSessionLocal
+    async with AsyncSessionLocal() as session:
+        repo = get_document_repository(session)
+        existing = await repo.get_by_checksum(workspace_id=workspace_id, uploaded_by=user_id, checksum=content_checksum)
+        if existing:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            logger.info(f"Idempotent upload match for '{file.filename}' (checksum: {content_checksum[:8]}...). Returning existing document record {existing.id}.")
+            return DocumentResponse.model_validate(existing)
 
     # Attempt upload to real Google Drive if user has an active Google OAuth token
     gdrive_file_id = f"gdrive_{os.urandom(6).hex()}"
@@ -175,6 +190,7 @@ async def upload_document_raw(
         storage_provider="GOOGLE_DRIVE",
         storage_file_id=gdrive_file_id,
         storage_metadata_json={"web_view_link": web_view_link},
+        checksum=content_checksum,
     )
 
     # Open DB session ONLY after external HTTP calls and file prep complete to prevent pool exhaustion
