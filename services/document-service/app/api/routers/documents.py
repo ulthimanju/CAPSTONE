@@ -1,6 +1,9 @@
+import asyncio
 import logging
 from uuid import UUID
-from fastapi import APIRouter, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -108,6 +111,39 @@ async def upload_document_raw(
 
     temp_path = temp_upload.name
     content_checksum = sha256.hexdigest()
+
+    # Inspect file content magic bytes (header signatures) to prevent file type spoofing / executable upload
+    try:
+        with open(temp_path, "rb") as f:
+            header = f.read(512)
+
+        if header:
+            # Check for executable signatures (Windows MZ, Linux ELF, Mach-O)
+            if header.startswith(b"MZ") or header.startswith(b"\x7fELF") or header.startswith(b"\xfe\xed\xfa") or header.startswith(b"\xce\xfa\xed\xfe"):
+                raise HTTPException(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    detail="Unsupported file type: Executable files are strictly forbidden.",
+                )
+
+            is_pdf = header.startswith(b"%PDF-")
+            is_zip_office = header.startswith(b"PK\x03\x04")
+            is_text = False
+            try:
+                sample_str = header.decode("utf-8")
+                if "\x00" not in sample_str:
+                    is_text = True
+            except UnicodeDecodeError:
+                is_text = False
+
+            if not (is_pdf or is_zip_office or is_text):
+                raise HTTPException(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    detail="Unsupported Media Type: File content signature does not match allowed document formats (PDF, DOCX, PPTX, XLSX, TXT, MD).",
+                )
+    except HTTPException:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
 
     def _read_file_bytes(path: str) -> bytes:
         with open(path, "rb") as disk_file:
