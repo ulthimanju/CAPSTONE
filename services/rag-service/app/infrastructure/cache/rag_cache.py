@@ -5,9 +5,23 @@ from typing import Any, Sequence
 from app.infrastructure.database.models import ChunkEmbeddingModel
 
 
+import redis.asyncio as aioredis
+from app.config.settings import settings
+
+_global_redis_client = None
+
+
+def get_redis_client():
+    global _global_redis_client
+    if _global_redis_client is None:
+        redis_url = getattr(settings, "redis_url", "redis://redis:6379/0")
+        _global_redis_client = aioredis.from_url(redis_url, decode_responses=True)
+    return _global_redis_client
+
+
 class RAGCacheManager:
     def __init__(self, redis_client: Any = None):
-        self.redis = redis_client
+        self.redis = redis_client if redis_client is not None else get_redis_client()
 
     def _hash_query(self, question: str) -> str:
         return hashlib.sha256(question.strip().lower().encode("utf-8")).hexdigest()[:16]

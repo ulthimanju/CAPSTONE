@@ -6,11 +6,22 @@ from datetime import datetime, timezone
 from app.domain.entities.document import Document
 from app.constants.enums import DocumentStatus, FileType, StorageProvider, ParseStatus, ChunkStatus, LifecycleStatus
 from app.config.settings import settings
+import redis.asyncio as aioredis
+
+_global_redis_client = None
+
+
+def get_redis_client():
+    global _global_redis_client
+    if _global_redis_client is None:
+        redis_url = getattr(settings, "redis_url", "redis://redis:6379/0")
+        _global_redis_client = aioredis.from_url(redis_url, decode_responses=True)
+    return _global_redis_client
 
 
 class DocumentCacheManager:
     def __init__(self, redis_client: Any = None):
-        self.redis = redis_client
+        self.redis = redis_client if redis_client is not None else get_redis_client()
 
     def _get_workspace_documents_key(self, workspace_id: uuid.UUID) -> str:
         return f"workspace_documents:{workspace_id}"

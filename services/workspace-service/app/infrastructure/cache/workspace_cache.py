@@ -7,11 +7,22 @@ from app.domain.entities.workspace import Workspace
 from app.domain.entities.workspace_member import WorkspaceMember
 from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceRole
 from app.config.settings import settings
+import redis.asyncio as aioredis
+
+_global_redis_client = None
+
+
+def get_redis_client():
+    global _global_redis_client
+    if _global_redis_client is None:
+        redis_url = getattr(settings, "redis_url", "redis://redis:6379/0")
+        _global_redis_client = aioredis.from_url(redis_url, decode_responses=True)
+    return _global_redis_client
 
 
 class WorkspaceCacheManager:
     def __init__(self, redis_client: Any = None):
-        self.redis = redis_client
+        self.redis = redis_client if redis_client is not None else get_redis_client()
 
     def _get_key(self, workspace_id: uuid.UUID) -> str:
         return f"workspace:{workspace_id}"
