@@ -10,16 +10,21 @@ from app.schemas.workspace import WorkspaceResponse
 from app.utils.ids import generate_uuid
 
 
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+
 class TransferOwnershipUseCase:
     def __init__(
         self,
         workspace_repo: WorkspaceRepository,
         member_repo: MemberRepository,
         activity_repo: ActivityRepository,
+        cache_manager: WorkspaceCacheManager | None = None,
     ):
         self.workspace_repo = workspace_repo
         self.member_repo = member_repo
         self.activity_repo = activity_repo
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def execute(self, workspace_id: UUID, current_owner_id: UUID, new_owner_id: UUID) -> WorkspaceResponse:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
@@ -59,6 +64,10 @@ class TransferOwnershipUseCase:
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
+
+        await self.cache.invalidate_workspace_members(workspace_id)
+        await self.cache.invalidate_user_workspaces(current_owner_id)
+        await self.cache.invalidate_user_workspaces(new_owner_id)
 
         res = WorkspaceResponse.model_validate(updated)
         res.user_role = WorkspaceRole.EDITOR

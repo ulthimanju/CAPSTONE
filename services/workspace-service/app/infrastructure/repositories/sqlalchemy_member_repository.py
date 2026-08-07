@@ -6,11 +6,13 @@ from app.domain.entities.workspace_member import WorkspaceMember
 from app.domain.repositories.member_repository import MemberRepository
 from app.infrastructure.database.models import WorkspaceMemberModel
 from app.constants.enums import WorkspaceRole
+from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 
 
 class SQLAlchemyMemberRepository(MemberRepository):
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, cache_manager: WorkspaceCacheManager | None = None):
         self.session = session
+        self.cache = cache_manager or WorkspaceCacheManager()
 
     async def add_member(self, member: WorkspaceMember) -> WorkspaceMember:
         from sqlalchemy.exc import IntegrityError
@@ -26,6 +28,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
         try:
             self.session.add(model)
             await self.session.flush()
+            await self.cache.invalidate_workspace_members(member.workspace_id)
             return member
         except IntegrityError:
             await self.session.rollback()
@@ -54,10 +57,14 @@ class SQLAlchemyMemberRepository(MemberRepository):
         )
 
     async def list_members(self, workspace_id: UUID) -> list[WorkspaceMember]:
+        cached_members = await self.cache.get_workspace_members(workspace_id)
+        if cached_members is not None:
+            return cached_members
+
         stmt = select(WorkspaceMemberModel).where(WorkspaceMemberModel.workspace_id == workspace_id)
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        return [
+        members = [
             WorkspaceMember(
                 id=m.id,
                 workspace_id=m.workspace_id,
@@ -68,6 +75,8 @@ class SQLAlchemyMemberRepository(MemberRepository):
                 last_accessed_at=m.last_accessed_at
             ) for m in models
         ]
+        await self.cache.set_workspace_members(workspace_id, members)
+        return members
 
     async def update_role(self, member: WorkspaceMember) -> WorkspaceMember:
         return await self.update_role_with_version(member, getattr(member, "version", 1))
@@ -91,6 +100,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
         if result.rowcount == 0:
             raise HTTPException(status_code=409, detail="Workspace membership was modified by another request")
         member.version = expected_version + 1
+        await self.cache.invalidate_workspace_members(member.workspace_id)
         return member
 
     async def remove_member(self, workspace_id: UUID, user_id: UUID) -> bool:
@@ -100,4 +110,7 @@ class SQLAlchemyMemberRepository(MemberRepository):
         )
         result = await self.session.execute(stmt)
         await self.session.flush()
-        return result.rowcount > 0
+        if result.rowcount > 0:
+            await self.cache.invalidate_workspace_members(workspace_id)
+            return True
+        return False

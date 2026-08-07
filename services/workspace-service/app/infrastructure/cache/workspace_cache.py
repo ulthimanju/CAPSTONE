@@ -3,7 +3,8 @@ import uuid
 from typing import Any
 from datetime import datetime, timezone
 from app.domain.entities.workspace import Workspace
-from app.constants.enums import WorkspaceStatus, WorkspaceVisibility
+from app.domain.entities.workspace_member import WorkspaceMember
+from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceRole
 from app.config.settings import settings
 
 
@@ -16,6 +17,9 @@ class WorkspaceCacheManager:
 
     def _get_user_workspaces_key(self, user_id: uuid.UUID) -> str:
         return f"user_workspaces:{user_id}"
+
+    def _get_workspace_members_key(self, workspace_id: uuid.UUID) -> str:
+        return f"workspace_members:{workspace_id}"
 
     async def get(self, workspace_id: uuid.UUID) -> Workspace | None:
         if not self.redis:
@@ -130,5 +134,55 @@ class WorkspaceCacheManager:
             return
         try:
             await self.redis.delete(self._get_user_workspaces_key(user_id))
+        except Exception:
+            pass
+
+    async def get_workspace_members(self, workspace_id: uuid.UUID) -> list[WorkspaceMember] | None:
+        if not self.redis:
+            return None
+        try:
+            val = await self.redis.get(self._get_workspace_members_key(workspace_id))
+            if not val:
+                return None
+            items = json.loads(val)
+            return [
+                WorkspaceMember(
+                    id=uuid.UUID(m["id"]),
+                    workspace_id=uuid.UUID(m["workspace_id"]),
+                    user_id=uuid.UUID(m["user_id"]),
+                    role=WorkspaceRole(m["role"]),
+                    version=m.get("version", 1),
+                    joined_at=datetime.fromisoformat(m["joined_at"]) if m.get("joined_at") else datetime.now(timezone.utc),
+                    last_accessed_at=datetime.fromisoformat(m["last_accessed_at"]) if m.get("last_accessed_at") else datetime.now(timezone.utc),
+                ) for m in items
+            ]
+        except Exception:
+            return None
+
+    async def set_workspace_members(self, workspace_id: uuid.UUID, members: list[WorkspaceMember], ttl: int = settings.workspace_cache_ttl):
+        if not self.redis:
+            return
+        try:
+            key = self._get_workspace_members_key(workspace_id)
+            items = [
+                {
+                    "id": str(m.id),
+                    "workspace_id": str(m.workspace_id),
+                    "user_id": str(m.user_id),
+                    "role": m.role.value if hasattr(m.role, "value") else str(m.role),
+                    "version": getattr(m, "version", 1),
+                    "joined_at": m.joined_at.isoformat() if m.joined_at else None,
+                    "last_accessed_at": m.last_accessed_at.isoformat() if m.last_accessed_at else None,
+                } for m in members
+            ]
+            await self.redis.setex(key, ttl, json.dumps(items))
+        except Exception:
+            pass
+
+    async def invalidate_workspace_members(self, workspace_id: uuid.UUID):
+        if not self.redis:
+            return
+        try:
+            await self.redis.delete(self._get_workspace_members_key(workspace_id))
         except Exception:
             pass

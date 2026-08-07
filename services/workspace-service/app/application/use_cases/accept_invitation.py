@@ -69,5 +69,6 @@ class AcceptInvitationUseCase:
         await self.activity_repo.record_activity(activity)
 
         await self.cache.invalidate_user_workspaces(user_id)
+        await self.cache.invalidate_workspace_members(invitation.workspace_id)
 
         return InvitationResponse.model_validate(updated_invitation)

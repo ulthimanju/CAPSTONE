@@ -4,9 +4,11 @@ from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone
 
 from app.domain.entities.workspace import Workspace
-from app.constants.enums import WorkspaceStatus, WorkspaceVisibility
+from app.domain.entities.workspace_member import WorkspaceMember
+from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceRole
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 from app.infrastructure.repositories.sqlalchemy_workspace_repository import SQLAlchemyWorkspaceRepository
+from app.infrastructure.repositories.sqlalchemy_member_repository import SQLAlchemyMemberRepository
 from app.application.use_cases.create_workspace import CreateWorkspaceUseCase
 from app.application.use_cases.update_workspace import UpdateWorkspaceUseCase
 from app.application.use_cases.archive_workspace import ArchiveWorkspaceUseCase
@@ -14,6 +16,7 @@ from app.application.use_cases.restore_workspace import RestoreWorkspaceUseCase
 from app.application.use_cases.delete_workspace import DeleteWorkspaceUseCase
 from app.application.use_cases.accept_invitation import AcceptInvitationUseCase
 from app.application.use_cases.remove_member import RemoveMemberUseCase
+from app.application.use_cases.transfer_ownership import TransferOwnershipUseCase
 from app.schemas.workspace import CreateWorkspaceRequest, UpdateWorkspaceRequest
 
 
@@ -24,9 +27,11 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     session = AsyncMock()
 
     repo = SQLAlchemyWorkspaceRepository(session=session, cache_manager=cache)
+    mem_repo = SQLAlchemyMemberRepository(session=session, cache_manager=cache)
 
     ws_id = uuid.uuid4()
     owner_id = uuid.uuid4()
+    member_user_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
 
     ws = Workspace(
@@ -59,9 +64,19 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     db_model_mock.summary_json = None
     db_model_mock.learning_path_json = None
 
+    member_model_mock = MagicMock()
+    member_model_mock.id = uuid.uuid4()
+    member_model_mock.workspace_id = ws_id
+    member_model_mock.user_id = owner_id
+    member_model_mock.role = "OWNER"
+    member_model_mock.version = 1
+    member_model_mock.joined_at = now
+    member_model_mock.last_accessed_at = now
+
     exec_res = MagicMock()
     exec_res.scalar_one_or_none.return_value = db_model_mock
     exec_res.scalars().unique().all.return_value = [db_model_mock]
+    exec_res.scalars().all.return_value = [member_model_mock]
     session.execute.return_value = exec_res
 
     fetched_ws = await repo.get_by_id(ws_id)
@@ -69,43 +84,50 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     assert fetched_ws.name == "Cache Test Workspace"
     assert redis_mock.setex.called
 
-    # 2. List user workspaces: Cache MISS -> reads from DB -> sets user_workspaces:{user_id} cache key
+    # 2. List user workspaces: Cache MISS -> sets user_workspaces:{user_id}
     redis_mock.get.return_value = None
     ws_list = await repo.list_by_user_id(owner_id)
     assert len(ws_list) == 1
     assert redis_mock.setex.called
 
-    # 3. CreateWorkspaceUseCase invalidates user_workspaces:{user_id}
+    # 3. List workspace members: Cache MISS -> sets workspace_members:{workspace_id}
+    redis_mock.get.return_value = None
+    members_list = await mem_repo.list_members(ws_id)
+    assert len(members_list) == 1
+    assert redis_mock.setex.called
+
+    # 4. CreateWorkspaceUseCase invalidates user_workspaces:{user_id}
     act_repo = AsyncMock()
-    mem_repo = AsyncMock()
-    create_uc = CreateWorkspaceUseCase(repo, mem_repo, act_repo, cache_manager=cache)
+    mock_mem_repo = AsyncMock()
+    create_uc = CreateWorkspaceUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
     await create_uc.execute(owner_id, CreateWorkspaceRequest(name="New Workspace"))
     assert redis_mock.delete.called
 
-    # 4. UpdateWorkspaceUseCase invalidation
+    # 5. UpdateWorkspaceUseCase invalidation
     member_mock = MagicMock()
     member_mock.role = "OWNER"
-    mem_repo.get_member.return_value = member_mock
+    mock_mem_repo.get_member.return_value = member_mock
 
-    update_uc = UpdateWorkspaceUseCase(repo, mem_repo, act_repo, cache_manager=cache)
+    update_uc = UpdateWorkspaceUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
     await update_uc.execute(ws_id, owner_id, UpdateWorkspaceRequest(name="Updated Name"))
     assert redis_mock.delete.called
 
-    # 5. ArchiveWorkspaceUseCase invalidation
-    archive_uc = ArchiveWorkspaceUseCase(repo, act_repo, cache_manager=cache)
+    # 6. TransferOwnershipUseCase invalidates workspace_members:{workspace_id}
+    transfer_uc = TransferOwnershipUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
-    await archive_uc.execute(ws_id, owner_id)
+    await transfer_uc.execute(ws_id, owner_id, member_user_id)
     assert redis_mock.delete.called
 
-    # 6. RestoreWorkspaceUseCase invalidation
-    restore_uc = RestoreWorkspaceUseCase(repo, act_repo, cache_manager=cache)
+    # 7. RemoveMemberUseCase invalidates workspace_members:{workspace_id}
+    mock_mem_repo.remove_member.return_value = True
+    remove_uc = RemoveMemberUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
-    await restore_uc.execute(ws_id, owner_id)
+    await remove_uc.execute(ws_id, owner_id, member_user_id)
     assert redis_mock.delete.called
 
-    # 7. DeleteWorkspaceUseCase invalidation
+    # 8. DeleteWorkspaceUseCase invalidation
     delete_uc = DeleteWorkspaceUseCase(repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
     await delete_uc.execute(ws_id, owner_id)

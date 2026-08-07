@@ -50,4 +50,5 @@ class RemoveMemberUseCase:
             )
             await self.activity_repo.record_activity(activity)
             await self.cache.invalidate_user_workspaces(member_user_id)
+            await self.cache.invalidate_workspace_members(workspace_id)
         return success
