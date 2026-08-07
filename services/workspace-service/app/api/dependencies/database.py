@@ -28,6 +28,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             cache = get_workspace_cache()
             for ws_id in session.info.get("post_commit_invalidations", set()):
                 await cache.invalidate(ws_id)
+                await cache.invalidate_workspace_activity(ws_id)
         except Exception:
             await session.rollback()
             raise

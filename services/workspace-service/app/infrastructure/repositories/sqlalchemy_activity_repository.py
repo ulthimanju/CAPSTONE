@@ -30,7 +30,8 @@ class SQLAlchemyActivityRepository(ActivityRepository):
         await self.session.flush()
         if "post_commit_invalidations" in self.session.info:
             self.session.info["post_commit_invalidations"].add(activity.workspace_id)
-        await self.cache.invalidate_workspace_activity(activity.workspace_id)
+        else:
+            await self.cache.invalidate_workspace_activity(activity.workspace_id)
         return activity
 
     async def list_activities(self, workspace_id: UUID, limit: int = 50) -> list[WorkspaceActivity]:
