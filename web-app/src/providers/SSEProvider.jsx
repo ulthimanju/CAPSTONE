@@ -20,13 +20,17 @@ const ROUTE_MAP = {
   'workspace.activity.recorded': 'activity',
 };
 
+const COALESCE_WINDOW_MS = 150; // 150ms event buffering window
+
 export function SSEProvider({ children }) {
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState(null);
   const listenersRef = useRef(new Set());
   const refreshRegistryRef = useRef(new Map()); // Map<key: "domain:workspaceId", Set<HandlerEntry>>
+  const coalescingBufferRef = useRef(new Map()); // Map<key: "domain:workspaceId", { domain, workspaceId }>
+  const coalesceTimerRef = useRef(null);
 
-  // Invalidate domain & execute registered refresh handlers (with debouncing, priority, enabled filters)
+  // Invalidate domain & execute registered refresh handlers (with priority, enabled filters)
   const invalidateDomain = (domain, workspaceId) => {
     const targetKeys = [
       `${domain}:${workspaceId}`,
@@ -64,17 +68,34 @@ export function SSEProvider({ children }) {
     });
   };
 
+  // Flush buffered coalesced events into single domain invalidations
+  const flushCoalescedEvents = () => {
+    coalesceTimerRef.current = null;
+    const pendingEvents = Array.from(coalescingBufferRef.current.values());
+    coalescingBufferRef.current.clear();
+
+    pendingEvents.forEach(({ domain, workspaceId }) => {
+      invalidateDomain(domain, workspaceId);
+    });
+  };
+
   const dispatchEventToSubscribers = (payload) => {
     setLastEvent(payload);
 
     // Notify raw listeners
     listenersRef.current.forEach((fn) => fn(payload));
 
-    // Route event through Central Domain Router & trigger store invalidation
+    // Event Coalescing (Burst Protection)
     const evtName = payload.eventType || payload.event;
     const domain = ROUTE_MAP[evtName];
     if (domain) {
-      invalidateDomain(domain, payload.workspace_id);
+      const wsId = payload.workspace_id;
+      const bufferKey = `${domain}:${wsId || 'global'}`;
+      coalescingBufferRef.current.set(bufferKey, { domain, workspaceId: wsId });
+
+      if (!coalesceTimerRef.current) {
+        coalesceTimerRef.current = setTimeout(flushCoalescedEvents, COALESCE_WINDOW_MS);
+      }
     }
   };
 
@@ -173,6 +194,9 @@ export function SSEProvider({ children }) {
     return () => {
       isAborted = true;
       controller.abort();
+      if (coalesceTimerRef.current) {
+        clearTimeout(coalesceTimerRef.current);
+      }
       setConnected(false);
     };
   }, []);
