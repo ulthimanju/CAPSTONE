@@ -64,10 +64,12 @@ class OAuthUseCase:
                 )
                 user = await self.user_repo.create(user)
 
-            # 2. Check or create/update OAuth Identity
+            # 2. Check or create/update OAuth Identity with concurrent race recovery
+            from sqlalchemy.exc import IntegrityError
+
             identity = await self.oauth_repo.get_by_provider(OAuthProvider.GOOGLE, provider_user_id)
             if not identity:
-                identity = OAuthIdentity(
+                new_identity = OAuthIdentity(
                     id=generate_uuid(),
                     user_id=user.id,
                     provider=OAuthProvider.GOOGLE,
@@ -77,7 +79,20 @@ class OAuthUseCase:
                     refresh_token=token_dto.refresh_token,
                     expires_at=datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
                 )
-                await self.oauth_repo.create(identity)
+                try:
+                    await self.oauth_repo.create(new_identity)
+                    identity = new_identity
+                except IntegrityError:
+                    if hasattr(self.uow, "rollback"):
+                        await self.uow.rollback()
+                    identity = await self.oauth_repo.get_by_provider(OAuthProvider.GOOGLE, provider_user_id)
+                    if not identity:
+                        raise
+                    identity.access_token = token_dto.access_token
+                    if token_dto.refresh_token:
+                        identity.refresh_token = token_dto.refresh_token
+                    identity.expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
+                    await self.oauth_repo.update(identity)
             else:
                 identity.access_token = token_dto.access_token
                 if token_dto.refresh_token:

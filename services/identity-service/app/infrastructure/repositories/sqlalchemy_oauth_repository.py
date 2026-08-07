@@ -35,16 +35,10 @@ class SQLAlchemyOAuthRepository(OAuthRepository):
             access_token=identity.access_token, refresh_token=identity.refresh_token,
             expires_at=identity.expires_at,
         )
-        try:
-            self._db.add(m)
-            await self._db.flush()
-            await self._db.refresh(m)
-            return _to_entity(m)
-        except Exception:
-            existing = await self.get_by_provider(identity.provider, identity.provider_user_id)
-            if existing:
-                return existing
-            raise
+        self._db.add(m)
+        await self._db.flush()
+        await self._db.refresh(m)
+        return _to_entity(m)
 
     async def update(self, identity: OAuthIdentity) -> OAuthIdentity:
         result = await self._db.execute(
