@@ -81,7 +81,6 @@ async def upload_document_raw(
     file: UploadFile = File(...),
     authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_db_session),
 ):
     from app.config.settings import settings
     max_bytes = settings.max_upload_size_mb * 1024 * 1024
@@ -100,7 +99,6 @@ async def upload_document_raw(
 
     try:
         import httpx
-        from app.config.settings import settings
         identity_service_url = os.environ.get("IDENTITY_SERVICE_URL", "http://identity-service:8000")
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             req_headers = {"Authorization": authorization} if authorization else {}
@@ -167,9 +165,13 @@ async def upload_document_raw(
         storage_metadata_json={"web_view_link": web_view_link},
     )
 
-    repo = get_document_repository(session)
-    use_case = UploadDocumentUseCase(repo)
-    created_doc = await use_case.execute(user_id, req)
+    # Open DB session ONLY after external HTTP calls and file prep complete to prevent pool exhaustion
+    from app.infrastructure.database.session import AsyncSessionLocal
+    async with AsyncSessionLocal() as session:
+        repo = get_document_repository(session)
+        use_case = UploadDocumentUseCase(repo)
+        created_doc = await use_case.execute(user_id, req)
+        await session.commit()
 
     # Save actual raw binary file bytes to temp directory for LlamaParse
     local_upload_path = os.path.join(tempfile.gettempdir(), f"upload_{created_doc.id}.{ext.lower()}")
