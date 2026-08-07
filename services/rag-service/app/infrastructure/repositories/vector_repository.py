@@ -52,7 +52,10 @@ class VectorRepository:
                 ChunkEmbeddingModel,
                 ChunkEmbeddingModel.vector.cosine_distance(query_vector).label("distance"),
             )
-            .where(ChunkEmbeddingModel.workspace_id == workspace_id)
+            .where(
+                ChunkEmbeddingModel.workspace_id == workspace_id,
+                ChunkEmbeddingModel.is_active == True,
+            )
             .order_by(ChunkEmbeddingModel.vector.cosine_distance(query_vector))
             .limit(top_k)
         )
