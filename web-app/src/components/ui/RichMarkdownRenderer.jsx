@@ -24,9 +24,11 @@ const getHighlightedCode = (code, language) => {
   }
 };
 
-// Initialize mermaid with custom theme matching app design tokens
+// Initialize mermaid with custom theme matching app design tokens and silent error suppression
 mermaid.initialize({
   startOnLoad: false,
+  suppressErrorRendering: true,
+  parseError: () => {},
   theme: 'base',
   securityLevel: 'loose',
   themeVariables: {
@@ -84,6 +86,41 @@ mermaid.initialize({
     pie8: '#fde68a',
   },
 });
+
+// ── Purge any stray Mermaid error DOM elements injected by third-party scripts 
+const purgeMermaidErrorElements = () => {
+  try {
+    document.querySelectorAll('[id^="dmermaid"], [id^="mermaid-"]').forEach((el) => {
+      if (el.textContent && (el.textContent.includes('Syntax error in text') || el.textContent.includes('mermaid version'))) {
+        el.remove();
+      }
+    });
+  } catch {
+    /* silent */
+  }
+};
+
+// ── Safe Mermaid Render Engine ─────────────────────────────────────────────
+const renderMermaidSafely = async (id, code) => {
+  const clean = code?.trim();
+  if (!clean) return null;
+
+  try {
+    // Pre-validate syntax silently without calling render
+    const valid = await mermaid.parse(clean).catch(() => false);
+    if (!valid) {
+      purgeMermaidErrorElements();
+      return null;
+    }
+
+    const { svg } = await mermaid.render(id, clean);
+    purgeMermaidErrorElements();
+    return svg;
+  } catch {
+    purgeMermaidErrorElements();
+    return null;
+  }
+};
 
 // ── Helper to split multi-subgraph / multi-diagram Mermaid blocks into N x 2 grid items ──
 const splitMermaidCode = (code) => {
@@ -167,28 +204,22 @@ const MermaidSubItem = ({ code }) => {
     setRenderFailed(false);
     containerRef.current.innerHTML = '';
 
-    mermaid
-      .render(idRef.current, code.trim())
-      .then(({ svg }) => {
-        if (cancelled) return;
-        if (containerRef.current) {
-          containerRef.current.innerHTML = svg;
-        }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.warn('Skipping invalid Mermaid sub-diagram:', err);
+    renderMermaidSafely(idRef.current, code).then((svg) => {
+      if (cancelled) return;
+      if (svg && containerRef.current) {
+        containerRef.current.innerHTML = svg;
+      } else {
         setRenderFailed(true);
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
-      });
+        if (containerRef.current) containerRef.current.innerHTML = '';
+      }
+    });
 
     return () => {
       cancelled = true;
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
       }
+      purgeMermaidErrorElements();
     };
   }, [code]);
 
@@ -222,32 +253,22 @@ const MermaidDiagram = ({ code }) => {
     setRenderFailed(false);
     containerRef.current.innerHTML = '';
 
-    mermaid
-      .render(idRef.current, code.trim())
-      .then(({ svg }) => {
-        if (cancelled) return;
-
-        if (containerRef.current) {
-          containerRef.current.innerHTML = svg;
-        }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-
-        console.warn('Skipping invalid Mermaid diagram:', err);
+    renderMermaidSafely(idRef.current, code).then((svg) => {
+      if (cancelled) return;
+      if (svg && containerRef.current) {
+        containerRef.current.innerHTML = svg;
+      } else {
         setRenderFailed(true);
-
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
-      });
+        if (containerRef.current) containerRef.current.innerHTML = '';
+      }
+    });
 
     return () => {
       cancelled = true;
-
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
       }
+      purgeMermaidErrorElements();
     };
   }, [code, subDiagrams]);
 
