@@ -178,12 +178,44 @@ async def test_rag_rejects_when_workspace_has_no_relevant_context():
         rag_cache=cache,
     )
 
-    with pytest.raises(WorkspaceContextGuardrailError):
-        await orchestrator.ask_question(
-            uuid.uuid4(),
-            "Tell me something.",
-            top_k=5,
-        )
+@pytest.mark.asyncio
+async def test_rag_allows_borderline_workspace_question():
+    redis_mock = AsyncMock()
+    redis_mock.get.return_value = None
 
-    ai_client.generate_text.assert_not_awaited()
+    cache = RAGCacheManager(redis_client=redis_mock)
+    vector_repo = AsyncMock()
+    ai_client = AsyncMock()
+
+    ws_id = uuid.uuid4()
+
+    chunk = ChunkEmbeddingModel(
+        id=uuid.uuid4(),
+        workspace_id=ws_id,
+        chunk_id=uuid.uuid4(),
+        document_name="java.pdf",
+        chunk_index=0,
+        chunk_content="Java programming concepts.",
+    )
+
+    # Borderline score 0.45 (between 0.40 borderline threshold and 0.60 min threshold)
+    vector_repo.similarity_search.return_value = [(chunk, 0.45)]
+    ai_client.get_embeddings.return_value = [[0.1, 0.2, 0.3]]
+    ai_client.generate_text.return_value = "Here is a standard Java Hello World example..."
+
+    orchestrator = RAGChatOrchestrator(
+        vector_repo=vector_repo,
+        ai_client=ai_client,
+        rag_cache=cache,
+    )
+
+    answer = await orchestrator.ask_question(
+        ws_id,
+        "Write a Hello World program",
+        top_k=5,
+    )
+
+    assert "Hello World" in answer
+    ai_client.generate_text.assert_awaited_once()
+
 
