@@ -3,6 +3,7 @@ import re
 import time
 import uuid
 import logging
+from collections import defaultdict
 import httpx
 from datetime import datetime, timezone
 from uuid import UUID
