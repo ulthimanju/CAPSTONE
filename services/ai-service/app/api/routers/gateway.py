@@ -118,13 +118,12 @@ from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummary
 
 
 from app.schemas.gateway import WorkspaceSummaryResponse
-import httpx
-import os
-
-import time
-from fastapi import Header
-
-async def _publish_summary_event(workspace_id: str, status: str, user_id: str | None = None, error: str | None = None):
+async def _publish_summary_event(
+    workspace_id: str,
+    status: str,
+    user_id: str | None = None,
+    error: str | None = None,
+):
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
         payload = {
@@ -134,7 +133,7 @@ async def _publish_summary_event(workspace_id: str, status: str, user_id: str | 
             "user_id": user_id,
             "status": status,
             "error": error,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
@@ -142,12 +141,17 @@ async def _publish_summary_event(workspace_id: str, status: str, user_id: str | 
         logger.warning(f"Notice: Failed to publish SummaryGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
 
-def build_chunk_outline(chunk: dict) -> str:
-    title = (chunk.get("title") or chunk.get("document_filename") or "").strip()
+def build_chunk_knowledge_map(chunk: dict) -> str:
     content = (chunk.get("content") or "").strip()
 
     if not content:
         return ""
+
+    title = (
+        chunk.get("title")
+        or chunk.get("document_filename")
+        or "Untitled"
+    ).strip()
 
     headings = re.findall(
         r"^(#{1,6})\s+(.+?)\s*$",
@@ -155,116 +159,178 @@ def build_chunk_outline(chunk: dict) -> str:
         re.MULTILINE,
     )
 
-    subheadings = [
+    subtopics = [
         heading.strip()
-        for _, heading in headings[:6]
+        for _, heading in headings
+        if heading.strip()
     ]
+
+    content_types = []
+
+    if "```" in content:
+        content_types.append("code")
+
+    if "```mermaid" in content.lower():
+        content_types.append("mermaid")
+
+    if re.search(r"^\s*\|.*\|", content, re.MULTILINE):
+        content_types.append("table")
+
+    if re.search(
+        r"(^|\n)\s*[-*]\s+",
+        content,
+    ):
+        content_types.append("lists")
+
+    if re.search(
+        r"\b(example|implementation|syntax|warning|note|comparison)\b",
+        content,
+        re.IGNORECASE,
+    ):
+        content_types.append("examples/notes/comparisons")
 
     paragraphs = [
-        p.strip()
-        for p in re.split(r"\n\s*\n", content)
-        if p.strip()
+        re.sub(r"\s+", " ", paragraph.strip())
+        for paragraph in re.split(r"\n\s*\n", content)
+        if paragraph.strip()
     ]
 
-    explanation = ""
-    for paragraph in paragraphs:
-        cleaned = re.sub(r"```[\s\S]*?```", "", paragraph).strip()
-        cleaned = re.sub(r"\|.*\|", "", cleaned).strip()
+    knowledge_preview = []
 
-        if len(cleaned) >= 40:
-            explanation = cleaned
+    for paragraph in paragraphs:
+        if paragraph.startswith("```"):
+            continue
+
+        if len(paragraph) >= 60:
+            knowledge_preview.append(paragraph)
+
+        if len(knowledge_preview) >= 3:
             break
 
-    parts = []
+    parts = [
+        f"Title: {title}",
+    ]
 
-    if title:
-        parts.append(f"Title: {title}")
+    if subtopics:
+        parts.append("Subtopics: " + "; ".join(subtopics[:10]))
 
-    if subheadings:
-        parts.append("Topics: " + "; ".join(subheadings[:5]))
+    if content_types:
+        parts.append("Content types: " + ", ".join(content_types))
 
-    if explanation:
-        explanation = re.sub(r"\s+", " ", explanation)
-        explanation = explanation[:300]
-        parts.append(f"Summary: {explanation}")
+    if knowledge_preview:
+        parts.append("Key information:\n- " + "\n- ".join(knowledge_preview))
 
     return "\n".join(parts)
 
 
+def divide_into_regions(
+    chunks: list[dict],
+    region_count: int = 10,
+) -> list[list[dict]]:
+    if not chunks:
+        return []
+
+    region_size = math.ceil(len(chunks) / region_count)
+
+    return [
+        chunks[i:i + region_size]
+        for i in range(0, len(chunks), region_size)
+    ]
+
+
 def calculate_chunk_importance(chunk: dict) -> float:
-    content = chunk.get("content", "") or ""
-    title = chunk.get("title", "") or chunk.get("document_filename", "") or ""
+    content = (chunk.get("content") or "").strip()
+
+    if not content:
+        return 0.0
 
     score = 0.0
 
-    if title:
+    headings = re.findall(
+        r"^#{1,6}\s+",
+        content,
+        re.MULTILINE,
+    )
+    score += min(len(headings) * 0.04, 0.20)
+
+    if re.search(
+        r"\b(definition|overview|concept|principle|what is)\b",
+        content,
+        re.IGNORECASE,
+    ):
         score += 0.15
 
-    heading_count = len(re.findall(r"^#{1,6}\s+", content, re.MULTILINE))
-    score += min(heading_count * 0.03, 0.15)
-
-    if re.search(r"\b(definition|overview|concept|important|key|principle)\b", content, re.IGNORECASE):
-        score += 0.15
-
-    if re.search(r"\b(example|implementation|code example|use case)\b", content, re.IGNORECASE):
+    if re.search(
+        r"\b(example|implementation|use case|syntax)\b",
+        content,
+        re.IGNORECASE,
+    ):
         score += 0.15
 
     if "```" in content:
         score += 0.15
 
-    if "```mermaid" in content:
+    if "```mermaid" in content.lower():
         score += 0.10
 
-    if "|" in content:
+    if re.search(
+        r"^\s*\|.*\|",
+        content,
+        re.MULTILINE,
+    ):
         score += 0.10
 
-    content_length_score = min(len(content) / 6000, 0.15)
-    score += content_length_score
+    if re.search(
+        r"\b(warning|important|note|limitation|pitfall)\b",
+        content,
+        re.IGNORECASE,
+    ):
+        score += 0.10
+
+    score += min(len(content) / 10000, 0.15)
 
     return min(score, 1.0)
 
 
-def group_chunks_by_topic(chunks: list[dict]) -> dict[str, list[dict]]:
-    groups = defaultdict(list)
+def select_representative_chunks(
+    chunks: list[dict],
+    detailed_token_budget: int = 9000,
+) -> list[dict]:
 
-    for chunk in chunks:
-        title = (
-            chunk.get("title")
-            or chunk.get("document_filename")
-            or "General"
-        ).strip()
+    regions = divide_into_regions(
+        chunks,
+        region_count=10,
+    )
 
-        groups[title.lower()].append(chunk)
+    candidates = []
 
-    return groups
+    for region_index, region in enumerate(regions):
+        if not region:
+            continue
 
+        best_chunk = max(
+            region,
+            key=calculate_chunk_importance,
+        )
 
-def select_representative_chunks(chunks: list[dict], budget_tokens: int) -> list[dict]:
-    groups = group_chunks_by_topic(chunks)
-
-    representatives = []
-
-    for _, group in groups.items():
-        best = max(group, key=calculate_chunk_importance)
-        representatives.append(best)
-
-    representatives.sort(key=calculate_chunk_importance, reverse=True)
+        candidates.append((region_index, best_chunk))
 
     selected = []
     used_tokens = 0
 
-    for chunk in representatives:
-        content = chunk.get("content", "")
-        tokens = TokenCounter.estimate_tokens(content)
+    for region_index, chunk in candidates:
+        tokens = TokenCounter.estimate_tokens(chunk.get("content", ""))
 
-        if used_tokens + tokens > budget_tokens:
+        if used_tokens + tokens > detailed_token_budget:
             continue
 
         selected.append(chunk)
         used_tokens += tokens
-
+    
     return selected
 
+
+from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
 
 @router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
 async def generate_workspace_summary_endpoint(
@@ -297,41 +363,41 @@ async def generate_workspace_summary_endpoint(
                 raise HTTPException(status_code=500, detail="Failed to retrieve workspace document chunks")
             chunks_data = chunks_res.json().get("chunks", [])
 
-        # 3. Assemble Workspace Coverage Map & Representative Detailed Source Context
-        workspace_outline = []
+        # 3. Assemble Workspace Knowledge Map & Representative Detailed Source Context
+        workspace_map = []
         for index, chunk in enumerate(chunks_data, start=1):
-            outline = build_chunk_outline(chunk)
-            if outline:
-                workspace_outline.append(f"Chunk {index}\n{outline}")
+            knowledge_map = build_chunk_knowledge_map(chunk)
+            if knowledge_map:
+                workspace_map.append(f"--- Workspace Chunk {index} ---\n{knowledge_map}")
 
-        workspace_outline_text = "\n\n".join(workspace_outline)
+        workspace_map_text = "\n\n".join(workspace_map)
 
-        # Select topic-diverse, high-importance representative full chunks
-        representative_chunks = select_representative_chunks(chunks_data, budget_tokens=9000)
+        # Select region-representative full chunks across the entire workspace
+        selected_chunks = select_representative_chunks(chunks_data, detailed_token_budget=9000)
 
-        detailed_context_parts = []
-        for index, chunk in enumerate(representative_chunks, start=1):
+        detailed_sources = []
+        for index, chunk in enumerate(selected_chunks, start=1):
             title = chunk.get("title") or chunk.get("document_filename", "Untitled")
-            detailed_context_parts.append(
+            detailed_sources.append(
                 f"--- Detailed Source {index} ---\nTitle: {title}\n\n{chunk.get('content', '').strip()}"
             )
 
-        detailed_context = "\n\n".join(detailed_context_parts)
+        detailed_context = "\n\n".join(detailed_sources)
 
         assembled_prompt = f"""Workspace Title: {ws_meta.get('name', 'Untitled')}
 Description: {ws_meta.get('description', 'N/A')}
 
-WORKSPACE COVERAGE MAP
-======================
+WORKSPACE KNOWLEDGE MAP
+=======================
 
-{workspace_outline_text}
+{workspace_map_text}
 
-DETAILED REPRESENTATIVE SOURCE MATERIAL
-=======================================
+DETAILED SOURCE MATERIAL
+========================
 
 {detailed_context}
 
-Generate the comprehensive workspace summary using the entire workspace coverage map and the detailed source material."""
+Generate the comprehensive workspace summary using the entire workspace knowledge map and the detailed source material."""
 
         # 4. Build System Instruction using WorkspaceSummaryPromptBuilder
         sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction()
