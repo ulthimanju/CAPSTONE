@@ -71,6 +71,26 @@ const WorkspaceDetailPageContent = () => {
   } = useWorkspaceStore();
 
   const [error, setError] = useState(null);
+  // Indices of summary sections whose mermaid diagram(s) failed to render.
+  // Purely a local UI concern — not persisted to the summary store — so it
+  // naturally resets whenever the summary is regenerated/refetched.
+  const [hiddenSummarySections, setHiddenSummarySections] = useState(() => new Set());
+
+  const hideSummarySection = (idx) => {
+    setHiddenSummarySections((prev) => {
+      if (prev.has(idx)) return prev;
+      const next = new Set(prev);
+      next.add(idx);
+      return next;
+    });
+  };
+
+  // Reset hidden-section tracking whenever the summary payload itself changes
+  // (regenerate, refetch, or initial load) — a freshly (re)generated summary
+  // deserves a clean slate rather than inheriting stale hidden-section state.
+  useEffect(() => {
+    setHiddenSummarySections(new Set());
+  }, [summaryData]);
 
   const renderStatusBadge = (status) => {
     switch (status) {
@@ -949,14 +969,33 @@ const WorkspaceDetailPageContent = () => {
                 {/* Main Sections */}
                 {summaryData.sections && summaryData.sections.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
-                    {summaryData.sections.map((sec, idx) => (
-                      <div key={idx}>
-                        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '6px' }}>
-                          {sec.title}
-                        </h4>
-                        <RichMarkdownRenderer content={sec.content} />
-                      </div>
-                    ))}
+                    {summaryData.sections.map((sec, idx) => {
+                      // If this section's mermaid diagram failed to render,
+                      // hide the entire section (per product decision) rather
+                      // than show a section with a broken/missing diagram.
+                      //
+                      // Alternative: MermaidDiagram already degrades gracefully
+                      // on its own to a small "Diagram preview unavailable"
+                      // pill, so the section's prose (usually the bulk of the
+                      // content, and unaffected by the diagram bug) could stay
+                      // visible instead. To switch to that behavior, remove
+                      // this early-return and just drop the onMermaidError
+                      // prop below — RichMarkdownRenderer already falls back
+                      // per-diagram with no extra wiring needed.
+                      if (hiddenSummarySections.has(idx)) return null;
+
+                      return (
+                        <div key={idx}>
+                          <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '6px' }}>
+                            {sec.title}
+                          </h4>
+                          <RichMarkdownRenderer
+                            content={sec.content}
+                            onMermaidError={() => hideSummarySection(idx)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

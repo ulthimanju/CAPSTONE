@@ -237,7 +237,7 @@ const sanitizeMermaidCode = (code) => {
 };
 
 // ── Remove Stray Body-Level Mermaid DOM Nodes ────────────────────────────────
-// Mermaid's internal render() prefixes the wrapper it appends to <body> with
+// Mermaid's internal render8() prefixes the wrapper it appends to <body> with
 // "d" + the id we passed in (e.g. id "rmc-mermaid-xyz" -> wrapper "drmc-mermaid-xyz"),
 // and on some error paths (renderer.draw throwing after Diagram.fromText("error"))
 // it does NOT clean that wrapper up even with suppressErrorRendering set.
@@ -292,7 +292,7 @@ const isMermaidErrorSvg = (svg) => {
 // internally do `select("body").append("div#d" + id).append("svg#" + id)` before
 // it even attempts to parse/draw anything. On most parse failures this scratch
 // node is removed via suppressErrorRendering, but on renderer-level draw failures
-// (a second, separate try/catch inside mermaid's render()) mermaid calls its own
+// (a second, separate try/catch inside mermaid's render8()) mermaid calls its own
 // errorRenderer directly into that body-level node and does NOT remove it — that
 // stray "bomb" SVG is what was showing up at the bottom of the page.
 //
@@ -399,7 +399,7 @@ const splitMermaidCode = (code) => {
 };
 
 // ── Sub-diagram Column Item Component ─────────────────────────────────────
-const MermaidSubItem = ({ code, theme }) => {
+const MermaidSubItem = ({ code, theme, onError }) => {
   const containerRef = useRef(null);
   const reactId = useId();
   const mermaidId = useMemo(() => generateMermaidId(reactId), [reactId]);
@@ -422,6 +422,7 @@ const MermaidSubItem = ({ code, theme }) => {
         if (version !== renderVersion.current) return;
         setFailed(true);
         console.warn('Sub-diagram rendering failed:', err?.message);
+        onError?.(err);
       } finally {
         cleanupStrayMermaidNodes();
       }
@@ -434,7 +435,7 @@ const MermaidSubItem = ({ code, theme }) => {
       cleanupStrayMermaidNodes();
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
-  }, [code, theme, mermaidId]);
+  }, [code, theme, mermaidId, onError]);
 
   if (failed) return null;
 
@@ -449,12 +450,37 @@ const MermaidSubItem = ({ code, theme }) => {
   );
 };
 
+// ── Sub-diagram Group: escalates to parent only if ALL sub-diagrams fail ────
+const MermaidSubGroup = ({ subDiagrams, theme, onError }) => {
+  const failCount = useRef(0);
+  const hasReportedGroupError = useRef(false);
+
+  const handleSubError = (err) => {
+    failCount.current += 1;
+    if (failCount.current >= subDiagrams.length && !hasReportedGroupError.current) {
+      hasReportedGroupError.current = true;
+      onError?.(err);
+    }
+  };
+
+  return (
+    <div className="rmc-mermaid-wrap">
+      <div className="rmc-mermaid-column-list">
+        {subDiagrams.map((subCode, index) => (
+          <MermaidSubItem key={index} code={subCode} theme={theme} onError={handleSubError} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ── Mermaid Diagram Component ──────────────────────────────────────────────
-const MermaidDiagram = ({ code }) => {
+const MermaidDiagram = ({ code, onError }) => {
   const containerRef = useRef(null);
   const reactId = useId();
   const mermaidId = useMemo(() => generateMermaidId(reactId), [reactId]);
   const renderVersion = useRef(0);
+  const hasReportedError = useRef(false);
   const [status, setStatus] = useState('idle');
   const [theme, setTheme] = useState(
     typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'light' : 'light'
@@ -504,6 +530,15 @@ const MermaidDiagram = ({ code }) => {
 
         setStatus('fallback');
         if (containerRef.current) containerRef.current.innerHTML = '';
+
+        // Notify the nearest ancestor (e.g. a summary section) so it can choose
+        // to hide itself instead of showing a broken/empty diagram card.
+        // Fire at most once per mount to avoid re-render loops if the parent
+        // re-renders this component in response to onError.
+        if (!hasReportedError.current) {
+          hasReportedError.current = true;
+          onError?.(err);
+        }
       } finally {
         cleanupStrayMermaidNodes();
       }
@@ -519,17 +554,11 @@ const MermaidDiagram = ({ code }) => {
         containerRef.current.innerHTML = '';
       }
     };
-  }, [code, theme, subDiagrams, mermaidId]);
+  }, [code, theme, subDiagrams, mermaidId, onError]);
 
   if (subDiagrams.length >= 2) {
     return (
-      <div className="rmc-mermaid-wrap">
-        <div className="rmc-mermaid-column-list">
-          {subDiagrams.map((subCode, index) => (
-            <MermaidSubItem key={index} code={subCode} theme={theme} />
-          ))}
-        </div>
-      </div>
+      <MermaidSubGroup subDiagrams={subDiagrams} theme={theme} onError={onError} />
     );
   }
 
@@ -588,7 +617,7 @@ const extractTextContent = (node) => {
 };
 
 // ── Code Block Component ───────────────────────────────────────────────────
-const CodeBlock = ({ className, children }) => {
+const CodeBlock = ({ className, children, onMermaidError }) => {
   const match = /language-(\w+)/.exec(className || '');
   let lang = match ? match[1] : '';
   let rawCodeString = extractTextContent(children).replace(/\n$/, '');
@@ -615,7 +644,7 @@ const CodeBlock = ({ className, children }) => {
 
   if (isMermaid) {
     const cleanCode = trimmed.replace(/^mermaid\s*/i, '');
-    return <MermaidDiagram code={cleanCode} />;
+    return <MermaidDiagram code={cleanCode} onError={onMermaidError} />;
   }
 
   const [formattedCode, setFormattedCode] = useState(rawCodeString);
@@ -657,7 +686,11 @@ const CodeBlock = ({ className, children }) => {
 };
 
 // ── Unified Markdown Renderer Component ───────────────────────────────────
-export const RichMarkdownRenderer = ({ content, compact = false }) => {
+// onMermaidError: optional callback(error) fired when a mermaid diagram in this
+// content block fails to render. Useful for consumers (e.g. an AI summary
+// section) that want to hide the whole section rather than show a broken or
+// empty diagram placeholder.
+export const RichMarkdownRenderer = ({ content, compact = false, onMermaidError }) => {
   if (!content) return null;
 
   let normalizedContent = typeof content === 'string' ? content : String(content);
@@ -695,7 +728,7 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
             const codeContent = codeElement?.props?.children || children;
 
             return (
-              <CodeBlock className={className}>
+              <CodeBlock className={className} onMermaidError={onMermaidError}>
                 {codeContent}
               </CodeBlock>
             );

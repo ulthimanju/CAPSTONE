@@ -30,6 +30,23 @@ export const LearningUnitDetailPage = () => {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizScore, setQuizScore] = useState(0);
 
+  // Indices of summary sections whose mermaid diagram(s) failed to render.
+  // Local UI-only concern; resets whenever contentData changes.
+  const [hiddenSummarySections, setHiddenSummarySections] = useState(() => new Set());
+
+  const hideSummarySection = (idx) => {
+    setHiddenSummarySections((prev) => {
+      if (prev.has(idx)) return prev;
+      const next = new Set(prev);
+      next.add(idx);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    setHiddenSummarySections(new Set());
+  }, [contentData]);
+
   // Load workspace & unit metadata
   useEffect(() => {
     if (!workspaceId) return;
@@ -380,14 +397,21 @@ export const LearningUnitDetailPage = () => {
                 {/* Sections */}
                 {contentData.summary.sections && contentData.summary.sections.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
-                    {contentData.summary.sections.map((sec, idx) => (
-                      <div key={idx}>
-                        <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '6px' }}>
-                          {sec.title}
-                        </h4>
-                        <RichMarkdownRenderer content={sec.content} />
-                      </div>
-                    ))}
+                    {contentData.summary.sections.map((sec, idx) => {
+                      if (hiddenSummarySections.has(idx)) return null;
+
+                      return (
+                        <div key={idx}>
+                          <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '6px' }}>
+                            {sec.title}
+                          </h4>
+                          <RichMarkdownRenderer
+                            content={sec.content}
+                            onMermaidError={() => hideSummarySection(idx)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
