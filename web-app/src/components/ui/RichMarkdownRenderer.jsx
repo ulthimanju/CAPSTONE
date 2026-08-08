@@ -85,18 +85,58 @@ mermaid.initialize({
   },
 });
 
+// ── Mermaid Syntax Auto-Sanitizer & Pre-Processor ──────────────────────────
+const sanitizeMermaidCode = (code) => {
+  if (!code || typeof code !== 'string') return '';
+  let clean = code.trim();
+
+  // 1. Strip markdown fences if accidentally included inside code block
+  clean = clean.replace(/^```mermaid\s*/i, '').replace(/```$/i, '').trim();
+
+  // 2. Fix unquoted subgraph titles with spaces: `subgraph Single Inheritance` -> `subgraph "Single Inheritance"`
+  clean = clean.replace(/^(\s*subgraph\s+)(?!["'\n])([^\n]+)$/gim, (match, prefix, title) => {
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.includes(' ') && !trimmedTitle.startsWith('"') && !trimmedTitle.startsWith('[')) {
+      return `${prefix}"${trimmedTitle}"`;
+    }
+    return match;
+  });
+
+  // 3. Remove raw HTML tags like <code>, </code>, <span>, </span> while preserving text and <br/>
+  clean = clean.replace(/<\/?(code|span|div|p|strong|em)[^>]*>/gi, '');
+
+  // 4. Wrap unquoted node labels containing special chars (/ ( ) : , etc.) in quotes:
+  // e.g. P[Polymorphism] --> C[Compile-Time Polymorphism / Static Binding] -> C["Compile-Time Polymorphism / Static Binding"]
+  clean = clean.replace(/(\[[^\]\n]+\])/g, (match) => {
+    const inner = match.slice(1, -1).trim();
+    if ((inner.includes('/') || inner.includes(':') || inner.includes('(') || inner.includes(')')) && !inner.startsWith('"')) {
+      const safeInner = inner.replace(/"/g, "'");
+      return `["${safeInner}"]`;
+    }
+    return match;
+  });
+
+  // 5. Fix invalid classDiagram syntax like `+calculateSalary()* int` -> `+calculateSalary() int`
+  clean = clean.replace(/(\+\w+\([^)]*\))\*\s*(\w+)/g, '$1 $2');
+
+  return clean;
+};
+
 // ── Mermaid Render Engine ──────────────────────────────────────────────────
-const renderMermaidSafely = async (id, code) => {
-  const clean = code?.trim();
+const renderMermaidSafely = async (id, rawCode) => {
+  const clean = sanitizeMermaidCode(rawCode);
 
   if (!clean) {
     throw new Error('Empty Mermaid diagram');
   }
 
-  await mermaid.parse(clean);
+  try {
+    await mermaid.parse(clean);
+  } catch (parseErr) {
+    console.warn('Mermaid parse pre-check failed, attempting render anyway:', parseErr);
+  }
 
   const { svg } = await mermaid.render(id, clean);
-
   return svg;
 };
 
@@ -148,7 +188,17 @@ const MermaidDiagram = ({ code }) => {
   }, [code]);
 
   if (error) {
-    return null;
+    // If diagram rendering fails even after auto-sanitization, render as formatted code block
+    return (
+      <div className="rmc-code-block my-3 border border-[var(--border-subtle)] rounded-lg overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-2)] border-b border-[var(--border-subtle)] text-xs text-[var(--text-3)] font-mono">
+          <span>mermaid</span>
+        </div>
+        <pre className="p-3 text-xs font-mono overflow-x-auto text-[var(--text-2)] bg-[var(--bg-1)]">
+          <code>{code}</code>
+        </pre>
+      </div>
+    );
   }
 
   return (
