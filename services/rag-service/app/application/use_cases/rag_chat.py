@@ -79,15 +79,15 @@ class RAGChatOrchestrator:
 
         # Step 4: Construct Grounded RAG Prompt for ai-service
         rag_sys_instruction = system_instruction or (
-            "You are an intelligent educational RAG assistant. Answer the user's question accurately "
-            "using ONLY the provided context. If the context does not contain enough information, "
-            "state that clearly."
+            "You are an intelligent educational assistant. Primary guidance: use the provided context to ground your answer. "
+            "If the question relates to general programming, concepts, or standard code examples (such as writing a Hello World program), "
+            "provide a complete, accurate, and helpful educational response even if not explicitly detailed in the context."
         )
 
         prompt = (
             f"Context Information:\n{context_str}\n\n"
             f"User Question: {question}\n\n"
-            "Answer the question concisely and directly:"
+            "Answer the question clearly, concisely, and accurately:"
         )
 
         # Step 5: Generate RAG response via ai-service (LLM always runs)
