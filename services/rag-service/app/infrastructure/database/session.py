@@ -1,5 +1,6 @@
 import os
 from typing import AsyncGenerator
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.infrastructure.database.models import Base
 
@@ -35,6 +36,9 @@ AsyncSessionLocal = async_sessionmaker(
 
 async def init_db():
     async with engine.begin() as conn:
+        # Ensure the pgvector extension exists before creating tables.
+        # This is idempotent and safe to run on every startup.
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
 
 
