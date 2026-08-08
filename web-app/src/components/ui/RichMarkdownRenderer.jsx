@@ -5,13 +5,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import mermaid from 'mermaid';
-import prettier from 'prettier/standalone';
-import parserBabel from 'prettier/plugins/babel';
-import parserEstree from 'prettier/plugins/estree';
-import parserHtml from 'prettier/plugins/html';
-import parserPostcss from 'prettier/plugins/postcss';
-import parserMarkdown from 'prettier/plugins/markdown';
-import parserTypescript from 'prettier/plugins/typescript';
+import { formatCodeWithLanguageFormatter } from '../../utils/codeFormatters';
 import 'katex/dist/katex.min.css';
 import './RichMarkdown.css';
 
@@ -290,55 +284,6 @@ const CopyButton = ({ text }) => {
       {copied ? 'Copied' : 'Copy'}
     </button>
   );
-};
-
-// ── Prettier Code Formatting Helper ────────────────────────────────────────
-const formatCodeWithPrettier = async (code, lang) => {
-  if (!code || !code.trim()) return code;
-  const l = (lang || '').toLowerCase();
-
-  let parser = null;
-  let plugins = [];
-
-  if (['js', 'jsx', 'javascript', 'react', 'node', 'ecmascript'].includes(l)) {
-    parser = 'babel';
-    plugins = [parserBabel, parserEstree];
-  } else if (['ts', 'tsx', 'typescript'].includes(l)) {
-    parser = 'typescript';
-    plugins = [parserTypescript, parserEstree];
-  } else if (['json', 'jsonc', 'geojson'].includes(l)) {
-    parser = 'json';
-    plugins = [parserBabel, parserEstree];
-  } else if (['html', 'xhtml', 'xml', 'svg'].includes(l)) {
-    parser = 'html';
-    plugins = [parserHtml];
-  } else if (['css', 'scss', 'less'].includes(l)) {
-    parser = 'css';
-    plugins = [parserPostcss];
-  } else if (['markdown', 'md'].includes(l)) {
-    parser = 'markdown';
-    plugins = [parserMarkdown];
-  }
-
-  if (!parser) return code;
-
-  try {
-    const formatted = await prettier.format(code, {
-      parser,
-      plugins,
-      printWidth: 80,
-      tabWidth: 2,
-      semi: true,
-      singleQuote: true,
-      trailingComma: 'es5',
-    });
-    return formatted.replace(/\n$/, '');
-  } catch (err) {
-    // If syntax snippet or unparseable fragment, fall back to raw code gracefully
-    return code;
-  }
-};
-
 // ── Helper to extract plain text string recursively from React node trees ────
 const extractTextContent = (node) => {
   if (node === null || node === undefined) return '';
@@ -385,7 +330,7 @@ const CodeBlock = ({ className, children }) => {
 
   useEffect(() => {
     let active = true;
-    formatCodeWithPrettier(rawCodeString, lang).then((result) => {
+    formatCodeWithLanguageFormatter(rawCodeString, lang).then((result) => {
       if (active && result) {
         setFormattedCode(result);
       }
