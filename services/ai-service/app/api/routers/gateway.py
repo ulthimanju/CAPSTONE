@@ -140,6 +140,130 @@ async def _publish_summary_event(workspace_id: str, status: str, user_id: str | 
         logger.warning(f"Notice: Failed to publish SummaryGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
 
+def build_chunk_outline(chunk: dict) -> str:
+    title = (chunk.get("title") or chunk.get("document_filename") or "").strip()
+    content = (chunk.get("content") or "").strip()
+
+    if not content:
+        return ""
+
+    headings = re.findall(
+        r"^(#{1,6})\s+(.+?)\s*$",
+        content,
+        re.MULTILINE,
+    )
+
+    subheadings = [
+        heading.strip()
+        for _, heading in headings[:6]
+    ]
+
+    paragraphs = [
+        p.strip()
+        for p in re.split(r"\n\s*\n", content)
+        if p.strip()
+    ]
+
+    explanation = ""
+    for paragraph in paragraphs:
+        cleaned = re.sub(r"```[\s\S]*?```", "", paragraph).strip()
+        cleaned = re.sub(r"\|.*\|", "", cleaned).strip()
+
+        if len(cleaned) >= 40:
+            explanation = cleaned
+            break
+
+    parts = []
+
+    if title:
+        parts.append(f"Title: {title}")
+
+    if subheadings:
+        parts.append("Topics: " + "; ".join(subheadings[:5]))
+
+    if explanation:
+        explanation = re.sub(r"\s+", " ", explanation)
+        explanation = explanation[:300]
+        parts.append(f"Summary: {explanation}")
+
+    return "\n".join(parts)
+
+
+def calculate_chunk_importance(chunk: dict) -> float:
+    content = chunk.get("content", "") or ""
+    title = chunk.get("title", "") or chunk.get("document_filename", "") or ""
+
+    score = 0.0
+
+    if title:
+        score += 0.15
+
+    heading_count = len(re.findall(r"^#{1,6}\s+", content, re.MULTILINE))
+    score += min(heading_count * 0.03, 0.15)
+
+    if re.search(r"\b(definition|overview|concept|important|key|principle)\b", content, re.IGNORECASE):
+        score += 0.15
+
+    if re.search(r"\b(example|implementation|code example|use case)\b", content, re.IGNORECASE):
+        score += 0.15
+
+    if "```" in content:
+        score += 0.15
+
+    if "```mermaid" in content:
+        score += 0.10
+
+    if "|" in content:
+        score += 0.10
+
+    content_length_score = min(len(content) / 6000, 0.15)
+    score += content_length_score
+
+    return min(score, 1.0)
+
+
+def group_chunks_by_topic(chunks: list[dict]) -> dict[str, list[dict]]:
+    groups = defaultdict(list)
+
+    for chunk in chunks:
+        title = (
+            chunk.get("title")
+            or chunk.get("document_filename")
+            or "General"
+        ).strip()
+
+        groups[title.lower()].append(chunk)
+
+    return groups
+
+
+def select_representative_chunks(chunks: list[dict], budget_tokens: int) -> list[dict]:
+    groups = group_chunks_by_topic(chunks)
+
+    representatives = []
+
+    for _, group in groups.items():
+        best = max(group, key=calculate_chunk_importance)
+        representatives.append(best)
+
+    representatives.sort(key=calculate_chunk_importance, reverse=True)
+
+    selected = []
+    used_tokens = 0
+
+    for chunk in representatives:
+        content = chunk.get("content", "")
+        tokens = TokenCounter.estimate_tokens(content)
+
+        if used_tokens + tokens > budget_tokens:
+            continue
+
+        selected.append(chunk)
+        used_tokens += tokens
+
+    return selected
+
+
 @router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
 async def generate_workspace_summary_endpoint(
     workspace_id: str,
@@ -171,37 +295,53 @@ async def generate_workspace_summary_endpoint(
                 raise HTTPException(status_code=500, detail="Failed to retrieve workspace document chunks")
             chunks_data = chunks_res.json().get("chunks", [])
 
-        # 3. Assemble Workspace Context (Max ~13,000 tokens)
-        context_parts = [
-            f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
-            f"Description: {ws_meta.get('description', 'N/A')}\n",
-            "--- WORKSPACE DOCUMENT CHUNKS ---"
-        ]
+        # 3. Assemble Workspace Coverage Map & Representative Detailed Source Context
+        workspace_outline = []
+        for index, chunk in enumerate(chunks_data, start=1):
+            outline = build_chunk_outline(chunk)
+            if outline:
+                workspace_outline.append(f"Chunk {index}\n{outline}")
 
-        total_tokens = TokenCounter.estimate_tokens("\n".join(context_parts))
-        max_chunk_tokens = 13000
+        workspace_outline_text = "\n\n".join(workspace_outline)
 
-        for chunk in chunks_data:
-            chunk_str = f"\n[Document: {chunk.get('document_filename', 'Doc')} | Chunk {chunk.get('chunk_index', 0)}]\n{chunk.get('content', '')}"
-            c_tokens = TokenCounter.estimate_tokens(chunk_str)
-            if total_tokens + c_tokens > max_chunk_tokens:
-                break
-            context_parts.append(chunk_str)
-            total_tokens += c_tokens
+        # Select topic-diverse, high-importance representative full chunks
+        representative_chunks = select_representative_chunks(chunks_data, budget_tokens=9000)
 
-        assembled_prompt = "\n".join(context_parts)
+        detailed_context_parts = []
+        for index, chunk in enumerate(representative_chunks, start=1):
+            title = chunk.get("title") or chunk.get("document_filename", "Untitled")
+            detailed_context_parts.append(
+                f"--- Detailed Source {index} ---\nTitle: {title}\n\n{chunk.get('content', '').strip()}"
+            )
+
+        detailed_context = "\n\n".join(detailed_context_parts)
+
+        assembled_prompt = f"""Workspace Title: {ws_meta.get('name', 'Untitled')}
+Description: {ws_meta.get('description', 'N/A')}
+
+WORKSPACE COVERAGE MAP
+======================
+
+{workspace_outline_text}
+
+DETAILED REPRESENTATIVE SOURCE MATERIAL
+=======================================
+
+{detailed_context}
+
+Generate the comprehensive workspace summary using the entire workspace coverage map and the detailed source material."""
 
         # 4. Build System Instruction using WorkspaceSummaryPromptBuilder
         sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction()
 
-        # 5. Call Gemini with configured default model & strict JSON schema validation
+        # 5. Call Gemini with configured default model & strict JSON schema validation (32,768 output token budget)
         gemini_res = await gemini_client.generate_text(
             prompt=assembled_prompt,
             system_instruction=sys_instruction,
             model=settings.gemini_default_model,
             temperature=0.3,
             top_p=0.95,
-            max_output_tokens=8192,
+            max_output_tokens=32768,
             response_mime_type="application/json",
             response_schema=WorkspaceSummaryResponse,
         )
