@@ -72,23 +72,54 @@ mermaid.initialize({
 // ── Mermaid Diagram Component ──────────────────────────────────────────────
 const MermaidDiagram = ({ code }) => {
   const containerRef = useRef(null);
-  const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
+  const idRef = useRef(
+    `mermaid-${Math.random().toString(36).substring(2, 9)}`
+  );
+  const [renderFailed, setRenderFailed] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current || !code) return;
+    let cancelled = false;
+
+    if (!containerRef.current || !code?.trim()) {
+      setRenderFailed(true);
+      return;
+    }
+
+    setRenderFailed(false);
     containerRef.current.innerHTML = '';
+
     mermaid
-      .render(idRef.current, code)
+      .render(idRef.current, code.trim())
       .then(({ svg }) => {
-        if (containerRef.current) containerRef.current.innerHTML = svg;
+        if (cancelled) return;
+
+        if (containerRef.current) {
+          containerRef.current.innerHTML = svg;
+        }
       })
       .catch((err) => {
-        console.error('Mermaid render error:', err);
+        if (cancelled) return;
+
+        console.warn('Skipping invalid Mermaid diagram:', err);
+        setRenderFailed(true);
+
         if (containerRef.current) {
-          containerRef.current.innerHTML = `<pre style="color:#e5484d;font-size:12px;padding:8px;">${code}</pre>`;
+          containerRef.current.innerHTML = '';
         }
       });
+
+    return () => {
+      cancelled = true;
+
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+    };
   }, [code]);
+
+  if (renderFailed) {
+    return null;
+  }
 
   return (
     <div className="rmc-mermaid-wrap">
@@ -96,7 +127,12 @@ const MermaidDiagram = ({ code }) => {
         <i className="ti ti-chart-bubble" style={{ marginRight: 5 }} />
         Diagram
       </div>
-      <div className="rmc-mermaid-body" ref={containerRef} />
+
+      <div
+        className="rmc-mermaid-body"
+        ref={containerRef}
+        aria-label="Mermaid diagram"
+      />
     </div>
   );
 };
@@ -136,16 +172,19 @@ const CodeBlock = ({ className, children }) => {
 
   const trimmed = codeString.trim();
   const isMermaid =
-    lang === 'mermaid' ||
-    trimmed.startsWith('mermaid') ||
-    trimmed.startsWith('graph ') ||
-    trimmed.startsWith('graph TD') ||
-    trimmed.startsWith('graph LR') ||
-    trimmed.startsWith('flowchart ') ||
-    trimmed.startsWith('sequenceDiagram') ||
-    trimmed.startsWith('classDiagram') ||
-    trimmed.startsWith('erDiagram') ||
-    trimmed.startsWith('pie');
+    lang.toLowerCase() === 'mermaid' ||
+    (!lang &&
+      (
+        /^graph\s+(TD|TB|BT|RL|LR)\b/i.test(trimmed) ||
+        /^flowchart\s+(TD|TB|BT|RL|LR)\b/i.test(trimmed) ||
+        /^sequenceDiagram\b/i.test(trimmed) ||
+        /^classDiagram\b/i.test(trimmed) ||
+        /^erDiagram\b/i.test(trimmed) ||
+        /^stateDiagram(?:-v2)?\b/i.test(trimmed) ||
+        /^journey\b/i.test(trimmed) ||
+        /^gantt\b/i.test(trimmed) ||
+        /^pie\b/i.test(trimmed)
+      ));
 
   if (isMermaid) {
     const cleanCode = trimmed.replace(/^mermaid\s*/i, '');
