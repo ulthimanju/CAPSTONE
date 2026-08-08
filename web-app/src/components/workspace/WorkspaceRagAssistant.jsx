@@ -110,7 +110,7 @@ const EmptyState = ({ docState, adaptivePrompts, onPromptClick, workspaceName })
           flexShrink: 0,
         }}
       >
-        <i className={`ti ${cfg.icon}`} style={cfg.showProcessing ? { animation: 'spin 1.2s linear infinite' } : {}} />
+        <i className={`ti ${cfg.icon}`} style={cfg.showProcessing ? { animation: 'spin 1.2s linear infinite', display: 'inline-block' } : {}} />
       </div>
 
       {/* Heading */}
