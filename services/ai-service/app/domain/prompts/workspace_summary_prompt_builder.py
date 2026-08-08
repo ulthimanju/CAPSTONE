@@ -366,8 +366,8 @@ Avoid:
 - unnecessary restatement of the prompt
 
 ==================================================
-14. OUTPUT STRUCTURE
-====================
+14. OUTPUT STRUCTURE & PROVENANCE
+==================================================
 
 Return ONLY valid JSON conforming to the supplied response schema.
 
@@ -381,6 +381,10 @@ Each section must contain:
 
 - title
 - content
+- source_chunk_ids
+
+For each section in the response JSON, source_chunk_ids must contain the IDs/numbers of the workspace chunks from the workspace knowledge map that materially support that section.
+Do not invent IDs. Use only chunk IDs present in the workspace knowledge map.
 
 The content field may contain:
 

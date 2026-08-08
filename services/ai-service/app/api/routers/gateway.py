@@ -275,36 +275,46 @@ def calculate_block_importance(block: str, title: str = "") -> float:
 
     score = 0.0
 
-    # 1. Structural Headings
-    if re.search(r"^#{1,6}\s+", block, re.MULTILINE):
-        score += 0.10
-
-    # 2. Mermaid Diagrams (High Priority: +0.30)
-    if "```mermaid" in block.lower():
-        score += 0.30
-
-    # 3. Code Blocks (High Priority: +0.25)
-    if "```" in block:
+    # Conceptual importance (+0.25)
+    if re.search(
+        r"\b(definition|overview|concept|principle|what is)\b",
+        block,
+        re.IGNORECASE,
+    ):
         score += 0.25
 
-    # 4. Tables & Comparisons (High Priority: +0.20)
-    if re.search(r"^\s*\|.*\|", block, re.MULTILINE):
+    # Important rules / distinctions (+0.20)
+    if re.search(
+        r"\b(rule|important|warning|limitation|pitfall|difference|distinction)\b",
+        block,
+        re.IGNORECASE,
+    ):
         score += 0.20
 
-    # 5. Definitions, Core Concepts, Formulas (+0.15)
-    if re.search(r"\b(definition|overview|concept|principle|what is|formula|equation)\b", block, re.IGNORECASE):
-        score += 0.15
-
-    # 6. Examples, Warnings, Notes, Limitations, Pitfalls, Comparisons (+0.15)
+    # Examples / implementation (+0.15)
     if re.search(
-        r"\b(example|implementation|use case|syntax|warning|important|note|limitation|pitfall|comparison)\b",
+        r"\b(example|implementation|use case|syntax)\b",
         block,
         re.IGNORECASE,
     ):
         score += 0.15
 
-    # 7. Moderate Length Weight
-    score += min(len(block) / 3000, 0.15)
+    # Structured artifacts (+0.15 Mermaid, +0.10 Code, +0.10 Table)
+    if "```mermaid" in block.lower():
+        score += 0.15
+
+    if "```" in block:
+        score += 0.10
+
+    if re.search(
+        r"^\s*\|.*\|",
+        block,
+        re.MULTILINE,
+    ):
+        score += 0.10
+
+    # Substantive content (+0.10)
+    score += min(len(block) / 5000, 0.10)
 
     return min(score, 1.0)
 
@@ -322,45 +332,79 @@ def select_representative_passages(
     if not regions:
         return []
 
-    per_region_budget = max(400, detailed_token_budget // len(regions))
-    selected_passages = []
-    total_used_tokens = 0
+    all_blocks = []
 
-    for region in regions:
-        if not region:
-            continue
+    for region_index, region in enumerate(regions):
+        for chunk_index, chunk in enumerate(region):
+            chunk_id = str(chunk.get("chunk_index", chunk_index + 1))
+            title = (
+                chunk.get("title")
+                or chunk.get("document_filename")
+                or "Untitled"
+            ).strip()
 
-        region_blocks = []
-        for chunk in region:
-            doc_title = (chunk.get("title") or chunk.get("document_filename") or "Untitled").strip()
             content = chunk.get("content", "") or ""
-            blocks = split_content_blocks(content)
 
-            for block in blocks:
-                score = calculate_block_importance(block, doc_title)
-                region_blocks.append({
-                    "title": doc_title,
+            for block_index, block in enumerate(
+                split_content_blocks(content)
+            ):
+                if not block.strip():
+                    continue
+
+                all_blocks.append({
+                    "region_index": region_index,
+                    "chunk_index": chunk_index,
+                    "block_index": block_index,
+                    "chunk_id": chunk_id,
+                    "title": title,
                     "content": block,
-                    "score": score,
+                    "score": calculate_block_importance(
+                        block,
+                        title,
+                    ),
                 })
 
+    selected = []
+    selected_ids = set()
+    used_tokens = 0
+
+    # Phase 1: Guarantee minimum coverage across every workspace region (top 1 block per region)
+    for region_index in range(len(regions)):
+        region_blocks = [
+            b for b in all_blocks
+            if b["region_index"] == region_index
+        ]
+
+        if not region_blocks:
+            continue
+
         region_blocks.sort(key=lambda b: b["score"], reverse=True)
+        best = region_blocks[0]
+        tokens = TokenCounter.estimate_tokens(best["content"])
 
-        region_used_tokens = 0
-        for block_item in region_blocks:
-            tokens = TokenCounter.estimate_tokens(block_item["content"])
+        if used_tokens + tokens <= detailed_token_budget:
+            selected.append(best)
+            selected_ids.add(id(best))
+            used_tokens += tokens
 
-            if region_used_tokens + tokens > per_region_budget:
-                continue
+    # Phase 2: Use remaining budget globally for highest-value blocks
+    remaining_blocks = [
+        b for b in all_blocks
+        if id(b) not in selected_ids
+    ]
 
-            if total_used_tokens + tokens > detailed_token_budget:
-                break
+    remaining_blocks.sort(key=lambda b: b["score"], reverse=True)
 
-            selected_passages.append(block_item)
-            region_used_tokens += tokens
-            total_used_tokens += tokens
+    for block in remaining_blocks:
+        tokens = TokenCounter.estimate_tokens(block["content"])
 
-    return selected_passages
+        if used_tokens + tokens > detailed_token_budget:
+            continue
+
+        selected.append(block)
+        used_tokens += tokens
+
+    return selected
 
 
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
@@ -446,8 +490,23 @@ Generate the comprehensive workspace summary using the entire workspace knowledg
             response_schema=WorkspaceSummaryResponse,
         )
 
-        # 6. Validate Response Schema
+        # 6. Validate Response Schema & Calculate Provenance Coverage
         summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
+
+        summary_chunk_ids = set()
+        for sec in summary_validated.sections:
+            if sec.source_chunk_ids:
+                summary_chunk_ids.update(sec.source_chunk_ids)
+
+        total_chunks = len(chunks_data)
+        coverage_ratio = (len(summary_chunk_ids) / total_chunks) if total_chunks else 0.0
+        logger.info(
+            "Workspace summary coverage: %.1f%% (%d/%d chunks referenced in section provenance)",
+            coverage_ratio * 100,
+            len(summary_chunk_ids),
+            total_chunks,
+            extra={"workspace_id": ws_id, "coverage_ratio": coverage_ratio}
+        )
 
         # 7. Persist Summary via workspace-service
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
