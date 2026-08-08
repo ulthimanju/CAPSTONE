@@ -339,11 +339,22 @@ const formatCodeWithPrettier = async (code, lang) => {
   }
 };
 
+// ── Helper to extract plain text string recursively from React node trees ────
+const extractTextContent = (node) => {
+  if (node === null || node === undefined) return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractTextContent).join('');
+  if (typeof node === 'object' && node.props) {
+    return extractTextContent(node.props.children);
+  }
+  return '';
+};
+
 // ── Code Block Component ───────────────────────────────────────────────────
 const CodeBlock = ({ className, children }) => {
   const match = /language-(\w+)/.exec(className || '');
   let lang = match ? match[1] : '';
-  let rawCodeString = String(children).replace(/\n$/, '');
+  let rawCodeString = extractTextContent(children).replace(/\n$/, '');
 
   if (rawCodeString.includes('\\n')) {
     rawCodeString = rawCodeString.replace(/\\n/g, '\n');
