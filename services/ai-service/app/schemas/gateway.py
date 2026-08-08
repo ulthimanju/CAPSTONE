@@ -70,6 +70,7 @@ class SummaryResponse(BaseModel):
 class WorkspaceSummarySection(BaseModel):
     title: str
     content: str
+    source_chunk_ids: list[str] = Field(default_factory=list, description="Internal backend provenance tracking IDs")
 
 
 class WorkspaceSummaryResponse(BaseModel):
