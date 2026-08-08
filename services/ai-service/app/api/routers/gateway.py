@@ -417,6 +417,30 @@ def contains_mermaid(content: str) -> bool:
     )
 
 
+def sanitize_backend_mermaid(content: str) -> str:
+    if not content or "```mermaid" not in content.lower():
+        return content
+
+    def fix_block(match):
+        code = match.group(1).strip()
+        lines = code.split("\n")
+        fixed_lines = []
+
+        for line in lines:
+            line_fixed = re.sub(
+                r"([A-Za-z0-9_]+)\s*\[([^\"\]\n]+)\]",
+                lambda m: f'{m.group(1)}["{m.group(2).strip().replace(chr(34), chr(39))}"]'
+                if any(c in m.group(2) for c in ["(", ")", ":", ",", " "]) and not m.group(2).strip().startswith('"')
+                else m.group(0),
+                line,
+            )
+            fixed_lines.append(line_fixed)
+
+        return f"```mermaid\n" + "\n".join(fixed_lines) + "\n```"
+
+    return re.sub(r"```mermaid\s*([\s\S]*?)```", fix_block, content, flags=re.IGNORECASE)
+
+
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
 
 @router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
@@ -543,6 +567,10 @@ Do not remove existing explanations. Do not alter sections that already contain 
                     summary_validated = repaired_summary
             except Exception as repair_err:
                 logger.warning("Notice: Summary repair attempt encountered error, proceeding with original summary: %s", repair_err)
+
+        # 6. Apply backend Mermaid sanitizer pre-pass to all sections
+        for sec in summary_validated.sections:
+            sec.content = sanitize_backend_mermaid(sec.content)
 
         summary_chunk_ids = set()
         for sec in summary_validated.sections:
