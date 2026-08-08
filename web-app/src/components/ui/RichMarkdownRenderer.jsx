@@ -284,6 +284,8 @@ const CopyButton = ({ text }) => {
       {copied ? 'Copied' : 'Copy'}
     </button>
   );
+};
+
 // ── Helper to extract plain text string recursively from React node trees ────
 const extractTextContent = (node) => {
   if (node === null || node === undefined) return '';
