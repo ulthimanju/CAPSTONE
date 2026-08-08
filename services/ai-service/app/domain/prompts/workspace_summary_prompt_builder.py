@@ -101,6 +101,46 @@ Do not reduce several distinct concepts into one paragraph merely because they b
 If the source contains enough material to justify multiple subsections, use multiple subsections.
 
 ==================================================
+4A. DEPTH MUST FOLLOW SOURCE DENSITY
+==================================================
+
+Do not give every concept the same amount of explanation.
+
+The amount of detail given to a concept must reflect how much meaningful information the workspace provides about that concept.
+
+If the source provides only a definition, provide a concise explanation.
+
+If the source provides definitions, subtopics, examples, code, diagrams, comparisons, warnings, and implementation details, preserve those details.
+
+A concept with substantial source material should produce a substantially detailed section.
+
+Do not compress a content-rich source section into a short paragraph merely because the concept can be described briefly.
+
+Use the source's internal structure as a signal of the appropriate depth.
+
+For example, if a source section contains:
+
+- multiple subheadings
+- several examples
+- implementation code
+- diagrams
+- comparison tables
+- warnings
+- limitations
+
+then preserve those elements and organize them into corresponding subsections rather than summarizing them into one paragraph.
+
+==================================================
+4B. DO NOT TREAT COVERAGE AS ONE-SENTENCE MENTION
+==================================================
+
+Representing a concept does not mean merely mentioning its name or providing a one-sentence definition.
+
+When the workspace contains substantial information about a concept, the final summary must preserve that information.
+
+A concept is considered adequately covered only when its important source-backed subtopics and instructional details have been represented.
+
+==================================================
 5. PRESERVE INSTRUCTIONAL MATERIAL
 ==================================================
 
@@ -295,10 +335,16 @@ The following are examples of unacceptable compression:
 Compress only genuine repetition.
 
 ==================================================
-13. EDUCATIONAL STYLE
-=====================
+13. EDUCATIONAL STYLE & OVERVIEW NON-REDUNDANCY
+==================================================
 
 Write as comprehensive university-level study material.
+
+Do not create a generic overview section merely to list concepts that are already covered in subsequent sections.
+
+The overview field should provide a concise 1-2 paragraph conceptual synthesis.
+
+Do not spend a section repeating the workspace topic list.
 
 The result should be:
 
