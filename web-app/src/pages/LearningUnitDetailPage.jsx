@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/api/client';
+import { tokenStorage } from '../lib/tokenStorage';
 import { Spinner } from '../components/ui/Spinner';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
 import { useAuth } from '../hooks/useAuth';
@@ -39,13 +40,18 @@ export const LearningUnitDetailPage = () => {
   // Listen to SSE events for LearningUnitGeneration
   useEffect(() => {
     if (!workspaceId || !decodedTitle) return;
-    const eventSource = new EventSource('/api/v1/notifications/stream');
+    const token = tokenStorage.getAccessToken();
+    const sseUrl = token
+      ? `/api/v1/workspaces/${workspaceId}/events?token=${encodeURIComponent(token)}`
+      : `/api/v1/workspaces/${workspaceId}/events`;
+
+    const eventSource = new EventSource(sseUrl);
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (
-          data.event_name === 'LearningUnitGeneration' &&
+          (data.event_name === 'LearningUnitGeneration' || data.event === 'LearningUnitGeneration') &&
           data.workspace_id === workspaceId &&
           data.unit_title === decodedTitle
         ) {
@@ -62,7 +68,7 @@ export const LearningUnitDetailPage = () => {
           }
         }
       } catch (e) {
-        console.error('Error parsing SSE event in LearningUnitDetailPage:', e);
+        /* silent catch */
       }
     };
 
@@ -129,9 +135,9 @@ export const LearningUnitDetailPage = () => {
   const handleGenerateContent = async () => {
     try {
       setGenerating(true);
-      setGenerationProgressText('Starting generation pipeline...');
+      setGenerationProgressText('Generating Summary, Flashcards & Quiz with Gemini...');
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await apiClient.post(
+      const res = await apiClient.post(
         `/api/v1/ai/workspaces/${workspaceId}/units/generate`,
         {
           unit_title: decodedTitle,
@@ -141,9 +147,15 @@ export const LearningUnitDetailPage = () => {
         },
         { headers }
       );
+
+      if (res.data) {
+        setGenerationProgressText('Completed!');
+        await fetchUnitContent();
+      }
     } catch (err) {
       console.error('Failed to trigger unit content generation:', err);
       alert('Failed to generate unit study content.');
+    } finally {
       setGenerating(false);
     }
   };

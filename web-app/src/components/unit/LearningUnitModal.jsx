@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/api/client';
+import { tokenStorage } from '../../lib/tokenStorage';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { Spinner } from '../ui/Spinner';
 import { RichMarkdownRenderer } from '../ui/RichMarkdownRenderer';
@@ -30,19 +31,24 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
   // Listen to SSE events for LearningUnitGeneration
   useEffect(() => {
     if (!open || !workspaceId || !unit) return;
-    const eventSource = new EventSource('/api/v1/notifications/stream');
+    const token = tokenStorage.getAccessToken();
+    const sseUrl = token
+      ? `/api/v1/workspaces/${workspaceId}/events?token=${encodeURIComponent(token)}`
+      : `/api/v1/workspaces/${workspaceId}/events`;
+
+    const eventSource = new EventSource(sseUrl);
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (
-          data.event_name === 'LearningUnitGeneration' &&
+          (data.event_name === 'LearningUnitGeneration' || data.event === 'LearningUnitGeneration') &&
           data.workspace_id === workspaceId &&
           data.unit_title === unit.title
         ) {
           if (data.status === 'QUEUED') setGenerationProgressText('Queued...');
-          else if (data.status === 'STARTED') setGenerationProgressText('Retrieving RAG document context (~1K tokens)...');
-          else if (data.status === 'IN_PROGRESS') setGenerationProgressText('Generating Summary, Flashcards & Quiz in 1 pass with Gemini...');
+          else if (data.status === 'STARTED') setGenerationProgressText('Retrieving RAG document context...');
+          else if (data.status === 'IN_PROGRESS') setGenerationProgressText('Generating Summary, Flashcards & Quiz with Gemini...');
           else if (data.status === 'COMPLETED') {
             setGenerationProgressText('Completed!');
             fetchUnitContent();
@@ -53,7 +59,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
           }
         }
       } catch (e) {
-        console.error('Error parsing SSE event in LearningUnitModal:', e);
+        /* silent catch */
       }
     };
 
@@ -100,9 +106,9 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
   const handleGenerateContent = async () => {
     try {
       setGenerating(true);
-      setGenerationProgressText('Starting generation pipeline...');
+      setGenerationProgressText('Generating Summary, Flashcards & Quiz with Gemini...');
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
-      await apiClient.post(
+      const res = await apiClient.post(
         `/api/v1/ai/workspaces/${workspaceId}/units/generate`,
         {
           unit_title: unit.title,
@@ -112,9 +118,15 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
         },
         { headers }
       );
+
+      if (res.data) {
+        setGenerationProgressText('Completed!');
+        await fetchUnitContent();
+      }
     } catch (err) {
       console.error('Failed to trigger unit content generation:', err);
       alert('Failed to generate unit study content.');
+    } finally {
       setGenerating(false);
     }
   };
