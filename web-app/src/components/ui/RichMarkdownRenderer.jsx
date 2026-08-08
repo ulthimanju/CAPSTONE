@@ -237,13 +237,33 @@ const sanitizeMermaidCode = (code) => {
 };
 
 // ── Remove Stray Body-Level Mermaid DOM Nodes ────────────────────────────────
+// Mermaid's internal render() prefixes the wrapper it appends to <body> with
+// "d" + the id we passed in (e.g. id "rmc-mermaid-xyz" -> wrapper "drmc-mermaid-xyz"),
+// and on some error paths (renderer.draw throwing after Diagram.fromText("error"))
+// it does NOT clean that wrapper up even with suppressErrorRendering set.
+// This is a defense-in-depth backstop; the primary fix is rendering into our own
+// detached container (see renderMermaidSafely) so mermaid never touches body at all.
 const cleanupStrayMermaidNodes = () => {
   if (typeof document === 'undefined') return;
   document
     .querySelectorAll(
-      'body > svg[id^="mermaid-"], body > svg[aria-roledescription="error"], body > div[id^="dmermaid-"], body > svg[id^="dmermaid-"]'
+      [
+        'body > div[id^="d"]',
+        'body > svg[aria-roledescription="error"]',
+        'body > svg .error-icon',
+        'body > iframe[id^="i"]',
+      ].join(', ')
     )
-    .forEach((el) => el.remove());
+    .forEach((el) => {
+      // Only remove nodes that are actually ours / mermaid's, not unrelated app UI.
+      const isOurs =
+        el.id?.startsWith('drmc-mermaid-') ||
+        el.id?.startsWith('irmc-mermaid-') ||
+        el.querySelector?.('svg[id^="rmc-mermaid-"]') ||
+        el.getAttribute?.('aria-roledescription') === 'error' ||
+        el.querySelector?.('.error-icon');
+      if (isOurs) el.remove();
+    });
 };
 
 // ── Collision-Free Monotonic Mermaid ID Generator ───────────────────────────
@@ -267,12 +287,35 @@ const isMermaidErrorSvg = (svg) => {
 };
 
 // ── Mermaid Render Engine with Silent Syntax Validation & Cleanup ──────────
+//
+// IMPORTANT: mermaid.render(id, code) — called with only 2 args — makes mermaid
+// internally do `select("body").append("div#d" + id).append("svg#" + id)` before
+// it even attempts to parse/draw anything. On most parse failures this scratch
+// node is removed via suppressErrorRendering, but on renderer-level draw failures
+// (a second, separate try/catch inside mermaid's render()) mermaid calls its own
+// errorRenderer directly into that body-level node and does NOT remove it — that
+// stray "bomb" SVG is what was showing up at the bottom of the page.
+//
+// The fix: pass a THIRD argument — our own detached, off-DOM container element —
+// so mermaid renders (and on error, mis-renders) inside a node WE own and control,
+// and it never touches document.body at all. We create a fresh scratch element
+// per render call so concurrent/streaming renders can't collide.
 const renderMermaidSafely = async (id, rawCode) => {
   const clean = sanitizeMermaidCode(rawCode);
 
   if (!clean) {
     throw new Error('Empty Mermaid diagram');
   }
+
+  // Detached scratch container — never appended to the live document, so
+  // anything mermaid writes into it (including its own error SVG) is simply
+  // garbage-collected with it and can never leak into the visible page.
+  const scratch = document.createElement('div');
+  scratch.style.position = 'absolute';
+  scratch.style.visibility = 'hidden';
+  scratch.style.pointerEvents = 'none';
+  scratch.style.left = '-99999px';
+  scratch.style.top = '-99999px';
 
   try {
     mermaid.initialize(getMermaidTheme());
@@ -284,7 +327,7 @@ const renderMermaidSafely = async (id, rawCode) => {
       throw new Error('Invalid Mermaid syntax');
     }
 
-    const { svg } = await mermaid.render(id, clean);
+    const { svg } = await mermaid.render(id, clean, scratch);
 
     if (!svg || isMermaidErrorSvg(svg)) {
       throw new Error('Mermaid rendering failed');
@@ -292,6 +335,10 @@ const renderMermaidSafely = async (id, rawCode) => {
 
     return svg;
   } finally {
+    // scratch was never attached to the DOM, so there is nothing to detach.
+    // Kept as a belt-and-suspenders backstop in case a future mermaid version,
+    // a different code path (e.g. sandbox securityLevel), or a race condition
+    // still ends up writing to document.body.
     cleanupStrayMermaidNodes();
   }
 };
