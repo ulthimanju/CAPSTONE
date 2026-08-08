@@ -23,6 +23,7 @@ from app.application.use_cases.list_workspaces import ListWorkspacesUseCase
 from app.application.use_cases.update_workspace import UpdateWorkspaceUseCase
 from app.application.use_cases.archive_workspace import ArchiveWorkspaceUseCase
 from app.application.use_cases.restore_workspace import RestoreWorkspaceUseCase
+from app.application.use_cases.delete_workspace import DeleteWorkspaceUseCase
 from app.config.settings import settings
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
