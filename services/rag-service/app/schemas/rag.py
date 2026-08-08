@@ -45,14 +45,7 @@ class RAGChatRequest(BaseModel):
     system_instruction: str | None = None
 
 
-class CitationItem(BaseModel):
-    document_name: str | None
-    chunk_index: int
-    snippet: str
-    similarity_score: float
-
-
 class RAGChatResponse(BaseModel):
     question: str
     answer: str
-    citations: list[CitationItem]
+

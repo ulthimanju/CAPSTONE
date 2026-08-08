@@ -124,7 +124,7 @@ async def rag_chat(
     orchestrator = RAGChatOrchestrator(vector_repo=vector_repo, ai_client=ai_client)
 
     try:
-        answer, citations = await orchestrator.ask_question(
+        answer = await orchestrator.ask_question(
             workspace_id=req.workspace_id,
             question=req.question,
             top_k=req.top_k,
@@ -133,7 +133,6 @@ async def rag_chat(
         return RAGChatResponse(
             question=req.question,
             answer=answer,
-            citations=citations,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"RAG chat orchestration error: {e}")

@@ -72,7 +72,7 @@ const EmptyState = ({ docState, adaptivePrompts, onPromptClick, workspaceName })
     ready: {
       icon: 'ti-sparkles',
       heading: 'What can I help you find?',
-      description: `Ask anything about your ${workspaceName || 'workspace'} documents. Answers are grounded in your content with source citations.`,
+      description: `Ask anything about your ${workspaceName || 'workspace'} documents. Answers are grounded in your content.`,
       showPrompts: true,
       showProcessing: false,
     },
@@ -235,38 +235,6 @@ const MessageBubble = ({ msg }) => {
           <RichMarkdownRenderer content={msg.text} />
         )}
       </div>
-
-      {/* Citations */}
-      {!isUser && msg.citations && msg.citations.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '6px',
-            marginTop: '6px',
-          }}
-        >
-          {msg.citations.map((c, i) => (
-            <span
-              key={i}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '11px',
-                color: 'var(--accent)',
-                background: 'var(--accent-bg)',
-                border: '1px solid rgba(77,124,245,0.2)',
-                borderRadius: '6px',
-                padding: '2px 8px',
-              }}
-            >
-              <i className="ti ti-file-text" style={{ fontSize: '10px' }} />
-              {c.document_name || c.source || `Source ${i + 1}`}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
@@ -350,7 +318,6 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         id: `ast-${Date.now()}`,
         sender: 'assistant',
         text: res.data.answer || 'No answer generated.',
-        citations: res.data.citations || [],
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
@@ -362,7 +329,6 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         id: `err-${Date.now()}`,
         sender: 'assistant',
         text: 'Unable to retrieve an answer. Please try again or check that your documents have finished processing.',
-        citations: [],
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       const final = [...withUser, errorMsg];
