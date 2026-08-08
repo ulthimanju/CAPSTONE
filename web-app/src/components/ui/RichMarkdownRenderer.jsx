@@ -5,6 +5,13 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import mermaid from 'mermaid';
+import prettier from 'prettier/standalone';
+import parserBabel from 'prettier/plugins/babel';
+import parserEstree from 'prettier/plugins/estree';
+import parserHtml from 'prettier/plugins/html';
+import parserPostcss from 'prettier/plugins/postcss';
+import parserMarkdown from 'prettier/plugins/markdown';
+import parserTypescript from 'prettier/plugins/typescript';
 import 'katex/dist/katex.min.css';
 import './RichMarkdown.css';
 
@@ -285,17 +292,64 @@ const CopyButton = ({ text }) => {
   );
 };
 
+// ── Prettier Code Formatting Helper ────────────────────────────────────────
+const formatCodeWithPrettier = async (code, lang) => {
+  if (!code || !code.trim()) return code;
+  const l = (lang || '').toLowerCase();
+
+  let parser = null;
+  let plugins = [];
+
+  if (['js', 'jsx', 'javascript', 'react', 'node', 'ecmascript'].includes(l)) {
+    parser = 'babel';
+    plugins = [parserBabel, parserEstree];
+  } else if (['ts', 'tsx', 'typescript'].includes(l)) {
+    parser = 'typescript';
+    plugins = [parserTypescript, parserEstree];
+  } else if (['json', 'jsonc', 'geojson'].includes(l)) {
+    parser = 'json';
+    plugins = [parserBabel, parserEstree];
+  } else if (['html', 'xhtml', 'xml', 'svg'].includes(l)) {
+    parser = 'html';
+    plugins = [parserHtml];
+  } else if (['css', 'scss', 'less'].includes(l)) {
+    parser = 'css';
+    plugins = [parserPostcss];
+  } else if (['markdown', 'md'].includes(l)) {
+    parser = 'markdown';
+    plugins = [parserMarkdown];
+  }
+
+  if (!parser) return code;
+
+  try {
+    const formatted = await prettier.format(code, {
+      parser,
+      plugins,
+      printWidth: 80,
+      tabWidth: 2,
+      semi: true,
+      singleQuote: true,
+      trailingComma: 'es5',
+    });
+    return formatted.replace(/\n$/, '');
+  } catch (err) {
+    // If syntax snippet or unparseable fragment, fall back to raw code gracefully
+    return code;
+  }
+};
+
 // ── Code Block Component ───────────────────────────────────────────────────
 const CodeBlock = ({ className, children }) => {
   const match = /language-(\w+)/.exec(className || '');
   let lang = match ? match[1] : '';
-  let codeString = String(children).replace(/\n$/, '');
+  let rawCodeString = String(children).replace(/\n$/, '');
 
-  if (codeString.includes('\\n')) {
-    codeString = codeString.replace(/\\n/g, '\n');
+  if (rawCodeString.includes('\\n')) {
+    rawCodeString = rawCodeString.replace(/\\n/g, '\n');
   }
 
-  const trimmed = codeString.trim();
+  const trimmed = rawCodeString.trim();
   const isMermaid =
     lang.toLowerCase() === 'mermaid' ||
     (!lang &&
@@ -316,14 +370,28 @@ const CodeBlock = ({ className, children }) => {
     return <MermaidDiagram code={cleanCode} />;
   }
 
+  const [formattedCode, setFormattedCode] = useState(rawCodeString);
+
+  useEffect(() => {
+    let active = true;
+    formatCodeWithPrettier(rawCodeString, lang).then((result) => {
+      if (active && result) {
+        setFormattedCode(result);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [rawCodeString, lang]);
+
   return (
     <div className="rmc-code-block">
       <div className="rmc-code-header">
         <span className="rmc-code-lang">{lang || 'code'}</span>
-        <CopyButton text={codeString} />
+        <CopyButton text={formattedCode} />
       </div>
       <pre>
-        <code className={className}>{children}</code>
+        <code className={className}>{formattedCode}</code>
       </pre>
     </div>
   );
