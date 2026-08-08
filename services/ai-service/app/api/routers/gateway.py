@@ -303,31 +303,37 @@ def select_representative_chunks(
         region_count=10,
     )
 
-    candidates = []
+    if not regions:
+        return []
 
-    for region_index, region in enumerate(regions):
+    per_region_budget = max(400, detailed_token_budget // len(regions))
+    selected = []
+    total_used_tokens = 0
+
+    for region in regions:
         if not region:
             continue
 
-        best_chunk = max(
+        sorted_region_chunks = sorted(
             region,
             key=calculate_chunk_importance,
+            reverse=True,
         )
 
-        candidates.append((region_index, best_chunk))
+        region_used_tokens = 0
+        for chunk in sorted_region_chunks:
+            tokens = TokenCounter.estimate_tokens(chunk.get("content", ""))
 
-    selected = []
-    used_tokens = 0
+            if region_used_tokens + tokens > per_region_budget:
+                continue
 
-    for region_index, chunk in candidates:
-        tokens = TokenCounter.estimate_tokens(chunk.get("content", ""))
+            if total_used_tokens + tokens > detailed_token_budget:
+                break
 
-        if used_tokens + tokens > detailed_token_budget:
-            continue
+            selected.append(chunk)
+            region_used_tokens += tokens
+            total_used_tokens += tokens
 
-        selected.append(chunk)
-        used_tokens += tokens
-    
     return selected
 
 
