@@ -33,6 +33,7 @@ const getMermaidTheme = () => {
   if (isDark) {
     return {
       startOnLoad: false,
+      suppressErrorRendering: true,
       theme: 'base',
       securityLevel: 'loose',
       themeVariables: {
@@ -90,6 +91,7 @@ const getMermaidTheme = () => {
 
   return {
     startOnLoad: false,
+    suppressErrorRendering: true,
     theme: 'base',
     securityLevel: 'loose',
     themeVariables: {
