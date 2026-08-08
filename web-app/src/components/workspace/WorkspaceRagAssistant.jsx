@@ -325,13 +325,15 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
       setMessages(final);
       await saveChatHistory(final);
     } catch (error) {
+      const displayMsg =
+        error?.message && error.message !== 'An API error occurred'
+          ? error.message
+          : 'I can only answer questions related to the documents in this workspace. Please ask a question about the uploaded content.';
+
       const errorMsg = {
         id: `err-${Date.now()}`,
         sender: 'assistant',
-        text:
-          error?.status === 422
-            ? error.message
-            : 'Unable to retrieve an answer. Please try again or check that your documents have finished processing.',
+        text: displayMsg,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       const final = [...withUser, errorMsg];
