@@ -8,9 +8,11 @@ export default function App() {
   useEffect(() => {
     const cleanupMermaidErrors = () => {
       document
-        .querySelectorAll('body > div[id^="dmermaid-"]')
-        .forEach((div) => {
-          div.remove();
+        .querySelectorAll('body > div[id^="dmermaid-"], svg[aria-roledescription="error"], .error-icon, [id*="dmermaid"]')
+        .forEach((el) => {
+          if (!el.closest('.rmc-mermaid-body, .rmc-mermaid-column-item') || el.getAttribute('aria-roledescription') === 'error' || el.classList.contains('error-icon')) {
+            el.remove();
+          }
         });
     };
 

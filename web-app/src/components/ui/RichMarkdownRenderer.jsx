@@ -247,11 +247,20 @@ const cleanupMermaidArtifacts = (id) => {
     `svg#d${id}`,
     `svg[aria-roledescription="error"]`,
     `[id^="dmermaid-"]`,
+    `[id*="dmermaid"]`,
+    `.error-icon`,
   ];
 
   document.querySelectorAll(selectors.join(',')).forEach((element) => {
-    // Never remove an element that belongs to our actual React container.
     if (element.closest('.rmc-mermaid-body, .rmc-mermaid-column-item')) {
+      // If it's an error SVG inside our container, remove it!
+      if (
+        element.getAttribute('aria-roledescription') === 'error' ||
+        element.classList.contains('error-icon') ||
+        element.id?.includes('dmermaid')
+      ) {
+        element.remove();
+      }
       return;
     }
 
@@ -281,6 +290,21 @@ const renderMermaidSafely = async (id, rawCode) => {
 
   try {
     const { svg } = await mermaid.render(id, clean);
+
+    // Reject error SVGs returned by mermaid.render
+    if (
+      svg &&
+      (svg.includes('aria-roledescription="error"') ||
+       svg.includes('class="error-icon"') ||
+       svg.includes('Syntax error') ||
+       svg.includes('Parse error') ||
+       svg.includes('error-text') ||
+       svg.includes('id="dmermaid') ||
+       svg.includes('dmermaid-'))
+    ) {
+      throw new Error('Mermaid generated an error SVG');
+    }
+
     return svg;
   } catch (renderErr) {
     cleanupMermaidArtifacts(id);
