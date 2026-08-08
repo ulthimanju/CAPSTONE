@@ -189,18 +189,6 @@ Use code when it materially improves understanding.
 Do not generate unrelated code that is not supported by the workspace.
 
 ==================================================
-7. MERMAID & MANDATORY DIAGRAM REQUIREMENT
-==================================================
-
-EVERY SUMMARY SECTION MUST CONTAIN AT LEAST ONE MEANINGFUL MERMAID DIAGRAM.
-
-This is a strict requirement.
-
-For every item in `sections`, the `content` field MUST contain at least one valid fenced Mermaid block:
-
-```mermaid
-...
-```
 7. VISUAL CONCEPT FLOW CARDS & STRUCTURED STEPS
 ==================================================
 
@@ -428,14 +416,9 @@ Before producing the final JSON, verify internally that:
 6. Important warnings and limitations were preserved.
 7. Distinct concepts were not unnecessarily merged.
 8. Every summary section contains a meaningful textual explanation.
-9. EVERY summary section contains at least one valid Mermaid diagram.
-10. Every Mermaid diagram is directly relevant to its section.
-11. Mermaid diagrams do not contain unsupported information.
-12. Mermaid syntax is valid.
-13. Mermaid diagrams are not duplicated mechanically across sections.
-14. The output is a comprehensive educational resource rather than an executive summary.
-
-If a section does not contain a meaningful Mermaid diagram, revise that section before returning the final JSON."""
+9. EVERY summary section contains at least one visual concept flow representation.
+10. Do NOT output ```mermaid code blocks. Use visual flow cards (<div className="flow-card-container">) or step callouts.
+11. The output is a comprehensive educational resource rather than an executive summary."""
 
     @classmethod
     def build_system_instruction(cls) -> str:
