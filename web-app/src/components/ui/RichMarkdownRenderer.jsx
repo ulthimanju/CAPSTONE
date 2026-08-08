@@ -749,6 +749,23 @@ export const RichMarkdownRenderer = ({ content, compact = false, onMermaidError 
       .replace(/&quot;/g, '"');
   }
 
+  // Pre-process ```diagram and ```html flow card blocks into raw HTML before markdown parsing
+  normalizedContent = normalizedContent.replace(
+    /```(?:diagram|html)?\s*\n?([\s\S]*?<div[^>]*class(?:Name)?=["']flow-card-container[\s\S]*?<\/div>[\s\S]*?)\n?```/gi,
+    (_, innerHtml) => {
+      const cleanHtml = innerHtml.replace(/className=/gi, 'class=').trim();
+      return `\n\n<div class="rmc-flow-card-embed">\n${cleanHtml}\n</div>\n\n`;
+    }
+  );
+
+  normalizedContent = normalizedContent.replace(
+    /```diagram\s*\n?([\s\S]*?)\n?```/gi,
+    (_, innerHtml) => {
+      const cleanHtml = innerHtml.replace(/className=/gi, 'class=').trim();
+      return `\n\n<div class="rmc-flow-card-embed">\n${cleanHtml}\n</div>\n\n`;
+    }
+  );
+
   // Transform LaTeX inline \(...\) and display \[...\] delimiters into $...$ and $$...$$
   normalizedContent = normalizedContent
     .replace(/\\\((\s*[\s\S]*?\s*)\\\)/g, (_, match) => `$${match}$`)
