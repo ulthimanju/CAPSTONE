@@ -268,27 +268,35 @@ def calculate_block_importance(block: str, title: str = "") -> float:
 
     score = 0.0
 
-    headings = re.findall(r"^#{1,6}\s+", block, re.MULTILINE)
-    score += min(len(headings) * 0.05, 0.20)
+    # 1. Structural Headings
+    if re.search(r"^#{1,6}\s+", block, re.MULTILINE):
+        score += 0.10
 
-    if re.search(r"\b(definition|overview|concept|principle|what is)\b", block, re.IGNORECASE):
-        score += 0.15
-
-    if re.search(r"\b(example|implementation|use case|syntax)\b", block, re.IGNORECASE):
-        score += 0.15
-
-    if "```" in block:
-        score += 0.15
-
+    # 2. Mermaid Diagrams (High Priority: +0.30)
     if "```mermaid" in block.lower():
-        score += 0.10
+        score += 0.30
 
+    # 3. Code Blocks (High Priority: +0.25)
+    if "```" in block:
+        score += 0.25
+
+    # 4. Tables & Comparisons (High Priority: +0.20)
     if re.search(r"^\s*\|.*\|", block, re.MULTILINE):
-        score += 0.10
+        score += 0.20
 
-    if re.search(r"\b(warning|important|note|limitation|pitfall)\b", block, re.IGNORECASE):
-        score += 0.10
+    # 5. Definitions, Core Concepts, Formulas (+0.15)
+    if re.search(r"\b(definition|overview|concept|principle|what is|formula|equation)\b", block, re.IGNORECASE):
+        score += 0.15
 
+    # 6. Examples, Warnings, Notes, Limitations, Pitfalls, Comparisons (+0.15)
+    if re.search(
+        r"\b(example|implementation|use case|syntax|warning|important|note|limitation|pitfall|comparison)\b",
+        block,
+        re.IGNORECASE,
+    ):
+        score += 0.15
+
+    # 7. Moderate Length Weight
     score += min(len(block) / 3000, 0.15)
 
     return min(score, 1.0)
