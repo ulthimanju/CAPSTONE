@@ -614,7 +614,7 @@ const WorkspaceDetailPageContent = () => {
 
   if (loading) {
     return (
-      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={documents.length}>
+      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} workspaceId={workspaceId} workspaceName={workspace?.name || null} docCount={documents.length}>
         <WorkspaceDashboardSkeleton />
       </AppLayout>
     );
@@ -622,7 +622,7 @@ const WorkspaceDetailPageContent = () => {
 
   if (!loading && allWorkspaces.length === 0) {
     return (
-      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={0}>
+      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} workspaceId={null} workspaceName={null} docCount={0}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', padding: '2rem' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
             <i className="ti ti-folder-plus"></i>
@@ -694,7 +694,7 @@ const WorkspaceDetailPageContent = () => {
 
   if (error || !workspace) {
     return (
-      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} docCount={documents.length}>
+      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} workspaceId={workspaceId} workspaceName={null} docCount={documents.length}>
         <div style={{ padding: '2rem' }}>
           <div style={{ padding: '1rem', background: 'var(--bg-1)', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px' }}>
             {error || 'Workspace not found.'}
@@ -709,7 +709,8 @@ const WorkspaceDetailPageContent = () => {
     <AppLayout
       activeTab={activeTab}
       setActiveTab={handleTabChange}
-      workspaceName={workspace?.name}
+      workspaceId={workspaceId}
+      workspaceName={workspace?.name || null}
       docCount={documents.length}
       readyCount={readyCount}
       processingCount={processingCount}

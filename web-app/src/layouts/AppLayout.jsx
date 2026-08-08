@@ -7,7 +7,8 @@ export const AppLayout = ({
   children,
   activeTab = 'documents',
   setActiveTab,
-  workspaceName = 'Software Engineering',
+  workspaceId = null,
+  workspaceName = null,
   docCount = 0,
   readyCount = 0,
   processingCount = 0,
@@ -105,7 +106,7 @@ export const AppLayout = ({
       return;
     }
 
-    const currentWsId = workspacesList.length > 0 ? workspacesList[0].id : null;
+    const currentWsId = workspaceId || (workspacesList.length > 0 ? workspacesList[0].id : null);
     const path = currentWsId ? `/workspaces/${currentWsId}` : '/workspaces';
     const query = tabKey === 'documents' ? '' : `?tab=${tabKey}`;
 
@@ -133,7 +134,7 @@ export const AppLayout = ({
               <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
             </svg>
           </span>
-          <span>{workspaceName}</span>
+          <span>{workspaceName || 'No workspace selected'}</span>
           <span className="chev">
             <svg
               width="13"
@@ -173,7 +174,7 @@ export const AppLayout = ({
               </div>
             ) : (
               workspacesList.map((ws) => {
-                const isSelected = ws.name === workspaceName;
+                const isSelected = (ws.id && workspaceId) ? ws.id === workspaceId : ws.name === workspaceName;
                 return (
                   <div
                     key={ws.id}

@@ -221,7 +221,8 @@ export const LearningUnitDetailPage = () => {
   return (
     <AppLayout
       activeTab="learning"
-      workspaceName={workspace?.name || 'Workspace'}
+      workspaceId={workspaceId}
+      workspaceName={workspace?.name || null}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* 1. Header Island Banner */}
