@@ -131,7 +131,6 @@ async def rag_chat(
             workspace_id=req.workspace_id,
             question=req.question,
             top_k=req.top_k,
-            system_instruction=req.system_instruction,
         )
         return RAGChatResponse(
             question=req.question,
