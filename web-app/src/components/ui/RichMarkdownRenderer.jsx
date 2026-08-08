@@ -5,9 +5,24 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import mermaid from 'mermaid';
+import hljs from 'highlight.js';
 import { formatCodeWithLanguageFormatter } from '../../utils/codeFormatters';
 import 'katex/dist/katex.min.css';
 import './RichMarkdown.css';
+
+// ── Highlight.js Code Highlighter Helper ──────────────────────────────────
+const getHighlightedCode = (code, language) => {
+  if (!code) return '';
+  const validLang = language && hljs.getLanguage(language) ? language : null;
+  try {
+    if (validLang) {
+      return hljs.highlight(code, { language: validLang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  } catch {
+    return null;
+  }
+};
 
 // Initialize mermaid with custom theme matching app design tokens
 mermaid.initialize({
@@ -342,6 +357,10 @@ const CodeBlock = ({ className, children }) => {
     };
   }, [rawCodeString, lang]);
 
+  const highlightedHtml = useMemo(() => {
+    return getHighlightedCode(formattedCode, lang);
+  }, [formattedCode, lang]);
+
   return (
     <div className="rmc-code-block">
       <div className="rmc-code-header">
@@ -349,7 +368,14 @@ const CodeBlock = ({ className, children }) => {
         <CopyButton text={formattedCode} />
       </div>
       <pre>
-        <code className={className}>{formattedCode}</code>
+        {highlightedHtml ? (
+          <code
+            className={`hljs ${className || ''}`}
+            dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          />
+        ) : (
+          <code className={className}>{formattedCode}</code>
+        )}
       </pre>
     </div>
   );
