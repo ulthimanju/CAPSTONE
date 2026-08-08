@@ -324,11 +324,14 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
       const final = [...withUser, assistantMsg];
       setMessages(final);
       await saveChatHistory(final);
-    } catch {
+    } catch (error) {
       const errorMsg = {
         id: `err-${Date.now()}`,
         sender: 'assistant',
-        text: 'Unable to retrieve an answer. Please try again or check that your documents have finished processing.',
+        text:
+          error?.status === 422
+            ? error.message
+            : 'Unable to retrieve an answer. Please try again or check that your documents have finished processing.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       const final = [...withUser, errorMsg];

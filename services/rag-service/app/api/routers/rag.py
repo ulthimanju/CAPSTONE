@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.session import get_db_session
 from app.infrastructure.repositories.vector_repository import VectorRepository
 from app.infrastructure.clients.embedding.ai_service_client import AIServiceClient
-from app.application.use_cases.rag_chat import RAGChatOrchestrator
+from app.application.use_cases.rag_chat import (
+    RAGChatOrchestrator,
+    WorkspaceContextGuardrailError,
+)
 from app.infrastructure.cache.rag_cache import RAGCacheManager
 from app.schemas.rag import (
     GenerateChunkEmbeddingsRequest,
@@ -134,8 +137,17 @@ async def rag_chat(
             question=req.question,
             answer=answer,
         )
+    except WorkspaceContextGuardrailError as e:
+        raise HTTPException(
+            status_code=422,
+            detail=str(e),
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"RAG chat orchestration error: {e}")
+        logger.exception("RAG chat orchestration error")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to process the RAG request.",
+        )
 
 
 @router.delete("/documents/{document_id}")

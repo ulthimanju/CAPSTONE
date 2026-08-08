@@ -40,9 +40,9 @@ class SemanticSearchResponse(BaseModel):
 
 class RAGChatRequest(BaseModel):
     workspace_id: uuid.UUID
-    question: str
+    question: str = Field(..., min_length=1)
     top_k: int = Field(default=10, ge=1, le=20)
-    system_instruction: str | None = None
+
 
 
 class RAGChatResponse(BaseModel):
