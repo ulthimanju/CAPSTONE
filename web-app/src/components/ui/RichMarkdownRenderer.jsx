@@ -342,12 +342,23 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
   if (normalizedContent.includes('\\t')) {
     normalizedContent = normalizedContent.replace(/\\t/g, '\t');
   }
+  if (normalizedContent.includes('\\"')) {
+    normalizedContent = normalizedContent.replace(/\\"/g, '"');
+  }
+
+  // Transform LaTeX inline \(...\) and display \[...\] delimiters into $...$ and $$...$$
+  normalizedContent = normalizedContent
+    .replace(/\\\((\s*[\s\S]*?\s*)\\\)/g, (_, match) => `$${match}$`)
+    .replace(/\\\[(\s*[\s\S]*?\s*)\\\]/g, (_, match) => `$$\n${match}\n$$`);
 
   return (
     <div className={`rich-markdown-content${compact ? ' rich-markdown-compact' : ''}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex, rehypeHighlight]}
+        rehypePlugins={[
+          [rehypeKatex, { throwOnError: false, errorColor: 'inherit', strict: false }],
+          rehypeHighlight,
+        ]}
         components={{
           // Pre element intercepts fenced code blocks and routes them to CodeBlock
           pre({ children }) {
