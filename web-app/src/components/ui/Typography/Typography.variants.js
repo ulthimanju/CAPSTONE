@@ -7,10 +7,12 @@ export const typographyVariants = cva("", {
       h1: "text-4xl leading-tight tracking-tight",
       h2: "text-3xl leading-snug",
       h3: "text-2xl leading-snug",
+      h4: "text-lg leading-snug font-semibold",
 
       title: "text-xl leading-normal",
 
       body: "text-base leading-7",
+      body1: "text-base leading-7",
 
       "body-small": "text-sm leading-6",
 
@@ -35,6 +37,8 @@ export const typographyVariants = cva("", {
 
       muted: "text-[var(--color-text-secondary)]",
 
+      secondary: "text-[var(--color-text-secondary)]",
+
       disabled: "text-[var(--color-text-disabled)]",
 
       primary: "text-[var(--color-primary)]",
@@ -57,7 +61,7 @@ export const typographyVariants = cva("", {
       false: "",
     },
   },
-  
+
   defaultVariants: {
     variant: "body",
     weight: "regular",

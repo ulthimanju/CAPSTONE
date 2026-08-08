@@ -31,7 +31,6 @@ export const OAuthCallbackPage = () => {
       }
     };
 
-
     handleOAuthCallback();
 
     return () => {
@@ -40,9 +39,20 @@ export const OAuthCallbackPage = () => {
   }, [navigate]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fafafa' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-bg, var(--bg))',
+        color: 'var(--color-text-primary, var(--text))',
+        transition: 'background-color var(--transition-normal) ease',
+      }}
+    >
       <Spinner size="lg" />
-      <Typography variant="body1" style={{ marginTop: '1rem' }}>
+      <Typography variant="body" color="muted" style={{ marginTop: '1rem' }}>
         Completing OAuth login, please wait...
       </Typography>
     </div>

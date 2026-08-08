@@ -90,6 +90,7 @@ export function Button({
         as="span"
         variant="button"
         weight="medium"
+        color="inherit"
       >
         {children}
       </Typography>
