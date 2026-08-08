@@ -629,9 +629,11 @@ const CodeBlock = ({ className, children, onMermaidError }) => {
 
   const trimmed = rawCodeString.trim();
 
-  // If code block contains visual flow cards, render as live visual elements
-  if (trimmed.includes('flow-card')) {
-    const cleanHtml = trimmed.replace(/className=/gi, 'class=');
+  // If code block is a ```diagram block or contains visual flow cards, render as live visual elements
+  if (lang.toLowerCase() === 'diagram' || trimmed.includes('flow-card')) {
+    const cleanHtml = trimmed
+      .replace(/^diagram\s*/i, '')
+      .replace(/className=/gi, 'class=');
     return (
       <div
         className="rmc-flow-card-embed my-4"

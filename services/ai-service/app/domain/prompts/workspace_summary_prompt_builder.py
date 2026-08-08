@@ -192,13 +192,11 @@ Do not generate unrelated code that is not supported by the workspace.
 7. VISUAL CONCEPT FLOW CARDS & STRUCTURED STEPS
 ==================================================
 
-Every generated summary section in `sections[]` MUST contain at least one visual concept flow representation (process flow, lifecycle, object hierarchy, or architecture sequence).
-
-Format visual concepts as clean HTML flow containers or structured Markdown callout steps.
+Every generated summary section in `sections[]` MUST contain at least one visual concept flow representation wrapped in a fenced ```diagram code block.
 
 Preferred Format:
 
-```html
+```diagram
 <div className="flow-card-container">
   <div className="flow-card">
     <div className="flow-card-badge">Step 1</div>
@@ -220,13 +218,7 @@ Preferred Format:
 </div>
 ```
 
-Or as structured visual step callouts:
-
-> **Step 1: Declaration** — Reference variable created on stack frame.  
-> **Step 2: Instantiation** — Object memory allocated in Heap space.  
-> **Step 3: Initialization** — Class constructor executes to initialize instance fields.
-
-Do NOT use Mermaid code blocks. Use Visual Flow Cards and structured step containers for all process flows.
+ALWAYS wrap Visual Flow Cards in a ```diagram ... ``` fenced block. Do NOT use Mermaid code blocks.
 
 ==================================================
 8. TABLES AND COMPARISONS
