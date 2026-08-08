@@ -1078,7 +1078,7 @@ const WorkspaceDetailPageContent = () => {
         {/* ============ TAB 4: RAG ASSISTANT ============ */}
         {activeTab === 'rag' && (
           <section className="tab-panel active" id="panel-rag">
-            <WorkspaceRagAssistant workspaceId={workspaceId} documents={documents} />
+            <WorkspaceRagAssistant workspaceId={workspaceId} documents={documents} workspaceName={workspace?.name} />
           </section>
         )}
 
