@@ -93,7 +93,11 @@ Suitable diagram types include:
 - mindmap
 - timeline
 
-Generate only valid Mermaid syntax.
+Generate only valid Mermaid v11 syntax.
+Place each node declaration and edge on its own line.
+Every relationship must contain an explicit edge operator (e.g. -->).
+Never concatenate node declarations without an edge operator.
+Do not use Markdown syntax inside Mermaid labels.
 
 Do not generate diagrams that cannot be represented correctly.
 

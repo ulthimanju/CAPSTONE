@@ -24,11 +24,9 @@ const getHighlightedCode = (code, language) => {
   }
 };
 
-// Initialize mermaid with custom theme matching app design tokens and silent error suppression
+// Initialize mermaid with custom theme matching app design tokens
 mermaid.initialize({
   startOnLoad: false,
-  suppressErrorRendering: true,
-  parseError: () => {},
   theme: 'base',
   securityLevel: 'loose',
   themeVariables: {
@@ -87,212 +85,77 @@ mermaid.initialize({
   },
 });
 
-// ── Purge any stray Mermaid error DOM elements injected by third-party scripts 
-const purgeMermaidErrorElements = () => {
-  try {
-    document.querySelectorAll('[id^="dmermaid"], [id^="mermaid-"]').forEach((el) => {
-      if (el.textContent && (el.textContent.includes('Syntax error in text') || el.textContent.includes('mermaid version'))) {
-        el.remove();
-      }
-    });
-  } catch {
-    /* silent */
-  }
-};
-
-// ── Safe Mermaid Render Engine ─────────────────────────────────────────────
+// ── Mermaid Render Engine ──────────────────────────────────────────────────
 const renderMermaidSafely = async (id, code) => {
   const clean = code?.trim();
-  if (!clean) return null;
 
-  try {
-    // Pre-validate syntax silently without calling render
-    const valid = await mermaid.parse(clean).catch(() => false);
-    if (!valid) {
-      purgeMermaidErrorElements();
-      return null;
-    }
-
-    const { svg } = await mermaid.render(id, clean);
-    purgeMermaidErrorElements();
-    return svg;
-  } catch {
-    purgeMermaidErrorElements();
-    return null;
-  }
-};
-
-// ── Helper to split multi-subgraph / multi-diagram Mermaid blocks into N x 2 grid items ──
-const splitMermaidCode = (code) => {
-  if (!code || typeof code !== 'string') return [];
-  const trimmed = code.trim();
-  const lines = trimmed.split('\n');
-  let header = lines[0].trim();
-
-  if (!/^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram|journey|gantt|pie)\b/i.test(header)) {
-    header = 'graph TD';
+  if (!clean) {
+    throw new Error('Empty Mermaid diagram');
   }
 
-  // 1. Extract top-level subgraph blocks
-  const subgraphs = [];
-  let currentSubgraph = [];
-  let depth = 0;
-  let inSubgraph = false;
+  await mermaid.parse(clean);
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const lineTrim = line.trim();
+  const { svg } = await mermaid.render(id, clean);
 
-    if (/^subgraph\b/i.test(lineTrim)) {
-      if (depth === 0) {
-        inSubgraph = true;
-        currentSubgraph = [line];
-      } else {
-        currentSubgraph.push(line);
-      }
-      depth++;
-    } else if (lineTrim === 'end' && inSubgraph) {
-      depth--;
-      currentSubgraph.push(line);
-      if (depth === 0) {
-        subgraphs.push(currentSubgraph.join('\n'));
-        currentSubgraph = [];
-        inSubgraph = false;
-      }
-    } else if (inSubgraph) {
-      currentSubgraph.push(line);
-    }
-  }
-
-  if (subgraphs.length >= 2) {
-    return subgraphs.map((sg) => {
-      const sgTrim = sg.trim();
-      if (/^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram)\b/i.test(sgTrim)) {
-        return sgTrim;
-      }
-      return `${header}\n${sgTrim}`;
-    });
-  }
-
-  // 2. Check for multiple diagram headers in single code block
-  const blocks = trimmed
-    .split(/(?=^(?:graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram|journey|gantt|pie)\b)/im)
-    .map((b) => b.trim())
-    .filter(Boolean);
-
-  if (blocks.length >= 2) {
-    return blocks;
-  }
-
-  return [];
-};
-
-// ── Single Sub-diagram Item Component (Grid Cell) ─────────────────────────
-const MermaidSubItem = ({ code }) => {
-  const containerRef = useRef(null);
-  const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
-  const [renderFailed, setRenderFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!containerRef.current || !code?.trim()) {
-      setRenderFailed(true);
-      return;
-    }
-
-    setRenderFailed(false);
-    containerRef.current.innerHTML = '';
-
-    renderMermaidSafely(idRef.current, code).then((svg) => {
-      if (cancelled) return;
-      if (svg && containerRef.current) {
-        containerRef.current.innerHTML = svg;
-      } else {
-        setRenderFailed(true);
-        if (containerRef.current) containerRef.current.innerHTML = '';
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
-      purgeMermaidErrorElements();
-    };
-  }, [code]);
-
-  if (renderFailed) return null;
-
-  return (
-    <div className="rmc-mermaid-grid-item">
-      <div ref={containerRef} aria-label="Mermaid diagram" style={{ width: '100%', display: 'flex', justifyContent: 'center' }} />
-    </div>
-  );
+  return svg;
 };
 
 // ── Mermaid Diagram Component ──────────────────────────────────────────────
 const MermaidDiagram = ({ code }) => {
   const containerRef = useRef(null);
   const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
-  const [renderFailed, setRenderFailed] = useState(false);
-
-  const subDiagrams = useMemo(() => splitMermaidCode(code), [code]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    if (subDiagrams.length >= 2) return;
-
-    if (!containerRef.current || !code?.trim()) {
-      setRenderFailed(true);
-      return;
-    }
-
-    setRenderFailed(false);
-    containerRef.current.innerHTML = '';
-
-    renderMermaidSafely(idRef.current, code).then((svg) => {
-      if (cancelled) return;
-      if (svg && containerRef.current) {
-        containerRef.current.innerHTML = svg;
-      } else {
-        setRenderFailed(true);
-        if (containerRef.current) containerRef.current.innerHTML = '';
+    const render = async () => {
+      if (!containerRef.current || !code?.trim()) {
+        return;
       }
-    });
+
+      setError(null);
+      containerRef.current.innerHTML = '';
+
+      try {
+        const svg = await renderMermaidSafely(idRef.current, code);
+
+        if (cancelled) return;
+
+        containerRef.current.innerHTML = svg;
+      } catch (err) {
+        if (cancelled) return;
+
+        console.error('Mermaid rendering failed:', {
+          code,
+          error: err,
+        });
+
+        setError(err);
+        containerRef.current.innerHTML = '';
+      }
+    };
+
+    render();
 
     return () => {
       cancelled = true;
+
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
       }
-      purgeMermaidErrorElements();
     };
-  }, [code, subDiagrams]);
+  }, [code]);
 
-  if (subDiagrams.length >= 2) {
-    return (
-      <div className="rmc-mermaid-wrap">
-        <div className="rmc-mermaid-grid">
-          {subDiagrams.map((subCode, index) => (
-            <MermaidSubItem key={index} code={subCode} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (renderFailed) {
+  if (error) {
     return null;
   }
 
   return (
     <div className="rmc-mermaid-wrap">
       <div
-        className="rmc-mermaid-body"
         ref={containerRef}
+        className="rmc-mermaid-body"
         aria-label="Mermaid diagram"
       />
     </div>
