@@ -407,6 +407,16 @@ def select_representative_passages(
     return selected
 
 
+def contains_mermaid(content: str) -> bool:
+    return bool(
+        re.search(
+            r"```mermaid\s+[\s\S]*?```",
+            content or "",
+            re.IGNORECASE,
+        )
+    )
+
+
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
 
 @router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
@@ -490,8 +500,49 @@ Generate the comprehensive workspace summary using the entire workspace knowledg
             response_schema=WorkspaceSummaryResponse,
         )
 
-        # 6. Validate Response Schema & Calculate Provenance Coverage
+        # 6. Validate Response Schema & Check Mandatory Section Mermaid Requirement
         summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
+
+        missing_mermaid_sections = [
+            sec.title or f"Section {idx + 1}"
+            for idx, sec in enumerate(summary_validated.sections)
+            if not contains_mermaid(sec.content)
+        ]
+
+        if missing_mermaid_sections:
+            logger.warning(
+                "Notice: Generated summary sections missing Mermaid diagrams: %s. Triggering targeted repair.",
+                ", ".join(missing_mermaid_sections),
+                extra={"workspace_id": ws_id}
+            )
+
+            repair_prompt = f"""The generated workspace summary requires every section in `sections` to contain at least one valid, topic-specific Mermaid diagram.
+
+The following sections are missing a Mermaid diagram:
+{chr(10).join('- ' + s for s in missing_mermaid_sections)}
+
+Return the complete updated JSON workspace summary schema where EVERY section in `sections` contains:
+1. Its complete existing textual explanation.
+2. At least one valid, topic-specific fenced Mermaid diagram block (` ```mermaid ... ``` `) directly representing the section's concept.
+
+Do not remove existing explanations. Do not alter sections that already contain valid Mermaid diagrams."""
+
+            try:
+                repair_res = await gemini_client.generate_text(
+                    prompt=repair_prompt,
+                    system_instruction=sys_instruction,
+                    model=settings.gemini_default_model,
+                    temperature=0.2,
+                    top_p=0.95,
+                    max_output_tokens=32768,
+                    response_mime_type="application/json",
+                    response_schema=WorkspaceSummaryResponse,
+                )
+                repaired_summary = WorkspaceSummaryResponse.model_validate_json(repair_res["text"])
+                if repaired_summary.sections:
+                    summary_validated = repaired_summary
+            except Exception as repair_err:
+                logger.warning("Notice: Summary repair attempt encountered error, proceeding with original summary: %s", repair_err)
 
         summary_chunk_ids = set()
         for sec in summary_validated.sections:

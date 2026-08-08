@@ -189,32 +189,77 @@ Use code when it materially improves understanding.
 Do not generate unrelated code that is not supported by the workspace.
 
 ==================================================
-7. MERMAID
+7. MERMAID & MANDATORY DIAGRAM REQUIREMENT
 ==================================================
 
-When the workspace contains a meaningful diagram or relationship, preserve or recreate it using valid Mermaid syntax.
+EVERY SUMMARY SECTION MUST CONTAIN AT LEAST ONE MEANINGFUL MERMAID DIAGRAM.
 
-Generate diagrams for:
+This is a strict requirement.
 
-- workflows
-- architectures
-- hierarchies
-- class relationships
-- lifecycles
-- processes
-- state transitions
-- conceptual relationships
+For every item in `sections`, the `content` field MUST contain at least one valid fenced Mermaid block:
+
+```mermaid
+...
+```
+
+The Mermaid diagram must be directly related to the section's topic and must help explain the concept.
+
+Do NOT add meaningless, decorative, or generic diagrams merely to satisfy this requirement.
+
+The diagram should represent a meaningful relationship, structure, workflow, hierarchy, lifecycle, process, comparison, or conceptual model supported by the workspace.
+
+Examples:
+
+- Objects and Classes: class/object relationship or object creation flow
+- Object Creation: declaration -> instantiation -> initialization flow
+- Classes: class structure / class-to-object relationship
+- Abstraction: abstract class -> subclasses relationship
+- Encapsulation: private data -> getters/setters/access boundary
+- Inheritance: superclass -> subclass hierarchy
+- Polymorphism: interface/reference -> multiple implementations
+- Comparisons: conceptual relationship or decision/relationship diagram
+
+The Mermaid diagram must be placed within the section content and accompanied by a textual explanation.
+
+A Mermaid diagram MUST NOT replace the explanation.
+
+Each section must contain BOTH:
+1. A meaningful textual explanation.
+2. At least one meaningful Mermaid diagram.
+
+Do not create a separate diagram-only section just to satisfy this rule.
+
+Note: The `overview` field is a concise summary paragraph and does NOT require a Mermaid diagram. Only `sections[]` items require a Mermaid diagram.
+
+==================================================
+7A. MERMAID DIAGRAM DESIGN
+==================================================
+
+Choose the diagram type that best represents the section:
+
+- flowchart for processes and workflows
+- classDiagram for classes, inheritance, and object relationships
+- sequenceDiagram for interactions between components
+- stateDiagram-v2 for state transitions
+- mindmap for conceptual hierarchies when appropriate
+- graph relationships for conceptual connections
+
+Prefer the simplest diagram that communicates the important relationship.
+
+Do not use the same generic diagram structure for every section.
+
+Each diagram should add information that is difficult to communicate as ordinary prose alone.
+
+The diagram must be derived from the workspace content.
 
 Every Mermaid diagram must be syntactically valid.
 
 Rules:
-
 - Put each node or relationship on its own line.
-- Every relationship must use an explicit Mermaid edge operator.
+- Every relationship must use an explicit Mermaid edge operator (e.g. `-->`, `---|`).
 - Never concatenate node declarations.
 - Do not put Markdown syntax inside Mermaid.
 - Keep node labels concise.
-- Do not generate decorative diagrams without useful information.
 
 Example:
 
@@ -401,22 +446,26 @@ Use these representations whenever they improve understanding and are supported 
 
 ==================================================
 15. FINAL QUALITY CHECK
-=======================
+==================================================
 
 Before producing the final JSON, verify internally that:
 
 1. The major concepts from the entire workspace are represented.
 2. No major later topic was omitted because earlier topics consumed the response.
 3. Important source examples were preserved.
-4. Important code examples were preserved.
-5. Important Mermaid diagrams were preserved or recreated.
-6. Important comparison tables were preserved.
-7. Important warnings and limitations were preserved.
-8. Distinct concepts were not unnecessarily merged.
-9. The result is substantially more informative than a short executive summary.
-10. The output uses the available output budget for meaningful educational content.
+4. Important code examples were preserved when educationally useful.
+5. Important tables and comparisons were preserved.
+6. Important warnings and limitations were preserved.
+7. Distinct concepts were not unnecessarily merged.
+8. Every summary section contains a meaningful textual explanation.
+9. EVERY summary section contains at least one valid Mermaid diagram.
+10. Every Mermaid diagram is directly relevant to its section.
+11. Mermaid diagrams do not contain unsupported information.
+12. Mermaid syntax is valid.
+13. Mermaid diagrams are not duplicated mechanically across sections.
+14. The output is a comprehensive educational resource rather than an executive summary.
 
-The final result should be a comprehensive study resource, not an executive summary."""
+If a section does not contain a meaningful Mermaid diagram, revise that section before returning the final JSON."""
 
     @classmethod
     def build_system_instruction(cls) -> str:
