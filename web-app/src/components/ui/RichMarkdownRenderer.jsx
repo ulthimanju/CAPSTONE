@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeRaw from 'rehype-raw';
 import mermaid from 'mermaid';
 import hljs from 'highlight.js';
 import { formatCodeWithLanguageFormatter } from '../../utils/codeFormatters';
@@ -706,6 +707,11 @@ export const RichMarkdownRenderer = ({ content, compact = false, onMermaidError 
     normalizedContent = normalizedContent.replace(/\\"/g, '"');
   }
 
+  // Normalize JSX `className=` to standard HTML `class=` for raw HTML parsing
+  if (normalizedContent.includes('className=')) {
+    normalizedContent = normalizedContent.replace(/className=/gi, 'class=');
+  }
+
   // Transform LaTeX inline \(...\) and display \[...\] delimiters into $...$ and $$...$$
   normalizedContent = normalizedContent
     .replace(/\\\((\s*[\s\S]*?\s*)\\\)/g, (_, match) => `$${match}$`)
@@ -716,6 +722,7 @@ export const RichMarkdownRenderer = ({ content, compact = false, onMermaidError 
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[
+          rehypeRaw,
           [rehypeKatex, { throwOnError: false, errorColor: 'inherit', strict: false }],
           rehypeHighlight,
         ]}
