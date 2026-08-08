@@ -342,6 +342,48 @@ svg, i[class^="ti-"], i[class*=" ti-"] {
   background: rgba(77, 124, 245, 0.08);
 }
 
+/* Workspace dropdown action buttons (rename / archive / delete) */
+.ws-item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast) ease;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.ws-dropdown-item:hover .ws-item-actions {
+  opacity: 1;
+}
+
+.ws-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
+}
+
+.ws-action-btn:hover {
+  background: var(--island-3);
+  color: var(--text);
+}
+
+.ws-action-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+/* When actions are showing, hide the check-ico to avoid crowding */
+.ws-dropdown-item:hover .check-ico {
+  display: none;
+}
+
 .folder-ico {
   color: var(--accent);
   display: inline-flex;
