@@ -40,7 +40,19 @@ export const AppLayout = ({
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Sync workspacesList from the prop whenever the parent context updates it.
+  // This is the primary source of truth — the local API fetch below is only a
+  // fallback for contexts where no workspaces prop is provided.
   useEffect(() => {
+    if (workspaces && workspaces.length > 0) {
+      setWorkspacesList(workspaces);
+    }
+  }, [workspaces]);
+
+  useEffect(() => {
+    // Skip the local fetch if the parent is already providing a live list.
+    if (workspaces && workspaces.length > 0) return;
+
     const fetchWorkspaces = async () => {
       try {
         const headers = {};
@@ -60,7 +72,7 @@ export const AppLayout = ({
     if (user) {
       fetchWorkspaces();
     }
-  }, [user]);
+  }, [user, workspaces]);
 
   // Click outside listener for dropdown
   useEffect(() => {

@@ -273,7 +273,8 @@ const WorkspaceDetailPageContent = () => {
       await apiClient.patch(`/api/v1/workspaces/${renameTarget.id}`, { name: renameValue.trim() }, { headers });
       setIsRenameOpen(false);
       setRenameTarget(null);
-      await fetchWorkspaceAndDocs(true);
+      // Refresh context workspace list so dropdown and header update immediately
+      await fetchWorkspaceList();
     } catch (err) {
       console.error('Failed to rename workspace:', err);
       alert('Failed to rename workspace');
@@ -289,13 +290,15 @@ const WorkspaceDetailPageContent = () => {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
       await apiClient.post(`/api/v1/workspaces/${ws.id}/archive`, {}, { headers });
       setIsDropdownOpen(false);
-      // If archiving the currently viewed workspace, navigate away
       if (ws.id === workspaceId) {
+        // Refresh list first so remaining[] is accurate, then navigate
+        await fetchWorkspaceList();
         const remaining = allWorkspaces.filter(w => w.id !== ws.id);
         if (remaining.length > 0) navigate(`/workspaces/${remaining[0].id}`);
         else navigate('/workspaces');
       } else {
-        await fetchWorkspaceAndDocs(true);
+        // Just refresh the list — no navigation needed
+        await fetchWorkspaceList();
       }
     } catch (err) {
       console.error('Failed to archive workspace:', err);
@@ -310,12 +313,12 @@ const WorkspaceDetailPageContent = () => {
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
       await apiClient.delete(`/api/v1/workspaces/${ws.id}`, { headers });
       setIsDropdownOpen(false);
+      // Refresh list first so remaining[] is accurate
+      await fetchWorkspaceList();
       if (ws.id === workspaceId) {
         const remaining = allWorkspaces.filter(w => w.id !== ws.id);
         if (remaining.length > 0) navigate(`/workspaces/${remaining[0].id}`);
         else navigate('/workspaces');
-      } else {
-        await fetchWorkspaceAndDocs(true);
       }
     } catch (err) {
       console.error('Failed to delete workspace:', err);
@@ -628,6 +631,7 @@ const WorkspaceDetailPageContent = () => {
   // Shared AppLayout action props — passed to all AppLayout instances so the
   // dropdown action buttons work regardless of which loading state is rendered.
   const layoutActionProps = {
+    workspaces: allWorkspaces,          // always pass live context list to AppLayout
     onRenameWorkspace: openRenameModal,
     onArchiveWorkspace: handleArchiveWorkspace,
     onDeleteWorkspace: handleDeleteWorkspace,
