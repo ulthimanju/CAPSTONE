@@ -24,66 +24,126 @@ const getHighlightedCode = (code, language) => {
   }
 };
 
-// Initialize mermaid with custom theme matching app design tokens
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'base',
-  securityLevel: 'loose',
-  themeVariables: {
-    background: '#0c0c0e',
+// ── Dynamic Theme Helper for Mermaid ──────────────────────────────────────
+const getMermaidTheme = () => {
+  const isDark =
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-theme') === 'dark';
 
-    primaryColor: '#16161a',
-    primaryTextColor: '#e4e4e7',
-    primaryBorderColor: '#2a2a2e',
+  if (isDark) {
+    return {
+      startOnLoad: false,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        background: '#1c2121',
 
-    secondaryColor: '#111113',
-    secondaryTextColor: '#a1a1aa',
-    secondaryBorderColor: '#1f1f22',
+        primaryColor: '#232828',
+        primaryTextColor: '#F4F1F8',
+        primaryBorderColor: '#3a4242',
 
-    tertiaryColor: '#16161a',
-    tertiaryTextColor: '#e4e4e7',
-    tertiaryBorderColor: '#2a2a2e',
+        secondaryColor: '#2c3333',
+        secondaryTextColor: '#c8cfcf',
+        secondaryBorderColor: '#3a4242',
 
-    lineColor: '#52525b',
-    textColor: '#e4e4e7',
-    labelTextColor: '#e4e4e7',
+        tertiaryColor: '#232828',
+        tertiaryTextColor: '#F4F1F8',
+        tertiaryBorderColor: '#3a4242',
 
-    fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
-    fontSize: '13px',
+        lineColor: '#a0a8a8',
+        textColor: '#F4F1F8',
+        labelTextColor: '#F4F1F8',
 
-    edgeLabelBackground: '#0c0c0e',
+        fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+        fontSize: '13px',
 
-    clusterBkg: '#111113',
-    clusterBorder: '#2a2a2e',
+        edgeLabelBackground: '#1c2121',
 
-    // Flowchart specifics
-    fillType0: '#16161a',
-    fillType1: '#1f1f22',
-    fillType2: '#1a1a1e',
+        clusterBkg: '#232828',
+        clusterBorder: '#3a4242',
 
-    // Note / Special
-    noteBkgColor: '#16161a',
-    noteBorderColor: '#3ecf8e',
-    noteTextColor: '#e4e4e7',
+        fillType0: '#232828',
+        fillType1: '#2c3333',
+        fillType2: '#242b2b',
 
-    // Sequence diagram
-    activationBkgColor: '#1f1f22',
-    activationBorderColor: '#3ecf8e',
-    labelBoxBkgColor: '#16161a',
-    labelBoxBorderColor: '#2a2a2e',
-    sequenceNumberColor: '#0c0c0e',
+        noteBkgColor: '#232828',
+        noteBorderColor: '#4D7CF5',
+        noteTextColor: '#F4F1F8',
 
-    // Pie chart
-    pie1: '#3ecf8e',
-    pie2: '#3b82f6',
-    pie3: '#f59e0b',
-    pie4: '#e5484d',
-    pie5: '#c084fc',
-    pie6: '#67e8f9',
-    pie7: '#86efac',
-    pie8: '#fde68a',
-  },
-});
+        activationBkgColor: '#2c3333',
+        activationBorderColor: '#4D7CF5',
+        labelBoxBkgColor: '#232828',
+        labelBoxBorderColor: '#3a4242',
+        sequenceNumberColor: '#1c2121',
+
+        pie1: '#3ecf8e',
+        pie2: '#3b82f6',
+        pie3: '#f59e0b',
+        pie4: '#e5484d',
+        pie5: '#c084fc',
+        pie6: '#67e8f9',
+        pie7: '#86efac',
+        pie8: '#fde68a',
+      },
+    };
+  }
+
+  return {
+    startOnLoad: false,
+    theme: 'base',
+    securityLevel: 'loose',
+    themeVariables: {
+      background: '#FFFFFF',
+
+      primaryColor: '#F9F8FC',
+      primaryTextColor: '#141717',
+      primaryBorderColor: '#D4CEE3',
+
+      secondaryColor: '#EFECEF',
+      secondaryTextColor: '#3a3f42',
+      secondaryBorderColor: '#D4CEE3',
+
+      tertiaryColor: '#FFFFFF',
+      tertiaryTextColor: '#141717',
+      tertiaryBorderColor: '#D4CEE3',
+
+      lineColor: '#5c6265',
+      textColor: '#141717',
+      labelTextColor: '#141717',
+
+      fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+      fontSize: '13px',
+
+      edgeLabelBackground: '#FFFFFF',
+
+      clusterBkg: '#F9F8FC',
+      clusterBorder: '#D4CEE3',
+
+      fillType0: '#F9F8FC',
+      fillType1: '#EFECEF',
+      fillType2: '#FFFFFF',
+
+      noteBkgColor: '#F9F8FC',
+      noteBorderColor: '#4D7CF5',
+      noteTextColor: '#141717',
+
+      activationBkgColor: '#EFECEF',
+      activationBorderColor: '#4D7CF5',
+      labelBoxBkgColor: '#F9F8FC',
+      labelBoxBorderColor: '#D4CEE3',
+      sequenceNumberColor: '#FFFFFF',
+
+      pie1: '#3ecf8e',
+      pie2: '#3b82f6',
+      pie3: '#f59e0b',
+      pie4: '#e5484d',
+      pie5: '#c084fc',
+      pie6: '#67e8f9',
+      pie7: '#86efac',
+      pie8: '#fde68a',
+    },
+  };
+};
 
 // ── Mermaid Syntax Auto-Sanitizer & Pre-Processor ──────────────────────────
 const sanitizeMermaidCode = (code) => {
@@ -130,6 +190,8 @@ const renderMermaidSafely = async (id, rawCode) => {
     throw new Error('Empty Mermaid diagram');
   }
 
+  mermaid.initialize(getMermaidTheme());
+
   try {
     await mermaid.parse(clean);
   } catch (parseErr) {
@@ -145,6 +207,22 @@ const MermaidDiagram = ({ code }) => {
   const containerRef = useRef(null);
   const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
   const [error, setError] = useState(null);
+  const [theme, setTheme] = useState(
+    typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'light' : 'light'
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setTheme(document.documentElement.getAttribute('data-theme') || 'light');
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -185,7 +263,7 @@ const MermaidDiagram = ({ code }) => {
         containerRef.current.innerHTML = '';
       }
     };
-  }, [code]);
+  }, [code, theme]);
 
   if (error) {
     // If diagram rendering fails even after auto-sanitization, render as formatted code block

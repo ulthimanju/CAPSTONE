@@ -167,6 +167,7 @@
   border-radius: 8px;
   background: var(--bg-1);
   overflow: hidden;
+  transition: background 0.25s ease;
 }
 
 .rmc-mermaid-body {
@@ -175,9 +176,11 @@
   justify-content: center;
   align-items: center;
   background: var(--bg-1);
+  transition: background 0.25s ease;
 }
 
 .rmc-mermaid-body svg {
+  display: block;
   max-width: 100%;
   height: auto;
 }
