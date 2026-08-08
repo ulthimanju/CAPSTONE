@@ -236,6 +236,22 @@ const sanitizeMermaidCode = (code) => {
   return clean;
 };
 
+// ── Remove Stray Body-Level Mermaid DOM Nodes ────────────────────────────────
+const cleanupStrayMermaidNodes = () => {
+  if (typeof document === 'undefined') return;
+  document
+    .querySelectorAll(
+      'body > svg[id^="mermaid-"], body > svg[aria-roledescription="error"], body > div[id^="dmermaid-"], body > svg[id^="dmermaid-"]'
+    )
+    .forEach((el) => el.remove());
+};
+
+// ── Collision-Free Monotonic Mermaid ID Generator ───────────────────────────
+const generateMermaidId = (reactId) => {
+  const cleanId = (reactId || '').replace(/:/g, '');
+  return `rmc-mermaid-${cleanId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+};
+
 // ── Error SVG Validation Helper ──────────────────────────────────────────
 const isMermaidErrorSvg = (svg) => {
   if (!svg || typeof svg !== 'string') return true;
@@ -250,7 +266,7 @@ const isMermaidErrorSvg = (svg) => {
   );
 };
 
-// ── Mermaid Render Engine with Silent Syntax Validation ────────────────────
+// ── Mermaid Render Engine with Silent Syntax Validation & Cleanup ──────────
 const renderMermaidSafely = async (id, rawCode) => {
   const clean = sanitizeMermaidCode(rawCode);
 
@@ -258,16 +274,16 @@ const renderMermaidSafely = async (id, rawCode) => {
     throw new Error('Empty Mermaid diagram');
   }
 
-  mermaid.initialize(getMermaidTheme());
-
-  // Perform silent syntax validation: returns false if invalid syntax without rendering error UI
-  const isValid = await mermaid.parse(clean, { suppressErrors: true });
-
-  if (!isValid) {
-    throw new Error('Invalid Mermaid syntax');
-  }
-
   try {
+    mermaid.initialize(getMermaidTheme());
+
+    // Perform silent syntax validation: returns false if invalid syntax without rendering error UI
+    const isValid = await mermaid.parse(clean, { suppressErrors: true });
+
+    if (!isValid) {
+      throw new Error('Invalid Mermaid syntax');
+    }
+
     const { svg } = await mermaid.render(id, clean);
 
     if (!svg || isMermaidErrorSvg(svg)) {
@@ -275,8 +291,8 @@ const renderMermaidSafely = async (id, rawCode) => {
     }
 
     return svg;
-  } catch (error) {
-    throw error;
+  } finally {
+    cleanupStrayMermaidNodes();
   }
 };
 
@@ -339,10 +355,7 @@ const splitMermaidCode = (code) => {
 const MermaidSubItem = ({ code, theme }) => {
   const containerRef = useRef(null);
   const reactId = useId();
-  const mermaidId = useMemo(
-    () => `rmc-mermaid-${reactId.replace(/:/g, '')}`,
-    [reactId]
-  );
+  const mermaidId = useMemo(() => generateMermaidId(reactId), [reactId]);
   const renderVersion = useRef(0);
   const [failed, setFailed] = useState(false);
 
@@ -362,6 +375,8 @@ const MermaidSubItem = ({ code, theme }) => {
         if (version !== renderVersion.current) return;
         setFailed(true);
         console.warn('Sub-diagram rendering failed:', err?.message);
+      } finally {
+        cleanupStrayMermaidNodes();
       }
     };
 
@@ -369,6 +384,7 @@ const MermaidSubItem = ({ code, theme }) => {
 
     return () => {
       renderVersion.current++;
+      cleanupStrayMermaidNodes();
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
   }, [code, theme, mermaidId]);
@@ -390,10 +406,7 @@ const MermaidSubItem = ({ code, theme }) => {
 const MermaidDiagram = ({ code }) => {
   const containerRef = useRef(null);
   const reactId = useId();
-  const mermaidId = useMemo(
-    () => `rmc-mermaid-${reactId.replace(/:/g, '')}`,
-    [reactId]
-  );
+  const mermaidId = useMemo(() => generateMermaidId(reactId), [reactId]);
   const renderVersion = useRef(0);
   const [status, setStatus] = useState('idle');
   const [theme, setTheme] = useState(
@@ -444,6 +457,8 @@ const MermaidDiagram = ({ code }) => {
 
         setStatus('fallback');
         if (containerRef.current) containerRef.current.innerHTML = '';
+      } finally {
+        cleanupStrayMermaidNodes();
       }
     };
 
@@ -451,6 +466,7 @@ const MermaidDiagram = ({ code }) => {
 
     return () => {
       renderVersion.current++;
+      cleanupStrayMermaidNodes();
 
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
@@ -471,7 +487,12 @@ const MermaidDiagram = ({ code }) => {
   }
 
   if (status === 'fallback') {
-    return null;
+    return (
+      <div className="rmc-mermaid-fallback-card">
+        <i className="ti ti-chart-dots" />
+        <span>Diagram preview unavailable</span>
+      </div>
+    );
   }
 
   return (
