@@ -628,6 +628,18 @@ const CodeBlock = ({ className, children, onMermaidError }) => {
   }
 
   const trimmed = rawCodeString.trim();
+
+  // If code block contains visual flow cards, render as live visual elements
+  if (trimmed.includes('flow-card')) {
+    const cleanHtml = trimmed.replace(/className=/gi, 'class=');
+    return (
+      <div
+        className="rmc-flow-card-embed my-4"
+        dangerouslySetInnerHTML={{ __html: cleanHtml }}
+      />
+    );
+  }
+
   const isMermaid =
     lang.toLowerCase() === 'mermaid' ||
     (!lang &&
@@ -710,6 +722,14 @@ export const RichMarkdownRenderer = ({ content, compact = false, onMermaidError 
   // Normalize JSX `className=` to standard HTML `class=` for raw HTML parsing
   if (normalizedContent.includes('className=')) {
     normalizedContent = normalizedContent.replace(/className=/gi, 'class=');
+  }
+
+  // Unescape HTML entities if HTML tags were entity-encoded
+  if (normalizedContent.includes('&lt;div') || normalizedContent.includes('&lt;span')) {
+    normalizedContent = normalizedContent
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"');
   }
 
   // Transform LaTeX inline \(...\) and display \[...\] delimiters into $...$ and $$...$$
