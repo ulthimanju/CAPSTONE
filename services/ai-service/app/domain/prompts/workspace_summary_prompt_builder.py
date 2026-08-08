@@ -260,6 +260,7 @@ Rules:
 - Never concatenate node declarations.
 - Do not put Markdown syntax inside Mermaid.
 - Keep node labels concise.
+- ALWAYS enclose node labels in double quotes if they contain parentheses `()`, method signatures (e.g. `calculateSalary()`), spaces, or special characters: e.g. `A["calculateSalary() abstract"] --> B["ConcreteClass"]`.
 
 Example:
 

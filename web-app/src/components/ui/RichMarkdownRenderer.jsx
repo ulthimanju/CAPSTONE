@@ -165,13 +165,18 @@ const sanitizeMermaidCode = (code) => {
   // 3. Remove raw HTML tags like <code>, </code>, <span>, </span> while preserving text and <br/>
   clean = clean.replace(/<\/?(code|span|div|p|strong|em)[^>]*>/gi, '');
 
-  // 4. Wrap unquoted node labels containing special chars (/ ( ) : , etc.) in quotes:
-  // e.g. P[Polymorphism] --> C[Compile-Time Polymorphism / Static Binding] -> C["Compile-Time Polymorphism / Static Binding"]
-  clean = clean.replace(/(\[[^\]\n]+\])/g, (match) => {
-    const inner = match.slice(1, -1).trim();
-    if ((inner.includes('/') || inner.includes(':') || inner.includes('(') || inner.includes(')')) && !inner.startsWith('"')) {
-      const safeInner = inner.replace(/"/g, "'");
-      return `["${safeInner}"]`;
+  // 4. Wrap unquoted node labels containing special chars (/ ( ) : , - spaces etc.) in double quotes
+  // e.g. A[calculateSalary() abstract] -> A["calculateSalary() abstract"]
+  clean = clean.replace(/([A-Za-z0-9_]*)\s*\[\s*([^"\]\n]+?)\s*\]/g, (match, nodeId, label) => {
+    const trimmed = label.trim();
+    if (!trimmed) return match;
+    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      const inner = trimmed.slice(1, -1).replace(/"/g, "'");
+      return `${nodeId}["${inner}"]`;
+    }
+    if (/[\/\(\):,;\-\s]/.test(trimmed)) {
+      const safeLabel = trimmed.replace(/"/g, "'");
+      return `${nodeId}["${safeLabel}"]`;
     }
     return match;
   });
