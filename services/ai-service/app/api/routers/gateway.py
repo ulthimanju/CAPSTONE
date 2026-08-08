@@ -56,7 +56,7 @@ async def list_models():
                 "name": "Gemini 2.5 Flash",
                 "type": "TEXT_GENERATION",
                 "input_token_limit": 1048576,
-                "output_token_limit": 8192,
+                "output_token_limit": 65536,
                 "supports_streaming": True,
             },
             {
