@@ -92,11 +92,16 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
       const res = await apiClient.get('/api/v1/workspaces', { headers });
       const list = res.data.workspaces || [];
       setWorkspaces(list);
-      if (activeWorkspaceId) {
-        setWorkspace(list.find((w) => w.id === activeWorkspaceId) || null);
-      }
+
+      const selectedWorkspace = activeWorkspaceId
+        ? list.find((w) => w.id === activeWorkspaceId)
+        : null;
+
+      setWorkspace(selectedWorkspace || list[0] || null);
     } catch (err) {
       console.error('Failed to load workspaces:', err);
+      setWorkspaces([]);
+      setWorkspace(null);
     } finally {
       setLoading(false);
     }

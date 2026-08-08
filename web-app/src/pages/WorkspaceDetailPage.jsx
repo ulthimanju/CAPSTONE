@@ -327,6 +327,19 @@ const WorkspaceDetailPageContent = () => {
     fetchWorkspaceList();
   }, []);
 
+  // Auto-redirect if URL has no workspace ID or an invalid ID when workspaces exist
+  useEffect(() => {
+    if (loading || allWorkspaces.length === 0) return;
+
+    const selectedWorkspace = workspaceId
+      ? allWorkspaces.find((ws) => ws.id === workspaceId)
+      : null;
+
+    if (!selectedWorkspace) {
+      navigate(`/workspaces/${allWorkspaces[0].id}`, { replace: true });
+    }
+  }, [loading, allWorkspaces, workspaceId, navigate]);
+
   // On workspace switch: update active workspace info + fetch docs; reset lazy flags
   useEffect(() => {
     if (!workspaceId) return;
@@ -627,9 +640,9 @@ const WorkspaceDetailPageContent = () => {
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
             <i className="ti ti-folder-plus"></i>
           </div>
-          <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>No Workspaces Found</h2>
+          <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>No workspaces created yet</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '400px', marginBottom: '1.5rem' }}>
-            Get started by creating your first workspace to manage documents and collaborate with AI.
+            Create a workspace to manage your documents and collaborate with AI.
           </p>
           <button className="btn btn-primary" onClick={() => setIsCreateWsOpen(true)} style={{ padding: '8px 16px', fontSize: '13px' }}>
             <i className="ti ti-plus"></i> Create Workspace
@@ -692,14 +705,22 @@ const WorkspaceDetailPageContent = () => {
     );
   }
 
-  if (error || !workspace) {
+  if (error) {
     return (
       <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} workspaceId={workspaceId} workspaceName={null} docCount={documents.length}>
         <div style={{ padding: '2rem' }}>
           <div style={{ padding: '1rem', background: 'var(--bg-1)', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px' }}>
-            {error || 'Workspace not found.'}
+            {error}
           </div>
         </div>
+      </AppLayout>
+    );
+  }
+
+  if (!workspace) {
+    return (
+      <AppLayout activeTab={activeTab} setActiveTab={handleTabChange} workspaceId={workspaceId} workspaceName={null} docCount={0}>
+        <WorkspaceDashboardSkeleton />
       </AppLayout>
     );
   }
