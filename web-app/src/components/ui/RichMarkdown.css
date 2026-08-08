@@ -195,6 +195,40 @@
   height: auto;
 }
 
+/* ── Mermaid 2-column grid layout (N rows x 2 columns) ─────── */
+.rmc-mermaid-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-1);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.rmc-mermaid-grid-item {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.rmc-mermaid-grid-item svg {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 640px) {
+  .rmc-mermaid-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Tables ───────────────────────────────────────────── */
 .rmc-table-wrap {
   overflow-x: auto;

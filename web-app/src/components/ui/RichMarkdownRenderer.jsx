@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -69,16 +69,134 @@ mermaid.initialize({
   },
 });
 
-// ── Mermaid Diagram Component ──────────────────────────────────────────────
-const MermaidDiagram = ({ code }) => {
+// ── Helper to split multi-subgraph / multi-diagram Mermaid blocks into N x 2 grid items ──
+const splitMermaidCode = (code) => {
+  if (!code || typeof code !== 'string') return [];
+  const trimmed = code.trim();
+  const lines = trimmed.split('\n');
+  let header = lines[0].trim();
+
+  if (!/^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram|journey|gantt|pie)\b/i.test(header)) {
+    header = 'graph TD';
+  }
+
+  // 1. Extract top-level subgraph blocks
+  const subgraphs = [];
+  let currentSubgraph = [];
+  let depth = 0;
+  let inSubgraph = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineTrim = line.trim();
+
+    if (/^subgraph\b/i.test(lineTrim)) {
+      if (depth === 0) {
+        inSubgraph = true;
+        currentSubgraph = [line];
+      } else {
+        currentSubgraph.push(line);
+      }
+      depth++;
+    } else if (lineTrim === 'end' && inSubgraph) {
+      depth--;
+      currentSubgraph.push(line);
+      if (depth === 0) {
+        subgraphs.push(currentSubgraph.join('\n'));
+        currentSubgraph = [];
+        inSubgraph = false;
+      }
+    } else if (inSubgraph) {
+      currentSubgraph.push(line);
+    }
+  }
+
+  if (subgraphs.length >= 2) {
+    return subgraphs.map((sg) => {
+      const sgTrim = sg.trim();
+      if (/^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram)\b/i.test(sgTrim)) {
+        return sgTrim;
+      }
+      return `${header}\n${sgTrim}`;
+    });
+  }
+
+  // 2. Check for multiple diagram headers in single code block
+  const blocks = trimmed
+    .split(/(?=^(?:graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram|journey|gantt|pie)\b)/im)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  if (blocks.length >= 2) {
+    return blocks;
+  }
+
+  return [];
+};
+
+// ── Single Sub-diagram Item Component (Grid Cell) ─────────────────────────
+const MermaidSubItem = ({ code }) => {
   const containerRef = useRef(null);
-  const idRef = useRef(
-    `mermaid-${Math.random().toString(36).substring(2, 9)}`
-  );
+  const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
   const [renderFailed, setRenderFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!containerRef.current || !code?.trim()) {
+      setRenderFailed(true);
+      return;
+    }
+
+    setRenderFailed(false);
+    containerRef.current.innerHTML = '';
+
+    mermaid
+      .render(idRef.current, code.trim())
+      .then(({ svg }) => {
+        if (cancelled) return;
+        if (containerRef.current) {
+          containerRef.current.innerHTML = svg;
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn('Skipping invalid Mermaid sub-diagram:', err);
+        setRenderFailed(true);
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+    };
+  }, [code]);
+
+  if (renderFailed) return null;
+
+  return (
+    <div className="rmc-mermaid-grid-item">
+      <div ref={containerRef} aria-label="Mermaid diagram" style={{ width: '100%', display: 'flex', justifyContent: 'center' }} />
+    </div>
+  );
+};
+
+// ── Mermaid Diagram Component ──────────────────────────────────────────────
+const MermaidDiagram = ({ code }) => {
+  const containerRef = useRef(null);
+  const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
+  const [renderFailed, setRenderFailed] = useState(false);
+
+  const subDiagrams = useMemo(() => splitMermaidCode(code), [code]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (subDiagrams.length >= 2) return;
 
     if (!containerRef.current || !code?.trim()) {
       setRenderFailed(true);
@@ -115,7 +233,23 @@ const MermaidDiagram = ({ code }) => {
         containerRef.current.innerHTML = '';
       }
     };
-  }, [code]);
+  }, [code, subDiagrams]);
+
+  if (subDiagrams.length >= 2) {
+    return (
+      <div className="rmc-mermaid-wrap">
+        <div className="rmc-mermaid-label">
+          <i className="ti ti-chart-bubble" style={{ marginRight: 5 }} />
+          Diagrams ({subDiagrams.length})
+        </div>
+        <div className="rmc-mermaid-grid">
+          {subDiagrams.map((subCode, index) => (
+            <MermaidSubItem key={index} code={subCode} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (renderFailed) {
     return null;
