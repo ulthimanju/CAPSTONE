@@ -379,6 +379,7 @@ const splitMermaidCode = (code) => {
 const MermaidSubItem = ({ code, theme }) => {
   const containerRef = useRef(null);
   const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -387,12 +388,15 @@ const MermaidSubItem = ({ code, theme }) => {
       if (!containerRef.current || !code?.trim()) return;
 
       containerRef.current.innerHTML = '';
+      setFailed(false);
 
       try {
         const svg = await renderMermaidSafely(idRef.current, code);
         if (cancelled) return;
         containerRef.current.innerHTML = svg;
       } catch (err) {
+        if (cancelled) return;
+        setFailed(true);
         console.warn('Sub-diagram rendering failed:', err?.message);
       }
     };
@@ -405,6 +409,8 @@ const MermaidSubItem = ({ code, theme }) => {
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
   }, [code, theme]);
+
+  if (failed) return null;
 
   return (
     <div className="rmc-mermaid-column-item">
@@ -496,17 +502,8 @@ const MermaidDiagram = ({ code }) => {
   }
 
   if (error) {
-    // If diagram rendering fails even after auto-sanitization, render as formatted code block
-    return (
-      <div className="rmc-code-block my-3 border border-[var(--border-subtle)] rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-2)] border-b border-[var(--border-subtle)] text-xs text-[var(--text-3)] font-mono">
-          <span>mermaid</span>
-        </div>
-        <pre className="p-3 text-xs font-mono overflow-x-auto text-[var(--text-2)] bg-[var(--bg-1)]">
-          <code>{code}</code>
-        </pre>
-      </div>
-    );
+    // Silently omit failed Mermaid diagrams to prevent any broken UI or error artifacts
+    return null;
   }
 
   return (
