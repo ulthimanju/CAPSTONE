@@ -252,23 +252,26 @@ Each diagram should add information that is difficult to communicate as ordinary
 
 The diagram must be derived from the workspace content.
 
-Every Mermaid diagram must be syntactically valid.
+FLOWCHART NODE LABEL SAFETY:
+- For flowchart and graph diagrams, NEVER put programming syntax containing parentheses `()`, colons, commas, semicolons, slashes, or line breaks inside an unquoted node label.
+- Always quote such labels.
+- For multiline flowchart labels, use `<br/>` inside a quoted label instead of putting an actual newline or escaped `\n` inside `[...]`.
 
-Rules:
-- Put each node or relationship on its own line.
-- Every relationship must use an explicit Mermaid edge operator (e.g. `-->`, `---|`).
-- Never concatenate node declarations.
-- Do not put Markdown syntax inside Mermaid.
-- Keep node labels concise.
-- ALWAYS enclose node labels in double quotes if they contain parentheses `()`, method signatures (e.g. `calculateSalary()`), spaces, or special characters: e.g. `A["calculateSalary() abstract"] --> B["ConcreteClass"]`.
+Correct:
+A["Abstract Employee Class<br/>calculateSalary() abstract"] --> B["Contractor<br/>Implements calculateSalary"]
+
+Incorrect:
+A[Abstract Employee Class
+calculateSalary() abstract] --> B[Contractor
+Implements calculateSalary]
 
 Example:
 
 ```mermaid
 flowchart LR
-    A[Declaration] --> B[Instantiation]
-    B --> C[Initialization]
-    C --> D[Object Ready]
+    A["1. Declaration"] --> B["2. Instantiation"]
+    B --> C["3. Initialization"]
+    C --> D["Object Ready"]
 ```
 
 ==================================================

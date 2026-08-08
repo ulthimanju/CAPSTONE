@@ -145,6 +145,60 @@ const getMermaidTheme = () => {
   };
 };
 
+// ── Diagram Type Detector ──────────────────────────────────────────────────
+const getMermaidDiagramType = (code) => {
+  const firstLine = (code || '')
+    .trim()
+    .split(/\r?\n/)
+    .find(Boolean) || '';
+
+  if (/^(flowchart|graph)\b/i.test(firstLine)) {
+    return 'flowchart';
+  }
+  if (/^classDiagram\b/i.test(firstLine)) {
+    return 'classDiagram';
+  }
+  if (/^sequenceDiagram\b/i.test(firstLine)) {
+    return 'sequenceDiagram';
+  }
+  if (/^stateDiagram(?:-v2)?\b/i.test(firstLine)) {
+    return 'stateDiagram';
+  }
+  return 'unknown';
+};
+
+// ── Multiline Flowchart Label Sanitizer ────────────────────────────────────
+const sanitizeFlowchartLabels = (code) => {
+  return code.replace(
+    /([A-Za-z0-9_]+)\s*\[([\s\S]*?)\]/g,
+    (match, nodeId, rawLabel) => {
+      const label = rawLabel.trim();
+
+      if (!label) {
+        return match;
+      }
+
+      // If already quoted and single-line, preserve
+      if (label.startsWith('"') && label.endsWith('"') && !label.includes('\n')) {
+        return `${nodeId}[${label}]`;
+      }
+
+      // Strip outer quotes if multiline and quote properly
+      let inner = label;
+      if (inner.startsWith('"') && inner.endsWith('"')) {
+        inner = inner.slice(1, -1);
+      }
+
+      const safeLabel = inner
+        .replace(/\r?\n/g, '<br/>')
+        .replace(/\\n/g, '<br/>')
+        .replace(/"/g, "'");
+
+      return `${nodeId}["${safeLabel}"]`;
+    }
+  );
+};
+
 // ── Mermaid Syntax Auto-Sanitizer & Pre-Processor ──────────────────────────
 const sanitizeMermaidCode = (code) => {
   if (!code || typeof code !== 'string') return '';
@@ -153,7 +207,10 @@ const sanitizeMermaidCode = (code) => {
   // 1. Strip markdown fences if accidentally included inside code block
   clean = clean.replace(/^```mermaid\s*/i, '').replace(/```$/i, '').trim();
 
-  // 2. Fix unquoted subgraph titles with spaces: `subgraph Single Inheritance` -> `subgraph "Single Inheritance"`
+  // 2. Normalize escaped newlines
+  clean = clean.replace(/\\n/g, '\n');
+
+  // 3. Fix unquoted subgraph titles with spaces: `subgraph Single Inheritance` -> `subgraph "Single Inheritance"`
   clean = clean.replace(/^(\s*subgraph\s+)(?!["'\n])([^\n]+)$/gim, (match, prefix, title) => {
     const trimmedTitle = title.trim();
     if (trimmedTitle.includes(' ') && !trimmedTitle.startsWith('"') && !trimmedTitle.startsWith('[')) {
@@ -162,26 +219,16 @@ const sanitizeMermaidCode = (code) => {
     return match;
   });
 
-  // 3. Remove raw HTML tags like <code>, </code>, <span>, </span> while preserving text and <br/>
+  // 4. Remove raw HTML tags like <code>, </code>, <span>, </span> while preserving text and <br/>
   clean = clean.replace(/<\/?(code|span|div|p|strong|em)[^>]*>/gi, '');
 
-  // 4. Wrap unquoted node labels containing special chars (/ ( ) : , - spaces etc.) in double quotes
-  // e.g. A[calculateSalary() abstract] -> A["calculateSalary() abstract"]
-  clean = clean.replace(/([A-Za-z0-9_]*)\s*\[\s*([^"\]\n]+?)\s*\]/g, (match, nodeId, label) => {
-    const trimmed = label.trim();
-    if (!trimmed) return match;
-    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-      const inner = trimmed.slice(1, -1).replace(/"/g, "'");
-      return `${nodeId}["${inner}"]`;
-    }
-    if (/[\/\(\):,;\-\s]/.test(trimmed)) {
-      const safeLabel = trimmed.replace(/"/g, "'");
-      return `${nodeId}["${safeLabel}"]`;
-    }
-    return match;
-  });
+  // 5. Apply diagram-specific label sanitization
+  const type = getMermaidDiagramType(clean);
+  if (type === 'flowchart') {
+    clean = sanitizeFlowchartLabels(clean);
+  }
 
-  // 5. Fix invalid classDiagram syntax like `+calculateSalary()* int` -> `+calculateSalary() int`
+  // 6. Fix invalid classDiagram syntax like `+calculateSalary()* int` -> `+calculateSalary() int`
   clean = clean.replace(/(\+\w+\([^)]*\))\*\s*(\w+)/g, '$1 $2');
 
   return clean;
@@ -200,7 +247,7 @@ const renderMermaidSafely = async (id, rawCode) => {
   try {
     await mermaid.parse(clean);
   } catch (parseErr) {
-    console.warn('Mermaid parse pre-check failed, attempting render anyway:', parseErr);
+    throw new Error(`Invalid Mermaid syntax: ${parseErr.message}`);
   }
 
   const { svg } = await mermaid.render(id, clean);
