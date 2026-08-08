@@ -407,38 +407,22 @@ def select_representative_passages(
     return selected
 
 
-def contains_mermaid(content: str) -> bool:
+def contains_visual_flow(content: str) -> bool:
+    if not content:
+        return False
     return bool(
-        re.search(
-            r"```mermaid\s+[\s\S]*?```",
-            content or "",
-            re.IGNORECASE,
-        )
+        "flow-card" in content or
+        "Step 1" in content or
+        "Step 2" in content or
+        "> **Step" in content or
+        "| Step |" in content or
+        "<table" in content or
+        "```" in content
     )
 
 
 def sanitize_backend_mermaid(content: str) -> str:
-    if not content or "```mermaid" not in content.lower():
-        return content
-
-    def fix_block(match):
-        code = match.group(1).strip()
-        lines = code.split("\n")
-        fixed_lines = []
-
-        for line in lines:
-            line_fixed = re.sub(
-                r"([A-Za-z0-9_]+)\s*\[([^\"\]\n]+)\]",
-                lambda m: f'{m.group(1)}["{m.group(2).strip().replace(chr(34), chr(39))}"]'
-                if any(c in m.group(2) for c in ["(", ")", ":", ",", " "]) and not m.group(2).strip().startswith('"')
-                else m.group(0),
-                line,
-            )
-            fixed_lines.append(line_fixed)
-
-        return f"```mermaid\n" + "\n".join(fixed_lines) + "\n```"
-
-    return re.sub(r"```mermaid\s*([\s\S]*?)```", fix_block, content, flags=re.IGNORECASE)
+    return content
 
 
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
@@ -524,32 +508,30 @@ Generate the comprehensive workspace summary using the entire workspace knowledg
             response_schema=WorkspaceSummaryResponse,
         )
 
-        # 6. Validate Response Schema & Check Mandatory Section Mermaid Requirement
+        # 6. Validate Response Schema & Check Mandatory Section Visual Flow Requirement
         summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
 
-        missing_mermaid_sections = [
+        missing_flow_sections = [
             sec.title or f"Section {idx + 1}"
             for idx, sec in enumerate(summary_validated.sections)
-            if not contains_mermaid(sec.content)
+            if not contains_visual_flow(sec.content)
         ]
 
-        if missing_mermaid_sections:
+        if missing_flow_sections:
             logger.warning(
-                "Notice: Generated summary sections missing Mermaid diagrams: %s. Triggering targeted repair.",
-                ", ".join(missing_mermaid_sections),
+                "Notice: Generated summary sections missing visual flow representations: %s. Triggering targeted repair.",
+                ", ".join(missing_flow_sections),
                 extra={"workspace_id": ws_id}
             )
 
-            repair_prompt = f"""The generated workspace summary requires every section in `sections` to contain at least one valid, topic-specific Mermaid diagram.
+            repair_prompt = f"""The generated workspace summary requires every section in `sections` to contain at least one visual concept flow representation (process flow, lifecycle, object hierarchy, or step container).
 
-The following sections are missing a Mermaid diagram:
-{chr(10).join('- ' + s for s in missing_mermaid_sections)}
+The following sections are missing a visual flow representation:
+{chr(10).join('- ' + s for s in missing_flow_sections)}
 
 Return the complete updated JSON workspace summary schema where EVERY section in `sections` contains:
 1. Its complete existing textual explanation.
-2. At least one valid, topic-specific fenced Mermaid diagram block (` ```mermaid ... ``` `) directly representing the section's concept.
-
-Do not remove existing explanations. Do not alter sections that already contain valid Mermaid diagrams."""
+2. At least one visual concept flow container (`<div className="flow-card-container">...</div>` or structured step block `> **Step 1:** ...`)."""
 
             try:
                 repair_res = await gemini_client.generate_text(

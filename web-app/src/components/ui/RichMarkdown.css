@@ -232,7 +232,77 @@
   color: var(--text-3);
 }
 
-/* ── End Mermaid Styles ── */
+/* ── Visual Concept Flow Cards ────────────────────────────────────────── */
+.flow-card-container {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  width: 100%;
+}
+
+.flow-card {
+  flex: 1 1 200px;
+  min-width: 180px;
+  background: var(--bg-1);
+  border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.flow-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.flow-card-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent-bg, rgba(77, 124, 245, 0.15));
+  color: var(--accent, #4D7CF5);
+}
+
+.flow-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.flow-card-desc {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.flow-card-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--text-3);
+  padding: 0 4px;
+}
+
+@media (max-width: 640px) {
+  .flow-card-arrow {
+    display: none;
+  }
+}
+
+/* ── End Visual Concept Flow Cards ── */
 
 /* ── Tables ───────────────────────────────────────────── */
 .rmc-table-wrap {

@@ -201,78 +201,44 @@ For every item in `sections`, the `content` field MUST contain at least one vali
 ```mermaid
 ...
 ```
-
-The Mermaid diagram must be directly related to the section's topic and must help explain the concept.
-
-Do NOT add meaningless, decorative, or generic diagrams merely to satisfy this requirement.
-
-The diagram should represent a meaningful relationship, structure, workflow, hierarchy, lifecycle, process, comparison, or conceptual model supported by the workspace.
-
-Examples:
-
-- Objects and Classes: class/object relationship or object creation flow
-- Object Creation: declaration -> instantiation -> initialization flow
-- Classes: class structure / class-to-object relationship
-- Abstraction: abstract class -> subclasses relationship
-- Encapsulation: private data -> getters/setters/access boundary
-- Inheritance: superclass -> subclass hierarchy
-- Polymorphism: interface/reference -> multiple implementations
-- Comparisons: conceptual relationship or decision/relationship diagram
-
-The Mermaid diagram must be placed within the section content and accompanied by a textual explanation.
-
-A Mermaid diagram MUST NOT replace the explanation.
-
-Each section must contain BOTH:
-1. A meaningful textual explanation.
-2. At least one meaningful Mermaid diagram.
-
-Do not create a separate diagram-only section just to satisfy this rule.
-
-Note: The `overview` field is a concise summary paragraph and does NOT require a Mermaid diagram. Only `sections[]` items require a Mermaid diagram.
-
-==================================================
-7A. MERMAID DIAGRAM DESIGN
+7. VISUAL CONCEPT FLOW CARDS & STRUCTURED STEPS
 ==================================================
 
-Choose the diagram type that best represents the section:
+Every generated summary section in `sections[]` MUST contain at least one visual concept flow representation (process flow, lifecycle, object hierarchy, or architecture sequence).
 
-- flowchart for processes and workflows
-- classDiagram for classes, inheritance, and object relationships
-- sequenceDiagram for interactions between components
-- stateDiagram-v2 for state transitions
-- mindmap for conceptual hierarchies when appropriate
-- graph relationships for conceptual connections
+Format visual concepts as clean HTML flow containers or structured Markdown callout steps.
 
-Prefer the simplest diagram that communicates the important relationship.
+Preferred Format:
 
-Do not use the same generic diagram structure for every section.
-
-Each diagram should add information that is difficult to communicate as ordinary prose alone.
-
-The diagram must be derived from the workspace content.
-
-FLOWCHART NODE LABEL SAFETY:
-- For flowchart and graph diagrams, NEVER put programming syntax containing parentheses `()`, colons, commas, semicolons, slashes, or line breaks inside an unquoted node label.
-- Always quote such labels.
-- For multiline flowchart labels, use `<br/>` inside a quoted label instead of putting an actual newline or escaped `\n` inside `[...]`.
-
-Correct:
-A["Abstract Employee Class<br/>calculateSalary() abstract"] --> B["Contractor<br/>Implements calculateSalary"]
-
-Incorrect:
-A[Abstract Employee Class
-calculateSalary() abstract] --> B[Contractor
-Implements calculateSalary]
-
-Example:
-
-```mermaid
-flowchart LR
-    A["1. Declaration"] --> B["2. Instantiation"]
-    B --> C["3. Initialization"]
-    C --> D["Object Ready"]
+```html
+<div className="flow-card-container">
+  <div className="flow-card">
+    <div className="flow-card-badge">Step 1</div>
+    <div className="flow-card-title">Declaration</div>
+    <div className="flow-card-desc">Reference variable created on stack</div>
+  </div>
+  <div className="flow-card-arrow">➔</div>
+  <div className="flow-card">
+    <div className="flow-card-badge">Step 2</div>
+    <div className="flow-card-title">Instantiation</div>
+    <div className="flow-card-desc">Heap memory allocated via <code>new</code></div>
+  </div>
+  <div className="flow-card-arrow">➔</div>
+  <div className="flow-card">
+    <div className="flow-card-badge">Step 3</div>
+    <div className="flow-card-title">Initialization</div>
+    <div className="flow-card-desc">Constructor executed to set initial object state</div>
+  </div>
+</div>
 ```
+
+Or as structured visual step callouts:
+
+> **Step 1: Declaration** — Reference variable created on stack frame.  
+> **Step 2: Instantiation** — Object memory allocated in Heap space.  
+> **Step 3: Initialization** — Class constructor executes to initialize instance fields.
+
+Do NOT use Mermaid code blocks. Use Visual Flow Cards and structured step containers for all process flows.
 
 ==================================================
 8. TABLES AND COMPARISONS
