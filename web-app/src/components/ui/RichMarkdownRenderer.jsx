@@ -202,6 +202,102 @@ const renderMermaidSafely = async (id, rawCode) => {
   return svg;
 };
 
+// ── Helper to split multi-subgraph / multi-diagram Mermaid blocks ──────────
+const splitMermaidCode = (code) => {
+  if (!code || typeof code !== 'string') return [];
+  const trimmed = code.trim();
+  const lines = trimmed.split('\n');
+  let header = lines[0].trim();
+
+  if (!/^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram|journey|gantt|pie)\b/i.test(header)) {
+    header = 'graph TD';
+  }
+
+  // Extract top-level subgraph blocks
+  const subgraphs = [];
+  let currentSubgraph = [];
+  let depth = 0;
+  let inSubgraph = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineTrim = line.trim();
+
+    if (/^subgraph\b/i.test(lineTrim)) {
+      if (depth === 0) {
+        inSubgraph = true;
+        currentSubgraph = [line];
+      } else {
+        currentSubgraph.push(line);
+      }
+      depth++;
+    } else if (lineTrim.toLowerCase() === 'end' && inSubgraph) {
+      depth--;
+      currentSubgraph.push(line);
+      if (depth === 0) {
+        subgraphs.push(currentSubgraph.join('\n'));
+        currentSubgraph = [];
+        inSubgraph = false;
+      }
+    } else if (inSubgraph) {
+      currentSubgraph.push(line);
+    }
+  }
+
+  if (subgraphs.length >= 2) {
+    return subgraphs.map((sg) => {
+      const sgTrim = sg.trim();
+      if (/^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram)\b/i.test(sgTrim)) {
+        return sgTrim;
+      }
+      return `${header}\n${sgTrim}`;
+    });
+  }
+
+  return [];
+};
+
+// ── Sub-diagram Column Item Component ─────────────────────────────────────
+const MermaidSubItem = ({ code, theme }) => {
+  const containerRef = useRef(null);
+  const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const render = async () => {
+      if (!containerRef.current || !code?.trim()) return;
+
+      containerRef.current.innerHTML = '';
+
+      try {
+        const svg = await renderMermaidSafely(idRef.current, code);
+        if (cancelled) return;
+        containerRef.current.innerHTML = svg;
+      } catch (err) {
+        console.error('Sub-diagram rendering failed:', err);
+      }
+    };
+
+    render();
+
+    return () => {
+      cancelled = true;
+      if (containerRef.current) containerRef.current.innerHTML = '';
+    };
+  }, [code, theme]);
+
+  return (
+    <div className="rmc-mermaid-column-item">
+      <div
+        ref={containerRef}
+        aria-label="Mermaid sub-diagram"
+        style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+      />
+    </div>
+  );
+};
+
 // ── Mermaid Diagram Component ──────────────────────────────────────────────
 const MermaidDiagram = ({ code }) => {
   const containerRef = useRef(null);
@@ -210,6 +306,8 @@ const MermaidDiagram = ({ code }) => {
   const [theme, setTheme] = useState(
     typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'light' : 'light'
   );
+
+  const subDiagrams = useMemo(() => splitMermaidCode(code), [code]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -226,6 +324,7 @@ const MermaidDiagram = ({ code }) => {
 
   useEffect(() => {
     let cancelled = false;
+    if (subDiagrams.length >= 2) return;
 
     const render = async () => {
       if (!containerRef.current || !code?.trim()) {
@@ -263,7 +362,19 @@ const MermaidDiagram = ({ code }) => {
         containerRef.current.innerHTML = '';
       }
     };
-  }, [code, theme]);
+  }, [code, theme, subDiagrams]);
+
+  if (subDiagrams.length >= 2) {
+    return (
+      <div className="rmc-mermaid-wrap">
+        <div className="rmc-mermaid-column-list">
+          {subDiagrams.map((subCode, index) => (
+            <MermaidSubItem key={index} code={subCode} theme={theme} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     // If diagram rendering fails even after auto-sanitization, render as formatted code block
