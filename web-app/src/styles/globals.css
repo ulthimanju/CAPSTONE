@@ -1,16 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
 
-/* Hide Mermaid's error SVG containers and error icons globally */
-body > div[id^="dmermaid-"]:has(> svg[aria-roledescription="error"]),
-body > div[id^="dmermaid-"],
-body > [id^="dmermaid-"],
-svg[aria-roledescription="error"],
-.error-icon,
-[id*="dmermaid"] {
-  display: none !important;
-}
-
 :root {
   --accent: #4D7CF5;
   --accent-dim: #355bc9;

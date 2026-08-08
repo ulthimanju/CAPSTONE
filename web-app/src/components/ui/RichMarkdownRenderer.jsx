@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useId } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -236,39 +236,21 @@ const sanitizeMermaidCode = (code) => {
   return clean;
 };
 
-// ── Remove Mermaid temporary/error DOM artifacts ─────────────────────────────
-const cleanupMermaidArtifacts = (id) => {
-  if (typeof document === 'undefined') return;
+// ── Error SVG Validation Helper ──────────────────────────────────────────
+const isMermaidErrorSvg = (svg) => {
+  if (!svg || typeof svg !== 'string') return true;
 
-  const selectors = [
-    `#${id}`,
-    `#d${id}`,
-    `svg#${id}`,
-    `svg#d${id}`,
-    `svg[aria-roledescription="error"]`,
-    `[id^="dmermaid-"]`,
-    `[id*="dmermaid"]`,
-    `.error-icon`,
-  ];
-
-  document.querySelectorAll(selectors.join(',')).forEach((element) => {
-    if (element.closest('.rmc-mermaid-body, .rmc-mermaid-column-item')) {
-      // If it's an error SVG inside our container, remove it!
-      if (
-        element.getAttribute('aria-roledescription') === 'error' ||
-        element.classList.contains('error-icon') ||
-        element.id?.includes('dmermaid')
-      ) {
-        element.remove();
-      }
-      return;
-    }
-
-    element.remove();
-  });
+  return (
+    svg.includes('aria-roledescription="error"') ||
+    svg.includes('class="error-icon"') ||
+    svg.includes('Syntax error') ||
+    svg.includes('Parse error') ||
+    svg.includes('error-text') ||
+    svg.includes('dmermaid-')
+  );
 };
 
-// ── Mermaid Render Engine ──────────────────────────────────────────────────
+// ── Mermaid Render Engine with Silent Syntax Validation ────────────────────
 const renderMermaidSafely = async (id, rawCode) => {
   const clean = sanitizeMermaidCode(rawCode);
 
@@ -276,47 +258,25 @@ const renderMermaidSafely = async (id, rawCode) => {
     throw new Error('Empty Mermaid diagram');
   }
 
-  // Remove stale artifacts from a previous render attempt.
-  cleanupMermaidArtifacts(id);
-
   mermaid.initialize(getMermaidTheme());
 
-  try {
-    await mermaid.parse(clean);
-  } catch (parseErr) {
-    cleanupMermaidArtifacts(id);
-    throw new Error(`Invalid Mermaid syntax: ${parseErr.message}`);
+  // Perform silent syntax validation: returns false if invalid syntax without rendering error UI
+  const isValid = await mermaid.parse(clean, { suppressErrors: true });
+
+  if (!isValid) {
+    throw new Error('Invalid Mermaid syntax');
   }
 
   try {
     const { svg } = await mermaid.render(id, clean);
 
-    // Reject error SVGs returned by mermaid.render
-    if (
-      svg &&
-      (svg.includes('aria-roledescription="error"') ||
-       svg.includes('class="error-icon"') ||
-       svg.includes('Syntax error') ||
-       svg.includes('Parse error') ||
-       svg.includes('error-text') ||
-       svg.includes('id="dmermaid') ||
-       svg.includes('dmermaid-'))
-    ) {
-      throw new Error('Mermaid generated an error SVG');
+    if (!svg || isMermaidErrorSvg(svg)) {
+      throw new Error('Mermaid rendering failed');
     }
 
     return svg;
-  } catch (renderErr) {
-    cleanupMermaidArtifacts(id);
-    setTimeout(() => {
-      cleanupMermaidArtifacts(id);
-    }, 0);
-    throw renderErr;
-  } finally {
-    cleanupMermaidArtifacts(id);
-    setTimeout(() => {
-      cleanupMermaidArtifacts(id);
-    }, 0);
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -378,24 +338,28 @@ const splitMermaidCode = (code) => {
 // ── Sub-diagram Column Item Component ─────────────────────────────────────
 const MermaidSubItem = ({ code, theme }) => {
   const containerRef = useRef(null);
-  const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
+  const reactId = useId();
+  const mermaidId = useMemo(
+    () => `rmc-mermaid-${reactId.replace(/:/g, '')}`,
+    [reactId]
+  );
+  const renderVersion = useRef(0);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const version = ++renderVersion.current;
+    if (!containerRef.current || !code?.trim()) return;
+
+    containerRef.current.innerHTML = '';
+    setFailed(false);
 
     const render = async () => {
-      if (!containerRef.current || !code?.trim()) return;
-
-      containerRef.current.innerHTML = '';
-      setFailed(false);
-
       try {
-        const svg = await renderMermaidSafely(idRef.current, code);
-        if (cancelled) return;
+        const svg = await renderMermaidSafely(mermaidId, code);
+        if (version !== renderVersion.current || !containerRef.current) return;
         containerRef.current.innerHTML = svg;
       } catch (err) {
-        if (cancelled) return;
+        if (version !== renderVersion.current) return;
         setFailed(true);
         console.warn('Sub-diagram rendering failed:', err?.message);
       }
@@ -404,11 +368,10 @@ const MermaidSubItem = ({ code, theme }) => {
     render();
 
     return () => {
-      cancelled = true;
-      cleanupMermaidArtifacts(idRef.current);
+      renderVersion.current++;
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
-  }, [code, theme]);
+  }, [code, theme, mermaidId]);
 
   if (failed) return null;
 
@@ -426,8 +389,13 @@ const MermaidSubItem = ({ code, theme }) => {
 // ── Mermaid Diagram Component ──────────────────────────────────────────────
 const MermaidDiagram = ({ code }) => {
   const containerRef = useRef(null);
-  const idRef = useRef(`mermaid-${Math.random().toString(36).substring(2, 9)}`);
-  const [error, setError] = useState(null);
+  const reactId = useId();
+  const mermaidId = useMemo(
+    () => `rmc-mermaid-${reactId.replace(/:/g, '')}`,
+    [reactId]
+  );
+  const renderVersion = useRef(0);
+  const [status, setStatus] = useState('idle');
   const [theme, setTheme] = useState(
     typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'light' : 'light'
   );
@@ -448,46 +416,47 @@ const MermaidDiagram = ({ code }) => {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const version = ++renderVersion.current;
     if (subDiagrams.length >= 2) return;
 
+    if (!containerRef.current || !code?.trim()) {
+      return;
+    }
+
+    setStatus('validating');
+    containerRef.current.innerHTML = '';
+
     const render = async () => {
-      if (!containerRef.current || !code?.trim()) {
-        return;
-      }
-
-      setError(null);
-      containerRef.current.innerHTML = '';
-
       try {
-        const svg = await renderMermaidSafely(idRef.current, code);
+        setStatus('rendering');
+        const svg = await renderMermaidSafely(mermaidId, code);
 
-        if (cancelled) return;
+        if (version !== renderVersion.current || !containerRef.current) return;
 
         containerRef.current.innerHTML = svg;
+        setStatus('rendered');
       } catch (err) {
-        if (cancelled) return;
+        if (version !== renderVersion.current) return;
 
         console.warn('Mermaid diagram could not be rendered and was hidden.', {
           error: err?.message,
         });
 
-        setError(err);
-        containerRef.current.innerHTML = '';
+        setStatus('fallback');
+        if (containerRef.current) containerRef.current.innerHTML = '';
       }
     };
 
     render();
 
     return () => {
-      cancelled = true;
-      cleanupMermaidArtifacts(idRef.current);
+      renderVersion.current++;
 
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
       }
     };
-  }, [code, theme, subDiagrams]);
+  }, [code, theme, subDiagrams, mermaidId]);
 
   if (subDiagrams.length >= 2) {
     return (
@@ -501,8 +470,7 @@ const MermaidDiagram = ({ code }) => {
     );
   }
 
-  if (error) {
-    // Silently omit failed Mermaid diagrams to prevent any broken UI or error artifacts
+  if (status === 'fallback') {
     return null;
   }
 
