@@ -154,7 +154,8 @@ def build_chunk_knowledge_map(chunk: dict) -> str:
         or "Untitled"
     ).strip()
 
-    headings = re.findall(
+    # 1. Extract Headings & Hierarchy
+    heading_matches = re.findall(
         r"^(#{1,6})\s+(.+?)\s*$",
         content,
         re.MULTILINE,
@@ -162,64 +163,70 @@ def build_chunk_knowledge_map(chunk: dict) -> str:
 
     subtopics = [
         heading.strip()
-        for _, heading in headings
+        for _, heading in heading_matches
         if heading.strip()
     ]
 
-    content_types = []
+    hierarchy_parts = []
+    for level_hashes, heading_text in heading_matches[:5]:
+        level = len(level_hashes)
+        hierarchy_parts.append(f"H{level}: {heading_text.strip()}")
 
-    if "```" in content:
-        content_types.append("code")
-
+    # 2. Extract Available Artifacts
+    artifacts = []
     if "```mermaid" in content.lower():
-        content_types.append("mermaid")
+        artifacts.append("Mermaid diagram")
+
+    code_langs = re.findall(r"```([a-zA-Z0-9_-]+)", content)
+    if code_langs:
+        unique_langs = sorted(list(set([l.capitalize() for l in code_langs if l.lower() != "mermaid"])))
+        if unique_langs:
+            artifacts.append(f"{'/'.join(unique_langs)} code")
+        else:
+            artifacts.append("Code example")
 
     if re.search(r"^\s*\|.*\|", content, re.MULTILINE):
-        content_types.append("table")
+        artifacts.append("Comparison table")
 
-    if re.search(
-        r"(^|\n)\s*[-*]\s+",
+    if re.search(r"\b(warning|important|caution|pitfall|note)\b", content, re.IGNORECASE):
+        artifacts.append("Warning / Callout note")
+
+    if re.search(r"(^|\n)\s*[-*]\s+", content):
+        artifacts.append("Structured list")
+
+    if re.search(r"\$\$|\$\\w+", content):
+        artifacts.append("KaTeX formula")
+
+    # 3. Extract Important Concepts & Key Terms
+    bold_terms = re.findall(r"\*\*([^*]+)\*\*", content)
+    inline_code_terms = re.findall(r"`([^`]+)`", content)
+    concept_keywords = re.findall(
+        r"\b([A-Z][a-zA-Z0-9_-]{2,}(?:\s+[A-Z][a-zA-Z0-9_-]{2,})?)\b",
         content,
-    ):
-        content_types.append("lists")
+    )
 
-    if re.search(
-        r"\b(example|implementation|syntax|warning|note|comparison)\b",
-        content,
-        re.IGNORECASE,
-    ):
-        content_types.append("examples/notes/comparisons")
+    raw_concepts = bold_terms + inline_code_terms + concept_keywords
+    cleaned_concepts = []
+    for term in raw_concepts:
+        clean = term.strip()
+        if 3 <= len(clean) <= 40 and not clean.lower().startswith("http") and clean.lower() not in [c.lower() for c in cleaned_concepts]:
+            cleaned_concepts.append(clean)
+            if len(cleaned_concepts) >= 8:
+                break
 
-    paragraphs = [
-        re.sub(r"\s+", " ", paragraph.strip())
-        for paragraph in re.split(r"\n\s*\n", content)
-        if paragraph.strip()
-    ]
+    parts = [f"Title: {title}"]
 
-    knowledge_preview = []
-
-    for paragraph in paragraphs:
-        if paragraph.startswith("```"):
-            continue
-
-        if len(paragraph) >= 60:
-            knowledge_preview.append(paragraph)
-
-        if len(knowledge_preview) >= 3:
-            break
-
-    parts = [
-        f"Title: {title}",
-    ]
+    if hierarchy_parts:
+        parts.append("Hierarchy:\n- " + "\n- ".join(hierarchy_parts))
 
     if subtopics:
         parts.append("Subtopics: " + "; ".join(subtopics[:10]))
 
-    if content_types:
-        parts.append("Content types: " + ", ".join(content_types))
+    if artifacts:
+        parts.append("Available Artifacts: " + ", ".join(artifacts))
 
-    if knowledge_preview:
-        parts.append("Key information:\n- " + "\n- ".join(knowledge_preview))
+    if cleaned_concepts:
+        parts.append("Important Terms / Concepts: " + ", ".join(cleaned_concepts))
 
     return "\n".join(parts)
 
