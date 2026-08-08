@@ -800,8 +800,8 @@ svg, i[class^="ti-"], i[class*=" ti-"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 10px;
+  padding: 10px 18px;
   border-radius: var(--radius-sm);
   font-size: 13.5px;
   font-weight: 600;
@@ -809,7 +809,8 @@ svg, i[class^="ti-"], i[class*=" ti-"] {
   border: 1px solid var(--border);
   background: var(--island-2);
   color: var(--text);
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
 .btn i, .btn svg {
@@ -823,16 +824,80 @@ svg, i[class^="ti-"], i[class*=" ti-"] {
   background: var(--island);
 }
 
+.btn-lg {
+  padding: 12px 24px;
+  font-size: 14.5px;
+  border-radius: 12px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.btn-full {
+  width: 100%;
+}
+
 .btn-primary {
   background: linear-gradient(145deg, #6992ff, #4D7CF5);
   border: none;
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(77, 124, 245, 0.25);
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(77, 124, 245, 0.35);
 }
 
 .btn-primary:hover {
   background: linear-gradient(145deg, #5883f5, #3a6be6);
-  color: #FFFFFF;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 18px rgba(77, 124, 245, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-3);
+  border-color: var(--border-strong);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+}
+
+.btn-outline:hover {
+  background: var(--bg-2);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+.btn-danger {
+  background: var(--danger);
+  border: none;
+  color: #FFFFFF !important;
+}
+
+.btn-danger:hover {
+  filter: brightness(0.9);
 }
 
 /* Responsive breakpoint */

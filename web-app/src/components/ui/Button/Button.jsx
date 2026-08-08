@@ -1,10 +1,7 @@
+import React from "react";
 import { cn } from "@/lib/cn";
-
 import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
-import { Typography } from "@/components/ui/Typography";
-
-import { buttonVariants } from "./Button.variants";
 
 const contentSizeMap = {
   sm: "xs",
@@ -36,71 +33,61 @@ const spinnerColorMap = {
  */
 export function Button({
   children,
-
   variant = "primary",
   size = "md",
-
   leftIcon,
   rightIcon,
-
   loading = false,
   disabled = false,
-
   fullWidth = false,
-
   className,
-
+  style,
   ...props
 }) {
   const contentSize = contentSizeMap[size];
-
   const spinnerColor = spinnerColorMap[variant];
-
   const isDisabled = disabled || loading;
+
+  const sizeClass = {
+    sm: "btn-sm",
+    md: "",
+    lg: "btn-lg",
+  }[size] || "";
+
+  const variantClass = {
+    primary: "btn-primary",
+    secondary: "btn-secondary",
+    outline: "btn-outline",
+    ghost: "btn-ghost",
+    danger: "btn-danger",
+  }[variant] || "btn-primary";
 
   return (
     <button
       type="button"
       className={cn(
-        buttonVariants({
-          variant,
-          size,
-          fullWidth,
-        }),
+        "btn",
+        variantClass,
+        sizeClass,
+        fullWidth && "btn-full",
         className
       )}
+      style={{
+        width: fullWidth ? '100%' : undefined,
+        ...style,
+      }}
       disabled={isDisabled}
       {...props}
     >
       {loading ? (
-        <Spinner
-          size={contentSize}
-          color={spinnerColor}
-        />
+        <Spinner size={contentSize} color={spinnerColor} />
       ) : (
-        leftIcon && (
-          <Icon
-            name={leftIcon}
-            size={contentSize}
-          />
-        )
+        leftIcon && <Icon name={leftIcon} size={contentSize} />
       )}
 
-      <Typography
-        as="span"
-        variant="button"
-        weight="medium"
-        color="inherit"
-      >
-        {children}
-      </Typography>
+      <span>{children}</span>
 
-      {!loading && rightIcon && (
-        <Icon
-          name={rightIcon}
-          size={contentSize}
-        />
-      )}
+      {!loading && rightIcon && <Icon name={rightIcon} size={contentSize} />}
     </button>
   );
 }
