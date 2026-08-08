@@ -238,10 +238,6 @@ const MermaidDiagram = ({ code }) => {
   if (subDiagrams.length >= 2) {
     return (
       <div className="rmc-mermaid-wrap">
-        <div className="rmc-mermaid-label">
-          <i className="ti ti-chart-bubble" style={{ marginRight: 5 }} />
-          Diagrams ({subDiagrams.length})
-        </div>
         <div className="rmc-mermaid-grid">
           {subDiagrams.map((subCode, index) => (
             <MermaidSubItem key={index} code={subCode} />
@@ -257,11 +253,6 @@ const MermaidDiagram = ({ code }) => {
 
   return (
     <div className="rmc-mermaid-wrap">
-      <div className="rmc-mermaid-label">
-        <i className="ti ti-chart-bubble" style={{ marginRight: 5 }} />
-        Diagram
-      </div>
-
       <div
         className="rmc-mermaid-body"
         ref={containerRef}

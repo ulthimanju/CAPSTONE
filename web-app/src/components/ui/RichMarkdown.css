@@ -165,21 +165,8 @@
 .rmc-mermaid-wrap {
   margin: 16px 0;
   border-radius: 8px;
-  border: 1px solid var(--border-strong);
   background: var(--bg-1);
   overflow: hidden;
-}
-
-.rmc-mermaid-label {
-  font-size: 11px;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 6px 12px;
-  background: var(--bg-3);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
 }
 
 .rmc-mermaid-body {
@@ -200,7 +187,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  padding: 16px;
+  padding: 0;
   background: var(--bg-1);
   box-sizing: border-box;
   width: 100%;
@@ -208,7 +195,6 @@
 
 .rmc-mermaid-grid-item {
   background: var(--bg-2);
-  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 14px;
   display: flex;
