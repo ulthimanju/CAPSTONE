@@ -234,6 +234,29 @@ const sanitizeMermaidCode = (code) => {
   return clean;
 };
 
+// ── Remove Mermaid temporary/error DOM artifacts ─────────────────────────────
+const cleanupMermaidArtifacts = (id) => {
+  if (typeof document === 'undefined') return;
+
+  const selectors = [
+    `#${id}`,
+    `#d${id}`,
+    `svg#${id}`,
+    `svg#d${id}`,
+    `svg[aria-roledescription="error"]`,
+    `[id^="dmermaid-"]`,
+  ];
+
+  document.querySelectorAll(selectors.join(',')).forEach((element) => {
+    // Never remove an element that belongs to our actual React container.
+    if (element.closest('.rmc-mermaid-body, .rmc-mermaid-column-item')) {
+      return;
+    }
+
+    element.remove();
+  });
+};
+
 // ── Mermaid Render Engine ──────────────────────────────────────────────────
 const renderMermaidSafely = async (id, rawCode) => {
   const clean = sanitizeMermaidCode(rawCode);
@@ -242,16 +265,33 @@ const renderMermaidSafely = async (id, rawCode) => {
     throw new Error('Empty Mermaid diagram');
   }
 
+  // Remove stale artifacts from a previous render attempt.
+  cleanupMermaidArtifacts(id);
+
   mermaid.initialize(getMermaidTheme());
 
   try {
     await mermaid.parse(clean);
   } catch (parseErr) {
+    cleanupMermaidArtifacts(id);
     throw new Error(`Invalid Mermaid syntax: ${parseErr.message}`);
   }
 
-  const { svg } = await mermaid.render(id, clean);
-  return svg;
+  try {
+    const { svg } = await mermaid.render(id, clean);
+    return svg;
+  } catch (renderErr) {
+    cleanupMermaidArtifacts(id);
+    setTimeout(() => {
+      cleanupMermaidArtifacts(id);
+    }, 0);
+    throw renderErr;
+  } finally {
+    cleanupMermaidArtifacts(id);
+    setTimeout(() => {
+      cleanupMermaidArtifacts(id);
+    }, 0);
+  }
 };
 
 // ── Helper to split multi-subgraph / multi-diagram Mermaid blocks ──────────
@@ -327,7 +367,7 @@ const MermaidSubItem = ({ code, theme }) => {
         if (cancelled) return;
         containerRef.current.innerHTML = svg;
       } catch (err) {
-        console.error('Sub-diagram rendering failed:', err);
+        console.warn('Sub-diagram rendering failed:', err?.message);
       }
     };
 
@@ -335,6 +375,7 @@ const MermaidSubItem = ({ code, theme }) => {
 
     return () => {
       cancelled = true;
+      cleanupMermaidArtifacts(idRef.current);
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
   }, [code, theme]);
@@ -395,9 +436,8 @@ const MermaidDiagram = ({ code }) => {
       } catch (err) {
         if (cancelled) return;
 
-        console.error('Mermaid rendering failed:', {
-          code,
-          error: err,
+        console.warn('Mermaid diagram could not be rendered and was hidden.', {
+          error: err?.message,
         });
 
         setError(err);
@@ -409,6 +449,7 @@ const MermaidDiagram = ({ code }) => {
 
     return () => {
       cancelled = true;
+      cleanupMermaidArtifacts(idRef.current);
 
       if (containerRef.current) {
         containerRef.current.innerHTML = '';

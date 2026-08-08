@@ -6,7 +6,13 @@
    --text, --text-2, --text-3, --text-4
    --accent, --accent-dim, --accent-bg
    --danger, --mono, --sans
-   ============================================================ */
+/* Mermaid can temporarily inject error SVGs outside the React renderer.
+   Never allow those artifacts to become visible in the application UI. */
+body > svg[aria-roledescription="error"],
+body > svg[id^="dmermaid-"],
+body > [id^="dmermaid-"] {
+  display: none !important;
+}
 
 .rich-markdown-content {
   font-family: var(--sans);
