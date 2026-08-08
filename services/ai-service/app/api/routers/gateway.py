@@ -239,61 +239,62 @@ def divide_into_regions(
     ]
 
 
-def calculate_chunk_importance(chunk: dict) -> float:
-    content = (chunk.get("content") or "").strip()
+def split_content_blocks(content: str) -> list[str]:
+    if not content or not content.strip():
+        return []
 
-    if not content:
+    blocks = re.split(
+        r"(?=^#{1,6}\s+)",
+        content,
+        flags=re.MULTILINE,
+    )
+
+    result = [
+        block.strip()
+        for block in blocks
+        if block.strip()
+    ]
+
+    if not result and content.strip():
+        paragraphs = re.split(r"\n\s*\n", content)
+        result = [p.strip() for p in paragraphs if p.strip()]
+
+    return result
+
+
+def calculate_block_importance(block: str, title: str = "") -> float:
+    if not block or not block.strip():
         return 0.0
 
     score = 0.0
 
-    headings = re.findall(
-        r"^#{1,6}\s+",
-        content,
-        re.MULTILINE,
-    )
-    score += min(len(headings) * 0.04, 0.20)
+    headings = re.findall(r"^#{1,6}\s+", block, re.MULTILINE)
+    score += min(len(headings) * 0.05, 0.20)
 
-    if re.search(
-        r"\b(definition|overview|concept|principle|what is)\b",
-        content,
-        re.IGNORECASE,
-    ):
+    if re.search(r"\b(definition|overview|concept|principle|what is)\b", block, re.IGNORECASE):
         score += 0.15
 
-    if re.search(
-        r"\b(example|implementation|use case|syntax)\b",
-        content,
-        re.IGNORECASE,
-    ):
+    if re.search(r"\b(example|implementation|use case|syntax)\b", block, re.IGNORECASE):
         score += 0.15
 
-    if "```" in content:
+    if "```" in block:
         score += 0.15
 
-    if "```mermaid" in content.lower():
+    if "```mermaid" in block.lower():
         score += 0.10
 
-    if re.search(
-        r"^\s*\|.*\|",
-        content,
-        re.MULTILINE,
-    ):
+    if re.search(r"^\s*\|.*\|", block, re.MULTILINE):
         score += 0.10
 
-    if re.search(
-        r"\b(warning|important|note|limitation|pitfall)\b",
-        content,
-        re.IGNORECASE,
-    ):
+    if re.search(r"\b(warning|important|note|limitation|pitfall)\b", block, re.IGNORECASE):
         score += 0.10
 
-    score += min(len(content) / 10000, 0.15)
+    score += min(len(block) / 3000, 0.15)
 
     return min(score, 1.0)
 
 
-def select_representative_chunks(
+def select_representative_passages(
     chunks: list[dict],
     detailed_token_budget: int = 9000,
 ) -> list[dict]:
@@ -307,22 +308,32 @@ def select_representative_chunks(
         return []
 
     per_region_budget = max(400, detailed_token_budget // len(regions))
-    selected = []
+    selected_passages = []
     total_used_tokens = 0
 
     for region in regions:
         if not region:
             continue
 
-        sorted_region_chunks = sorted(
-            region,
-            key=calculate_chunk_importance,
-            reverse=True,
-        )
+        region_blocks = []
+        for chunk in region:
+            doc_title = (chunk.get("title") or chunk.get("document_filename") or "Untitled").strip()
+            content = chunk.get("content", "") or ""
+            blocks = split_content_blocks(content)
+
+            for block in blocks:
+                score = calculate_block_importance(block, doc_title)
+                region_blocks.append({
+                    "title": doc_title,
+                    "content": block,
+                    "score": score,
+                })
+
+        region_blocks.sort(key=lambda b: b["score"], reverse=True)
 
         region_used_tokens = 0
-        for chunk in sorted_region_chunks:
-            tokens = TokenCounter.estimate_tokens(chunk.get("content", ""))
+        for block_item in region_blocks:
+            tokens = TokenCounter.estimate_tokens(block_item["content"])
 
             if region_used_tokens + tokens > per_region_budget:
                 continue
@@ -330,11 +341,11 @@ def select_representative_chunks(
             if total_used_tokens + tokens > detailed_token_budget:
                 break
 
-            selected.append(chunk)
+            selected_passages.append(block_item)
             region_used_tokens += tokens
             total_used_tokens += tokens
 
-    return selected
+    return selected_passages
 
 
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
@@ -379,14 +390,13 @@ async def generate_workspace_summary_endpoint(
 
         workspace_map_text = "\n\n".join(workspace_map)
 
-        # Select region-representative full chunks across the entire workspace
-        selected_chunks = select_representative_chunks(chunks_data, detailed_token_budget=9000)
+        # Select region-representative granular passages across the entire workspace
+        selected_passages = select_representative_passages(chunks_data, detailed_token_budget=9000)
 
         detailed_sources = []
-        for index, chunk in enumerate(selected_chunks, start=1):
-            title = chunk.get("title") or chunk.get("document_filename", "Untitled")
+        for index, item in enumerate(selected_passages, start=1):
             detailed_sources.append(
-                f"--- Detailed Source {index} ---\nTitle: {title}\n\n{chunk.get('content', '').strip()}"
+                f"--- Detailed Excerpt {index} ---\nSource: {item['title']}\n\n{item['content']}"
             )
 
         detailed_context = "\n\n".join(detailed_sources)
