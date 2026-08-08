@@ -611,8 +611,16 @@ const extractTextContent = (node) => {
   if (node === null || node === undefined) return '';
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (Array.isArray(node)) return node.map(extractTextContent).join('');
-  if (typeof node === 'object' && node.props) {
-    return extractTextContent(node.props.children);
+  if (typeof node === 'object') {
+    if (node.props && node.props.children) {
+      return extractTextContent(node.props.children);
+    }
+    if (node.children) {
+      return extractTextContent(node.children);
+    }
+    if (node.value) {
+      return String(node.value);
+    }
   }
   return '';
 };
@@ -629,8 +637,15 @@ const CodeBlock = ({ className, children, onMermaidError }) => {
 
   const trimmed = rawCodeString.trim();
 
-  // If code block is a ```diagram block or contains visual flow cards, render as live visual elements
-  if (lang.toLowerCase() === 'diagram' || trimmed.includes('flow-card')) {
+  // Bulletproof detection of diagram blocks and flow cards
+  const isDiagramBlock =
+    lang.toLowerCase() === 'diagram' ||
+    (className && className.toLowerCase().includes('diagram')) ||
+    trimmed.toLowerCase().includes('flow-card') ||
+    trimmed.toLowerCase().includes('flow-card-container') ||
+    (trimmed.includes('<div') && (trimmed.includes('Step 1') || trimmed.includes('Step 2')));
+
+  if (isDiagramBlock) {
     const cleanHtml = trimmed
       .replace(/^diagram\s*/i, '')
       .replace(/className=/gi, 'class=');
@@ -750,14 +765,14 @@ export const RichMarkdownRenderer = ({ content, compact = false, onMermaidError 
         ]}
         components={{
           // Pre element intercepts fenced code blocks and routes them to CodeBlock
-          pre({ children }) {
+          pre({ children, className: preClassName, ...props }) {
             const childrenArray = React.Children.toArray(children);
-            const codeElement = childrenArray.find((child) => child && child.type === 'code') || children;
-            const className = codeElement?.props?.className || '';
+            const codeElement = childrenArray.find((child) => child && (child.type === 'code' || child.props?.className)) || children;
+            const className = codeElement?.props?.className || preClassName || props.className || '';
             const codeContent = codeElement?.props?.children || children;
 
             return (
-              <CodeBlock className={className} onMermaidError={onMermaidError}>
+              <CodeBlock className={className} onMermaidError={onMermaidError} {...props}>
                 {codeContent}
               </CodeBlock>
             );
