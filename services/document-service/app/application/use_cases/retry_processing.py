@@ -43,7 +43,7 @@ class RetryProcessingUseCase:
 
             from fastapi import status
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Job cannot be retried. Maximum retry limit of {max_retries} attempts reached.",
             )
 
