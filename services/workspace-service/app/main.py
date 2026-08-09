@@ -17,6 +17,13 @@ async def lifespan(app: FastAPI):
                 "ADD COLUMN IF NOT EXISTS role VARCHAR(50) NOT NULL DEFAULT 'VIEWER'"
             )
         )
+        # Ensure problems_json column exists — added after initial table creation
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "ALTER TABLE learning_unit_contents "
+                "ADD COLUMN IF NOT EXISTS problems_json JSONB"
+            )
+        )
     yield
     try:
         await engine.dispose()
