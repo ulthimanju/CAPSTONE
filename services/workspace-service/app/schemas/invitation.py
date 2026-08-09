@@ -1,7 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
-from app.constants.enums import InvitationStatus
+from app.constants.enums import InvitationStatus, WorkspaceRole
 
 
 class InvitationResponse(BaseModel):
@@ -12,6 +12,7 @@ class InvitationResponse(BaseModel):
     invited_by: UUID
     invited_user_id: UUID | None = None
     invited_email: str | None = None
+    role: WorkspaceRole = WorkspaceRole.VIEWER
     status: InvitationStatus
     expires_at: datetime
     created_at: datetime

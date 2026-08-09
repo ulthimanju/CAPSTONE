@@ -107,77 +107,7 @@ class GeminiClient:
                         # Switch immediately to fallback model on 503 high demand spike
                         break
 
-        # Fallback handling for unauthenticated / unconfigured API key or quota errors
-        err_str = str(last_err)
-        if "401" in err_str or "UNAUTHENTICATED" in err_str or "API_KEY" in err_str or "not configured" in err_str or "400" in err_str or "403" in err_str:
-            fallback_text = self._generate_structured_fallback(response_schema, prompt)
-            if fallback_text:
-                return {
-                    "text": fallback_text,
-                    "model": "fallback-heuristic",
-                    "provider": AIProvider.GEMINI,
-                    "prompt_tokens": 100,
-                    "completion_tokens": 100,
-                    "total_tokens": 200,
-                    "latency_ms": 10,
-                }
-
-        raise RuntimeError(f"Gemini generation failed across models ({fallback_models}): {last_err}")
-
-    def _generate_structured_fallback(self, response_schema: Any | None, prompt: str) -> str | None:
-        import json
-        if not response_schema:
-            return json.dumps({
-                "response": "AI Summary generated based on workspace content analysis.",
-                "status": "completed"
-            })
-        schema_name = getattr(response_schema, "__name__", str(response_schema))
-        if "WorkspaceSummaryResponse" in schema_name:
-            return json.dumps({
-                "overview": "Comprehensive workspace overview generated from core documents and materials.",
-                "key_topics": ["Architecture & Design", "API Endpoints & Contracts", "Database & Performance"],
-                "executive_summary": "This workspace contains foundational documentation, microservice configurations, and learning modules for scalable application development."
-            })
-        elif "LearningPathResponse" in schema_name:
-            return json.dumps({
-                "title": "Mastery Learning Path",
-                "description": "Step-by-step learning progression built from workspace content.",
-                "units": [
-                    {
-                        "title": "Module 1: Foundations & Architecture",
-                        "description": "Introduction to core components, design principles, and system setup.",
-                        "topics": ["Architecture Overview", "Data Modeling", "API Routing"]
-                    },
-                    {
-                        "title": "Module 2: Implementation & Services",
-                        "description": "Deep-dive into microservices, authentication, and state management.",
-                        "topics": ["Authentication", "Service Communication", "Caching Strategies"]
-                    },
-                    {
-                        "title": "Module 3: Advanced Optimization & Production",
-                        "description": "Performance tuning, database indexing, and deployment pipelines.",
-                        "topics": ["Indexing", "Concurrency Control", "Monitoring"]
-                    }
-                ]
-            })
-        elif "LearningUnitContentResponse" in schema_name or "UnitContent" in schema_name:
-            return json.dumps({
-                "title": "Learning Module Overview",
-                "summary": {
-                    "overview": "Detailed breakdown of module concepts and principles.",
-                    "key_topics": ["Key Concept 1", "Key Concept 2"],
-                    "executive_summary": "Structured summary of unit topics."
-                },
-                "quiz_questions": [
-                    {
-                        "question": "What is the primary architectural goal of using microservices in this application?",
-                        "options": ["Monolithic scaling", "Decoupled domain isolation", "Single database constraint", "Synchronous blocking calls"],
-                        "correct_option_index": 1,
-                        "explanation": "Microservices enable decoupled domain isolation and independent scalability."
-                    }
-                ]
-            })
-        return json.dumps({"summary": "Generated content summary."})
+        raise RuntimeError(f"AI generation Failed: {last_err}")
 
     async def embed_texts(
         self,

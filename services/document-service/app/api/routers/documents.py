@@ -7,7 +7,7 @@ from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.dependencies.auth import get_current_user_id
+from app.api.dependencies.auth import get_current_user_id, verify_workspace_access
 from app.api.dependencies.database import (
     get_db_session,
     get_document_repository,
@@ -58,9 +58,11 @@ router = APIRouter(prefix="/api/v1/documents", tags=["Documents"])
 @router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     req: UploadDocumentRequest,
+    authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
+    await verify_workspace_access(req.workspace_id, user_id, required_write=True, authorization=authorization)
     from app.config.settings import settings
     max_bytes = settings.max_upload_size_mb * 1024 * 1024
     if req.file_size_bytes > max_bytes:
@@ -85,14 +87,22 @@ async def upload_document_raw(
     authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
 ):
+    await verify_workspace_access(workspace_id, user_id, required_write=True, authorization=authorization)
     import hashlib
     sha256 = hashlib.sha256()
-    ext = file.filename.split(".")[-1].upper() if "." in file.filename else "PDF"
+    ALLOWED_EXTENSIONS = {"pdf", "docx", "wps", "pptx", "key", "xlsx", "csv", "png", "jpg", "jpeg", "tif", "tiff"}
+    ext = file.filename.split(".")[-1].lower() if "." in file.filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported file extension. Allowed formats: Documents (PDF, DOCX, WPS), Slides (PPTX, Keynote), Spreadsheets (XLSX, CSV), Images (PNG, JPG, TIFF)."
+        )
+
     max_bytes = settings.max_upload_size_mb * 1024 * 1024
     current_size = 0
 
     # Stream file contents incrementally in 1MB chunks directly to disk while updating SHA-256 hash
-    temp_upload = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext.lower()}")
+    temp_upload = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}")
     try:
         while chunk := await file.read(1024 * 1024):
             current_size += len(chunk)
@@ -127,6 +137,8 @@ async def upload_document_raw(
 
             is_pdf = header.startswith(b"%PDF-")
             is_zip_office = header.startswith(b"PK\x03\x04")
+            is_image = header.startswith(b"\x89PNG\r\n\x1a\n") or header.startswith(b"\xff\xd8\xff") or header.startswith(b"II*\x00") or header.startswith(b"MM\x00*")
+            is_compound_binary = header.startswith(b"\xd0\xcf\x11\xe0")
             is_text = False
             try:
                 sample_str = header.decode("utf-8")
@@ -135,10 +147,10 @@ async def upload_document_raw(
             except UnicodeDecodeError:
                 is_text = False
 
-            if not (is_pdf or is_zip_office or is_text):
+            if not (is_pdf or is_zip_office or is_image or is_compound_binary or is_text):
                 raise HTTPException(
                     status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                    detail="Unsupported Media Type: File content signature does not match allowed document formats (PDF, DOCX, PPTX, XLSX, TXT, MD).",
+                    detail="Unsupported Media Type: File content signature does not match allowed document, slide, spreadsheet, or image formats.",
                 )
     except HTTPException:
         if os.path.exists(temp_path):
@@ -294,8 +306,11 @@ async def list_documents(
     workspace_id: UUID = Query(...),
     limit: int = Query(default=settings.default_page_size, ge=1, le=settings.max_page_size),
     offset: int = Query(default=0, ge=0),
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
+    await verify_workspace_access(workspace_id, user_id, required_write=False, authorization=authorization)
     repo = get_document_repository(session)
     use_case = ListDocumentsUseCase(repo)
     result = await use_case.execute(workspace_id)
@@ -307,20 +322,29 @@ async def list_documents(
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(
     document_id: UUID,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
     repo = get_document_repository(session)
     use_case = GetDocumentUseCase(repo)
-    return await use_case.execute(document_id)
+    doc = await use_case.execute(document_id)
+    await verify_workspace_access(doc.workspace_id, user_id, required_write=False, authorization=authorization)
+    return doc
 
 
 @router.patch("/{document_id}", response_model=DocumentResponse)
 async def rename_document(
     document_id: UUID,
     req: UpdateDocumentRequest,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
     repo = get_document_repository(session)
+    get_use_case = GetDocumentUseCase(repo)
+    doc = await get_use_case.execute(document_id)
+    await verify_workspace_access(doc.workspace_id, user_id, required_write=True, authorization=authorization)
     use_case = RenameDocumentUseCase(repo)
     return await use_case.execute(document_id, req)
 
@@ -328,9 +352,14 @@ async def rename_document(
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: UUID,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
     repo = get_document_repository(session)
+    get_use_case = GetDocumentUseCase(repo)
+    doc = await get_use_case.execute(document_id)
+    await verify_workspace_access(doc.workspace_id, user_id, required_write=True, authorization=authorization)
     use_case = DeleteDocumentUseCase(repo)
     await use_case.execute(document_id)
     return None
@@ -484,8 +513,11 @@ async def list_workspace_chunks(
     workspace_id: UUID,
     limit: int = Query(default=settings.default_page_size, ge=1, le=settings.max_page_size),
     offset: int = Query(default=0, ge=0),
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
+    await verify_workspace_access(workspace_id, user_id, required_write=False, authorization=authorization)
     doc_repo = get_document_repository(session)
     chunk_repo = get_document_chunk_repository(session)
     docs = await doc_repo.list_by_workspace(workspace_id)
@@ -512,8 +544,11 @@ import re
 @router.get("/workspaces/{workspace_id}/outline")
 async def get_workspace_outline(
     workspace_id: UUID,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
+    await verify_workspace_access(workspace_id, user_id, required_write=False, authorization=authorization)
     doc_repo = get_document_repository(session)
     parse_repo = get_document_parse_result_repository(session)
     chunk_repo = get_document_chunk_repository(session)

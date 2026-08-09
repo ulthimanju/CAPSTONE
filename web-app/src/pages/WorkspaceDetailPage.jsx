@@ -518,10 +518,14 @@ const WorkspaceDetailPageContent = () => {
 
     const MAX_SIZE_MB = 50;
     const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'wps', 'pptx', 'key', 'xlsx', 'csv', 'png', 'jpg', 'jpeg', 'tif', 'tiff'];
     const validFiles = [];
 
     for (const file of Array.from(filesToUpload)) {
-      if (file.size > MAX_SIZE_BYTES) {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        alert(`File "${file.name}" has an unsupported format.\nAllowed types:\n• Documents: PDF, DOCX, WPS\n• Slides: PPTX, Keynote (.key)\n• Spreadsheets: XLSX, CSV\n• Images: PNG, JPG, TIFF`);
+      } else if (file.size > MAX_SIZE_BYTES) {
         alert(`File "${file.name}" exceeds the maximum allowed upload limit of ${MAX_SIZE_MB} MB.`);
       } else {
         validFiles.push(file);
@@ -869,6 +873,7 @@ const WorkspaceDetailPageContent = () => {
                   type="file"
                   id="file-input"
                   multiple
+                  accept=".pdf,.docx,.wps,.pptx,.key,.xlsx,.csv,.png,.jpg,.jpeg,.tif,.tiff"
                   onChange={(e) => handleUploadFiles(e.target.files)}
                   style={{ display: 'none' }}
                 />
@@ -877,19 +882,19 @@ const WorkspaceDetailPageContent = () => {
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
-                    PDFs (scanned/OCR), Word, Excel, PPT
+                    Documents (PDF, DOCX, WPS)
                   </div>
                   <div className="rule">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
-                    Images (PNG, JPG, WebP), TXT, code
+                    Slides (PPTX, Keynote) & Spreadsheets (XLSX, CSV)
                   </div>
                   <div className="rule">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
-                    Up to 50 MB per file
+                    Images (PNG, JPG, TIFF) · Max 50 MB
                   </div>
                 </div>
               </label>
@@ -902,6 +907,19 @@ const WorkspaceDetailPageContent = () => {
           <section className="tab-panel active" id="panel-summary">
             {!summaryLoaded && !summaryData && !summaryStatus ? (
               <SummarySkeleton />
+            ) : summaryStatus === 'FAILED' ? (
+              <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+                  <i className="ti ti-alert-triangle"></i>
+                </div>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--danger)', marginBottom: '0.5rem' }}>AI generation Failed</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+                  Unable to generate workspace summary at this time. Please try again.
+                </p>
+                <button className="btn btn-primary" onClick={handleGenerateSummary} style={{ padding: '8px 16px', fontSize: '13px' }}>
+                  <i className="ti ti-rotate-clockwise"></i> Retry Generation
+                </button>
+              </div>
             ) : summaryStatus ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
                 <Spinner size="lg" />
@@ -1025,6 +1043,19 @@ const WorkspaceDetailPageContent = () => {
           <section className="tab-panel active" id="panel-learning">
             {!learningPathLoaded && !learningPathData && !learningPathStatus ? (
               <LearningPathSkeleton />
+            ) : learningPathStatus === 'FAILED' ? (
+              <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+                  <i className="ti ti-alert-triangle"></i>
+                </div>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--danger)', marginBottom: '0.5rem' }}>AI generation Failed</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+                  Unable to generate learning path curriculum. Please try again.
+                </p>
+                <button className="btn btn-primary" onClick={handleGenerateLearningPath} style={{ padding: '8px 16px', fontSize: '13px' }}>
+                  <i className="ti ti-rotate-clockwise"></i> Retry Generation
+                </button>
+              </div>
             ) : learningPathStatus ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
                 <Spinner size="lg" />

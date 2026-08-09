@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
-from app.constants.enums import InvitationStatus
+from app.constants.enums import InvitationStatus, WorkspaceRole
 
 
 @dataclass
@@ -14,4 +14,5 @@ class WorkspaceInvitation:
     expires_at: datetime
     created_at: datetime
     invited_email: str | None = None
+    role: WorkspaceRole = WorkspaceRole.VIEWER
     accepted_at: datetime | None = None

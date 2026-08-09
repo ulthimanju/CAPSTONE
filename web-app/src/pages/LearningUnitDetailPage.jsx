@@ -74,7 +74,7 @@ export const LearningUnitDetailPage = () => {
         ) {
           if (data.status === 'QUEUED') setGenerationProgressText('Queued...');
           else if (data.status === 'STARTED') setGenerationProgressText('Retrieving RAG document context...');
-          else if (data.status === 'IN_PROGRESS') setGenerationProgressText('Generating Summary, Flashcards & Quiz with Gemini...');
+          else if (data.status === 'IN_PROGRESS') setGenerationProgressText('Generating Summary, Flashcards, Quiz & Problems with Gemini...');
           else if (data.status === 'COMPLETED') {
             setGenerationProgressText('Completed!');
             fetchUnitContent();
@@ -152,7 +152,7 @@ export const LearningUnitDetailPage = () => {
   const handleGenerateContent = async () => {
     try {
       setGenerating(true);
-      setGenerationProgressText('Generating Summary, Flashcards & Quiz with Gemini...');
+      setGenerationProgressText('Generating Summary, Flashcards, Quiz & Problems with Gemini...');
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
       const res = await apiClient.post(
         `/api/v1/ai/workspaces/${workspaceId}/units/generate`,
@@ -329,6 +329,18 @@ export const LearningUnitDetailPage = () => {
               </svg>
               Quiz ({contentData.quiz?.length || 0})
             </button>
+
+            <button
+              onClick={() => setActiveTab('problems')}
+              className={`nav-item ${activeTab === 'problems' ? 'active' : ''}`}
+              style={{ width: 'auto', padding: '8px 16px', borderRadius: '8px' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+              Problems ({contentData.problems?.length || 0})
+            </button>
           </div>
         )}
 
@@ -337,6 +349,23 @@ export const LearningUnitDetailPage = () => {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
             <Spinner size="lg" />
           </div>
+        ) : generationProgressText?.startsWith('Failed') ? (
+          <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--danger)', marginBottom: '0.5rem' }}>AI generation Failed</h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+              {generationProgressText}
+            </p>
+            <button className="btn btn-primary" onClick={handleGenerateContent} style={{ padding: '10px 20px', fontSize: '13.5px', gap: '8px' }}>
+              Retry Generation
+            </button>
+          </div>
         ) : generating ? (
           <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Spinner size="lg" />
@@ -344,7 +373,7 @@ export const LearningUnitDetailPage = () => {
               {generationProgressText}
             </h3>
             <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '420px' }}>
-              Gemini is processing RAG document context and building your interactive Summary, Flashcards, and Quiz...
+              Gemini is processing RAG document context and building your interactive Summary, Flashcards, Quiz, and Practice Problems...
             </p>
           </div>
         ) : !contentData ? (
@@ -357,7 +386,7 @@ export const LearningUnitDetailPage = () => {
             </div>
             <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>Unit Content Not Generated Yet</h2>
             <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '450px', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-              Generate a unified study bundle containing a rich summary, interactive flashcards, and a multiple-choice quiz — powered by RAG context from your workspace documents.
+              Generate a unified study bundle containing a rich summary, interactive flashcards, multiple-choice quiz, and 3 recommended practice problems — powered by RAG context from your workspace documents.
             </p>
             <button className="btn btn-primary" onClick={handleGenerateContent} style={{ padding: '10px 20px', fontSize: '13.5px', gap: '8px' }}>
               Generate Unit Study Bundle
@@ -564,6 +593,124 @@ export const LearningUnitDetailPage = () => {
                             {answeredOpt === q.correct_answer ? '✓ Correct!' : '✗ Incorrect'}
                           </strong>
                           {q.explanation}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* SUB-TAB 4: PROBLEMS */}
+            {activeTab === 'problems' && contentData.problems && contentData.problems.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {contentData.problems.map((prob, pIdx) => {
+                  const diffColor = prob.difficulty?.toLowerCase() === 'easy' ? '#3ecf8e' : prob.difficulty?.toLowerCase() === 'medium' ? '#f59e0b' : '#ef4444';
+                  return (
+                    <div
+                      key={pIdx}
+                      className="island"
+                      style={{
+                        padding: '22px 24px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '14px',
+                      }}
+                    >
+                      {/* Header: Title, Platform, Difficulty, Solve Button */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                          <h4 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>
+                            {prob.title}
+                          </h4>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              padding: '3px 10px',
+                              borderRadius: '4px',
+                              background: 'rgba(77, 124, 245, 0.12)',
+                              color: 'var(--accent)',
+                              border: '1px solid rgba(77, 124, 245, 0.25)',
+                            }}
+                          >
+                            {prob.platform}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              padding: '3px 10px',
+                              borderRadius: '4px',
+                              background: `${diffColor}18`,
+                              color: diffColor,
+                              border: `1px solid ${diffColor}40`,
+                            }}
+                          >
+                            {prob.difficulty}
+                          </span>
+                        </div>
+
+                        {prob.url && (
+                          <a
+                            href={prob.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-primary"
+                            style={{ fontSize: '13px', padding: '7px 16px', gap: '7px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                          >
+                            Solve Problem
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      <p style={{ fontSize: '13.5px', color: 'var(--text-dim)', margin: 0, lineHeight: '1.6' }}>
+                        {prob.description}
+                      </p>
+
+                      {/* Concepts */}
+                      {prob.concepts && prob.concepts.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-faint)' }}>Concepts:</span>
+                          {prob.concepts.map((c, cIdx) => (
+                            <span
+                              key={cIdx}
+                              style={{
+                                fontSize: '11.5px',
+                                padding: '3px 10px',
+                                borderRadius: '4px',
+                                background: 'var(--island-2)',
+                                color: 'var(--text-dim)',
+                                border: '1px solid var(--border-soft)',
+                              }}
+                            >
+                              {c}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Relevance note */}
+                      {prob.relevance && (
+                        <div
+                          style={{
+                            background: 'rgba(77, 124, 245, 0.06)',
+                            borderLeft: '3px solid var(--accent)',
+                            borderRadius: '0 6px 6px 0',
+                            padding: '10px 14px',
+                            fontSize: '12.5px',
+                            color: 'var(--text-dim)',
+                            lineHeight: '1.5',
+                          }}
+                        >
+                          <strong style={{ color: 'var(--accent)' }}>Why it is relevant: </strong>
+                          {prob.relevance}
                         </div>
                       )}
                     </div>

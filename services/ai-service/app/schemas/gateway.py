@@ -124,10 +124,21 @@ class UnitContentQuiz(BaseModel):
     explanation: str
 
 
+class UnitContentProblem(BaseModel):
+    title: str = Field(..., description="Problem title")
+    platform: str = Field(..., description="Platform name (LeetCode, HackerRank, Codeforces, GeeksforGeeks)")
+    difficulty: str = Field(..., description="Difficulty (Easy, Medium, Hard)")
+    description: str = Field(..., description="Short problem description")
+    url: str = Field(..., description="Direct problem URL")
+    concepts: list[str] = Field(default_factory=list, description="Covered concept tags")
+    relevance: str = Field(..., description="Relevance to the learning unit")
+
+
 class UnitContentResponse(BaseModel):
     summary: UnitContentSummary
     flashcards: list[UnitContentFlashcard] = Field(default_factory=list)
     quiz: list[UnitContentQuiz] = Field(default_factory=list)
+    problems: list[UnitContentProblem] = Field(default_factory=list)
 
 
 class GenerateUnitContentRequest(BaseModel):

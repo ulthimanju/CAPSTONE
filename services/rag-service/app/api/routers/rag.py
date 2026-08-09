@@ -1,10 +1,11 @@
 import logging
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
-
-logger = logging.getLogger(__name__)
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+logger = logging.getLogger(__name__)
+
+from app.api.dependencies.auth import get_current_user_id, verify_workspace_access
 from app.infrastructure.database.session import get_db_session
 from app.infrastructure.repositories.vector_repository import VectorRepository
 from app.infrastructure.clients.embedding.ai_service_client import AIServiceClient
@@ -30,8 +31,11 @@ ai_client = AIServiceClient()
 @router.post("/embeddings/generate", response_model=ChunkEmbeddingStatusResponse)
 async def generate_chunk_embeddings(
     req: GenerateChunkEmbeddingsRequest,
+    authorization: str | None = Header(None),
+    user_id: uuid.UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
+    await verify_workspace_access(req.workspace_id, user_id, required_write=True, authorization=authorization)
     if not req.chunks:
         raise HTTPException(status_code=400, detail="No chunks provided for embedding generation.")
 
@@ -47,8 +51,6 @@ async def generate_chunk_embeddings(
     except Exception as e:
         logger.exception("Failed to fetch embeddings from ai-service", extra={"workspace_id": req.workspace_id, "document_id": req.document_id})
         raise HTTPException(status_code=500, detail=f"Failed to fetch embeddings from ai-service: {e}")
-
-
 
     chunks_with_vectors = []
     for idx, chunk in enumerate(req.chunks):
@@ -81,8 +83,11 @@ async def generate_chunk_embeddings(
 @router.post("/search", response_model=SemanticSearchResponse)
 async def semantic_search(
     req: SemanticSearchRequest,
+    authorization: str | None = Header(None),
+    user_id: uuid.UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
+    await verify_workspace_access(req.workspace_id, user_id, required_write=False, authorization=authorization)
     try:
         query_vectors = await ai_client.get_embeddings([req.query])
         if not query_vectors:
@@ -121,8 +126,11 @@ async def semantic_search(
 @router.post("/chat", response_model=RAGChatResponse)
 async def rag_chat(
     req: RAGChatRequest,
+    authorization: str | None = Header(None),
+    user_id: uuid.UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
+    await verify_workspace_access(req.workspace_id, user_id, required_write=False, authorization=authorization)
     vector_repo = VectorRepository(session)
     orchestrator = RAGChatOrchestrator(vector_repo=vector_repo, ai_client=ai_client)
 
@@ -160,7 +168,12 @@ async def delete_document_vectors(
 
 
 @router.delete("/workspaces/{workspace_id}/cache")
-async def invalidate_rag_cache(workspace_id: uuid.UUID):
+async def invalidate_rag_cache(
+    workspace_id: uuid.UUID,
+    authorization: str | None = Header(None),
+    user_id: uuid.UUID = Depends(get_current_user_id),
+):
+    await verify_workspace_access(workspace_id, user_id, required_write=True, authorization=authorization)
     rag_cache = RAGCacheManager()
     await rag_cache.invalidate_workspace_retrievals(workspace_id)
     return {"status": "success", "message": f"RAG retrieval cache invalidated for workspace {workspace_id}"}

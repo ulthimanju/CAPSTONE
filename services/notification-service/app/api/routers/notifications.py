@@ -39,6 +39,23 @@ async def publish_platform_event(event: PlatformEvent):
     # Stream real-time event to connected SSE clients
     channel_id = str(event.user_id) if event.user_id else "global"
     await sse_manager.broadcast_event(event, channel_id=channel_id)
+
+    # Send real email notification for workspace invitations if target email is present
+    if event.event_name == "WorkspaceInvitationSent" or "invitation" in event.event_name.lower():
+        invited_email = getattr(event, "invited_email", None) or (event.metadata_json or {}).get("invited_email")
+        role_val = getattr(event, "role", None) or (event.metadata_json or {}).get("role") or "VIEWER"
+        if invited_email:
+            try:
+                from app.infrastructure.services.email_service import EmailNotificationService
+                email_svc = EmailNotificationService()
+                email_svc.send_invitation_email(
+                    to_email=invited_email,
+                    workspace_name=str(event.workspace_id),
+                    role=str(role_val),
+                )
+            except Exception as mail_err:
+                pass
+
     return {"status": "broadcasted", "event_id": str(event.event_id)}
 
 

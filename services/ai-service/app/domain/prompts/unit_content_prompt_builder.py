@@ -7,6 +7,7 @@ Your task is to analyze the provided Learning Unit Metadata (Title, Description,
 1. A rich, structured **Summary**
 2. A set of interactive **Flashcards**
 3. A multiple-choice **Quiz**
+4. A set of exactly 3 recommended **Problems**
 
 ---
 
@@ -14,7 +15,7 @@ Your task is to analyze the provided Learning Unit Metadata (Title, Description,
 
 - Base all generated content STRICTLY on the provided RAG document context and unit learning objectives.
 - Do NOT introduce facts or technical claims that contradict the retrieved context.
-- Ensure all 3 artifacts (Summary, Flashcards, Quiz) reinforce the exact same core concepts in one cohesive learning experience.
+- Ensure all 4 artifacts (Summary, Flashcards, Quiz, Problems) reinforce the exact same core concepts in one cohesive learning experience.
 
 ---
 
@@ -39,10 +40,23 @@ Your task is to analyze the provided Learning Unit Metadata (Title, Description,
 - `user_answer`: Set to integer -1 by default (unanswered).
 - `explanation`: Educational explanation of why the correct option is right and others are incorrect.
 
+### 4. Problems
+- Recommend **exactly 3** existing online coding/practice problems related to this unit.
+- Prefer real, existing online problems from platforms such as: **LeetCode**, **HackerRank**, **Codeforces**, **GeeksforGeeks**.
+- Do NOT invent new problem statements or fake URLs. Return the problem's actual platform URL belonging to `leetcode.com`, `hackerrank.com`, `codeforces.com`, or `geeksforgeeks.org`.
+- `title`: Name of the problem (e.g., "Two Sum", "Binary Tree Inorder Traversal").
+- `platform`: Name of the platform ("LeetCode", "HackerRank", "Codeforces", or "GeeksforGeeks").
+- `difficulty`: Difficulty rating ("Easy", "Medium", "Hard").
+- `description`: A short 1-2 sentence description of the problem statement.
+- `url`: Direct valid link URL to the problem on the platform.
+- `concepts`: Array of short concept tags (e.g., ["Arrays", "Hash Table"]).
+- `relevance`: 1 sentence explaining why this problem is relevant to the learning unit concepts.
+
 ---
 
 # Output Format
 Return ONLY valid JSON matching the requested schema. No markdown wrapping outside the JSON.
+
 """
 
     @classmethod

@@ -799,8 +799,24 @@ Generate a unified learning bundle containing:
             response_schema=UnitContentResponse,
         )
 
-        # 4. Validate Schema
+        # 4. Validate Schema & Filter Problem URLs
         unit_validated = UnitContentResponse.model_validate_json(gemini_res["text"])
+
+        def _is_valid_problem_url(url: str | None) -> bool:
+            if not url or not isinstance(url, str):
+                return False
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(url.strip())
+                if parsed.scheme not in ("http", "https"):
+                    return False
+                hostname = (parsed.hostname or "").lower()
+                allowed = ("leetcode.com", "hackerrank.com", "codeforces.com", "geeksforgeeks.org")
+                return any(hostname == d or hostname.endswith("." + d) for d in allowed)
+            except Exception:
+                return False
+
+        unit_validated.problems = [p for p in unit_validated.problems if _is_valid_problem_url(p.url)]
 
         # 5. Persist to workspace-service
         workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
@@ -813,6 +829,7 @@ Generate a unified learning bundle containing:
                     "summary_json": unit_validated.summary.model_dump(),
                     "flashcards_json": [f.model_dump() for f in unit_validated.flashcards],
                     "quiz_json": [q.model_dump() for q in unit_validated.quiz],
+                    "problems_json": [p.model_dump() for p in unit_validated.problems],
                     "model": settings.gemini_default_model,
                     "status": "READY",
                 },

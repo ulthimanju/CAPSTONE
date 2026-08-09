@@ -117,13 +117,37 @@ async def restore_workspace(
     return await use_case.execute(workspace_id, user_id)
 
 
+from app.constants.enums import WorkspaceRole
 from app.schemas.workspace import (
     CreateWorkspaceRequest,
     UpdateWorkspaceRequest,
     SaveSummaryRequest,
+    SaveLearningPathRequest,
+    SaveUnitContentRequest,
+    UpdateQuizProgressRequest,
+    SaveWorkspaceChatRequest,
     WorkspaceResponse,
     WorkspaceListResponse,
 )
+
+
+async def _verify_content_access(
+    workspace_id: UUID,
+    user_id: UUID,
+    ws_repo: WorkspaceRepository,
+    mem_repo: MemberRepository,
+    allowed_roles: tuple = (WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR, WorkspaceRole.VIEWER),
+):
+    from app.infrastructure.database.models import WorkspaceModel
+    ws = await ws_repo.get_by_id(workspace_id)
+    if not ws:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    is_owner = ws.owner_id == user_id
+    member = await mem_repo.get_member(workspace_id, user_id)
+    user_role = WorkspaceRole.OWNER if is_owner else (member.role if member else None)
+    if not user_role or user_role not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Access denied to workspace content")
+    return ws
 
 
 @router.get("/{workspace_id}/summary")
@@ -131,16 +155,13 @@ async def get_workspace_summary(
     workspace_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
+    ws = await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
     cached_summary = await cache.get_workspace_summary(workspace_id)
     if cached_summary is not None:
         return {"summary": cached_summary}
-
-    ws = await ws_repo.get_by_id(workspace_id)
-    if not ws:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Workspace not found")
 
     if ws.summary_json:
         await cache.set_workspace_summary(workspace_id, ws.summary_json)
@@ -153,12 +174,10 @@ async def save_workspace_summary(
     req: SaveSummaryRequest,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
-    ws = await ws_repo.get_by_id(workspace_id)
-    if not ws:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Workspace not found")
+    ws = await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
     ws.summary_json = req.summary_json
     await ws_repo.update(ws)
     await cache.invalidate_workspace_summary(workspace_id)
@@ -170,24 +189,18 @@ async def save_workspace_summary(
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
 
-from app.schemas.workspace import SaveLearningPathRequest
-
-
 @router.get("/{workspace_id}/learning-path")
 async def get_workspace_learning_path(
     workspace_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
+    ws = await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
     cached_lp = await cache.get_workspace_learning_path(workspace_id)
     if cached_lp is not None:
         return {"learning_path": cached_lp}
-
-    ws = await ws_repo.get_by_id(workspace_id)
-    if not ws:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Workspace not found")
 
     if ws.learning_path_json:
         await cache.set_workspace_learning_path(workspace_id, ws.learning_path_json)
@@ -200,12 +213,10 @@ async def save_workspace_learning_path(
     req: SaveLearningPathRequest,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
-    ws = await ws_repo.get_by_id(workspace_id)
-    if not ws:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Workspace not found")
+    ws = await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
     ws.learning_path_json = req.learning_path_json
     await ws_repo.update(ws)
     await cache.invalidate_workspace_learning_path(workspace_id)
@@ -220,15 +231,18 @@ async def save_workspace_learning_path(
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.database import get_db
-from app.infrastructure.database.models import LearningUnitContentModel, WorkspaceChatModel
-from app.schemas.workspace import SaveUnitContentRequest, UpdateQuizProgressRequest, SaveWorkspaceChatRequest
+from app.infrastructure.database.models import LearningUnitContentModel, WorkspaceChatModel, WorkspaceModel
 
 
 @router.get("/{workspace_id}/chat")
 async def get_workspace_chat(
     workspace_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     db: AsyncSession = Depends(get_db),
 ):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
     stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
     res = await db.execute(stmt)
     chat = res.scalar_one_or_none()
@@ -239,8 +253,12 @@ async def get_workspace_chat(
 async def save_workspace_chat(
     workspace_id: UUID,
     req: SaveWorkspaceChatRequest,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     db: AsyncSession = Depends(get_db),
 ):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
     stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
     res = await db.execute(stmt)
     chat = res.scalar_one_or_none()
@@ -261,8 +279,12 @@ async def save_workspace_chat(
 @router.delete("/{workspace_id}/chat")
 async def clear_workspace_chat(
     workspace_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     db: AsyncSession = Depends(get_db),
 ):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
     stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
     res = await db.execute(stmt)
     chat = res.scalar_one_or_none()
@@ -276,9 +298,13 @@ async def clear_workspace_chat(
 async def update_quiz_progress(
     workspace_id: UUID,
     req: UpdateQuizProgressRequest,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     db: AsyncSession = Depends(get_db),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
     stmt = select(LearningUnitContentModel).where(
         LearningUnitContentModel.workspace_id == workspace_id,
         LearningUnitContentModel.unit_title == req.unit_title
@@ -301,9 +327,13 @@ async def update_quiz_progress(
 async def get_learning_unit_content(
     workspace_id: UUID,
     unit_title: str,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     db: AsyncSession = Depends(get_db),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
     cached = await cache.get_learning_unit_content(workspace_id, unit_title)
     if cached is not None:
         return cached
@@ -322,6 +352,7 @@ async def get_learning_unit_content(
             "summary": unit_content.summary_json,
             "flashcards": unit_content.flashcards_json,
             "quiz": unit_content.quiz_json,
+            "problems": unit_content.problems_json or [],
         },
         "status": unit_content.status,
         "model": unit_content.model,
@@ -337,9 +368,30 @@ async def get_learning_unit_content(
 async def save_learning_unit_content(
     workspace_id: UUID,
     req: SaveUnitContentRequest,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
     db: AsyncSession = Depends(get_db),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
+
+    def _is_valid_problem_url(url: str | None) -> bool:
+        if not url or not isinstance(url, str):
+            return False
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url.strip())
+            if parsed.scheme not in ("http", "https"):
+                return False
+            hostname = (parsed.hostname or "").lower()
+            allowed = ("leetcode.com", "hackerrank.com", "codeforces.com", "geeksforgeeks.org")
+            return any(hostname == d or hostname.endswith("." + d) for d in allowed)
+        except Exception:
+            return False
+
+    valid_problems = [p for p in (req.problems_json or []) if _is_valid_problem_url(p.get("url"))] if req.problems_json is not None else None
+
     stmt = select(LearningUnitContentModel).where(
         LearningUnitContentModel.workspace_id == workspace_id,
         LearningUnitContentModel.unit_title == req.unit_title
@@ -354,6 +406,7 @@ async def save_learning_unit_content(
             summary_json=req.summary_json,
             flashcards_json=req.flashcards_json,
             quiz_json=req.quiz_json,
+            problems_json=valid_problems,
             status=req.status,
             model=req.model
         )
@@ -362,6 +415,7 @@ async def save_learning_unit_content(
         unit_content.summary_json = req.summary_json
         unit_content.flashcards_json = req.flashcards_json
         unit_content.quiz_json = req.quiz_json
+        unit_content.problems_json = valid_problems
         unit_content.status = req.status
         unit_content.model = req.model
 

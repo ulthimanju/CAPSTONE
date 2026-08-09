@@ -10,11 +10,19 @@ import app.infrastructure.database.models  # Register models
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Ensure the role column exists — create_all does not add new columns to existing tables
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "ALTER TABLE workspace_invitations "
+                "ADD COLUMN IF NOT EXISTS role VARCHAR(50) NOT NULL DEFAULT 'VIEWER'"
+            )
+        )
     yield
     try:
         await engine.dispose()
     except Exception:
         pass
+
 
 
 from shared.logging.correlation_id import CorrelationIdMiddleware

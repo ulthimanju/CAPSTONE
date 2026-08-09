@@ -15,13 +15,18 @@ class DocumentStatus(str, Enum):
 class FileType(str, Enum):
     PDF = "PDF"
     DOCX = "DOCX"
+    WPS = "WPS"
     PPTX = "PPTX"
+    KEY = "KEY"
     XLSX = "XLSX"
+    CSV = "CSV"
     TXT = "TXT"
     MD = "MD"
     PNG = "PNG"
     JPG = "JPG"
     JPEG = "JPEG"
+    TIF = "TIF"
+    TIFF = "TIFF"
 
 
 class StorageProvider(str, Enum):

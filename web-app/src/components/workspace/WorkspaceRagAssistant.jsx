@@ -58,7 +58,7 @@ const EmptyState = ({ docState, adaptivePrompts, onPromptClick, workspaceName })
     empty: {
       icon: 'ti-upload',
       heading: 'What can I help you find?',
-      description: `Upload PDF, Word, or text documents to ${workspaceName || 'this workspace'} to start asking questions grounded in your content.`,
+      description: `Upload Documents (PDF, DOCX, WPS), Slides, Spreadsheets, or Images to ${workspaceName || 'this workspace'} to start asking questions grounded in your content.`,
       showPrompts: false,
       showProcessing: false,
     },

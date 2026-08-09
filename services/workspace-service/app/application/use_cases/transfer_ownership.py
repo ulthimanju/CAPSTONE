@@ -50,7 +50,7 @@ class TransferOwnershipUseCase:
 
         old_owner_member = await self.member_repo.get_member(workspace_id, current_owner_id)
         if old_owner_member:
-            old_owner_member.role = WorkspaceRole.EDITOR
+            old_owner_member.role = WorkspaceRole.ADMIN
             await self.member_repo.update_role(old_owner_member)
 
         activity = WorkspaceActivity(
@@ -65,6 +65,21 @@ class TransferOwnershipUseCase:
         )
         await self.activity_repo.record_activity(activity)
 
+        await self.cache.invalidate_workspace(workspace_id)
+        await self.cache.invalidate_user_workspaces(current_owner_id)
+        await self.cache.invalidate_user_workspaces(new_owner_id)
+        await self.cache.invalidate_workspace_members(workspace_id)
+
+        try:
+            from shared.events import publish_workspace_event
+            await publish_workspace_event(
+                workspace_id,
+                "workspace.ownership.transferred",
+                {"previous_owner_id": str(current_owner_id), "new_owner_id": str(new_owner_id)}
+            )
+        except Exception:
+            pass
+
         await self.cache.invalidate_workspace_members(workspace_id)
         await self.cache.invalidate_workspace_permissions(workspace_id)
         await self.cache.invalidate_user_permission(workspace_id, current_owner_id)
@@ -73,5 +88,5 @@ class TransferOwnershipUseCase:
         await self.cache.invalidate_user_workspaces(new_owner_id)
 
         res = WorkspaceResponse.model_validate(updated)
-        res.user_role = WorkspaceRole.EDITOR
+        res.user_role = WorkspaceRole.ADMIN
         return res

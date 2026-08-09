@@ -33,21 +33,46 @@ class InviteMemberUseCase:
 
         member = await self.member_repo.get_member(workspace_id, invited_by)
         is_owner = workspace.owner_id == invited_by
-        is_editor = member and member.role in (WorkspaceRole.OWNER, WorkspaceRole.EDITOR)
-        if not (is_owner or is_editor):
+        can_invite = is_owner or (member and member.role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
+        if not can_invite:
             raise HTTPException(status_code=403, detail="Permission denied to invite member")
 
         target_email = req.email.lower().strip() if req.email else None
         if not target_email and not req.user_id:
             raise HTTPException(status_code=400, detail="Please provide a valid email address to invite")
 
+        # 1. Prevent self-invitation
+        if req.user_id and req.user_id == invited_by:
+            raise HTTPException(status_code=400, detail="You cannot invite yourself to the workspace.")
+
+        # 2. Prevent inviting existing members or owner
+        if req.user_id:
+            if workspace.owner_id == req.user_id:
+                raise HTTPException(status_code=400, detail="User is already the owner of this workspace.")
+            existing_mem = await self.member_repo.get_member(workspace_id, req.user_id)
+            if existing_mem:
+                raise HTTPException(status_code=400, detail="User is already a member of this workspace.")
+
+        # 3. Check for existing pending invitations and expire stale ones
         now = datetime.now(timezone.utc)
+        existing_invitations = await self.invitation_repo.list_by_workspace(workspace_id)
+        for inv in existing_invitations:
+            if inv.status == InvitationStatus.PENDING:
+                if inv.expires_at < now:
+                    inv.status = InvitationStatus.EXPIRED
+                    await self.invitation_repo.update(inv)
+                else:
+                    same_user = req.user_id and inv.invited_user_id == req.user_id
+                    same_email = target_email and inv.invited_email and inv.invited_email.lower().strip() == target_email
+                    if same_user or same_email:
+                        raise HTTPException(status_code=400, detail="An active invitation has already been sent to this user.")
         invitation = WorkspaceInvitation(
             id=generate_uuid(),
             workspace_id=workspace_id,
             invited_by=invited_by,
             invited_user_id=req.user_id,
             invited_email=target_email,
+            role=req.role,
             status=InvitationStatus.PENDING,
             expires_at=now + timedelta(days=7),
             created_at=now,
@@ -66,5 +91,25 @@ class InviteMemberUseCase:
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
+
+        # Dispatch notification event to notification-service (email notification)
+        try:
+            import os, httpx
+            notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                await client.post(
+                    f"{notification_url}/api/v1/notifications/events",
+                    json={
+                        "event_id": str(generate_uuid()),
+                        "event_name": "WorkspaceInvitationSent",
+                        "workspace_id": str(workspace_id),
+                        "user_id": str(req.user_id) if req.user_id else None,
+                        "status": "PENDING",
+                        "metadata_json": {"invited_email": target_email, "role": req.role.value},
+                        "timestamp": now.timestamp(),
+                    }
+                )
+        except Exception:
+            pass
 
         return InvitationResponse.model_validate(invitation)

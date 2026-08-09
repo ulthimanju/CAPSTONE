@@ -260,6 +260,14 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
             >
               <i className="ti ti-help-circle" style={{ marginRight: '6px' }}></i> Quiz ({contentData.quiz?.length || 0})
             </button>
+
+            <button
+              className={`tab-btn ${activeTab === 'problems' ? 'active' : ''}`}
+              onClick={() => setActiveTab('problems')}
+              style={{ padding: '10px 16px', fontSize: '13px', borderBottom: activeTab === 'problems' ? '2px solid var(--accent)' : 'none', color: activeTab === 'problems' ? 'var(--text)' : 'var(--text-3)', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <i className="ti ti-code" style={{ marginRight: '6px' }}></i> Problems ({contentData.problems?.length || 0})
+            </button>
           </div>
         )}
 
@@ -269,13 +277,26 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
             <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
               <Spinner size="lg" />
             </div>
+          ) : generationProgressText?.startsWith('Failed') ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '35vh', textAlign: 'center', padding: '2rem' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1.25rem' }}>
+                <i className="ti ti-alert-triangle"></i>
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--danger)', marginBottom: '0.5rem' }}>AI generation Failed</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '420px', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                {generationProgressText}
+              </p>
+              <button className="btn btn-primary" onClick={handleGenerateContent} style={{ padding: '10px 20px', fontSize: '13px' }}>
+                <i className="ti ti-rotate-clockwise"></i> Retry Generation
+              </button>
+            </div>
           ) : generating ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
               <Spinner size="lg" />
               <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
                 {generationProgressText}
               </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Gemini is synthesizing Summary, Flashcards & Quiz from RAG document context in 1 pass...</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Gemini is synthesizing Summary, Flashcards, Quiz & Problems from RAG document context in 1 pass...</p>
             </div>
           ) : !contentData ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '35vh', textAlign: 'center', padding: '2rem' }}>
@@ -284,7 +305,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>Unit Content Not Generated Yet</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '420px', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-                Generate a unified study bundle containing a rich summary, interactive flashcards, and a quiz — powered by RAG context from your workspace documents in 1 single pass.
+                Generate a unified study bundle containing a rich summary, interactive flashcards, quiz, and practice problems — powered by RAG context from your workspace documents in 1 single pass.
               </p>
               <button className="btn btn-primary" onClick={handleGenerateContent} style={{ padding: '10px 20px', fontSize: '13px' }}>
                 <i className="ti ti-bolt"></i> Generate Unit Study Bundle
@@ -485,6 +506,121 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
                               {answeredOpt === q.correct_answer ? '✓ Correct!' : '✗ Incorrect'}
                             </strong>
                             {q.explanation}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* SUB-TAB 4: PROBLEMS */}
+              {activeTab === 'problems' && contentData.problems && contentData.problems.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {contentData.problems.map((prob, pIdx) => {
+                    const diffColor = prob.difficulty?.toLowerCase() === 'easy' ? '#3ecf8e' : prob.difficulty?.toLowerCase() === 'medium' ? '#f59e0b' : '#ef4444';
+                    return (
+                      <div
+                        key={pIdx}
+                        style={{
+                          background: 'var(--island-2, #18181c)',
+                          border: '1px solid var(--border-soft, rgba(255,255,255,0.08))',
+                          borderRadius: '10px',
+                          padding: '18px 20px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                        }}
+                      >
+                        {/* Header: Title, Platform, Difficulty, Solve Button */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            <h4 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>
+                              {prob.title}
+                            </h4>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                background: 'rgba(77, 124, 245, 0.12)',
+                                color: 'var(--accent)',
+                                border: '1px solid rgba(77, 124, 245, 0.25)',
+                              }}
+                            >
+                              {prob.platform}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                background: `${diffColor}18`,
+                                color: diffColor,
+                                border: `1px solid ${diffColor}40`,
+                              }}
+                            >
+                              {prob.difficulty}
+                            </span>
+                          </div>
+
+                          {prob.url && (
+                            <a
+                              href={prob.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-primary"
+                              style={{ fontSize: '12.5px', padding: '6px 14px', gap: '6px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                            >
+                              Solve Problem
+                              <i className="ti ti-external-link" style={{ fontSize: '13px' }}></i>
+                            </a>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        <p style={{ fontSize: '13px', color: 'var(--text-2, #ccc)', margin: 0, lineHeight: '1.5' }}>
+                          {prob.description}
+                        </p>
+
+                        {/* Concepts */}
+                        {prob.concepts && prob.concepts.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '11.5px', fontWeight: '600', color: 'var(--text-3, #888)' }}>Concepts:</span>
+                            {prob.concepts.map((c, cIdx) => (
+                              <span
+                                key={cIdx}
+                                style={{
+                                  fontSize: '11px',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  background: 'rgba(255,255,255,0.05)',
+                                  color: 'var(--text-2)',
+                                  border: '1px solid var(--border)',
+                                }}
+                              >
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Relevance note */}
+                        {prob.relevance && (
+                          <div
+                            style={{
+                              background: 'rgba(77, 124, 245, 0.06)',
+                              borderLeft: '3px solid var(--accent)',
+                              borderRadius: '0 6px 6px 0',
+                              padding: '8px 12px',
+                              fontSize: '12px',
+                              color: 'var(--text-2)',
+                            }}
+                          >
+                            <strong style={{ color: 'var(--accent)' }}>Why it is relevant: </strong>
+                            {prob.relevance}
                           </div>
                         )}
                       </div>

@@ -31,6 +31,7 @@ class SaveUnitContentRequest(BaseModel):
     summary_json: dict | None = None
     flashcards_json: list[dict] | None = None
     quiz_json: list[dict] | None = None
+    problems_json: list[dict] | None = None
     model: str | None = "gemini-flash-latest"
     status: str = "READY"
 

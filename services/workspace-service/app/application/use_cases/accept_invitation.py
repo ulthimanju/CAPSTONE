@@ -35,6 +35,19 @@ class AcceptInvitationUseCase:
         if invitation.status != InvitationStatus.PENDING:
             raise HTTPException(status_code=400, detail=f"Invitation is already {invitation.status.value}")
 
+        # Recipient authorization verification:
+        # Require that accepting user matches invited_user_id or invited_email
+        has_user_match = (invitation.invited_user_id is not None) and (invitation.invited_user_id == user_id)
+        has_email_match = False
+        if invitation.invited_email:
+            clean_user_email = user_email.lower().strip() if user_email else None
+            clean_invited_email = invitation.invited_email.lower().strip()
+            if clean_user_email and clean_user_email == clean_invited_email:
+                has_email_match = True
+
+        if not (has_user_match or has_email_match):
+            raise HTTPException(status_code=403, detail="You are not authorized to accept this invitation")
+
         now = datetime.now(timezone.utc)
         if invitation.expires_at < now:
             invitation.status = InvitationStatus.EXPIRED
@@ -43,14 +56,14 @@ class AcceptInvitationUseCase:
 
         invitation.status = InvitationStatus.ACCEPTED
         invitation.accepted_at = now
-        invitation.invited_user_id = user_id
         updated_invitation = await self.invitation_repo.update(invitation)
 
+        assigned_role = invitation.role
         member = WorkspaceMember(
             id=generate_uuid(),
             workspace_id=invitation.workspace_id,
             user_id=user_id,
-            role=WorkspaceRole.VIEWER,
+            role=assigned_role,
             joined_at=now,
             last_accessed_at=now,
         )

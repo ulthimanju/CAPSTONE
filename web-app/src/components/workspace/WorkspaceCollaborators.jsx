@@ -31,17 +31,8 @@ export const WorkspaceCollaborators = ({ workspace }) => {
       setMembers(res.data || []);
     } catch (err) {
       console.error('Failed to load workspace members:', err);
-      // Default owner view fallback
-      setMembers([
-        {
-          id: user?.id || 'owner-1',
-          user_id: user?.id || workspace?.owner_id,
-          name: user?.name || user?.email?.split('@')[0] || 'Workspace Owner',
-          email: user?.email || 'owner@workspace.edu',
-          role: 'OWNER',
-          joined_at: workspace?.created_at || new Date().toISOString(),
-        },
-      ]);
+      setMembers([]);
+      setNotice({ type: 'error', text: 'Failed to load workspace members.' });
     } finally {
       setLoading(false);
     }
@@ -76,8 +67,41 @@ export const WorkspaceCollaborators = ({ workspace }) => {
     }
   };
 
+  const handleUpdateRole = async (memberUserId, newRole, version = 1) => {
+    const previousMembers = [...members];
+    // Optimistic UI Update
+    setMembers((prev) =>
+      prev.map((m) => ((m.user_id || m.id) === memberUserId ? { ...m, role: newRole } : m))
+    );
+
+    try {
+      setActionUserId(memberUserId);
+      const headers = user?.id ? { 'X-User-ID': user.id } : {};
+      await apiClient.put(
+        `/api/v1/workspaces/${workspaceId}/members/${memberUserId}`,
+        { role: newRole, version },
+        { headers }
+      );
+      setNotice({ type: 'success', text: `Updated member role to ${newRole}.` });
+      fetchMembers();
+    } catch (err) {
+      console.error('Failed to update member role:', err);
+      // Revert optimistic update on failure
+      setMembers(previousMembers);
+      const detail = err.response?.data?.detail || 'Failed to update member role.';
+      setNotice({ type: 'error', text: detail });
+    } finally {
+      setActionUserId(null);
+      setTimeout(() => setNotice(null), 4000);
+    }
+  };
+
   const handleRemoveMember = async (memberUserId) => {
     if (!window.confirm('Are you sure you want to remove this member from the workspace?')) return;
+    const previousMembers = [...members];
+    // Optimistic UI Remove
+    setMembers((prev) => prev.filter((m) => (m.user_id || m.id) !== memberUserId));
+
     try {
       setActionUserId(memberUserId);
       const headers = user?.id ? { 'X-User-ID': user.id } : {};
@@ -86,6 +110,8 @@ export const WorkspaceCollaborators = ({ workspace }) => {
       fetchMembers();
     } catch (err) {
       console.error('Failed to remove member:', err);
+      // Revert optimistic update on failure
+      setMembers(previousMembers);
       setNotice({ type: 'error', text: 'Failed to remove member.' });
     } finally {
       setActionUserId(null);
@@ -139,7 +165,11 @@ export const WorkspaceCollaborators = ({ workspace }) => {
     }
   };
 
-  const isOwner = user?.id && workspace?.owner_id && user.id === workspace.owner_id;
+  const isOwner = Boolean(user?.id && workspace?.owner_id && user.id === workspace.owner_id);
+  const currentMember = members.find((m) => (m.user_id || m.id) === user?.id);
+  const userRole = isOwner ? 'OWNER' : currentMember?.role || workspace?.user_role || 'VIEWER';
+  const canManageMembers = userRole === 'OWNER' || userRole === 'ADMIN';
+  const canInvite = userRole === 'OWNER' || userRole === 'ADMIN' || userRole === 'EDITOR';
 
   return (
     <div className="island" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -226,83 +256,85 @@ export const WorkspaceCollaborators = ({ workspace }) => {
       )}
 
       {/* 2. Invite New Team Member Form */}
-      <div style={{ borderBottom: '1px solid var(--border-soft)', paddingBottom: '22px' }}>
-        <h3
-          style={{
-            fontSize: '14px',
-            fontWeight: '700',
-            color: 'var(--text)',
-            marginBottom: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <span style={{ color: 'var(--accent)', display: 'inline-flex' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M19 8v6M22 11h-6" />
-            </svg>
-          </span>
-          Invite New Team Member
-        </h3>
-
-        <form onSubmit={handleSendInvite} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <input
-            type="email"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            placeholder="colleague@university.edu"
-            required
+      {canInvite && (
+        <div style={{ borderBottom: '1px solid var(--border-soft)', paddingBottom: '22px' }}>
+          <h3
             style={{
-              flex: 1,
-              background: 'var(--island-2)',
-              border: '1px solid var(--border-soft)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '9px 14px',
-              fontSize: '13.5px',
+              fontSize: '14px',
+              fontWeight: '700',
               color: 'var(--text)',
-              outline: 'none',
-              height: '40px',
-            }}
-          />
-
-          <select
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-            style={{
-              width: '200px',
-              background: 'var(--island-2)',
-              border: '1px solid var(--border-soft)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '9px 14px',
-              fontSize: '13.5px',
-              color: 'var(--text)',
-              outline: 'none',
-              cursor: 'pointer',
-              height: '40px',
+              marginBottom: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            <option value="VIEWER">Viewer (Read Only)</option>
-            <option value="EDITOR">Editor (Can Edit)</option>
-            <option value="ADMIN">Admin (Full Access)</option>
-          </select>
+            <span style={{ color: 'var(--accent)', display: 'inline-flex' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M19 8v6M22 11h-6" />
+              </svg>
+            </span>
+            Invite New Team Member
+          </h3>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={inviting || !inviteEmail.trim()}
-            style={{ height: '40px', padding: '0 18px', fontSize: '13.5px', gap: '7px' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="m22 2-7 20-4-9-9-4Z" />
-              <path d="M22 2 11 13" />
-            </svg>
-            {inviting ? 'Sending...' : 'Send Invitation'}
-          </button>
-        </form>
-      </div>
+          <form onSubmit={handleSendInvite} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="colleague@university.edu"
+              required
+              style={{
+                flex: 1,
+                background: 'var(--island-2)',
+                border: '1px solid var(--border-soft)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '9px 14px',
+                fontSize: '13.5px',
+                color: 'var(--text)',
+                outline: 'none',
+                height: '40px',
+              }}
+            />
+
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              style={{
+                width: '200px',
+                background: 'var(--island-2)',
+                border: '1px solid var(--border-soft)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '9px 14px',
+                fontSize: '13.5px',
+                color: 'var(--text)',
+                outline: 'none',
+                cursor: 'pointer',
+                height: '40px',
+              }}
+            >
+              <option value="VIEWER">Viewer (Read Only)</option>
+              <option value="EDITOR">Editor (Can Edit)</option>
+              {canManageMembers && <option value="ADMIN">Admin (Full Access)</option>}
+            </select>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={inviting || !inviteEmail.trim()}
+              style={{ height: '40px', padding: '0 18px', fontSize: '13.5px', gap: '7px' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="m22 2-7 20-4-9-9-4Z" />
+                <path d="M22 2 11 13" />
+              </svg>
+              {inviting ? 'Sending...' : 'Send Invitation'}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* 3. Active Workspace Members List */}
       <div>
@@ -334,7 +366,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {members.map((member) => {
               const memberUserId = member.user_id || member.id;
-              const isSelf = user?.id && memberUserId === user.id;
+              const isSelf = Boolean(user?.id && memberUserId === user.id);
 
               return (
                 <div
@@ -403,9 +435,30 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                     </div>
                   </div>
 
-                  {/* Right: Owner Actions */}
-                  {isOwner && !isSelf && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Right: Member Management Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {canManageMembers && !isSelf && member.role !== 'OWNER' && (
+                      <select
+                        value={member.role}
+                        onChange={(e) => handleUpdateRole(memberUserId, e.target.value, member.version || 1)}
+                        disabled={actionUserId === memberUserId || (userRole === 'ADMIN' && member.role === 'ADMIN')}
+                        style={{
+                          background: 'var(--island-2)',
+                          border: '1px solid var(--border-soft)',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          fontSize: '11.5px',
+                          color: 'var(--text)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <option value="VIEWER">Viewer</option>
+                        <option value="EDITOR">Editor</option>
+                        {isOwner && <option value="ADMIN">Admin</option>}
+                      </select>
+                    )}
+
+                    {isOwner && !isSelf && (
                       <button
                         className="btn"
                         style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--accent)', borderColor: 'var(--border-soft)' }}
@@ -414,16 +467,19 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                       >
                         Make Owner
                       </button>
+                    )}
+
+                    {canManageMembers && !isSelf && member.role !== 'OWNER' && (
                       <button
                         className="btn"
                         style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--danger)', borderColor: 'var(--border-soft)' }}
                         onClick={() => handleRemoveMember(memberUserId)}
-                        disabled={actionUserId === memberUserId}
+                        disabled={actionUserId === memberUserId || (userRole === 'ADMIN' && member.role === 'ADMIN')}
                       >
                         Remove
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}

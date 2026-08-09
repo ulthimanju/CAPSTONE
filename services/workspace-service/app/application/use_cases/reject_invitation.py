@@ -18,7 +18,19 @@ class RejectInvitationUseCase:
         if invitation.status != InvitationStatus.PENDING:
             raise HTTPException(status_code=400, detail=f"Invitation is already {invitation.status.value}")
 
+        # Recipient authorization verification:
+        # Require that rejecting user matches invited_user_id or invited_email
+        has_user_match = (invitation.invited_user_id is not None) and (invitation.invited_user_id == user_id)
+        has_email_match = False
+        if invitation.invited_email:
+            clean_user_email = user_email.lower().strip() if user_email else None
+            clean_invited_email = invitation.invited_email.lower().strip()
+            if clean_user_email and clean_user_email == clean_invited_email:
+                has_email_match = True
+
+        if not (has_user_match or has_email_match):
+            raise HTTPException(status_code=403, detail="You are not authorized to reject this invitation")
+
         invitation.status = InvitationStatus.REJECTED
-        invitation.invited_user_id = user_id
         updated = await self.invitation_repo.update(invitation)
         return InvitationResponse.model_validate(updated)
