@@ -726,6 +726,7 @@ from app.schemas.gateway import UnitContentResponse, GenerateUnitContentRequest
 async def generate_unit_content(
     workspace_id: str,
     req: GenerateUnitContentRequest,
+    authorization: str | None = Header(None),
     x_user_id: str | None = Header(default=None, alias="X-User-ID"),
 ):
     try:
@@ -821,8 +822,8 @@ Generate a unified learning bundle containing:
         # 5. Persist to workspace-service
         workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
-            headers = {"X-User-ID": x_user_id} if x_user_id else {}
-            await client.put(
+            headers = {"Authorization": authorization} if authorization else ({"X-User-ID": x_user_id} if x_user_id else {})
+            res = await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/units/content",
                 json={
                     "unit_title": req.unit_title,
@@ -835,6 +836,7 @@ Generate a unified learning bundle containing:
                 },
                 headers=headers,
             )
+            res.raise_for_status()
 
         # 6. Publish COMPLETED event
         await _publish_unit_generation_event(ws_id, req.unit_title, "COMPLETED", user_id=x_user_id)

@@ -273,6 +273,7 @@ async def save_workspace_chat(
         chat.messages_json = req.messages
 
     await db.flush()
+    await db.commit()
     return {"status": "saved", "workspace_id": str(workspace_id), "count": len(req.messages)}
 
 
@@ -291,6 +292,7 @@ async def clear_workspace_chat(
     if chat:
         chat.messages_json = []
         await db.flush()
+        await db.commit()
     return {"status": "cleared", "workspace_id": str(workspace_id)}
 
 
@@ -317,6 +319,7 @@ async def update_quiz_progress(
 
     unit_content.quiz_json = req.quiz_json
     await db.flush()
+    await db.commit()
     await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
     if unit_content.id:
         await cache.invalidate_learning_unit_content(workspace_id, unit_content.id)
@@ -420,6 +423,7 @@ async def save_learning_unit_content(
         unit_content.model = req.model
 
     await db.flush()
+    await db.commit()
     await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
     if unit_content.id:
         await cache.invalidate_learning_unit_content(workspace_id, unit_content.id)
