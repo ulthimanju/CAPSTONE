@@ -131,7 +131,7 @@ class DocumentCacheManager:
                     "lifecycle_status": d.lifecycle_status.value if hasattr(d.lifecycle_status, "value") else str(d.lifecycle_status),
                 } for d in documents
             ]
-            await self.redis.setex(key, ttl, json.dumps(items))
+            await self.redis.set(key, json.dumps(items), ex=ttl)
         except Exception:
             pass
 
@@ -159,7 +159,7 @@ class DocumentCacheManager:
             return
         try:
             key = self._get_document_status_key(document_id)
-            await self.redis.setex(key, ttl, json.dumps(status_data, default=str))
+            await self.redis.set(key, json.dumps(status_data, default=str), ex=ttl)
         except Exception:
             pass
 

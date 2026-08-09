@@ -90,7 +90,7 @@ class WorkspaceCacheManager:
                 "summary_json": workspace.summary_json,
                 "learning_path_json": workspace.learning_path_json,
             })
-            await self.redis.setex(key, ttl, payload)
+            await self.redis.set(key, payload, ex=ttl)
         except Exception:
             pass
 
@@ -155,7 +155,7 @@ class WorkspaceCacheManager:
                     "learning_path_json": w.learning_path_json,
                 } for w in workspaces
             ]
-            await self.redis.setex(key, ttl, json.dumps(items))
+            await self.redis.set(key, json.dumps(items), ex=ttl)
         except Exception:
             pass
 
@@ -205,7 +205,7 @@ class WorkspaceCacheManager:
                     "last_accessed_at": m.last_accessed_at.isoformat() if m.last_accessed_at else None,
                 } for m in members
             ]
-            await self.redis.setex(key, ttl, json.dumps(items))
+            await self.redis.set(key, json.dumps(items), ex=ttl)
         except Exception:
             pass
 
@@ -251,7 +251,7 @@ class WorkspaceCacheManager:
                 "joined_at": member.joined_at.isoformat() if member.joined_at else None,
                 "last_accessed_at": member.last_accessed_at.isoformat() if member.last_accessed_at else None,
             })
-            await self.redis.setex(key, ttl, payload)
+            await self.redis.set(key, payload, ex=ttl)
         except Exception:
             pass
 
@@ -322,7 +322,7 @@ class WorkspaceCacheManager:
             return
         try:
             key = self._get_workspace_summary_key(workspace_id)
-            await self.redis.setex(key, ttl, json.dumps(summary_data))
+            await self.redis.set(key, json.dumps(summary_data), ex=ttl)
         except Exception:
             pass
 
@@ -350,7 +350,7 @@ class WorkspaceCacheManager:
             return
         try:
             key = self._get_workspace_learning_path_key(workspace_id)
-            await self.redis.setex(key, ttl, json.dumps(learning_path_data))
+            await self.redis.set(key, json.dumps(learning_path_data), ex=ttl)
         except Exception:
             pass
 
@@ -384,7 +384,7 @@ class WorkspaceCacheManager:
             return
         try:
             key = self._get_learning_unit_key(workspace_id, unit_identifier)
-            await self.redis.setex(key, ttl, json.dumps(content_data, default=str))
+            await self.redis.set(key, json.dumps(content_data, default=str), ex=ttl)
         except Exception:
             pass
 
@@ -484,7 +484,7 @@ class WorkspaceCacheManager:
                     "created_at": a.created_at.isoformat() if a.created_at else None,
                 } for a in activities
             ]
-            await self.redis.setex(key, ttl, json.dumps(items))
+            await self.redis.set(key, json.dumps(items), ex=ttl)
         except Exception:
             pass
 

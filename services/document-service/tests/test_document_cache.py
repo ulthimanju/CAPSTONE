@@ -98,12 +98,12 @@ async def test_document_cache_aside_pattern_and_invalidation():
     docs = await repo.list_by_workspace(ws_id)
     assert len(docs) == 1
     assert docs[0].original_filename == "test_doc.pdf"
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 2. Get document status: Cache MISS -> sets document_status:{doc_id} with 60s TTL
     redis_mock.get.return_value = None
     await cache.set_document_status(doc_id, {"status": "PARSING", "is_processing": True}, ttl=60)
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 3. UploadDocumentUseCase invalidates workspace_documents:{ws_id}
     upload_req = UploadDocumentRequest(

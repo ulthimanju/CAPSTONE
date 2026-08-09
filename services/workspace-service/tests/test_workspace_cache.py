@@ -82,19 +82,19 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     fetched_ws = await repo.get_by_id(ws_id)
     assert fetched_ws is not None
     assert fetched_ws.name == "Cache Test Workspace"
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 2. List user workspaces: Cache MISS -> sets user_workspaces:{user_id}
     redis_mock.get.return_value = None
     ws_list = await repo.list_by_user_id(owner_id)
     assert len(ws_list) == 1
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 3. List workspace members: Cache MISS -> sets workspace_members:{workspace_id}
     redis_mock.get.return_value = None
     members_list = await mem_repo.list_members(ws_id)
     assert len(members_list) == 1
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 4. Get workspace member (permission check): Cache MISS -> sets workspace_permissions:{ws_id}:{user_id}
     redis_mock.get.return_value = None
@@ -102,28 +102,28 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     single_member = await mem_repo.get_member(ws_id, owner_id)
     assert single_member is not None
     assert single_member.role == WorkspaceRole.OWNER
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
     exec_res.scalar_one_or_none.return_value = db_model_mock
 
     # 5. Get workspace summary: Cache MISS -> sets workspace_summary:{ws_id} with 3600s TTL
     redis_mock.get.return_value = None
     await cache.set_workspace_summary(ws_id, {"overview": "AI Summary"})
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 6. Get workspace learning path: Cache MISS -> sets workspace_learning_path:{ws_id} with 3600s TTL
     redis_mock.get.return_value = None
     await cache.set_workspace_learning_path(ws_id, {"modules": ["Unit 1"]})
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 7. Get learning unit content: Cache MISS -> sets learning_unit:{ws_id}:{hash} with 3600s TTL
     redis_mock.get.return_value = None
     await cache.set_learning_unit_content(ws_id, "Module 1", {"summary": "Content"})
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 8. Get workspace activity feed: Cache MISS -> sets workspace_activity:{ws_id} with 120s TTL
     redis_mock.get.return_value = None
     await cache.set_workspace_activity(ws_id, [], ttl=120)
-    assert redis_mock.setex.called
+    assert redis_mock.set.called
 
     # 9. CreateWorkspaceUseCase invalidates user_workspaces:{user_id}
     act_repo = AsyncMock()
