@@ -453,7 +453,7 @@ async def generate_workspace_summary_endpoint(
             ws_meta = ws_res.json()
 
             # 2. Fetch Processed Document Chunks
-            chunks_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/chunks")
+            chunks_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/chunks", headers=headers)
             if chunks_res.status_code != 200:
                 raise HTTPException(status_code=500, detail="Failed to retrieve workspace document chunks")
             chunks_data = chunks_res.json().get("chunks", [])
@@ -637,7 +637,7 @@ async def generate_workspace_learning_path_endpoint(
             ws_meta = ws_res.json()
 
             # 2. Fetch Processed Document Hierarchy / Outline (Not full text)
-            outline_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/outline")
+            outline_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/outline", headers=headers)
             if outline_res.status_code != 200:
                 raise HTTPException(status_code=500, detail="Failed to retrieve workspace document outline")
             outline_data = outline_res.json().get("outline", "")
