@@ -53,12 +53,18 @@ def mock_db_session():
         session.__aenter__.return_value = session
         mock_session_cls.return_value = session
 
-        with patch("app.api.routers.documents.get_document_repository", return_value=repo):
-            with patch("app.api.routers.documents.UploadDocumentUseCase") as mock_uc:
-                instance = AsyncMock()
-                instance.execute.return_value = doc
-                mock_uc.return_value = instance
-                yield
+        # Mock workspace verification so tests run without a live workspace-service
+        async def _mock_verify_workspace_access(*args, **kwargs):
+            return {"id": workspace_id, "user_role": "EDITOR"}
+
+        with patch("app.api.routers.documents.verify_workspace_access", side_effect=_mock_verify_workspace_access):
+            with patch("app.api.routers.documents.get_document_repository", return_value=repo):
+                with patch("app.api.routers.documents.UploadDocumentUseCase") as mock_uc:
+                    instance = AsyncMock()
+                    instance.execute.return_value = doc
+                    mock_uc.return_value = instance
+                    yield
+
 
 
 def test_valid_pdf_magic_bytes_accepted():
@@ -79,13 +85,16 @@ def test_valid_docx_magic_bytes_accepted():
     assert response.status_code == 201
 
 
-def test_valid_markdown_text_accepted():
+def test_markdown_extension_rejected():
+    """Markdown (.md) is not in the allowed extension list — router returns 400."""
     text_content = b"# System Architecture Overview\nThis is a test markdown document."
     files = {"file": ("summary.md", text_content, "text/markdown")}
     data = {"workspace_id": workspace_id}
 
     response = client.post("/api/v1/documents/raw", headers=headers, data=data, files=files)
-    assert response.status_code == 201
+    assert response.status_code == 400
+    res_data = response.json()
+    assert "Unsupported file extension" in res_data["error"]["message"]
 
 
 def test_spoofed_executable_renamed_pdf_rejected_with_415():
@@ -100,13 +109,13 @@ def test_spoofed_executable_renamed_pdf_rejected_with_415():
     assert "Unsupported file type" in res_data["error"]["message"] or "Executable" in res_data["error"]["message"]
 
 
-def test_unsupported_binary_format_rejected_with_415():
+def test_unsupported_binary_format_rejected():
+    """Unknown binary extension (.bin) is caught at extension check — returns 400."""
     binary_content = b"\x01\x02\x03\x04\x00\x05\x06\x07\x00\x08\x09\x0a"
     files = {"file": ("data.bin", binary_content, "application/octet-stream")}
     data = {"workspace_id": workspace_id}
 
     response = client.post("/api/v1/documents/raw", headers=headers, data=data, files=files)
-    assert response.status_code == 415
+    assert response.status_code == 400
     res_data = response.json()
-    assert res_data["error"]["code"] == "UNSUPPORTED_MEDIA_TYPE"
-    assert "Unsupported Media Type" in res_data["error"]["message"]
+    assert "Unsupported file extension" in res_data["error"]["message"]
