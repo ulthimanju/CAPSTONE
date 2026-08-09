@@ -17,6 +17,8 @@ async def test_document_cache_aside_pattern_and_invalidation():
     redis_mock = AsyncMock()
     cache = DocumentCacheManager(redis_client=redis_mock)
     session = AsyncMock()
+    # session.add() is synchronous in SQLAlchemy — use a plain MagicMock
+    session.add = MagicMock()
 
     repo = SQLAlchemyDocumentRepository(session=session, cache_manager=cache)
 

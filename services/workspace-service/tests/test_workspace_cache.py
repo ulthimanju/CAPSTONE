@@ -23,8 +23,15 @@ from app.schemas.workspace import CreateWorkspaceRequest, UpdateWorkspaceRequest
 @pytest.mark.asyncio
 async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     redis_mock = AsyncMock()
+    # scan returns (cursor, keys); must be a plain tuple so unpacking works
+    redis_mock.scan.return_value = (0, [])
+    # scan_iter is called WITHOUT await in the cache code — must be a plain MagicMock
+    # returning [] so no unawaited coroutine is created
+    redis_mock.scan_iter = MagicMock(return_value=[])
     cache = WorkspaceCacheManager(redis_client=redis_mock)
     session = AsyncMock()
+    # session.add() is synchronous in SQLAlchemy — use a plain MagicMock
+    session.add = MagicMock()
 
     repo = SQLAlchemyWorkspaceRepository(session=session, cache_manager=cache)
     mem_repo = SQLAlchemyMemberRepository(session=session, cache_manager=cache)

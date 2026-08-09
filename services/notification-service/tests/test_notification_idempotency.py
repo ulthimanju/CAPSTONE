@@ -1,6 +1,6 @@
 import uuid
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from app.schemas.notification import PlatformEvent
 from app.infrastructure.notification_store import NotificationStore
 
@@ -25,6 +25,8 @@ async def test_postgresql_notification_event_idempotency_on_conflict_do_nothing(
 
     # 1. First execution: ON CONFLICT DO NOTHING inserts row -> rowcount == 1
     session_1 = AsyncMock()
+    # session.add() is synchronous in SQLAlchemy — use plain MagicMock
+    session_1.add = MagicMock()
     exec_result_1 = AsyncMock()
     exec_result_1.rowcount = 1
     session_1.execute.return_value = exec_result_1
@@ -37,6 +39,8 @@ async def test_postgresql_notification_event_idempotency_on_conflict_do_nothing(
 
     # 2. Second execution: ON CONFLICT DO NOTHING finds duplicate -> rowcount == 0
     session_2 = AsyncMock()
+    # session.add() is synchronous in SQLAlchemy — use plain MagicMock
+    session_2.add = MagicMock()
     exec_result_2 = AsyncMock()
     exec_result_2.rowcount = 0
     session_2.execute.return_value = exec_result_2
