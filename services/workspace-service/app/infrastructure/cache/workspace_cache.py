@@ -102,6 +102,11 @@ class WorkspaceCacheManager:
         except Exception:
             pass
 
+    # Alias used by TransferOwnershipUseCase and other callers that prefer the explicit name
+    async def invalidate_workspace(self, workspace_id: uuid.UUID):
+        await self.invalidate(workspace_id)
+
+
     async def get_user_workspaces(self, user_id: uuid.UUID) -> list[Workspace] | None:
         if not self.redis:
             return None
