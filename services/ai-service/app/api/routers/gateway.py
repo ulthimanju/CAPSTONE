@@ -127,14 +127,20 @@ async def _publish_summary_event(
 ):
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+        progress_map = {"QUEUED": 0, "STARTED": 10, "IN_PROGRESS": 50, "COMPLETED": 100, "FAILED": 0}
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "SummaryGeneration",
+            "service": "ai-service",
+            "resource_type": "workspace",
+            "resource_id": workspace_id,
             "workspace_id": workspace_id,
             "user_id": user_id,
             "status": status,
-            "error": error,
-            "timestamp": time.time(),
+            "progress": progress_map.get(status, 0),
+            "message": error if error else f"Workspace summary generation {status.lower()}",
+            "payload": {},
+            "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
@@ -596,14 +602,20 @@ from app.schemas.gateway import LearningPathResponse
 async def _publish_learning_path_event(workspace_id: str, status: str, user_id: str | None = None, error: str | None = None):
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+        progress_map = {"QUEUED": 0, "STARTED": 10, "IN_PROGRESS": 50, "COMPLETED": 100, "FAILED": 0}
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "LearningPathGeneration",
+            "service": "ai-service",
+            "resource_type": "workspace",
+            "resource_id": workspace_id,
             "workspace_id": workspace_id,
             "user_id": user_id,
             "status": status,
-            "error": error,
-            "timestamp": time.time(),
+            "progress": progress_map.get(status, 0),
+            "message": error if error else f"Learning path generation {status.lower()}",
+            "payload": {},
+            "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
@@ -702,15 +714,20 @@ async def _publish_unit_generation_event(
 ):
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+        progress_map = {"QUEUED": 0, "STARTED": 10, "IN_PROGRESS": 50, "COMPLETED": 100, "FAILED": 0}
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "LearningUnitGeneration",
+            "service": "ai-service",
+            "resource_type": "workspace",
+            "resource_id": workspace_id,
             "workspace_id": workspace_id,
-            "unit_title": unit_title,
             "user_id": user_id,
             "status": status,
-            "error": error,
-            "timestamp": time.time(),
+            "progress": progress_map.get(status, 0),
+            "message": error if error else f"Learning unit generation {status.lower()}",
+            "payload": {"unit_title": unit_title},
+            "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
             await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
