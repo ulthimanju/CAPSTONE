@@ -125,6 +125,15 @@ export function SSEProvider({ children }) {
     }
   };
 
+  // Abort SSE immediately when session expires (triggered by api/client.js interceptor)
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setConnected(false);
+    };
+    window.addEventListener('session:expired', handleSessionExpired);
+    return () => window.removeEventListener('session:expired', handleSessionExpired);
+  }, []);
+
   useEffect(() => {
     const token = tokenStorage.getAccessToken();
     if (!token) {

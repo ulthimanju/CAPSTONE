@@ -327,6 +327,7 @@ async def get_document_overview_aggregation(document_id: uuid.UUID):
 @app.api_route("/api/v1/auth/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/sessions/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/users/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+@app.api_route("/api/v1/tokens/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_identity(request: Request, path: str = ""):
     return await proxy_request(settings.service_identity_url, request)
 
