@@ -138,7 +138,7 @@ export function SSEProvider({ children }) {
 
     const connectSSE = async () => {
       try {
-        const response = await fetch('/api/v1/events/sse', {
+        const response = await fetch('/api/v1/notifications/stream', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'text/event-stream',

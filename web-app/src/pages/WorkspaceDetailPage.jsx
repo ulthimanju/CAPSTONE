@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../services/api/client';
+import { tokenStorage } from '../lib/tokenStorage';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { Spinner } from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
@@ -411,16 +412,19 @@ const WorkspaceDetailPageContent = () => {
   // Listen to SSE events for real-time SummaryGeneration & LearningPathGeneration progress
   useEffect(() => {
     if (!workspaceId) return;
-    const eventSource = new EventSource('/api/v1/notifications/stream');
+    const token = tokenStorage.getAccessToken();
+    const sseUrl = token
+      ? `/api/v1/notifications/stream?token=${encodeURIComponent(token)}`
+      : '/api/v1/notifications/stream';
+    const eventSource = new EventSource(sseUrl);
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.event_name === 'SummaryGeneration' && data.workspace_id === workspaceId) {
           setSummaryStatus(data.status);
-          if (data.status === 'QUEUED') setSummaryProgressText('Generating Summary...');
-          else if (data.status === 'STARTED') setSummaryProgressText('Collecting Workspace Content...');
-          else if (data.status === 'IN_PROGRESS') setSummaryProgressText('Generating Educational Summary...');
+          if (data.status === 'PENDING') setSummaryProgressText('Generating Summary...');
+          else if (data.status === 'PROCESSING') setSummaryProgressText('Generating Educational Summary...');
           else if (data.status === 'COMPLETED') {
             setSummaryProgressText('Completed');
             const headers = user?.id ? { 'X-User-ID': user.id } : {};
@@ -432,14 +436,13 @@ const WorkspaceDetailPageContent = () => {
               setSummaryStatus(null);
             }).catch(() => setSummaryStatus(null));
           } else if (data.status === 'FAILED') {
-            setSummaryProgressText('Failed: ' + (data.error || 'Unknown error'));
+            setSummaryProgressText('Failed: ' + (data.message || 'Unknown error'));
             setTimeout(() => setSummaryStatus(null), 4000);
           }
         } else if (data.event_name === 'LearningPathGeneration' && data.workspace_id === workspaceId) {
           setLearningPathStatus(data.status);
-          if (data.status === 'QUEUED') setLearningPathProgressText('Generating Learning Path...');
-          else if (data.status === 'STARTED') setLearningPathProgressText('Collecting Workspace Structure...');
-          else if (data.status === 'IN_PROGRESS') setLearningPathProgressText('Building Curriculum Units...');
+          if (data.status === 'PENDING') setLearningPathProgressText('Generating Learning Path...');
+          else if (data.status === 'PROCESSING') setLearningPathProgressText('Building Curriculum Units...');
           else if (data.status === 'COMPLETED') {
             setLearningPathProgressText('Completed');
             const headers = user?.id ? { 'X-User-ID': user.id } : {};
@@ -451,7 +454,7 @@ const WorkspaceDetailPageContent = () => {
               setLearningPathStatus(null);
             }).catch(() => setLearningPathStatus(null));
           } else if (data.status === 'FAILED') {
-            setLearningPathProgressText('Failed: ' + (data.error || 'Unknown error'));
+            setLearningPathProgressText('Failed: ' + (data.message || 'Unknown error'));
             setTimeout(() => setLearningPathStatus(null), 4000);
           }
         }

@@ -125,9 +125,11 @@ async def _publish_summary_event(
     user_id: str | None = None,
     error: str | None = None,
 ):
+    _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
+    _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
-        progress_map = {"QUEUED": 0, "STARTED": 10, "IN_PROGRESS": 50, "COMPLETED": 100, "FAILED": 0}
+        mapped_status = _STATUS_MAP.get(status, "PROCESSING")
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "SummaryGeneration",
@@ -136,8 +138,8 @@ async def _publish_summary_event(
             "resource_id": workspace_id,
             "workspace_id": workspace_id,
             "user_id": user_id,
-            "status": status,
-            "progress": progress_map.get(status, 0),
+            "status": mapped_status,
+            "progress": _PROGRESS_MAP.get(mapped_status, 0),
             "message": error if error else f"Workspace summary generation {status.lower()}",
             "payload": {},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
@@ -600,9 +602,11 @@ from app.schemas.gateway import LearningPathResponse
 
 
 async def _publish_learning_path_event(workspace_id: str, status: str, user_id: str | None = None, error: str | None = None):
+    _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
+    _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
-        progress_map = {"QUEUED": 0, "STARTED": 10, "IN_PROGRESS": 50, "COMPLETED": 100, "FAILED": 0}
+        mapped_status = _STATUS_MAP.get(status, "PROCESSING")
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "LearningPathGeneration",
@@ -611,8 +615,8 @@ async def _publish_learning_path_event(workspace_id: str, status: str, user_id: 
             "resource_id": workspace_id,
             "workspace_id": workspace_id,
             "user_id": user_id,
-            "status": status,
-            "progress": progress_map.get(status, 0),
+            "status": mapped_status,
+            "progress": _PROGRESS_MAP.get(mapped_status, 0),
             "message": error if error else f"Learning path generation {status.lower()}",
             "payload": {},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
@@ -712,9 +716,11 @@ async def _publish_unit_generation_event(
     user_id: str | None = None,
     error: str | None = None,
 ):
+    _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
+    _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
-        progress_map = {"QUEUED": 0, "STARTED": 10, "IN_PROGRESS": 50, "COMPLETED": 100, "FAILED": 0}
+        mapped_status = _STATUS_MAP.get(status, "PROCESSING")
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "LearningUnitGeneration",
@@ -723,8 +729,8 @@ async def _publish_unit_generation_event(
             "resource_id": workspace_id,
             "workspace_id": workspace_id,
             "user_id": user_id,
-            "status": status,
-            "progress": progress_map.get(status, 0),
+            "status": mapped_status,
+            "progress": _PROGRESS_MAP.get(mapped_status, 0),
             "message": error if error else f"Learning unit generation {status.lower()}",
             "payload": {"unit_title": unit_title},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
