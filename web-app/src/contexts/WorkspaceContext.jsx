@@ -5,6 +5,22 @@ import { useSSE } from '../providers/SSEProvider';
 
 const WorkspaceContext = createContext(null);
 
+const extractSummaryDiagrams = (summary) => {
+  const map = {};
+  for (const section of summary?.sections || []) {
+    if (section?.content && section?.diagram) {
+      map[section.content] = {
+        id: section.id,
+        diagram: section.diagram,
+        diagram_type: section.diagram_type || 'none',
+        diagram_caption: section.diagram_caption || null,
+        title: section.title || 'Section diagram',
+      };
+    }
+  }
+  return map;
+};
+
 export function WorkspaceProvider({ children, activeWorkspaceId }) {
   const { user } = useAuth();
   const { registerRefreshHandler } = useSSE();
@@ -12,7 +28,8 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
   const [workspaces, setWorkspaces] = useState([]);
   const [workspace, setWorkspace] = useState(null);
   const [documents, setDocuments] = useState([]);
-  const [summary, setSummary] = useState(null);
+  const [summary, setSummaryState] = useState(null);
+  const [summaryDiagrams, setSummaryDiagrams] = useState({});
   const [learningPath, setLearningPath] = useState(null);
 
   const [loading, setLoading] = useState(false);
@@ -32,12 +49,10 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
         if (serverUploadId === optDoc.upload_id) return true;
       }
       if (d.id === optDoc.id) return true;
-      // Fallback matching
       return d.filename === optDoc.filename || d.original_filename === optDoc.filename;
     });
   };
 
-  // Optimistic Doc Helpers
   const addOptimisticDoc = useCallback((doc) => {
     const uploadId = doc.upload_id || `upl-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     const tempId = doc.id || `opt-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -72,7 +87,6 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     );
   }, []);
 
-  // Optimistic Operation Helpers (Summary, Learning Path, Workspace Create/Rename)
   const addOptimisticOp = useCallback((op) => {
     const id = op.id || `op-${Date.now()}`;
     const entry = { id, status: 'running', ...op };
@@ -84,7 +98,14 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     setOptimisticOps((prev) => prev.filter((op) => op.id !== id));
   }, []);
 
-  // REST API Refetchers
+  const setSummary = useCallback((nextSummary) => {
+    setSummaryState((previous) => {
+      const resolved = typeof nextSummary === 'function' ? nextSummary(previous) : nextSummary;
+      setSummaryDiagrams(extractSummaryDiagrams(resolved));
+      return resolved;
+    });
+  }, []);
+
   const refetchWorkspaces = useCallback(async () => {
     try {
       setLoading(true);
@@ -116,7 +137,6 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
       const serverDocs = res.data.documents || [];
       setDocuments(serverDocs);
 
-      // Reconcile optimistic docs: remove entries that match server state by upload_id or fallback
       setOptimisticDocs((prevOpt) =>
         prevOpt.filter((opt) => !isDocReconciled(opt, serverDocs))
       );
@@ -137,7 +157,7 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     } catch (err) {
       console.error('Failed to load summary:', err);
     }
-  }, [user?.id, activeWorkspaceId]);
+  }, [user?.id, activeWorkspaceId, setSummary]);
 
   const refetchLearningPath = useCallback(async (wsId = activeWorkspaceId) => {
     if (!wsId) return;
@@ -151,7 +171,6 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     }
   }, [user?.id, activeWorkspaceId]);
 
-  // Register Store Refresh Handlers with SSEProvider Invalidation Registry
   useEffect(() => {
     if (!activeWorkspaceId) return;
     const unregDocs = registerRefreshHandler('documents', activeWorkspaceId, () => refetchDocuments(activeWorkspaceId));
@@ -173,7 +192,6 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     };
   }, [activeWorkspaceId, registerRefreshHandler, refetchDocuments, refetchSummary, refetchLearningPath, refetchWorkspaces]);
 
-  // Merge server documents with unreconciled optimistic document placeholders
   const mergedDocuments = useMemo(() => {
     const filterOptimistic = optimisticDocs.filter((opt) => !isDocReconciled(opt, documents));
     return [...filterOptimistic, ...documents];
@@ -184,7 +202,8 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
     workspace,
     documents: mergedDocuments,
     rawServerDocuments: documents,
-    summary,
+    summary: summary,
+    summaryDiagrams,
     learningPath,
     loading,
     docsLoading,
