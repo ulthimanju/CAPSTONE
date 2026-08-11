@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal
 from pydantic import BaseModel, Field
 from app.constants.enums import RequestType, AIProvider
 
@@ -23,7 +24,6 @@ class GenerationRequest(BaseModel):
     top_p: float = Field(default=0.95, ge=0.0, le=1.0)
     max_output_tokens: int = Field(default=2048)
     response_mime_type: str | None = Field(default=None, description="e.g. application/json or text/markdown")
-
 
 
 class GenerationResponse(BaseModel):
@@ -68,9 +68,12 @@ class SummaryResponse(BaseModel):
 
 
 class WorkspaceSummarySection(BaseModel):
+    id: str
     title: str
     content: str
-    source_chunk_ids: list[str] = Field(default_factory=list, description="Internal backend provenance tracking IDs")
+    diagram: str | None = None
+    diagram_type: Literal["flowchart", "sequence", "none"] = "none"
+    diagram_caption: str | None = None
 
 
 class WorkspaceSummaryResponse(BaseModel):
@@ -146,5 +149,3 @@ class GenerateUnitContentRequest(BaseModel):
     unit_description: str | None = None
     learning_objectives: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
-
-
