@@ -1,7 +1,7 @@
 import uuid
 from typing import Literal
 from pydantic import BaseModel, Field
-from app.constants.enums import RequestType, AIProvider
+from app.constants.enums import AIProvider
 
 
 class EmbeddingRequest(BaseModel):
@@ -74,6 +74,11 @@ class WorkspaceSummarySection(BaseModel):
     diagram: str | None = None
     diagram_type: Literal["flowchart", "sequence", "none"] = "none"
     diagram_caption: str | None = None
+
+    @property
+    def source_chunk_ids(self) -> list[str]:
+        """Backward-compatible empty provenance accessor for legacy gateway code."""
+        return []
 
 
 class WorkspaceSummaryResponse(BaseModel):
