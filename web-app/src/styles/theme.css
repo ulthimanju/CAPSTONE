@@ -1,74 +1,357 @@
+/**
+ * Canonical Design System Tokens
+ * Source of truth for theme tokens across the application.
+ */
+
 :root {
-  /* Brand */
-  --color-primary: #3ecf8e;
-  --color-primary-hover: #35b87d;
+  /* ==========================================
+   * 1. TYPOGRAPHY TOKENS
+   * ========================================== */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', Consolas, 'Fira Code', 'Liberation Mono', Menlo, Monaco, monospace;
+  --font-serif: Georgia, Cambria, 'Times New Roman', Times, serif;
 
-  /* Background */
-  --color-bg: #0a0a0b;
-  --color-bg-secondary: #0c0c0e;
-  --color-bg-tertiary: #111113;
-  --color-bg-surface: #16161a;
+  /* Font Sizes */
+  --font-size-xs: 0.6875rem;    /* 11px */
+  --font-size-sm: 0.75rem;      /* 12px */
+  --font-size-md: 0.8125rem;    /* 13px */
+  --font-size-base: 0.875rem;   /* 14px */
+  --font-size-lg: 1rem;         /* 16px */
+  --font-size-xl: 1.125rem;     /* 18px */
+  --font-size-2xl: 1.25rem;     /* 20px */
+  --font-size-3xl: 1.5rem;      /* 24px */
+  --font-size-4xl: 1.875rem;    /* 30px */
+  --font-size-5xl: 2.25rem;     /* 36px */
 
-  /* Borders */
-  --color-border: #1f1f22;
-  --color-border-strong: #2a2a2e;
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
 
-  /* Typography */
-  --color-text-primary: #e4e4e7;
-  --color-text-secondary: #a1a1aa;
-  --color-text-muted: #71717a;
-  --color-text-disabled: #52525b;
+  /* Line Heights */
+  --line-height-none: 1;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
 
-  /* Semantic */
-  --color-success: #3ecf8e;
-  --color-danger: #e5484d;
-  --color-warning: #f59e0b;
-  --color-info: #3b82f6;
+  /* Letter Spacing */
+  --letter-spacing-tighter: -0.05em;
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0em;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+  --letter-spacing-widest: 0.1em;
 
-  /* Radius */
+  /* ==========================================
+   * 2. SPACING SCALE (4px / 8px Grid)
+   * ========================================== */
+  --space-0: 0px;
+  --space-0-5: 0.125rem;  /* 2px */
+  --space-1: 0.25rem;     /* 4px */
+  --space-1-5: 0.375rem;  /* 6px */
+  --space-2: 0.5rem;      /* 8px */
+  --space-2-5: 0.625rem;  /* 10px */
+  --space-3: 0.75rem;     /* 12px */
+  --space-3-5: 0.875rem;  /* 14px */
+  --space-4: 1rem;        /* 16px */
+  --space-5: 1.25rem;     /* 20px */
+  --space-6: 1.5rem;      /* 24px */
+  --space-7: 1.75rem;     /* 28px */
+  --space-8: 2rem;        /* 32px */
+  --space-9: 2.25rem;     /* 36px */
+  --space-10: 2.5rem;     /* 40px */
+  --space-12: 3rem;       /* 48px */
+  --space-16: 4rem;       /* 64px */
+  --space-20: 5rem;       /* 80px */
+  --space-24: 6rem;       /* 96px */
+
+  /* ==========================================
+   * 3. BORDER RADIUS SCALE
+   * ========================================== */
+  --radius-none: 0px;
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
-  --shadow-md: 0 8px 20px rgb(0 0 0 / 0.35);
+  /* ==========================================
+   * 4. ELEVATION (SHADOWS & Z-INDEX)
+   * ========================================== */
+  --z-base: 0;
+  --z-card: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
 
-  /* Fonts */
-  --font-sans:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  /* ==========================================
+   * 5. MOTION & TRANSITION TOKENS
+   * ========================================== */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
 
-  --font-mono:
-    "SF Mono",
-    Consolas,
-    monospace;
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Font Weights */
---font-weight-regular: 400;
---font-weight-medium: 500;
---font-weight-semibold: 600;
---font-weight-bold: 700;
+  --transition-fast: var(--duration-fast) var(--ease-in-out);
+  --transition-normal: var(--duration-normal) var(--ease-in-out);
+  --transition-slow: var(--duration-slow) var(--ease-in-out);
 
-/* Line Heights */
---line-height-tight: 1.25;
---line-height-normal: 1.5;
---line-height-relaxed: 1.75;
+  /* ==========================================
+   * 6. COMPONENT DIMENSION TOKENS
+   * ========================================== */
+  /* Modal Widths */
+  --dimension-modal-sm: 400px;
+  --dimension-modal-md: 560px;
+  --dimension-modal-lg: 720px;
+  --dimension-modal-xl: 900px;
+  --dimension-modal-full: calc(100vw - 32px);
 
-/* Letter Spacing */
---letter-spacing-tight: -0.025em;
---letter-spacing-normal: 0;
+  /* Sidebar Widths */
+  --dimension-sidebar-collapsed: 64px;
+  --dimension-sidebar-default: 260px;
+  --dimension-sidebar-wide: 320px;
+
+  /* Input & Button Heights */
+  --dimension-input-sm: 32px;
+  --dimension-input-md: 40px;
+  --dimension-input-lg: 48px;
+
+  --dimension-button-sm: 32px;
+  --dimension-button-md: 40px;
+  --dimension-button-lg: 48px;
+
+  /* Structural Dimensions */
+  --dimension-header-height: 64px;
+  --dimension-topbar-height: 48px;
 }
 
-html {
+/* ==========================================
+ * 7. COLOR PALETTES & THEME VARIATIONS
+ * ========================================== */
+
+/* Dark Theme (Default) */
+html, html[data-theme="dark"] {
   color-scheme: dark;
+
+  /* Backgrounds & Surfaces */
+  --color-bg-base: #0a0a0c;
+  --color-bg-surface: #121215;
+  --color-bg-elevated: #1a1a1f;
+  --color-bg-subtle: #222228;
+  --color-bg-secondary: #0e0e11;
+  --color-bg-tertiary: #16161c;
+
+  --color-surface-base: #121215;
+  --color-surface-hover: #1a1a1f;
+  --color-surface-active: #222228;
+  --color-surface-elevated: #1a1a1f;
+  --color-surface-elevated-hover: #222228;
+
+  /* Borders */
+  --color-border-subtle: #1e1e24;
+  --color-border-default: #2a2a32;
+  --color-border-strong: #3a3a46;
+  --color-border-focus: #4d7cf5;
+
+  /* Typography / Text */
+  --color-text-primary: #f4f4f7;
+  --color-text-secondary: #a1a1b3;
+  --color-text-muted: #717182;
+  --color-text-disabled: #4a4a58;
+  --color-text-inverse: #0a0a0c;
+
+  /* Primary Brand (Accent) */
+  --color-primary: #4d7cf5;
+  --color-primary-hover: #3b68e0;
+  --color-primary-active: #2d55c7;
+  --color-primary-subtle: rgba(77, 124, 245, 0.12);
+  --color-primary-subtle-hover: rgba(77, 124, 245, 0.2);
+  --color-primary-alpha-10: rgba(77, 124, 245, 0.1);
+  --color-primary-alpha-20: rgba(77, 124, 245, 0.2);
+
+  /* Semantic - Success */
+  --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-success-subtle: rgba(16, 185, 129, 0.12);
+  --color-success-alpha-10: rgba(16, 185, 129, 0.1);
+  --color-success-alpha-20: rgba(16, 185, 129, 0.2);
+  --color-success-text: #34d399;
+
+  /* Semantic - Warning */
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-warning-subtle: rgba(245, 158, 11, 0.12);
+  --color-warning-alpha-10: rgba(245, 158, 11, 0.1);
+  --color-warning-alpha-20: rgba(245, 158, 11, 0.2);
+  --color-warning-text: #fbbf24;
+
+  /* Semantic - Danger / Error */
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-danger-subtle: rgba(239, 68, 68, 0.12);
+  --color-danger-alpha-10: rgba(239, 68, 68, 0.1);
+  --color-danger-alpha-20: rgba(239, 68, 68, 0.2);
+  --color-danger-text: #f87171;
+
+  /* Semantic - Info */
+  --color-info: #3b82f6;
+  --color-info-hover: #2563eb;
+  --color-info-subtle: rgba(59, 130, 246, 0.12);
+  --color-info-alpha-10: rgba(59, 130, 246, 0.1);
+  --color-info-alpha-20: rgba(59, 130, 246, 0.2);
+  --color-info-text: #60a5fa;
+
+  /* Elevation Shadows */
+  --elevation-none: none;
+  --elevation-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --elevation-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --elevation-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --elevation-overlay: 0 20px 25px -5px rgba(0, 0, 0, 0.75), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
+
+  /* Legacy Bridge Aliases (for backward compatibility without breaking existing code) */
+  --accent: var(--color-primary);
+  --accent-dim: var(--color-primary-hover);
+  --accent-bg: var(--color-primary-subtle);
+  --danger: var(--color-danger);
+  --radius: var(--radius-xl);
+  --gap: var(--space-5);
+  --bg: var(--color-bg-base);
+  --bg-1: var(--color-bg-surface);
+  --bg-2: var(--color-bg-elevated);
+  --bg-3: var(--color-bg-subtle);
+  --island: var(--color-bg-surface);
+  --island-2: var(--color-bg-elevated);
+  --border: var(--color-border-default);
+  --border-soft: var(--color-border-subtle);
+  --border-strong: var(--color-border-strong);
+  --text: var(--color-text-primary);
+  --text-2: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --text-faint: var(--color-text-disabled);
 }
 
+/* Light Theme Override */
+html[data-theme="light"] {
+  color-scheme: light;
+
+  /* Backgrounds & Surfaces */
+  --color-bg-base: #f4f1f8;
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #f9f8fc;
+  --color-bg-subtle: #efecef;
+  --color-bg-secondary: #f9f8fc;
+  --color-bg-tertiary: #efecef;
+
+  --color-surface-base: #ffffff;
+  --color-surface-hover: #f9f8fc;
+  --color-surface-active: #efecef;
+  --color-surface-elevated: #f9f8fc;
+  --color-surface-elevated-hover: #efecef;
+
+  /* Borders */
+  --color-border-subtle: #efecef;
+  --color-border-default: #e2deed;
+  --color-border-strong: #d4cee3;
+  --color-border-focus: #4d7cf5;
+
+  /* Typography / Text */
+  --color-text-primary: #141717;
+  --color-text-secondary: #3a3f42;
+  --color-text-muted: #5c6265;
+  --color-text-disabled: #959b9e;
+  --color-text-inverse: #ffffff;
+
+  /* Primary Brand (Accent) */
+  --color-primary: #4d7cf5;
+  --color-primary-hover: #355bc9;
+  --color-primary-active: #2847a6;
+  --color-primary-subtle: rgba(77, 124, 245, 0.1);
+  --color-primary-subtle-hover: rgba(77, 124, 245, 0.18);
+  --color-primary-alpha-10: rgba(77, 124, 245, 0.1);
+  --color-primary-alpha-20: rgba(77, 124, 245, 0.2);
+
+  /* Semantic - Success */
+  --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-success-subtle: rgba(16, 185, 129, 0.1);
+  --color-success-alpha-10: rgba(16, 185, 129, 0.1);
+  --color-success-alpha-20: rgba(16, 185, 129, 0.2);
+  --color-success-text: #047857;
+
+  /* Semantic - Warning */
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-warning-subtle: rgba(245, 158, 11, 0.1);
+  --color-warning-alpha-10: rgba(245, 158, 11, 0.1);
+  --color-warning-alpha-20: rgba(245, 158, 11, 0.2);
+  --color-warning-text: #b45309;
+
+  /* Semantic - Danger / Error */
+  --color-danger: #e2574c;
+  --color-danger-hover: #c94339;
+  --color-danger-subtle: rgba(226, 87, 76, 0.1);
+  --color-danger-alpha-10: rgba(226, 87, 76, 0.1);
+  --color-danger-alpha-20: rgba(226, 87, 76, 0.2);
+  --color-danger-text: #b91c1c;
+
+  /* Semantic - Info */
+  --color-info: #3b82f6;
+  --color-info-hover: #2563eb;
+  --color-info-subtle: rgba(59, 130, 246, 0.1);
+  --color-info-alpha-10: rgba(59, 130, 246, 0.1);
+  --color-info-alpha-20: rgba(59, 130, 246, 0.2);
+  --color-info-text: #1d4ed8;
+
+  /* Elevation Shadows */
+  --elevation-none: none;
+  --elevation-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --elevation-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --elevation-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --elevation-overlay: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+
+  /* Legacy Bridge Aliases */
+  --accent: var(--color-primary);
+  --accent-dim: var(--color-primary-hover);
+  --accent-bg: var(--color-primary-subtle);
+  --danger: var(--color-danger);
+  --radius: var(--radius-xl);
+  --gap: var(--space-5);
+  --bg: var(--color-bg-base);
+  --bg-1: var(--color-bg-surface);
+  --bg-2: var(--color-bg-elevated);
+  --bg-3: var(--color-bg-subtle);
+  --island: var(--color-bg-surface);
+  --island-2: var(--color-bg-elevated);
+  --border: var(--color-border-default);
+  --border-soft: var(--color-border-subtle);
+  --border-strong: var(--color-border-strong);
+  --text: var(--color-text-primary);
+  --text-2: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --text-faint: var(--color-text-disabled);
+}
+
+/* Global Reset Defaults powered by tokens */
 body {
-  background-color: var(--color-bg);
+  background-color: var(--color-bg-base);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
 }
