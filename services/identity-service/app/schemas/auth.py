@@ -13,6 +13,10 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
 
+class BatchUsersRequest(BaseModel):
+    user_ids: list[UUID]
+
+
 
 class UserUpdate(BaseModel):
     name: str | None = None

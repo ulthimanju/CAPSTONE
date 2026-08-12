@@ -25,6 +25,8 @@ class MemberResponse(BaseModel):
     id: UUID
     workspace_id: UUID
     user_id: UUID
+    user_name: str | None = None
+    user_email: str | None = None
     role: WorkspaceRole
     version: int = 1
     joined_at: datetime

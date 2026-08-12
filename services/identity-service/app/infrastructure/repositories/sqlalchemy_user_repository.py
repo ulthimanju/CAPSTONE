@@ -36,6 +36,13 @@ class SQLAlchemyUserRepository(UserRepository):
         await self.cache.set_user_profile(user)
         return user
 
+    async def get_by_ids(self, user_ids: list[UUID]) -> list[User]:
+        if not user_ids:
+            return []
+        stmt = select(UserModel).where(UserModel.id.in_(user_ids))
+        res = await self._db.execute(stmt)
+        return [_to_entity(m) for m in res.scalars().all()]
+
     async def get_by_email(self, email: str) -> User | None:
         result = await self._db.execute(select(UserModel).where(UserModel.email == email))
         m = result.scalar_one_or_none()

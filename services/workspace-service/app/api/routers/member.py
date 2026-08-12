@@ -1,3 +1,6 @@
+import os
+import logging
+import httpx
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.dependencies.auth import get_current_user_id
@@ -20,6 +23,7 @@ from app.application.use_cases.transfer_ownership import TransferOwnershipUseCas
 from app.application.use_cases.list_members import ListMembersUseCase
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/workspaces/{workspace_id}", tags=["Members"])
 
 
@@ -38,7 +42,37 @@ async def list_members(
         raise HTTPException(status_code=403, detail="Access denied to workspace members")
 
     use_case = ListMembersUseCase(mem_repo)
-    return await use_case.execute(workspace_id)
+    members = await use_case.execute(workspace_id)
+
+    user_map = {}
+    if members:
+        identity_url = os.environ.get("IDENTITY_SERVICE_URL", "http://identity-service:8000").rstrip("/")
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                res = await client.post(
+                    f"{identity_url}/api/v1/users/batch",
+                    json={"user_ids": [str(m.user_id) for m in members]}
+                )
+                if res.status_code == 200:
+                    user_map = res.json()
+        except Exception as err:
+            logger.warning(f"Failed to fetch user profiles for members: {err}")
+
+    response = []
+    for m in members:
+        u_info = user_map.get(str(m.user_id), {})
+        response.append(MemberResponse(
+            id=m.id,
+            workspace_id=m.workspace_id,
+            user_id=m.user_id,
+            user_name=u_info.get("name"),
+            user_email=u_info.get("email"),
+            role=m.role,
+            version=m.version,
+            joined_at=m.joined_at,
+            last_accessed_at=m.last_accessed_at,
+        ))
+    return response
 
 
 @router.post("/members", response_model=InvitationResponse, status_code=status.HTTP_201_CREATED)
