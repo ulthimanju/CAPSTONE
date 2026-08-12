@@ -367,6 +367,8 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             {members.map((member) => {
               const memberUserId = member.user_id || member.id;
               const isSelf = Boolean(user?.id && memberUserId === user.id);
+              const displayName = member.user_name || member.name || member.user_email || member.email || 'Member';
+              const displayEmail = member.user_email || member.email;
 
               return (
                 <div
@@ -398,13 +400,13 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                         flexShrink: 0,
                       }}
                     >
-                      {(member.name || member.email || 'U').charAt(0).toUpperCase()}
+                      {displayName.charAt(0).toUpperCase()}
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text)' }}>
-                          {member.name || member.email || 'Member'}
+                          {displayName}
                         </span>
                         {isSelf && (
                           <span style={{ fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500' }}>(You)</span>
@@ -424,9 +426,9 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                       </div>
 
                       <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', display: 'flex', gap: '8px' }}>
-                        {member.email && member.email !== member.name && (
+                        {displayEmail && displayEmail !== displayName && (
                           <>
-                            <span>{member.email}</span>
+                            <span>{displayEmail}</span>
                             <span>·</span>
                           </>
                         )}
