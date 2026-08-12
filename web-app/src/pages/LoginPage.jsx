@@ -31,25 +31,25 @@ export const LoginPage = () => {
   };
 
   return (
-    <Card style={{ textAlign: 'center', padding: '2.5rem 2rem' }}>
-      <Typography variant="h2" weight="bold" style={{ marginBottom: '0.5rem' }}>
+    <Card style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
+      <Typography variant="h2" weight="bold" style={{ marginBottom: 'var(--space-2)' }}>
         Welcome Back
       </Typography>
       
       {isExpired ? (
         <div style={{
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '8px',
-          padding: '0.75rem 1rem',
-          marginBottom: '1.5rem',
-          color: '#f87171',
-          fontSize: '0.875rem'
+          backgroundColor: 'var(--color-danger-subtle)',
+          border: '1px solid var(--color-danger-alpha-20)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--space-3) var(--space-4)',
+          marginBottom: 'var(--space-6)',
+          color: 'var(--color-danger)',
+          fontSize: 'var(--font-size-sm)'
         }}>
           Your session has expired. Please sign in again to continue.
         </div>
       ) : (
-        <Typography variant="body" color="muted" style={{ marginBottom: '2rem' }}>
+        <Typography variant="body" color="muted" style={{ marginBottom: 'var(--space-8)' }}>
           Sign in with your Google account to access your workspaces.
         </Typography>
       )}
@@ -60,7 +60,7 @@ export const LoginPage = () => {
         fullWidth
         loading={loading}
         onClick={handleSignIn}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2-5)' }}
       >
         {!loading && <GoogleIcon />}
         <span>Sign in with Google</span>

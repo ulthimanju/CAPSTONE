@@ -8,10 +8,10 @@ export const AuthLayout = ({ children }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'var(--color-bg, var(--bg))',
-        color: 'var(--color-text-primary, var(--text))',
-        padding: '1.5rem',
-        transition: 'background-color var(--transition-normal) ease, color var(--transition-normal) ease',
+        backgroundColor: 'var(--color-bg-surface)',
+        color: 'var(--color-text-primary)',
+        padding: 'var(--space-6)',
+        transition: 'background-color var(--motion-normal) ease, color var(--motion-normal) ease',
       }}
     >
       <div

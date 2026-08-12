@@ -123,7 +123,7 @@ export const WorkspacesPage = () => {
       {/* Topbar */}
       <div className="topbar">
         <div className="topbar-left">
-          <div className="topbar-title" style={{ fontSize: '14px', fontWeight: 600 }}>Workspaces</div>
+          <div className="topbar-title" style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)' }}>Workspaces</div>
         </div>
         <div className="topbar-right">
           <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
@@ -134,11 +134,11 @@ export const WorkspacesPage = () => {
 
       <div className="content">
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-16)' }}>
             <Spinner size="lg" />
           </div>
         ) : error ? (
-          <div style={{ padding: '1rem', background: 'var(--bg-1)', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px' }}>
+          <div style={{ padding: 'var(--space-4)', background: 'var(--color-danger-subtle)', border: '1px solid var(--color-danger-alpha-20)', color: 'var(--color-danger)', borderRadius: 'var(--radius-md)' }}>
             {error}
           </div>
         ) : (
@@ -147,23 +147,23 @@ export const WorkspacesPage = () => {
             {pendingInvitations.length > 0 && (
               <div
                 style={{
-                  marginBottom: '24px',
-                  background: 'var(--bg-1)',
-                  border: '1px solid var(--accent)',
-                  borderRadius: '12px',
-                  padding: '16px 20px',
+                  marginBottom: 'var(--space-6)',
+                  background: 'var(--color-bg-secondary)',
+                  border: '1px solid var(--color-primary-alpha-20)',
+                  borderRadius: 'var(--radius-xl)',
+                  padding: 'var(--space-4) var(--space-5)',
                   display: 'flex',
                   alignItems: 'center',
-                  justify: 'space-between',
+                  justifyContent: 'space-between',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <i className="ti ti-mail-forward" style={{ color: 'var(--accent)', fontSize: '20px' }}></i>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <i className="ti ti-mail-forward" style={{ color: 'var(--color-primary)', fontSize: 'var(--font-size-xl)' }}></i>
                   <div>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
+                    <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
                       You have {pendingInvitations.length} pending workspace invitation{pendingInvitations.length !== 1 ? 's' : ''}
                     </span>
-                    <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>
+                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
                       Review and accept invitations on your dedicated Invitations page.
                     </div>
                   </div>
@@ -172,22 +172,22 @@ export const WorkspacesPage = () => {
                 <button
                   className="btn btn-primary"
                   onClick={() => navigate('/invitations')}
-                  style={{ fontSize: '12px', padding: '6px 14px', gap: '6px' }}
+                  style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1-5) var(--space-3-5)', gap: 'var(--space-1-5)' }}
                 >
                   View Invitations <i className="ti ti-arrow-right"></i>
                 </button>
               </div>
             )}
 
-            <div className="section-label" style={{ marginBottom: '12px' }}><i className="ti ti-folders"></i>Your Workspaces ({workspaces.length})</div>
+            <div className="section-label" style={{ marginBottom: 'var(--space-3)' }}><i className="ti ti-folders"></i>Your Workspaces ({workspaces.length})</div>
             <div className="doc-list">
               {workspaces.map((ws) => (
                 <div className="doc-row" key={ws.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/workspaces/${ws.id}`)}>
-                  <i className="ti ti-folder" style={{ color: 'var(--accent)' }}></i>
-                  <span className="doc-name" style={{ fontWeight: 500 }}>{ws.name}</span>
+                  <i className="ti ti-folder" style={{ color: 'var(--color-primary)' }}></i>
+                  <span className="doc-name" style={{ fontWeight: 'var(--font-weight-medium)' }}>{ws.name}</span>
                   <span className="doc-meta">{ws.description || 'No description'}</span>
                   <span className="doc-status"><i className="ti ti-shield"></i>{ws.visibility}</span>
-                  <button className="btn" style={{ marginLeft: '12px' }}>Open →</button>
+                  <button className="btn" style={{ marginLeft: 'var(--space-3)' }}>Open →</button>
                 </div>
               ))}
             </div>
@@ -195,20 +195,18 @@ export const WorkspacesPage = () => {
         )}
       </div>
 
-
-
       {/* Create Workspace Modal */}
       <Modal open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <ModalContent size="md" className="bg-[var(--color-bg-surface,#16161a)] border border-[var(--color-border,#2a2a2e)] text-white shadow-2xl">
+        <ModalContent size="md" style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', borderRadius: 'var(--radius-xl)' }}>
           <ModalHeader
             title="Create New Workspace"
             description="Set up a collaborative workspace for your documents and AI interactions."
           />
           <form onSubmit={handleCreateWorkspace}>
-            <ModalBody className="space-y-4 py-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-200">
-                  Workspace Name <span className="text-emerald-400">*</span>
+            <ModalBody style={{ padding: 'var(--space-4) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1-5)' }}>
+                <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-secondary)' }}>
+                  Workspace Name <span style={{ color: 'var(--color-primary)' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -217,25 +215,45 @@ export const WorkspacesPage = () => {
                   onChange={(e) => setName(e.target.value)}
                   required
                   autoFocus
-                  className="w-full h-11 px-4 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors"
+                  style={{
+                    width: '100%',
+                    height: 'var(--dimension-input-md)',
+                    padding: '0 var(--space-4)',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-bg-secondary)',
+                    border: '1px solid var(--color-border-default)',
+                    color: 'var(--color-text-primary)',
+                    fontSize: 'var(--font-size-md)',
+                    outline: 'none',
+                  }}
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-200">
-                  Description <span className="text-gray-400 text-xs">(Optional)</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1-5)' }}>
+                <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-secondary)' }}>
+                  Description <span style={{ color: 'var(--color-text-disabled)', fontSize: 'var(--font-size-xs)' }}>(Optional)</span>
                 </label>
                 <textarea
                   placeholder="Brief summary of the workspace purpose"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full p-3 rounded-lg bg-[#0c0c0e] border border-[#2a2a2e] text-white placeholder-gray-500 focus:outline-none focus:border-[#3ecf8e] focus:ring-1 focus:ring-[#3ecf8e] transition-colors resize-none"
+                  style={{
+                    width: '100%',
+                    padding: 'var(--space-3)',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-bg-secondary)',
+                    border: '1px solid var(--color-border-default)',
+                    color: 'var(--color-text-primary)',
+                    fontSize: 'var(--font-size-md)',
+                    outline: 'none',
+                    resize: 'none',
+                  }}
                 />
               </div>
             </ModalBody>
             
-            <ModalFooter className="gap-3 pt-4 border-t border-[#2a2a2e]">
+            <ModalFooter style={{ display: 'flex', gap: 'var(--space-3)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--color-border-subtle)' }}>
               <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
                 Cancel
               </Button>

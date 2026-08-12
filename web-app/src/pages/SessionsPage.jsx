@@ -13,10 +13,10 @@ export const SessionsPage = () => {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <Typography variant="h4" style={{ marginBottom: '1.5rem' }}>Active Sessions</Typography>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <Typography variant="h4" style={{ marginBottom: 'var(--space-6)' }}>Active Sessions</Typography>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         {sessions.map((session) => (
-          <Card key={session.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem' }}>
+          <Card key={session.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-4)' }}>
             <div>
               <Typography variant="subtitle1">{session.device || 'Unknown Device'}</Typography>
               <Typography variant="body2" color="secondary">

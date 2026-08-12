@@ -25,15 +25,15 @@ export const ProfilePage = () => {
   };
 
   return (
-    <Card style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+    <Card style={{ padding: 'var(--space-8)', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
         <Avatar src={user?.picture_url} name={user?.name || user?.email} size="lg" />
         <div>
           <Typography variant="h5">{user?.name}</Typography>
           <Typography variant="body2" color="secondary">{user?.email}</Typography>
         </div>
       </div>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <Input
           label="Full Name"
           value={name}

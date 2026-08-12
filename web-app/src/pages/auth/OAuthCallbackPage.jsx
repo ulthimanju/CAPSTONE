@@ -46,13 +46,13 @@ export const OAuthCallbackPage = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'var(--color-bg, var(--bg))',
-        color: 'var(--color-text-primary, var(--text))',
-        transition: 'background-color var(--transition-normal) ease',
+        backgroundColor: 'var(--color-bg-surface)',
+        color: 'var(--color-text-primary)',
+        transition: 'background-color var(--motion-normal) ease',
       }}
     >
       <Spinner size="lg" />
-      <Typography variant="body" color="muted" style={{ marginTop: '1rem' }}>
+      <Typography variant="body" color="muted" style={{ marginTop: 'var(--space-4)' }}>
         Completing OAuth login, please wait...
       </Typography>
     </div>

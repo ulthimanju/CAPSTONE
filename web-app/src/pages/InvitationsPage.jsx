@@ -75,56 +75,56 @@ export const InvitationsPage = () => {
     <AppLayout activeTab="invitations">
       {/* Topbar Header */}
       <div className="topbar">
-        <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <button
             className="btn"
-            style={{ fontSize: '13px', padding: '5px 10px', gap: '4px' }}
+            style={{ fontSize: 'var(--font-size-md)', padding: 'var(--space-1-5) var(--space-2-5)', gap: 'var(--space-1)' }}
             onClick={() => navigate('/workspaces')}
           >
             <i className="ti ti-arrow-left"></i> Workspaces
           </button>
-          <div style={{ height: '16px', width: '1px', background: 'var(--border)' }}></div>
-          <div className="topbar-title" style={{ fontSize: '14px', fontWeight: 600 }}>
+          <div style={{ height: '16px', width: '1px', background: 'var(--color-border-subtle)' }}></div>
+          <div className="topbar-title" style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)' }}>
             Workspace Invitations
           </div>
         </div>
       </div>
 
-      <div className="content" style={{ maxWidth: '900px', margin: '0 auto', padding: '24px' }}>
+      <div className="content" style={{ maxWidth: '900px', margin: '0 auto', padding: 'var(--space-6)' }}>
         {/* HERO CARD */}
         <div
           style={{
-            background: 'var(--bg-1)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '12px',
-            padding: '24px',
-            marginBottom: '24px',
+            background: 'var(--color-bg-surface)',
+            border: '1px solid var(--color-border-default)',
+            borderRadius: 'var(--radius-xl)',
+            padding: 'var(--space-6)',
+            marginBottom: 'var(--space-6)',
             display: 'flex',
             alignItems: 'center',
-            justify: 'space-between',
+            justifyContent: 'space-between',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
             <div
               style={{
                 width: '48px',
                 height: '48px',
-                borderRadius: '12px',
-                background: 'var(--accent-bg)',
-                color: 'var(--accent)',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--color-primary-subtle)',
+                color: 'var(--color-primary)',
                 display: 'flex',
                 alignItems: 'center',
-                justify: 'center',
-                fontSize: '24px',
+                justifyContent: 'center',
+                fontSize: 'var(--font-size-2xl)',
               }}
             >
               <i className="ti ti-mail-forward"></i>
             </div>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text)', margin: '0 0 4px 0' }}>
+              <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', margin: '0 0 var(--space-1) 0' }}>
                 Pending Invitations
               </h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-3)', margin: 0 }}>
+              <p style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-text-muted)', margin: 0 }}>
                 Review and accept invitations sent by workspace owners to join their project workspaces.
               </p>
             </div>
@@ -132,19 +132,19 @@ export const InvitationsPage = () => {
 
           <div
             style={{
-              background: 'var(--bg-2)',
-              border: '1px solid var(--border-strong)',
-              borderRadius: '20px',
-              padding: '6px 14px',
-              fontSize: '12px',
-              color: 'var(--text-2)',
-              fontFamily: 'var(--mono)',
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border-subtle)',
+              borderRadius: 'var(--radius-full)',
+              padding: 'var(--space-1-5) var(--space-3-5)',
+              fontSize: 'var(--font-size-xs)',
+              color: 'var(--color-text-secondary)',
+              fontFamily: 'var(--font-family-mono)',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: 'var(--space-1-5)',
             }}
           >
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }}></span>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)' }}></span>
             {invitations.length} Pending
           </div>
         </div>
@@ -153,16 +153,16 @@ export const InvitationsPage = () => {
         {notice && (
           <div
             style={{
-              background: notice.type === 'success' ? 'rgba(62, 207, 142, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              border: `1px solid ${notice.type === 'success' ? 'var(--accent)' : 'var(--danger)'}`,
-              borderRadius: '8px',
-              padding: '12px 16px',
-              fontSize: '13px',
-              color: notice.type === 'success' ? 'var(--accent)' : 'var(--danger)',
-              marginBottom: '20px',
+              background: notice.type === 'success' ? 'var(--color-success-subtle)' : 'var(--color-danger-subtle)',
+              border: `1px solid ${notice.type === 'success' ? 'var(--color-success-alpha-20)' : 'var(--color-danger-alpha-20)'}`,
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-3) var(--space-4)',
+              fontSize: 'var(--font-size-md)',
+              color: notice.type === 'success' ? 'var(--color-success-text)' : 'var(--color-danger)',
+              marginBottom: 'var(--space-5)',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: 'var(--space-2)',
             }}
           >
             <i className={notice.type === 'success' ? 'ti ti-circle-check' : 'ti ti-alert-triangle'}></i>
@@ -172,7 +172,7 @@ export const InvitationsPage = () => {
 
         {/* INVITATIONS LIST */}
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-16)' }}>
             <Spinner size="lg" />
           </div>
         ) : invitations.length === 0 ? (
@@ -181,88 +181,88 @@ export const InvitationsPage = () => {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justify: 'center',
+              justifyContent: 'center',
               minHeight: '30vh',
               textAlign: 'center',
-              background: 'var(--bg-1)',
-              border: '1px solid var(--border-strong)',
-              borderRadius: '12px',
-              padding: '3rem 2rem',
+              background: 'var(--color-bg-surface)',
+              border: '1px solid var(--color-border-default)',
+              borderRadius: 'var(--radius-xl)',
+              padding: 'var(--space-12) var(--space-8)',
             }}
           >
             <div
               style={{
                 width: '52px',
                 height: '52px',
-                borderRadius: '14px',
-                background: 'var(--bg-2)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-3)',
+                borderRadius: 'var(--radius-xl)',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border-subtle)',
+                color: 'var(--color-text-muted)',
                 display: 'flex',
                 alignItems: 'center',
-                justify: 'center',
-                fontSize: '24px',
-                marginBottom: '1rem',
+                justifyContent: 'center',
+                fontSize: 'var(--font-size-2xl)',
+                marginBottom: 'var(--space-4)',
               }}
             >
               <i className="ti ti-mail"></i>
             </div>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.4rem' }}>
+            <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-1-5)' }}>
               No Pending Invitations
             </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '400px' }}>
+            <p style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-text-muted)', maxWidth: '400px' }}>
               When a workspace owner invites you to collaborate on their workspace, invitations will appear here.
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3-5)' }}>
             {invitations.map((inv) => (
               <div
                 key={inv.id}
                 style={{
-                  background: 'var(--bg-1)',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: '12px',
-                  padding: '20px',
+                  background: 'var(--color-bg-surface)',
+                  border: '1px solid var(--color-border-default)',
+                  borderRadius: 'var(--radius-xl)',
+                  padding: 'var(--space-5)',
                   display: 'flex',
                   alignItems: 'center',
-                  justify: 'space-between',
-                  gap: '16px',
+                  justifyContent: 'space-between',
+                  gap: 'var(--space-4)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                   <div
                     style={{
                       width: '42px',
                       height: '42px',
-                      borderRadius: '10px',
-                      background: 'var(--bg-2)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--accent)',
+                      borderRadius: 'var(--radius-lg)',
+                      background: 'var(--color-bg-secondary)',
+                      border: '1px solid var(--color-border-subtle)',
+                      color: 'var(--color-primary)',
                       display: 'flex',
                       alignItems: 'center',
-                      justify: 'center',
-                      fontSize: '20px',
+                      justifyContent: 'center',
+                      fontSize: 'var(--font-size-xl)',
                     }}
                   >
                     <i className="ti ti-folder"></i>
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', margin: '0 0 4px 0' }}>
+                    <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', margin: '0 0 var(--space-1) 0' }}>
                       {inv.workspace_name || 'Workspace Project'}
                     </h3>
-                    <div style={{ fontSize: '12px', color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>
+                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-family-mono)' }}>
                       Invited by Owner • Status: PENDING
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-2-5)', alignItems: 'center' }}>
                   <button
                     className="btn btn-primary"
                     disabled={actionInvId === inv.id}
                     onClick={() => handleAccept(inv.id, inv.workspace_id)}
-                    style={{ padding: '8px 16px', fontSize: '13px', gap: '6px' }}
+                    style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-md)', gap: 'var(--space-1-5)' }}
                   >
                     <i className="ti ti-check"></i> Accept Invitation
                   </button>
@@ -270,7 +270,7 @@ export const InvitationsPage = () => {
                     className="btn"
                     disabled={actionInvId === inv.id}
                     onClick={() => handleReject(inv.id)}
-                    style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--danger)', borderColor: 'var(--border-strong)' }}
+                    style={{ padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--font-size-md)', color: 'var(--color-danger)', borderColor: 'var(--color-border-default)' }}
                   >
                     <i className="ti ti-x"></i> Decline
                   </button>
