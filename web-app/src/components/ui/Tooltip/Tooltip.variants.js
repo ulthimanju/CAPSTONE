@@ -2,25 +2,25 @@ import { cva } from "class-variance-authority";
 
 export const tooltipContentVariants = cva(
   [
-    "z-50",
+    "z-[var(--z-tooltip)]",
     "max-w-xs",
 
     "rounded-[var(--radius-sm)]",
 
     "border",
-    "border-[var(--color-border)]",
+    "border-[var(--color-border-default)]",
 
     "bg-[var(--color-bg-surface)]",
 
-    "px-3",
-    "py-2",
+    "px-[var(--space-3)]",
+    "py-[var(--space-2)]",
 
-    "text-xs",
-    "font-medium",
+    "text-[var(--font-size-xs)]",
+    "font-[var(--font-weight-medium)]",
 
     "text-[var(--color-text-primary)]",
 
-    "shadow-md",
+    "shadow-[var(--elevation-sm)]",
 
     "select-none",
 

@@ -3,7 +3,7 @@ import { cva } from "class-variance-authority";
 export const modalOverlayVariants = cva([
   "fixed",
   "inset-0",
-  "z-50",
+  "z-[var(--z-modal-backdrop)]",
   "bg-black/80",
   "backdrop-blur-sm",
   "animate-in",
@@ -15,18 +15,18 @@ export const modalOverlayVariants = cva([
 export const modalContentVariants = cva(
   [
     "fixed",
-    "z-50",
+    "z-[var(--z-modal)]",
     "flex",
     "max-h-[90vh]",
     "w-full",
     "flex-col",
     "overflow-hidden",
-    "rounded-xl",
+    "rounded-[var(--radius-xl)]",
     "border",
-    "border-[#2a2a2e]",
-    "bg-[#16161a]",
-    "text-[#e4e4e7]",
-    "shadow-2xl",
+    "border-[var(--color-border-default)]",
+    "bg-[var(--color-bg-surface)]",
+    "text-[var(--color-text-primary)]",
+    "shadow-[var(--elevation-overlay)]",
     "outline-none",
     "transition-all",
     "animate-in",
@@ -39,12 +39,12 @@ export const modalContentVariants = cva(
   {
     variants: {
       size: {
-        xs: "max-w-xs",
-        sm: "max-w-sm",
-        md: "max-w-md",
-        lg: "max-w-2xl",
-        xl: "max-w-4xl",
-        full: "max-w-[95vw] h-[90vh]",
+        xs: "max-w-[var(--dimension-modal-sm)]",
+        sm: "max-w-[var(--dimension-modal-sm)]",
+        md: "max-w-[var(--dimension-modal-md)]",
+        lg: "max-w-[var(--dimension-modal-lg)]",
+        xl: "max-w-[var(--dimension-modal-xl)]",
+        full: "max-w-[var(--dimension-modal-full)] h-[90vh]",
       },
       position: {
         center: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
@@ -61,28 +61,27 @@ export const modalContentVariants = cva(
 export const modalHeaderVariants = cva([
   "flex",
   "flex-col",
-  "gap-1",
-  "p-6",
-  "pb-4",
+  "gap-[var(--space-1)]",
+  "p-[var(--space-6)]",
+  "pb-[var(--space-4)]",
   "border-b",
-  "border-[#2a2a2e]",
+  "border-[var(--color-border-default)]",
 ]);
 
 export const modalBodyVariants = cva([
   "flex-1",
   "overflow-y-auto",
-  "p-6",
-  "space-y-4",
+  "p-[var(--space-6)]",
+  "space-y-[var(--space-4)]",
 ]);
 
 export const modalFooterVariants = cva([
   "flex",
   "items-center",
   "justify-end",
-  "gap-3",
-  "p-6",
-  "pt-4",
+  "gap-[var(--space-3)]",
+  "p-[var(--space-6)]",
+  "pt-[var(--space-4)]",
   "border-t",
-  "border-[#2a2a2e]",
+  "border-[var(--color-border-default)]",
 ]);
-

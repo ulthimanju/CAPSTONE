@@ -13,7 +13,7 @@ export const checkboxVariants = cva(
 
     "focus-visible:outline-none",
     "focus-visible:ring-2",
-    "focus-visible:ring-[var(--color-primary)]/20",
+    "focus-visible:ring-[var(--color-primary-alpha-20)]",
 
     "disabled:cursor-not-allowed",
     "disabled:opacity-50",
@@ -21,24 +21,24 @@ export const checkboxVariants = cva(
   {
     variants: {
       size: {
-        sm: "h-4 w-4 rounded-[4px]",
+        sm: "h-4 w-4 rounded-[var(--radius-xs)]",
 
-        md: "h-5 w-5 rounded-[6px]",
+        md: "h-5 w-5 rounded-[var(--radius-sm)]",
 
-        lg: "h-6 w-6 rounded-[8px]",
+        lg: "h-6 w-6 rounded-[var(--radius-md)]",
       },
 
       checked: {
         true:
-          "bg-[var(--color-primary)] border-[var(--color-primary)] text-black",
+          "bg-[var(--color-primary)] border-[var(--color-primary)] text-[var(--color-text-inverse)]",
 
         false:
-          "bg-[var(--color-bg-surface)] border-[var(--color-border)]",
+          "bg-[var(--color-bg-surface)] border-[var(--color-border-default)]",
       },
 
       hasError: {
         true:
-          "border-[var(--color-danger)] focus-visible:ring-[var(--color-danger)]/20",
+          "border-[var(--color-danger)] focus-visible:ring-[var(--color-danger-alpha-20)]",
 
         false: "",
       },

@@ -4,7 +4,7 @@ export const cardVariants = cva(
   [
     "rounded-[var(--radius-lg)]",
     "border",
-    "border-[var(--color-border)]",
+    "border-[var(--color-border-default)]",
     "transition-colors",
   ],
   {
@@ -17,7 +17,7 @@ export const cardVariants = cva(
           "bg-transparent",
 
         elevated:
-          "bg-[var(--color-bg-surface)] shadow-md",
+          "bg-[var(--color-bg-surface)] shadow-[var(--elevation-md)]",
       },
     },
 

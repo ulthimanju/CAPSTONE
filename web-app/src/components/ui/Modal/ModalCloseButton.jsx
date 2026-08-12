@@ -1,5 +1,4 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 
 export function ModalCloseButton({
@@ -11,7 +10,7 @@ export function ModalCloseButton({
     <Dialog.Close
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex items-center justify-center rounded-md p-1.5 text-[#71717a] transition-colors hover:bg-[#1f1f22] hover:text-[#e4e4e7] focus:outline-none",
+        "inline-flex items-center justify-center rounded-[var(--radius-sm)] p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] focus:outline-none",
         className
       )}
       {...props}
@@ -20,4 +19,3 @@ export function ModalCloseButton({
     </Dialog.Close>
   );
 }
-

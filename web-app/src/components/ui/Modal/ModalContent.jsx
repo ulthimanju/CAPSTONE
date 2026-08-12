@@ -1,6 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { cn } from "@/lib/cn";
-import { modalContentVariants, modalOverlayVariants } from "./Modal.variants";
+import { modalContentVariants } from "./Modal.variants";
 import { ModalCloseButton } from "./ModalCloseButton";
 
 export function ModalContent({
@@ -14,25 +14,25 @@ export function ModalContent({
   ...props
 }) {
   const sizeWidths = {
-    xs: '320px',
-    sm: '400px',
-    md: '520px',
-    lg: '680px',
-    xl: '880px',
-    full: '95vw',
+    xs: 'var(--dimension-modal-sm)',
+    sm: 'var(--dimension-modal-sm)',
+    md: 'var(--dimension-modal-md)',
+    lg: 'var(--dimension-modal-lg)',
+    xl: 'var(--dimension-modal-xl)',
+    full: 'var(--dimension-modal-full)',
   };
 
   return (
     <Dialog.Portal>
       <Dialog.Overlay
-        className="fixed inset-0 z-[999]"
+        className="fixed inset-0 z-[var(--z-modal-backdrop)]"
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: 9999,
+          zIndex: 'var(--z-modal-backdrop)',
           backgroundColor: 'rgba(0, 0, 0, 0.85)',
           backdropFilter: 'blur(6px)',
           WebkitBackdropFilter: 'blur(6px)',
@@ -40,30 +40,30 @@ export function ModalContent({
       />
       <Dialog.Content
         onInteractOutside={closeOnOutsideClick ? undefined : (e) => e.preventDefault()}
-        className={cn(modalContentVariants({ size, position }), "z-[10000]", className)}
+        className={cn(modalContentVariants({ size, position }), className)}
         style={{
           position: 'fixed',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          zIndex: 10000,
+          zIndex: 'var(--z-modal)',
           width: '90%',
-          maxWidth: sizeWidths[size] || '600px',
+          maxWidth: sizeWidths[size] || 'var(--dimension-modal-md)',
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          backgroundColor: '#16161a',
-          color: '#e4e4e7',
-          border: '1px solid #2a2a32',
-          borderRadius: '12px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.95)',
+          backgroundColor: 'var(--color-bg-surface)',
+          color: 'var(--color-text-primary)',
+          border: '1px solid var(--color-border-default)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--elevation-overlay)',
           ...style,
         }}
         {...props}
       >
         {showCloseButton && (
-          <div style={{ position: 'absolute', right: '16px', top: '16px', zIndex: 10 }}>
+          <div style={{ position: 'absolute', right: 'var(--space-4)', top: 'var(--space-4)', zIndex: 10 }}>
             <ModalCloseButton />
           </div>
         )}
@@ -72,4 +72,3 @@ export function ModalContent({
     </Dialog.Portal>
   );
 }
-

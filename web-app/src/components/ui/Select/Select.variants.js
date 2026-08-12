@@ -6,7 +6,7 @@ export const selectTriggerVariants = cva(
     "w-full",
     "items-center",
     "justify-between",
-    "gap-3",
+    "gap-[var(--space-3)]",
 
     "rounded-[var(--radius-sm)]",
     "border",
@@ -22,14 +22,14 @@ export const selectTriggerVariants = cva(
     "disabled:opacity-50",
 
     "focus:ring-2",
-    "focus:ring-[var(--color-primary)]/20",
+    "focus:ring-[var(--color-primary-alpha-20)]",
     "focus:border-[var(--color-primary)]",
   ],
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--color-bg-surface)] border-[var(--color-border)] text-[var(--color-text-primary)]",
+          "bg-[var(--color-bg-surface)] border-[var(--color-border-default)] text-[var(--color-text-primary)]",
 
         filled:
           "bg-[var(--color-bg-secondary)] border-transparent text-[var(--color-text-primary)]",
@@ -39,16 +39,16 @@ export const selectTriggerVariants = cva(
       },
 
       size: {
-        sm: "h-9 px-3 text-sm",
+        sm: "h-[var(--dimension-input-sm)] px-[var(--space-3)] text-[var(--font-size-sm)]",
 
-        md: "h-10 px-4 text-sm",
+        md: "h-[var(--dimension-input-md)] px-[var(--space-4)] text-[var(--font-size-sm)]",
 
-        lg: "h-12 px-5 text-base",
+        lg: "h-[var(--dimension-input-lg)] px-[var(--space-5)] text-[var(--font-size-base)]",
       },
 
       hasError: {
         true:
-          "border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-[var(--color-danger)]/20",
+          "border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-[var(--color-danger-alpha-20)]",
 
         false: "",
       },
@@ -64,17 +64,17 @@ export const selectTriggerVariants = cva(
 
 export const selectContentVariants = cva(
   [
-    "z-50",
+    "z-[var(--z-dropdown)]",
     "overflow-hidden",
 
     "rounded-[var(--radius-md)]",
 
     "border",
-    "border-[var(--color-border)]",
+    "border-[var(--color-border-default)]",
 
     "bg-[var(--color-bg-surface)]",
 
-    "shadow-md",
+    "shadow-[var(--elevation-md)]",
 
     "animate-in",
     "fade-in-0",
@@ -93,10 +93,10 @@ export const selectItemVariants = cva(
 
     "rounded-[var(--radius-xs)]",
 
-    "px-3",
-    "py-2",
+    "px-[var(--space-3)]",
+    "py-[var(--space-2)]",
 
-    "text-sm",
+    "text-[var(--font-size-sm)]",
 
     "outline-none",
 
@@ -110,15 +110,15 @@ export const selectItemVariants = cva(
 );
 
 export const selectLabelVariants = cva([
-  "px-3",
-  "py-2",
-  "text-xs",
-  "font-semibold",
+  "px-[var(--space-3)]",
+  "py-[var(--space-2)]",
+  "text-[var(--font-size-xs)]",
+  "font-[var(--font-weight-semibold)]",
   "text-[var(--color-text-muted)]",
 ]);
 
 export const selectSeparatorVariants = cva([
   "my-1",
   "h-px",
-  "bg-[var(--color-border)]",
-]); 
+  "bg-[var(--color-border-default)]",
+]);

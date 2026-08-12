@@ -15,10 +15,10 @@ function DiagramSkeleton() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: 'var(--text-faint)',
-        fontSize: '12px',
-        border: '1px solid var(--border-soft)',
-        background: 'var(--bg-2)',
+        color: 'var(--color-text-disabled)',
+        fontSize: 'var(--font-size-sm)',
+        border: '1px solid var(--color-border-subtle)',
+        background: 'var(--color-bg-elevated)',
       }}
       aria-label="Loading diagram"
     >
@@ -36,12 +36,12 @@ function DiagramFallback({ title, error }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '6px',
-        color: 'var(--text-faint)',
-        fontSize: '12px',
-        border: '1px solid var(--border-soft)',
-        background: 'var(--bg-2)',
-        padding: '16px',
+        gap: 'var(--space-1-5)',
+        color: 'var(--color-text-disabled)',
+        fontSize: 'var(--font-size-sm)',
+        border: '1px solid var(--color-border-subtle)',
+        background: 'var(--color-bg-elevated)',
+        padding: 'var(--space-4)',
         textAlign: 'center',
       }}
       role="status"
@@ -52,51 +52,61 @@ function DiagramFallback({ title, error }) {
   );
 }
 
-export function MermaidDiagram({ source, title, sectionId }) {
-  const [state, setState] = useState({ status: 'loading' });
+export function MermaidDiagram({ code, title = 'Diagram', onError }) {
+  const [svgHtml, setSvgHtml] = useState('');
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
+    let isMounted = true;
+    setIsLoading(true);
+    setError(null);
 
-    if (!source?.trim()) {
-      setState({ status: 'error', message: "This diagram couldn't be displayed." });
-      return () => {
-        cancelled = true;
-      };
+    if (!code || !code.trim()) {
+      setIsLoading(false);
+      setError('No diagram syntax available');
+      if (onError) onError();
+      return;
     }
 
-    setState({ status: 'loading' });
+    const uniqueId = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
 
-    mermaid
-      .parse(source)
-      .then(() => mermaid.render(`diagram-${sectionId}`, source))
+    mermaid.render(uniqueId, code.trim())
       .then(({ svg }) => {
-        if (!cancelled) setState({ status: 'ok', svg });
+        if (isMounted) {
+          setSvgHtml(svg);
+          setIsLoading(false);
+        }
       })
       .catch((err) => {
-        // Full detail goes to logs/monitoring only — never surfaced to the user.
-        console.error(
-          `Mermaid render failed for section "${title}" (id: ${sectionId}):`,
-          err
-        );
-        if (!cancelled) {
-          setState({
-            status: 'error',
-            message: "This diagram couldn't be displayed.",
-          });
+        if (isMounted) {
+          setError('Diagram unavailable');
+          setIsLoading(false);
+          if (onError) onError(err);
         }
       });
 
     return () => {
-      cancelled = true;
+      isMounted = false;
+      const element = document.getElementById(uniqueId);
+      if (element) {
+        element.remove();
+      }
     };
-  }, [source, title, sectionId]);
+  }, [code, onError]);
 
-  if (state.status === 'loading') return <DiagramSkeleton />;
-  if (state.status === 'error') {
-    return <DiagramFallback title={title} error={state.message} />;
+  if (isLoading) {
+    return <DiagramSkeleton />;
   }
-  return <div dangerouslySetInnerHTML={{ __html: state.svg }} />;
-}
 
-export default MermaidDiagram;
+  if (error) {
+    return <DiagramFallback title={title} error={error} />;
+  }
+
+  return (
+    <div
+      className="mermaid-wrapper flex justify-center items-center w-full py-4 overflow-x-auto"
+      dangerouslySetInnerHTML={{ __html: svgHtml }}
+    />
+  );
+}

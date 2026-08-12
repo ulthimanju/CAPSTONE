@@ -2,18 +2,18 @@ import { cva } from "class-variance-authority";
 
 export const dropdownContentVariants = cva(
   [
-    "z-50",
+    "z-[var(--z-dropdown)]",
     "min-w-56",
     "overflow-hidden",
 
     "rounded-[var(--radius-md)]",
 
     "border",
-    "border-[var(--color-border)]",
+    "border-[var(--color-border-default)]",
 
     "bg-[var(--color-bg-surface)]",
 
-    "shadow-md",
+    "shadow-[var(--elevation-md)]",
 
     "animate-in",
     "fade-in-0",
@@ -31,17 +31,17 @@ export const dropdownItemVariants = cva(
 
     "flex",
     "items-center",
-    "gap-3",
+    "gap-[var(--space-3)]",
 
     "cursor-pointer",
     "select-none",
 
     "rounded-[var(--radius-xs)]",
 
-    "px-3",
-    "py-2",
+    "px-[var(--space-3)]",
+    "py-[var(--space-2)]",
 
-    "text-sm",
+    "text-[var(--font-size-sm)]",
 
     "outline-none",
 
@@ -70,12 +70,12 @@ export const dropdownItemVariants = cva(
 );
 
 export const dropdownLabelVariants = cva([
-  "px-3",
-  "py-2",
+  "px-[var(--space-3)]",
+  "py-[var(--space-2)]",
 
-  "text-xs",
+  "text-[var(--font-size-xs)]",
 
-  "font-semibold",
+  "font-[var(--font-weight-semibold)]",
 
   "uppercase",
 
@@ -87,5 +87,5 @@ export const dropdownLabelVariants = cva([
 export const dropdownSeparatorVariants = cva([
   "my-1",
   "h-px",
-  "bg-[var(--color-border)]",
+  "bg-[var(--color-border-default)]",
 ]);

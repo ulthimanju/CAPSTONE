@@ -11,18 +11,18 @@ export const avatarVariants = cva(
     "shrink-0",
     "bg-[var(--color-bg-secondary)]",
     "border",
-    "border-[var(--color-border)]",
+    "border-[var(--color-border-default)]",
     "text-[var(--color-text-primary)]",
-    "font-semibold",
+    "font-[var(--font-weight-semibold)]",
   ],
   {
     variants: {
       size: {
-        xs: "h-6 w-6 text-[10px]",
-        sm: "h-8 w-8 text-xs",
-        md: "h-10 w-10 text-sm",
-        lg: "h-12 w-12 text-base",
-        xl: "h-16 w-16 text-lg",
+        xs: "h-6 w-6 text-[var(--font-size-xs)]",
+        sm: "h-8 w-8 text-[var(--font-size-xs)]",
+        md: "h-10 w-10 text-[var(--font-size-sm)]",
+        lg: "h-12 w-12 text-[var(--font-size-base)]",
+        xl: "h-16 w-16 text-[var(--font-size-lg)]",
       },
 
       shape: {
@@ -51,7 +51,7 @@ export const avatarStatusVariants = cva(
     "right-0",
     "rounded-full",
     "border-2",
-    "border-[var(--color-bg)]",
+    "border-[var(--color-bg-base)]",
   ],
   {
     variants: {
