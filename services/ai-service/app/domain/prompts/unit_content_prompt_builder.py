@@ -23,7 +23,7 @@ Your task is to analyze the provided Learning Unit Metadata (Title, Description,
 
 ### 1. Summary
 - `overview`: A clear, comprehensive synthesis of the unit concept.
-- `sections`: Structured sub-topics with titles and content formatted in clean Markdown (include KaTeX math equations `$ ... $`, Visual Flow Cards `<div className="flow-card-container">...</div>`, or code blocks ```python ... ``` where helpful).
+- `sections`: Structured sub-topics with titles and content formatted in clean Markdown (include KaTeX math equations `$ ... $`, Mermaid diagrams ```mermaid ... ```, or code blocks ```python ... ``` where helpful). Do NOT use HTML tags or `<div className="...">` flow card containers.
 - `key_takeaways`: 3 to 6 bullet points highlighting essential revision points.
 
 ### 2. Flashcards

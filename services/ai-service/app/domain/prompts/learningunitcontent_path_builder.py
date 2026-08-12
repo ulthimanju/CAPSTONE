@@ -78,7 +78,7 @@ Use whichever representation communicates concepts most effectively.
 The summary should intelligently use:
 
 - Markdown
-- Visual Flow Cards (<div className="flow-card-container">...</div>)
+- Mermaid diagrams (```mermaid ... ```)
 - KaTeX equations
 - Tables
 - Code blocks
@@ -117,7 +117,7 @@ Describe important components.
 
 # Workflow / Architecture
 
-Prefer Visual Flow Cards (<div className="flow-card-container">) or step callouts. Do NOT use Mermaid.
+Prefer Mermaid diagrams (```mermaid ... ```) or step callouts. Do NOT output HTML markup or <div> tags.
 
 # Process Explanation
 
@@ -222,9 +222,9 @@ For:
 
 ---
 
-## Visual Flow Cards
+## Mermaid Diagrams
 
-Whenever workflows, architectures, pipelines, hierarchies, or state transitions exist, format them as Visual Flow Cards (`<div className="flow-card-container">...</div>`) or step callout blocks (`> **Step 1:** ...`). Do NOT use ```mermaid code blocks.
+Whenever workflows, architectures, pipelines, hierarchies, or state transitions exist, represent them as valid Mermaid diagrams (```mermaid ... ```) or step callout blocks (> **Step 1:** ...). Do NOT output HTML markup or <div className="..."> tags.
 
 ---
 
