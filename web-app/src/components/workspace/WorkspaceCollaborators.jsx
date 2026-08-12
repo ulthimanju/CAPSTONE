@@ -155,13 +155,13 @@ export const WorkspaceCollaborators = ({ workspace }) => {
   const getRoleBadgeStyle = (role) => {
     switch (role) {
       case 'OWNER':
-        return { background: 'rgba(62, 207, 142, 0.12)', color: '#3ecf8e', border: '1px solid rgba(62, 207, 142, 0.25)' };
+        return { background: 'var(--color-success-subtle)', color: 'var(--color-success-text)', border: '1px solid var(--color-success-alpha-20)' };
       case 'ADMIN':
-        return { background: 'rgba(77, 124, 245, 0.12)', color: 'var(--accent)', border: '1px solid rgba(77, 124, 245, 0.25)' };
+        return { background: 'var(--color-primary-subtle)', color: 'var(--color-primary)', border: '1px solid var(--color-primary-alpha-20)' };
       case 'EDITOR':
-        return { background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.25)' };
+        return { background: 'var(--color-warning-subtle)', color: 'var(--color-warning-text)', border: '1px solid var(--color-warning-alpha-20)' };
       default:
-        return { background: 'var(--island-2)', color: 'var(--text-faint)', border: '1px solid var(--border-soft)' };
+        return { background: 'var(--color-bg-secondary)', color: 'var(--color-text-disabled)', border: '1px solid var(--color-border-subtle)' };
     }
   };
 
@@ -172,17 +172,17 @@ export const WorkspaceCollaborators = ({ workspace }) => {
   const canInvite = userRole === 'OWNER' || userRole === 'ADMIN' || userRole === 'EDITOR';
 
   return (
-    <div className="island" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="island" style={{ padding: 'var(--space-6-5) var(--space-7)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       {/* 1. Header Banner */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-soft)', paddingBottom: '18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 'var(--space-4-5)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <div
             style={{
               width: '34px',
               height: '34px',
-              borderRadius: '8px',
-              background: 'rgba(77, 124, 245, 0.1)',
-              color: 'var(--accent)',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-primary-subtle)',
+              color: 'var(--color-primary)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -196,31 +196,31 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             </svg>
           </div>
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>
+            <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', margin: 0 }}>
               Workspace Collaborators
             </h2>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-faint)' }}>
+            <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-disabled)' }}>
               Invite team members, assign access permissions, and manage workspace membership.
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2-5)' }}>
           <div
             style={{
-              background: 'var(--island-2)',
-              border: '1px solid var(--border-soft)',
-              borderRadius: '20px',
-              padding: '5px 13px',
-              fontSize: '12px',
-              fontWeight: '500',
-              color: 'var(--text-dim)',
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border-subtle)',
+              borderRadius: 'var(--radius-full)',
+              padding: 'var(--space-1) var(--space-3)',
+              fontSize: 'var(--font-size-xs)',
+              fontWeight: 'var(--font-weight-medium)',
+              color: 'var(--color-text-secondary)',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '7px',
+              gap: 'var(--space-1-5)',
             }}
           >
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent)' }}></span>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--color-primary)' }}></span>
             {members.length} Active Member{members.length !== 1 ? 's' : ''}
           </div>
 
@@ -228,7 +228,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             <button
               className="btn"
               onClick={handleLeaveWorkspace}
-              style={{ fontSize: '12.5px', padding: '6px 12px', color: 'var(--danger)', borderColor: 'var(--border-soft)' }}
+              style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-1-5) var(--space-3)', color: 'var(--color-danger)', borderColor: 'var(--color-border-subtle)' }}
             >
               Leave Workspace
             </button>
@@ -240,15 +240,15 @@ export const WorkspaceCollaborators = ({ workspace }) => {
       {notice && (
         <div
           style={{
-            background: notice.type === 'success' ? 'rgba(62, 207, 142, 0.08)' : 'rgba(226, 87, 76, 0.08)',
-            border: `1px solid ${notice.type === 'success' ? 'rgba(62, 207, 142, 0.3)' : 'rgba(226, 87, 76, 0.3)'}`,
-            borderRadius: '8px',
-            padding: '10px 14px',
-            fontSize: '13px',
-            color: notice.type === 'success' ? '#3ecf8e' : 'var(--danger)',
+            background: notice.type === 'success' ? 'var(--color-success-subtle)' : 'var(--color-danger-subtle)',
+            border: `1px solid ${notice.type === 'success' ? 'var(--color-success-alpha-20)' : 'var(--color-danger-alpha-20)'}`,
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-2-5) var(--space-3-5)',
+            fontSize: 'var(--font-size-md)',
+            color: notice.type === 'success' ? 'var(--color-success-text)' : 'var(--color-danger)',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: 'var(--space-2)',
           }}
         >
           {notice.text}
@@ -257,19 +257,19 @@ export const WorkspaceCollaborators = ({ workspace }) => {
 
       {/* 2. Invite New Team Member Form */}
       {canInvite && (
-        <div style={{ borderBottom: '1px solid var(--border-soft)', paddingBottom: '22px' }}>
+        <div style={{ borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 'var(--space-5-5)' }}>
           <h3
             style={{
-              fontSize: '14px',
-              fontWeight: '700',
-              color: 'var(--text)',
-              marginBottom: '14px',
+              fontSize: 'var(--font-size-md)',
+              fontWeight: 'var(--font-weight-bold)',
+              color: 'var(--color-text-primary)',
+              marginBottom: 'var(--space-3-5)',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: 'var(--space-2)',
             }}
           >
-            <span style={{ color: 'var(--accent)', display: 'inline-flex' }}>
+            <span style={{ color: 'var(--color-primary)', display: 'inline-flex' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -279,7 +279,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
             Invite New Team Member
           </h3>
 
-          <form onSubmit={handleSendInvite} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <form onSubmit={handleSendInvite} style={{ display: 'flex', gap: 'var(--space-2-5)', alignItems: 'center' }}>
             <input
               type="email"
               value={inviteEmail}
@@ -288,14 +288,14 @@ export const WorkspaceCollaborators = ({ workspace }) => {
               required
               style={{
                 flex: 1,
-                background: 'var(--island-2)',
-                border: '1px solid var(--border-soft)',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border-default)',
                 borderRadius: 'var(--radius-sm)',
-                padding: '9px 14px',
-                fontSize: '13.5px',
-                color: 'var(--text)',
+                padding: 'var(--space-2) var(--space-3-5)',
+                fontSize: 'var(--font-size-md)',
+                color: 'var(--color-text-primary)',
                 outline: 'none',
-                height: '40px',
+                height: 'var(--dimension-input-md)',
               }}
             />
 
@@ -304,15 +304,15 @@ export const WorkspaceCollaborators = ({ workspace }) => {
               onChange={(e) => setSelectedRole(e.target.value)}
               style={{
                 width: '200px',
-                background: 'var(--island-2)',
-                border: '1px solid var(--border-soft)',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border-default)',
                 borderRadius: 'var(--radius-sm)',
-                padding: '9px 14px',
-                fontSize: '13.5px',
-                color: 'var(--text)',
+                padding: 'var(--space-2) var(--space-3-5)',
+                fontSize: 'var(--font-size-md)',
+                color: 'var(--color-text-primary)',
                 outline: 'none',
                 cursor: 'pointer',
-                height: '40px',
+                height: 'var(--dimension-input-md)',
               }}
             >
               <option value="VIEWER">Viewer (Read Only)</option>
@@ -324,7 +324,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
               type="submit"
               className="btn btn-primary"
               disabled={inviting || !inviteEmail.trim()}
-              style={{ height: '40px', padding: '0 18px', fontSize: '13.5px', gap: '7px' }}
+              style={{ height: 'var(--dimension-input-md)', padding: '0 var(--space-4-5)', fontSize: 'var(--font-size-md)', gap: 'var(--space-2)' }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <path d="m22 2-7 20-4-9-9-4Z" />
@@ -340,16 +340,16 @@ export const WorkspaceCollaborators = ({ workspace }) => {
       <div>
         <h3
           style={{
-            fontSize: '14px',
-            fontWeight: '700',
-            color: 'var(--text)',
-            marginBottom: '14px',
+            fontSize: 'var(--font-size-md)',
+            fontWeight: 'var(--font-weight-bold)',
+            color: 'var(--color-text-primary)',
+            marginBottom: 'var(--space-3-5)',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: 'var(--space-2)',
           }}
         >
-          <span style={{ color: 'var(--accent)', display: 'inline-flex' }}>
+          <span style={{ color: 'var(--color-primary)', display: 'inline-flex' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
@@ -359,11 +359,11 @@ export const WorkspaceCollaborators = ({ workspace }) => {
         </h3>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-8)' }}>
             <Spinner size="md" />
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2-5)' }}>
             {members.map((member) => {
               const memberUserId = member.user_id || member.id;
               const isSelf = Boolean(user?.id && memberUserId === user.id);
@@ -374,49 +374,49 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                 <div
                   key={member.id}
                   style={{
-                    background: 'var(--island-2)',
-                    border: '1px solid var(--border-soft)',
-                    borderRadius: '10px',
-                    padding: '12px 16px',
+                    background: 'var(--color-bg-secondary)',
+                    border: '1px solid var(--color-border-default)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: 'var(--space-3) var(--space-4)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                   }}
                 >
                   {/* Left: Avatar & Info */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <div
                       style={{
                         width: '34px',
                         height: '34px',
                         borderRadius: '50%',
-                        background: 'rgba(77, 124, 245, 0.12)',
-                        color: 'var(--accent)',
+                        background: 'var(--color-primary-subtle)',
+                        color: 'var(--color-primary)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: '700',
-                        fontSize: '13px',
+                        fontWeight: 'var(--font-weight-bold)',
+                        fontSize: 'var(--font-size-md)',
                         flexShrink: 0,
                       }}
                     >
                       {displayName.charAt(0).toUpperCase()}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-0-5)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
                           {displayName}
                         </span>
                         {isSelf && (
-                          <span style={{ fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500' }}>(You)</span>
+                          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-disabled)', fontWeight: 'var(--font-weight-normal)' }}>(You)</span>
                         )}
                         <span
                           style={{
-                            fontSize: '10.5px',
-                            fontWeight: '700',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
+                            fontSize: 'var(--font-size-xs)',
+                            fontWeight: 'var(--font-weight-bold)',
+                            padding: 'var(--space-0-5) var(--space-2)',
+                            borderRadius: 'var(--radius-xs)',
                             letterSpacing: '0.04em',
                             ...getRoleBadgeStyle(member.role),
                           }}
@@ -425,7 +425,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                         </span>
                       </div>
 
-                      <div style={{ fontSize: '11.5px', color: 'var(--text-faint)', display: 'flex', gap: '8px' }}>
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-disabled)', display: 'flex', gap: 'var(--space-2)' }}>
                         {displayEmail && displayEmail !== displayName && (
                           <>
                             <span>{displayEmail}</span>
@@ -438,19 +438,19 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                   </div>
 
                   {/* Right: Member Management Actions */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                     {canManageMembers && !isSelf && member.role !== 'OWNER' && (
                       <select
                         value={member.role}
                         onChange={(e) => handleUpdateRole(memberUserId, e.target.value, member.version || 1)}
                         disabled={actionUserId === memberUserId || (userRole === 'ADMIN' && member.role === 'ADMIN')}
                         style={{
-                          background: 'var(--island-2)',
-                          border: '1px solid var(--border-soft)',
-                          borderRadius: '6px',
-                          padding: '4px 8px',
-                          fontSize: '11.5px',
-                          color: 'var(--text)',
+                          background: 'var(--color-bg-secondary)',
+                          border: '1px solid var(--color-border-subtle)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: 'var(--space-1) var(--space-2)',
+                          fontSize: 'var(--font-size-xs)',
+                          color: 'var(--color-text-primary)',
                           cursor: 'pointer',
                         }}
                       >
@@ -463,7 +463,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                     {isOwner && !isSelf && (
                       <button
                         className="btn"
-                        style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--accent)', borderColor: 'var(--border-soft)' }}
+                        style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1) var(--space-2-5)', color: 'var(--color-primary)', borderColor: 'var(--color-border-subtle)' }}
                         onClick={() => handleTransferOwnership(memberUserId)}
                         disabled={actionUserId === memberUserId}
                       >
@@ -474,7 +474,7 @@ export const WorkspaceCollaborators = ({ workspace }) => {
                     {canManageMembers && !isSelf && member.role !== 'OWNER' && (
                       <button
                         className="btn"
-                        style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--danger)', borderColor: 'var(--border-soft)' }}
+                        style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1) var(--space-2-5)', color: 'var(--color-danger)', borderColor: 'var(--color-border-subtle)' }}
                         onClick={() => handleRemoveMember(memberUserId)}
                         disabled={actionUserId === memberUserId || (userRole === 'ADMIN' && member.role === 'ADMIN')}
                       >

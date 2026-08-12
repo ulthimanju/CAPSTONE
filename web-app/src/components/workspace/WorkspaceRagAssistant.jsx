@@ -89,8 +89,8 @@ const EmptyState = ({ docState, adaptivePrompts, onPromptClick, workspaceName })
         justifyContent: 'center',
         flex: 1,
         textAlign: 'center',
-        padding: '2rem 1.5rem',
-        animation: 'fadeIn var(--transition-normal) ease-out',
+        padding: 'var(--space-8) var(--space-6)',
+        animation: 'fadeIn var(--motion-normal) ease-out',
       }}
     >
       {/* Icon */}
@@ -98,15 +98,15 @@ const EmptyState = ({ docState, adaptivePrompts, onPromptClick, workspaceName })
         style={{
           width: '48px',
           height: '48px',
-          borderRadius: '12px',
-          background: 'var(--bg-3)',
-          border: '1px solid var(--border)',
-          color: 'var(--accent)',
+          borderRadius: 'var(--radius-lg)',
+          background: 'var(--color-bg-elevated)',
+          border: '1px solid var(--color-border-subtle)',
+          color: 'var(--color-primary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '22px',
-          marginBottom: '1rem',
+          fontSize: 'var(--font-size-2xl)',
+          marginBottom: 'var(--space-4)',
           flexShrink: 0,
         }}
       >
@@ -116,10 +116,10 @@ const EmptyState = ({ docState, adaptivePrompts, onPromptClick, workspaceName })
       {/* Heading */}
       <h4
         style={{
-          fontSize: '15px',
-          fontWeight: '600',
-          color: 'var(--text)',
-          margin: '0 0 0.4rem',
+          fontSize: 'var(--font-size-base)',
+          fontWeight: 'var(--font-weight-semibold)',
+          color: 'var(--color-text-primary)',
+          margin: '0 0 var(--space-1-5)',
         }}
       >
         {cfg.heading}
@@ -128,11 +128,11 @@ const EmptyState = ({ docState, adaptivePrompts, onPromptClick, workspaceName })
       {/* Description */}
       <p
         style={{
-          fontSize: '13px',
-          color: 'var(--text-3)',
+          fontSize: 'var(--font-size-md)',
+          color: 'var(--color-text-disabled)',
           maxWidth: '380px',
           lineHeight: '1.55',
-          margin: '0 0 1.5rem',
+          margin: '0 0 var(--space-6)',
         }}
       >
         {cfg.description}
@@ -144,7 +144,7 @@ const EmptyState = ({ docState, adaptivePrompts, onPromptClick, workspaceName })
           style={{
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '8px',
+            gap: 'var(--space-2)',
             justifyContent: 'center',
             maxWidth: '560px',
           }}
@@ -166,22 +166,22 @@ const PromptChip = ({ text, onClick }) => {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? 'var(--bg-3)' : 'var(--bg-2)',
-        border: `1px solid ${hovered ? 'var(--accent)' : 'var(--border)'}`,
-        borderRadius: '20px',
-        padding: '7px 13px',
-        fontSize: '12px',
-        color: hovered ? 'var(--text)' : 'var(--text-2)',
+        background: hovered ? 'var(--color-bg-elevated)' : 'var(--color-bg-secondary)',
+        border: `1px solid ${hovered ? 'var(--color-primary)' : 'var(--color-border-subtle)'}`,
+        borderRadius: 'var(--radius-full)',
+        padding: 'var(--space-1-5) var(--space-3)',
+        fontSize: 'var(--font-size-xs)',
+        color: hovered ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        gap: '6px',
-        transition: `all var(--transition-fast) ease`,
+        gap: 'var(--space-1-5)',
+        transition: `all var(--motion-fast) ease`,
         lineHeight: '1.3',
         textAlign: 'left',
       }}
     >
-      <i className="ti ti-bulb" style={{ color: 'var(--accent)', flexShrink: 0 }} />
+      <i className="ti ti-bulb" style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
       {text}
     </button>
   );
@@ -197,21 +197,21 @@ const MessageBubble = ({ msg }) => {
         flexDirection: 'column',
         alignSelf: isUser ? 'flex-end' : 'flex-start',
         maxWidth: '85%',
-        animation: 'fadeIn var(--transition-normal) ease-out',
+        animation: 'fadeIn var(--motion-normal) ease-out',
       }}
     >
       <div
         style={{
-          fontSize: '11px',
-          color: 'var(--text-faint)',
-          marginBottom: '4px',
+          fontSize: 'var(--font-size-xs)',
+          color: 'var(--color-text-disabled)',
+          marginBottom: 'var(--space-1)',
           display: 'flex',
           alignItems: 'center',
-          gap: '5px',
+          gap: 'var(--space-1)',
           justifyContent: isUser ? 'flex-end' : 'flex-start',
         }}
       >
-        <span style={{ fontWeight: '600', color: isUser ? 'var(--accent)' : 'var(--text-dim)' }}>
+        <span style={{ fontWeight: 'var(--font-weight-semibold)', color: isUser ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}>
           {isUser ? 'You' : 'Assistant'}
         </span>
         <span>·</span>
@@ -220,12 +220,12 @@ const MessageBubble = ({ msg }) => {
 
       <div
         style={{
-          background: isUser ? 'var(--accent-bg)' : 'var(--bg-2)',
-          border: `1px solid ${isUser ? 'rgba(77,124,245,0.2)' : 'var(--border-strong)'}`,
-          borderRadius: isUser ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-          padding: '12px 16px',
-          color: 'var(--text)',
-          fontSize: '13.5px',
+          background: isUser ? 'var(--color-primary-subtle)' : 'var(--color-bg-secondary)',
+          border: `1px solid ${isUser ? 'var(--color-primary-alpha-20)' : 'var(--color-border-default)'}`,
+          borderRadius: isUser ? 'var(--radius-xl) var(--radius-xl) var(--radius-xs) var(--radius-xl)' : 'var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-xs)',
+          padding: 'var(--space-3) var(--space-4)',
+          color: 'var(--color-text-primary)',
+          fontSize: 'var(--font-size-md)',
           lineHeight: '1.6',
         }}
       >
@@ -376,46 +376,46 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         flexDirection: 'column',
         height: 'calc(100vh - 120px)',
         minHeight: '480px',
-        background: 'var(--bg-1)',
-        border: '1px solid var(--border-strong)',
-        borderRadius: '12px',
+        background: 'var(--color-bg-surface)',
+        border: '1px solid var(--color-border-default)',
+        borderRadius: 'var(--radius-xl)',
         overflow: 'hidden',
       }}
     >
       {/* ── Header ── */}
       <div
         style={{
-          padding: '12px 16px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--bg-2)',
+          padding: 'var(--space-3) var(--space-4)',
+          borderBottom: '1px solid var(--color-border-subtle)',
+          background: 'var(--color-bg-secondary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2-5)' }}>
           <div
             style={{
               width: '32px',
               height: '32px',
-              borderRadius: '9px',
-              background: 'var(--accent-bg)',
-              color: 'var(--accent)',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-primary-subtle)',
+              color: 'var(--color-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '16px',
+              fontSize: 'var(--font-size-base)',
               flexShrink: 0,
             }}
           >
             <i className="ti ti-message-bot" />
           </div>
           <div>
-            <div style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text)', lineHeight: 1.2 }}>
+            <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', lineHeight: 1.2 }}>
               RAG Assistant
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-faint)', lineHeight: 1.2, marginTop: '1px' }}>
+            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.2, marginTop: '1px' }}>
               {docState === 'ready'
                 ? `${documents.filter((d) => READY_STATUSES.includes(d.status)).length} document${
                     documents.filter((d) => READY_STATUSES.includes(d.status)).length !== 1 ? 's' : ''
@@ -430,7 +430,7 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         {hasConversation && (
           <button
             className="btn"
-            style={{ fontSize: '12px', padding: '4px 10px', gap: '5px', color: 'var(--text-dim)' }}
+            style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1) var(--space-2-5)', gap: 'var(--space-1)', color: 'var(--color-text-secondary)' }}
             onClick={handleClearChat}
             title="Clear conversation"
           >
@@ -447,8 +447,8 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          padding: hasConversation ? '16px' : '0',
-          gap: hasConversation ? '14px' : '0',
+          padding: hasConversation ? 'var(--space-4)' : '0',
+          gap: hasConversation ? 'var(--space-3-5)' : '0',
         }}
       >
         {!hasConversation ? (
@@ -470,17 +470,17 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: 'var(--space-2)',
                   alignSelf: 'flex-start',
-                  background: 'var(--bg-2)',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: '12px 12px 12px 2px',
-                  padding: '10px 14px',
-                  animation: 'fadeIn var(--transition-normal) ease-out',
+                  background: 'var(--color-bg-secondary)',
+                  border: '1px solid var(--color-border-default)',
+                  borderRadius: 'var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-xs)',
+                  padding: 'var(--space-2-5) var(--space-3-5)',
+                  animation: 'fadeIn var(--motion-normal) ease-out',
                 }}
               >
                 <Spinner size="sm" />
-                <span style={{ fontSize: '12.5px', color: 'var(--text-3)' }}>Searching documents…</span>
+                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>Searching documents…</span>
               </div>
             )}
 
@@ -496,11 +496,11 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           handleSend();
         }}
         style={{
-          padding: '12px 14px',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--bg-2)',
+          padding: 'var(--space-3) var(--space-3-5)',
+          borderTop: '1px solid var(--color-border-subtle)',
+          background: 'var(--color-bg-secondary)',
           display: 'flex',
-          gap: '10px',
+          gap: 'var(--space-2-5)',
           alignItems: 'flex-end',
           flexShrink: 0,
         }}
@@ -520,21 +520,21 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           disabled={!canSend}
           style={{
             flex: 1,
-            background: 'var(--bg-1)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '8px',
-            padding: '9px 12px',
-            fontSize: '13px',
-            color: 'var(--text)',
+            background: 'var(--color-bg-surface)',
+            border: '1px solid var(--color-border-default)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-2) var(--space-3)',
+            fontSize: 'var(--font-size-md)',
+            color: 'var(--color-text-primary)',
             outline: 'none',
             resize: 'none',
             lineHeight: '1.5',
             fontFamily: 'inherit',
             overflow: 'hidden',
-            transition: `border-color var(--transition-fast) ease`,
+            transition: `border-color var(--motion-fast) ease`,
           }}
-          onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
-          onBlur={(e) => (e.target.style.borderColor = 'var(--border-strong)')}
+          onFocus={(e) => (e.target.style.borderColor = 'var(--color-primary)')}
+          onBlur={(e) => (e.target.style.borderColor = 'var(--color-border-default)')}
         />
         <button
           type="submit"
@@ -542,9 +542,9 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           disabled={!canSend || !inputQuery.trim()}
           title="Send (Enter)"
           style={{
-            padding: '9px 16px',
-            fontSize: '13px',
-            gap: '6px',
+            padding: 'var(--space-2) var(--space-4)',
+            fontSize: 'var(--font-size-md)',
+            gap: 'var(--space-1-5)',
             flexShrink: 0,
             alignSelf: 'flex-end',
           }}
