@@ -415,6 +415,89 @@ def select_representative_passages(
     return selected
 
 
+from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
+
+@router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
+async def generate_workspace_summary_endpoint(
+    workspace_id: str,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
+):
+    ws_id = workspace_id
+    user_id_str = str(user_id)
+    await _publish_summary_event(ws_id, "QUEUED", user_id=user_id_str)
+    await _publish_summary_event(ws_id, "STARTED", user_id=user_id_str)
+
+    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
+    document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
+
+    try:
+        await _publish_summary_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
+
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
+            # 1. Fetch Workspace Metadata (forward Authorization header)
+            headers = {"Authorization": authorization} if authorization else {}
+            ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
+            if ws_res.status_code != 200:
+                raise HTTPException(status_code=404, detail="Workspace metadata not found")
+            ws_meta = ws_res.json()
+
+            # 2. Fetch Processed Document Chunks
+            chunks_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/chunks", headers=headers)
+            if chunks_res.status_code != 200:
+                raise HTTPException(status_code=500, detail="Failed to retrieve workspace document chunks")
+            chunks_data = chunks_res.json().get("chunks", [])
+
+        # 3. Assemble Workspace Knowledge Map & Representative Detailed Source Context
+        workspace_map = []
+        for index, chunk in enumerate(chunks_data, start=1):
+            knowledge_map = build_chunk_knowledge_map(chunk)
+            if knowledge_map:
+                workspace_map.append(f"--- Workspace Chunk {index} ---\n{knowledge_map}")
+
+        workspace_map_text = "\n\n".join(workspace_map)
+
+        # Select region-representative granular passages across the entire workspace
+        selected_passages = select_representative_passages(chunks_data, detailed_token_budget=9000)
+
+        detailed_sources = []
+        for index, item in enumerate(selected_passages, start=1):
+            detailed_sources.append(
+                f"--- Detailed Excerpt {index} ---\nSource: {item['title']}\n\n{item['content']}"
+            )
+
+        detailed_context = "\n\n".join(detailed_sources)
+
+        assembled_prompt = f"""Workspace Title: {ws_meta.get('name', 'Untitled')}
+Description: {ws_meta.get('description', 'N/A')}
+
+WORKSPACE KNOWLEDGE MAP
+=======================
+
+{workspace_map_text}
+
+DETAILED SOURCE MATERIAL
+========================
+
+{detailed_context}
+
+Generate the comprehensive workspace summary using the entire workspace knowledge map and the detailed source material."""
+
+        # 4. Build System Instruction using WorkspaceSummaryPromptBuilder
+        sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction()
+
+        # 5. Call Gemini with configured default model & strict JSON schema validation (32,768 output token budget)
+        gemini_res = await gemini_client.generate_text(
+            prompt=assembled_prompt,
+            system_instruction=sys_instruction,
+            model=settings.gemini_default_model,
+            temperature=0.3,
+            top_p=0.95,
+            max_output_tokens=32768,
+            response_mime_type="application/json",
+            response_schema=WorkspaceSummaryResponse,
+        )
+
         # 6. Validate Response Schema
         summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
 
