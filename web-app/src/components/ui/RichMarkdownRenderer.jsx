@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useContext } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -7,7 +7,7 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import hljs from 'highlight.js';
 import { formatCodeWithLanguageFormatter } from '../../utils/codeFormatters';
-import { useWorkspaceStore } from '../../contexts/WorkspaceContext';
+import { WorkspaceContext } from '../../contexts/WorkspaceContext';
 import { MermaidDiagram } from './MermaidDiagram';
 import 'katex/dist/katex.min.css';
 import './RichMarkdown.css';
@@ -121,7 +121,8 @@ const normalizeContent = (value) => {
 export const RichMarkdownRenderer = ({ content, compact = false }) => {
   if (!content) return null;
 
-  const { summaryDiagrams } = useWorkspaceStore();
+  const wsContext = useContext(WorkspaceContext);
+  const summaryDiagrams = wsContext?.summaryDiagrams || {};
   const normalizedContent = normalizeContent(content);
   const diagram = summaryDiagrams?.[content] || null;
 

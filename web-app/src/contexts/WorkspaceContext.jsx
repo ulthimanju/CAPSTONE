@@ -233,6 +233,8 @@ export function WorkspaceProvider({ children, activeWorkspaceId }) {
   );
 }
 
+export { WorkspaceContext };
+
 export function useWorkspaceStore() {
   const context = useContext(WorkspaceContext);
   if (!context) {
