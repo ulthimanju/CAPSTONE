@@ -131,10 +131,11 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
       {diagram?.diagram_type !== 'none' && diagram?.diagram && (
         <figure
           style={{
-            margin: '0 0 20px',
-            padding: '16px',
-            border: '1px solid var(--border-soft)',
-            background: 'var(--bg-2)',
+            margin: '0 0 var(--space-5)',
+            padding: 'var(--space-4)',
+            border: '1px solid var(--color-border-subtle)',
+            background: 'var(--color-bg-secondary)',
+            borderRadius: 'var(--radius-lg)',
           }}
         >
           <MermaidDiagram
@@ -145,9 +146,9 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
           {diagram.diagram_caption && (
             <figcaption
               style={{
-                marginTop: '10px',
-                color: 'var(--text-faint)',
-                fontSize: '12px',
+                marginTop: 'var(--space-2-5)',
+                color: 'var(--color-text-disabled)',
+                fontSize: 'var(--font-size-xs)',
                 lineHeight: '1.5',
               }}
             >
@@ -216,7 +217,7 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
               <img
                 src={src}
                 alt={alt || 'Image'}
-                style={{ maxWidth: '100%', borderRadius: '8px', border: '1px solid var(--border-soft)' }}
+                style={{ maxWidth: '100%', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}
                 {...props}
               />
             );
