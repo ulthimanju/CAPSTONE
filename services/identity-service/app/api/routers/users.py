@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from app.api.dependencies.database import get_user_repository
@@ -13,7 +14,7 @@ async def get_users_batch(
     user_repo: UserRepository = Depends(get_user_repository),
 ):
     users = await user_repo.get_by_ids(req.user_ids)
-    return {str(u.id): UserResponse.model_validate(u) for u in users}
+    return {str(u.id): UserResponse.model_validate(asdict(u)) for u in users}
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -24,4 +25,4 @@ async def get_user_by_id(
     user = await user_repo.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return UserResponse.model_validate(asdict(user))
