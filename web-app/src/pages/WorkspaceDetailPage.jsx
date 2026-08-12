@@ -97,39 +97,39 @@ const WorkspaceDetailPageContent = () => {
     switch (status) {
       case 'UPLOADING':
         return (
-          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#60a5fa', background: 'rgba(96, 165, 250, 0.12)', border: '1px solid rgba(96, 165, 250, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1-5)', fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-info-text)', background: 'var(--color-info-subtle)', border: '1px solid var(--color-info-alpha-20)', padding: 'var(--space-0-5) var(--space-2-5)', borderRadius: 'var(--radius-full)' }}>
             <Spinner size="sm" /> Uploading...
           </span>
         );
       case 'PARSING':
         return (
-          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1-5)', fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-warning-text)', background: 'var(--color-warning-subtle)', border: '1px solid var(--color-warning-alpha-20)', padding: 'var(--space-0-5) var(--space-2-5)', borderRadius: 'var(--radius-full)' }}>
             <Spinner size="sm" /> Parsing...
           </span>
         );
       case 'CHUNKING':
         return (
-          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#c084fc', background: 'rgba(192, 132, 252, 0.12)', border: '1px solid rgba(192, 132, 252, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1-5)', fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-info-text)', background: 'var(--color-info-subtle)', border: '1px solid var(--color-info-alpha-20)', padding: 'var(--space-0-5) var(--space-2-5)', borderRadius: 'var(--radius-full)' }}>
             <Spinner size="sm" /> Chunking...
           </span>
         );
       case 'EMBEDDING':
         return (
-          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '600', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1-5)', fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-info-text)', background: 'var(--color-info-subtle)', border: '1px solid var(--color-info-alpha-20)', padding: 'var(--space-0-5) var(--space-2-5)', borderRadius: 'var(--radius-full)' }}>
             <Spinner size="sm" /> Embedding...
           </span>
         );
       case 'READY_FOR_RAG':
       case 'READY':
         return (
-          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#3ecf8e', background: 'rgba(62, 207, 142, 0.12)', border: '1px solid rgba(62, 207, 142, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
-            <i className="ti ti-check" style={{ fontSize: '12px' }}></i> Ready
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1-5)', fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-success-text)', background: 'var(--color-success-subtle)', border: '1px solid var(--color-success-alpha-20)', padding: 'var(--space-0-5) var(--space-2-5)', borderRadius: 'var(--radius-full)' }}>
+            <i className="ti ti-check" style={{ fontSize: 'var(--font-size-sm)' }}></i> Ready
           </span>
         );
       case 'FAILED':
         return (
-          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '600', color: '#f87171', background: 'rgba(248, 113, 113, 0.12)', border: '1px solid rgba(248, 113, 113, 0.25)', padding: '3px 9px', borderRadius: '12px' }}>
-            <i className="ti ti-alert-triangle" style={{ fontSize: '12px' }}></i> Failed
+          <span className="doc-status-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1-5)', fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-danger-text)', background: 'var(--color-danger-subtle)', border: '1px solid var(--color-danger-alpha-20)', padding: 'var(--space-0-5) var(--space-2-5)', borderRadius: 'var(--radius-full)' }}>
+            <i className="ti ti-alert-triangle" style={{ fontSize: 'var(--font-size-sm)' }}></i> Failed
           </span>
         );
       default:
@@ -691,18 +691,18 @@ const WorkspaceDetailPageContent = () => {
 
         {/* Create Workspace Modal */}
         <Modal open={isCreateWsOpen} onOpenChange={setIsCreateWsOpen}>
-          <ModalContent size="md" showCloseButton={false} style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+          <ModalContent size="md" showCloseButton={false} style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', borderRadius: 'var(--radius-xl)', padding: '0', boxShadow: 'var(--elevation-overlay)' }}>
 
             <ModalHeader
               title="Create New Workspace"
               description="Set up a collaborative workspace for your documents and AI interactions."
-              style={{ padding: '20px 24px', borderBottom: '1px solid #2a2a2e' }}
+              style={{ padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)' }}
             />
             <form onSubmit={handleCreateWorkspaceSubmit}>
-              <ModalBody style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
-                    Workspace Name <span style={{ color: '#3ecf8e' }}>*</span>
+              <ModalBody style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1-5)' }}>
+                  <label style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-primary)' }}>
+                    Workspace Name <span style={{ color: 'var(--color-primary)' }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -711,25 +711,25 @@ const WorkspaceDetailPageContent = () => {
                     onChange={(e) => setNewWsName(e.target.value)}
                     required
                     autoFocus
-                    style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none' }}
+                    style={{ width: '100%', height: 'var(--dimension-input-md)', padding: '0 var(--space-3)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', fontSize: 'var(--font-size-md)', outline: 'none' }}
                   />
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
-                    Description <span style={{ color: '#71717a', fontSize: '11px' }}>(Optional)</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1-5)' }}>
+                  <label style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-primary)' }}>
+                    Description <span style={{ color: 'var(--color-text-disabled)', fontSize: 'var(--font-size-xs)' }}>(Optional)</span>
                   </label>
                   <textarea
                     placeholder="Brief summary of the workspace purpose"
                     value={newWsDescription}
                     onChange={(e) => setNewWsDescription(e.target.value)}
                     rows={3}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none', resize: 'none' }}
+                    style={{ width: '100%', padding: 'var(--space-2-5) var(--space-3)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', fontSize: 'var(--font-size-md)', outline: 'none', resize: 'none' }}
                   />
                 </div>
               </ModalBody>
               
-              <ModalFooter style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2e', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <ModalFooter style={{ padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
                 <button type="button" className="btn" onClick={() => setIsCreateWsOpen(false)}>
                   Cancel
                 </button>
@@ -911,8 +911,8 @@ const WorkspaceDetailPageContent = () => {
             {!summaryLoaded && !summaryData && !summaryStatus ? (
               <SummarySkeleton />
             ) : summaryStatus === 'FAILED' ? (
-              <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+              <div className="island" style={{ padding: 'var(--space-12) var(--space-8)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-lg)', background: 'var(--color-danger-subtle)', border: '1px solid var(--color-danger-alpha-20)', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-3xl)', marginBottom: 'var(--space-4)' }}>
                   <i className="ti ti-alert-triangle"></i>
                 </div>
                 <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--danger)', marginBottom: '0.5rem' }}>AI generation Failed</h2>
@@ -974,7 +974,7 @@ const WorkspaceDetailPageContent = () => {
                 {/* Key Takeaways Section */}
                 {summaryData.key_takeaways && summaryData.key_takeaways.length > 0 && (
                   <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#4D7CF5', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--color-primary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <i className="ti ti-bulb"></i> Key Takeaways
                     </h3>
                     <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1047,8 +1047,8 @@ const WorkspaceDetailPageContent = () => {
             {!learningPathLoaded && !learningPathData && !learningPathStatus ? (
               <LearningPathSkeleton />
             ) : learningPathStatus === 'FAILED' ? (
-              <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+              <div className="island" style={{ padding: 'var(--space-12) var(--space-8)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-lg)', background: 'var(--color-danger-subtle)', border: '1px solid var(--color-danger-alpha-20)', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-3xl)', marginBottom: 'var(--space-4)' }}>
                   <i className="ti ti-alert-triangle"></i>
                 </div>
                 <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--danger)', marginBottom: '0.5rem' }}>AI generation Failed</h2>
@@ -1243,26 +1243,26 @@ const WorkspaceDetailPageContent = () => {
 
       {/* Markdown Content Modal */}
       <Modal open={Boolean(selectedDoc)} onOpenChange={() => setSelectedDoc(null)}>
-        <ModalContent size="lg" className="bg-[#16161a] border border-[#2a2a2e] text-white shadow-2xl">
+        <ModalContent size="lg" className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] shadow-[var(--elevation-overlay)]">
           <ModalHeader
             title={selectedDoc?.original_filename || 'Parsed Document'}
             description="Plain text content extracted by LlamaParse."
           />
           <ModalBody className="py-4">
             {loadingMarkdown ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
                 <Spinner size="lg" />
               </div>
             ) : (
-              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', backgroundColor: '#0c0c0e', padding: '1rem', borderRadius: '8px', border: '1px solid #2a2a2e', fontSize: '0.85rem', color: '#e4e4e7', maxHeight: '60vh', overflowY: 'auto' }}>
+              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', backgroundColor: 'var(--color-bg-secondary)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-primary)', maxHeight: '60vh', overflowY: 'auto' }}>
                 {markdownContent}
               </pre>
             )}
           </ModalBody>
-          <ModalFooter className="pt-4 border-t border-[#2a2a2e]">
+          <ModalFooter className="pt-4 border-t border-[var(--color-border-subtle)]">
             <button
               onClick={() => setSelectedDoc(null)}
-              style={{ backgroundColor: '#27272a', color: '#fff', border: 'none', padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer' }}
+              className="btn btn-secondary"
             >
               Close
             </button>
@@ -1272,18 +1272,18 @@ const WorkspaceDetailPageContent = () => {
 
       {/* Create Workspace Modal */}
       <Modal open={isCreateWsOpen} onOpenChange={setIsCreateWsOpen}>
-        <ModalContent size="md" showCloseButton={false} style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+        <ModalContent size="md" showCloseButton={false} style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', borderRadius: 'var(--radius-xl)', padding: '0', boxShadow: 'var(--elevation-overlay)' }}>
 
           <ModalHeader
             title="Create New Workspace"
             description="Set up a collaborative workspace for your documents and AI interactions."
-            style={{ padding: '20px 24px', borderBottom: '1px solid #2a2a2e' }}
+            style={{ padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)' }}
           />
           <form onSubmit={handleCreateWorkspaceSubmit}>
-            <ModalBody style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
-                  Workspace Name <span style={{ color: '#3ecf8e' }}>*</span>
+            <ModalBody style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1-5)' }}>
+                <label style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-primary)' }}>
+                  Workspace Name <span style={{ color: 'var(--color-primary)' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -1292,25 +1292,25 @@ const WorkspaceDetailPageContent = () => {
                   onChange={(e) => setNewWsName(e.target.value)}
                   required
                   autoFocus
-                  style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none' }}
+                  style={{ width: '100%', height: 'var(--dimension-input-md)', padding: '0 var(--space-3)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', fontSize: 'var(--font-size-md)', outline: 'none' }}
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
-                  Description <span style={{ color: '#71717a', fontSize: '11px' }}>(Optional)</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1-5)' }}>
+                <label style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-primary)' }}>
+                  Description <span style={{ color: 'var(--color-text-disabled)', fontSize: 'var(--font-size-xs)' }}>(Optional)</span>
                 </label>
                 <textarea
                   placeholder="Brief summary of the workspace purpose"
                   value={newWsDescription}
                   onChange={(e) => setNewWsDescription(e.target.value)}
                   rows={3}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none', resize: 'none' }}
+                  style={{ width: '100%', padding: 'var(--space-2-5) var(--space-3)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', fontSize: 'var(--font-size-md)', outline: 'none', resize: 'none' }}
                 />
               </div>
             </ModalBody>
             
-            <ModalFooter style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2e', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <ModalFooter style={{ padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
               <button type="button" className="btn" onClick={() => setIsCreateWsOpen(false)}>
                 Cancel
               </button>
@@ -1324,17 +1324,17 @@ const WorkspaceDetailPageContent = () => {
 
       {/* Rename Workspace Modal */}
       <Modal open={isRenameOpen} onOpenChange={(open) => { if (!open) { setIsRenameOpen(false); setRenameTarget(null); } }}>
-        <ModalContent size="sm" showCloseButton={false} style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)' }}>
+        <ModalContent size="sm" showCloseButton={false} style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', borderRadius: 'var(--radius-xl)', padding: '0', boxShadow: 'var(--elevation-overlay)' }}>
           <ModalHeader
             title="Rename Workspace"
             description="Enter a new name for this workspace."
-            style={{ padding: '20px 24px', borderBottom: '1px solid #2a2a2e' }}
+            style={{ padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)' }}
           />
           <form onSubmit={handleRenameSubmit}>
-            <ModalBody style={{ padding: '20px 24px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '500', color: '#e4e4e7' }}>
-                  Workspace Name <span style={{ color: '#3ecf8e' }}>*</span>
+            <ModalBody style={{ padding: 'var(--space-5) var(--space-6)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1-5)' }}>
+                <label style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-primary)' }}>
+                  Workspace Name <span style={{ color: 'var(--color-primary)' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -1342,11 +1342,11 @@ const WorkspaceDetailPageContent = () => {
                   onChange={(e) => setRenameValue(e.target.value)}
                   required
                   autoFocus
-                  style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '6px', background: '#0c0c0e', border: '1px solid #2a2a2e', color: '#ffffff', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', height: 'var(--dimension-input-md)', padding: '0 var(--space-3)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', fontSize: 'var(--font-size-md)', outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
             </ModalBody>
-            <ModalFooter style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2e', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <ModalFooter style={{ padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
               <button type="button" className="btn" onClick={() => { setIsRenameOpen(false); setRenameTarget(null); }}>Cancel</button>
               <button type="submit" className="btn btn-primary" disabled={renamingWs || !renameValue.trim()}>
                 {renamingWs ? 'Saving...' : 'Save'}
@@ -1358,18 +1358,18 @@ const WorkspaceDetailPageContent = () => {
 
       {/* Raw JSON Payload Modal */}
       <Modal open={isJsonModalOpen} onOpenChange={setIsJsonModalOpen}>
-        <ModalContent size="lg" showCloseButton={false} style={{ background: '#16161a', border: '1px solid #2a2a2e', color: '#e4e4e7', borderRadius: '12px', padding: '0', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)', maxWidth: '800px', width: '90%' }}>
+        <ModalContent size="lg" showCloseButton={false} style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)', borderRadius: 'var(--radius-xl)', padding: '0', boxShadow: 'var(--elevation-overlay)', maxWidth: 'var(--dimension-modal-xl)', width: '90%' }}>
           <ModalHeader
             title="Raw Summary JSON Payload"
             description="The exact JSON schema response received from Gemini and stored in the database."
-            style={{ padding: '20px 24px', borderBottom: '1px solid #2a2a2e' }}
+            style={{ padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)' }}
           />
-          <ModalBody style={{ padding: '20px 24px', maxHeight: '60vh', overflowY: 'auto' }}>
-            <pre style={{ background: '#0c0c0e', border: '1px solid #2a2a2e', borderRadius: '8px', padding: '16px', color: '#a6e3a1', fontFamily: 'monospace', fontSize: '12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
+          <ModalBody style={{ padding: 'var(--space-5) var(--space-6)', maxHeight: '60vh', overflowY: 'auto' }}>
+            <pre style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', color: 'var(--color-success-text)', fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-sm)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
               {JSON.stringify(summaryData, null, 2)}
             </pre>
           </ModalBody>
-          <ModalFooter style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <ModalFooter style={{ padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button
               type="button"
               className="btn"
