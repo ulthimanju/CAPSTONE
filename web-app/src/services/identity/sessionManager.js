@@ -16,23 +16,24 @@ export class SessionManager {
   }
 
   static async initialize(options = {}) {
-
     try {
-      // 1. If access token is missing, attempt to obtain one using HTTP-only refresh cookie
-      if (!tokenStorage.getAccessToken()) {
+      // If already on /login page, don't auto-attempt background refresh
+      const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
+
+      if (!tokenStorage.getAccessToken() && !isLoginPage) {
         try {
           const tokenData = await authService.refreshToken();
           if (tokenData?.access_token) {
             tokenStorage.setAccessToken(tokenData.access_token);
           }
         } catch (refreshErr) {
-          // Ignore refresh error
+          // Ignore background refresh failure on initialization
         }
       }
 
       const token = tokenStorage.getAccessToken();
 
-      // 2. Try fetching profile via profileService
+      // Try fetching profile via profileService if token exists
       if (token) {
         try {
           const user = await profileService.getProfile(options);
@@ -57,25 +58,23 @@ export class SessionManager {
             useAuthStore.setState({ isLoading: false, isInitialized: true });
             return fallbackUser;
           } catch (jwtErr) {
-            // Invalid token
-            SessionManager.logout();
-            throw profileErr;
+            tokenStorage.removeAccessToken();
+            useAuthStore.getState().clearAuth();
           }
         }
-      } else {
-        useAuthStore.setState({ isLoading: false, isInitialized: true });
       }
+
+      // Default unauthenticated state
+      useAuthStore.getState().clearAuth();
+      return null;
     } catch (error) {
-      useAuthStore.setState({ isLoading: false, isInitialized: true });
-      throw error;
+      useAuthStore.getState().clearAuth();
+      return null;
     }
   }
 
-
-
   static scheduleRefresh() {
     SessionManager.clearRefreshTimer();
-    // Schedule refresh every 14 minutes (before 15 min JWT expiration)
     const FOURTEEN_MINUTES = 14 * 60 * 1000;
     SessionManager.refreshTimer = setTimeout(async () => {
       try {

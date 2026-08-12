@@ -8,8 +8,7 @@ export const authService = {
   },
   refreshToken: async (token = null) => {
     const payload = token ? { refresh_token: token } : {};
-    const res = await apiClient.post(API_ENDPOINTS.TOKENS.REFRESH, payload);
+    const res = await apiClient.post(API_ENDPOINTS.TOKENS.REFRESH, payload, { _isRefreshCall: true });
     return res.data;
   },
-
 };

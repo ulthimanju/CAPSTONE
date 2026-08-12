@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -16,6 +17,8 @@ const GoogleIcon = () => (
 export const LoginPage = () => {
   const { loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [searchParams] = useSearchParams();
+  const isExpired = searchParams.get('reason') === 'session_expired';
 
   const handleSignIn = async () => {
     setLoading(true);
@@ -32,9 +35,24 @@ export const LoginPage = () => {
       <Typography variant="h2" weight="bold" style={{ marginBottom: '0.5rem' }}>
         Welcome Back
       </Typography>
-      <Typography variant="body" color="muted" style={{ marginBottom: '2rem' }}>
-        Sign in with your Google account to access your workspaces.
-      </Typography>
+      
+      {isExpired ? (
+        <div style={{
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: '8px',
+          padding: '0.75rem 1rem',
+          marginBottom: '1.5rem',
+          color: '#f87171',
+          fontSize: '0.875rem'
+        }}>
+          Your session has expired. Please sign in again to continue.
+        </div>
+      ) : (
+        <Typography variant="body" color="muted" style={{ marginBottom: '2rem' }}>
+          Sign in with your Google account to access your workspaces.
+        </Typography>
+      )}
 
       <Button
         variant="primary"

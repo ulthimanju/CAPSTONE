@@ -3,6 +3,7 @@ import { apiConfig } from '../../config/api';
 import { API_ENDPOINTS } from '../../constants/api';
 import { tokenStorage } from '../../lib/tokenStorage';
 import { ApiError } from '../../lib/apiError';
+import { useAuthStore } from '../../store/authStore';
 
 const API_BASE_URL = apiConfig.baseUrl;
 
@@ -13,18 +14,19 @@ export const apiClient = axios.create({
   },
 });
 
-// Shared logout — clears token, dispatches a global event so all components (SSE, etc.) react
-let _isLoggingOut = false;
+// Shared logout handler for session expiry
 export function triggerSessionExpiredLogout() {
-  if (_isLoggingOut) return;
-  _isLoggingOut = true;
   tokenStorage.removeAccessToken();
-  // Give in-flight requests a tick to resolve before hard redirect
-  setTimeout(() => {
-    _isLoggingOut = false;
-    window.dispatchEvent(new CustomEvent('session:expired'));
+  try {
+    useAuthStore.getState().clearAuth();
+  } catch (e) {}
+
+  window.dispatchEvent(new CustomEvent('session:expired'));
+
+  // ONLY redirect if we are not already on the login page
+  if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
     window.location.href = '/login?reason=session_expired';
-  }, 100);
+  }
 }
 
 apiClient.interceptors.request.use((config) => {
@@ -41,7 +43,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Track in-progress refresh to avoid parallel refresh races
+// Coalesce in-flight refresh requests
 let _refreshPromise = null;
 
 apiClient.interceptors.response.use(
@@ -50,8 +52,12 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     const status = error.response?.status;
 
-    // Only attempt refresh on 401, never on the refresh call itself, and only once
-    if (status === 401 && !originalRequest._retry && !originalRequest._isRefreshCall) {
+    // Do NOT intercept if this was already a refresh request or a retry
+    if (originalRequest?._isRefreshCall || originalRequest?._retry) {
+      return Promise.reject(ApiError.fromAxiosError(error));
+    }
+
+    if (status === 401) {
       originalRequest._retry = true;
 
       // Coalesce concurrent 401s into a single refresh call
@@ -70,12 +76,13 @@ apiClient.interceptors.response.use(
       try {
         const res = await _refreshPromise;
         const { access_token } = res.data;
-        tokenStorage.setAccessToken(access_token);
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
-        return apiClient(originalRequest);
+        if (access_token) {
+          tokenStorage.setAccessToken(access_token);
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          return apiClient(originalRequest);
+        }
+        throw new Error('No access_token in refresh response');
       } catch (refreshError) {
-        // Refresh failed (401 = expired, 404 = wrong path, 400 = invalid token)
-        // → force logout, do NOT retry further
         triggerSessionExpiredLogout();
         return Promise.reject(ApiError.fromAxiosError(refreshError));
       }
