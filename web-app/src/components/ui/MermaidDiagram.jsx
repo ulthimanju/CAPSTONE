@@ -3,110 +3,146 @@ import mermaid from 'mermaid';
 
 mermaid.initialize({
   startOnLoad: false,
-  suppressErrorRendering: true,
-  securityLevel: 'strict',
+  securityLevel: 'loose',
 });
 
-function DiagramSkeleton() {
-  return (
-    <div
-      style={{
-        minHeight: '120px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--color-text-disabled)',
-        fontSize: 'var(--font-size-sm)',
-        border: '1px solid var(--color-border-subtle)',
-        background: 'var(--color-bg-elevated)',
-      }}
-      aria-label="Loading diagram"
-    >
-      Rendering diagram...
-    </div>
-  );
+function parseSubgraphsIntoIndividualDiagrams(code) {
+  if (!code) return [];
+  const raw = code.trim();
+
+  // If no subgraph block present, return single diagram
+  if (!/subgraph\s+/i.test(raw)) {
+    return [{ title: null, code: raw }];
+  }
+
+  // Extract flow direction header (default flowchart TD)
+  const headerMatch = raw.match(/^\s*(flowchart|graph)\s+([A-Za-z]+)/i);
+  const flowHeader = headerMatch ? `${headerMatch[1]} ${headerMatch[2]}` : 'flowchart TD';
+
+  const subgraphRegex = /subgraph\s+(?:"([^"]+)"|([^\s\n"\[\]]+))([\s\S]*?)end/gi;
+  const diagrams = [];
+  let match;
+
+  while ((match = subgraphRegex.exec(raw)) !== null) {
+    const title = (match[1] || match[2] || '').trim();
+    const innerContent = match[3].trim();
+    if (innerContent) {
+      diagrams.push({
+        title,
+        code: `${flowHeader}\n${innerContent}`,
+      });
+    }
+  }
+
+  if (diagrams.length === 0) {
+    return [{ title: null, code: raw }];
+  }
+
+  return diagrams;
 }
 
-function DiagramFallback({ title, error }) {
-  return (
-    <div
-      style={{
-        minHeight: '80px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 'var(--space-1-5)',
-        color: 'var(--color-text-disabled)',
-        fontSize: 'var(--font-size-sm)',
-        border: '1px solid var(--color-border-subtle)',
-        background: 'var(--color-bg-elevated)',
-        padding: 'var(--space-4)',
-        textAlign: 'center',
-      }}
-      role="status"
-      aria-label={`Diagram unavailable for ${title}`}
-    >
-      <span>{error}</span>
-    </div>
-  );
-}
-
-export function MermaidDiagram({ code, title = 'Diagram', onError }) {
+function SingleMermaidRender({ code, onError }) {
   const [svgHtml, setSvgHtml] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-    setIsLoading(true);
-    setError(null);
+    let cancelled = false;
 
-    if (!code || !code.trim()) {
+    if (!code) {
       setIsLoading(false);
       setError('No diagram syntax available');
       if (onError) onError();
       return;
     }
 
-    const uniqueId = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+    setIsLoading(true);
+    setError(null);
 
-    mermaid.render(uniqueId, code.trim())
+    const uniqueId = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
+
+    const tempContainer = document.createElement('div');
+    tempContainer.id = `container-${uniqueId}`;
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.top = '-9999px';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.visibility = 'hidden';
+    document.body.appendChild(tempContainer);
+
+    mermaid
+      .render(uniqueId, code, tempContainer)
       .then(({ svg }) => {
-        if (isMounted) {
+        if (!cancelled) {
           setSvgHtml(svg);
           setIsLoading(false);
         }
       })
       .catch((err) => {
-        if (isMounted) {
+        if (!cancelled) {
+          console.warn('[Mermaid Error]', err, code);
           setError('Diagram unavailable');
           setIsLoading(false);
           if (onError) onError(err);
         }
+      })
+      .finally(() => {
+        if (tempContainer && tempContainer.parentNode) {
+          tempContainer.parentNode.removeChild(tempContainer);
+        }
+        const el = document.getElementById(uniqueId);
+        if (el && el.parentNode) {
+          el.parentNode.removeChild(el);
+        }
       });
 
     return () => {
-      isMounted = false;
-      const element = document.getElementById(uniqueId);
-      if (element) {
-        element.remove();
+      cancelled = true;
+      if (tempContainer && tempContainer.parentNode) {
+        tempContainer.parentNode.removeChild(tempContainer);
       }
     };
   }, [code, onError]);
 
   if (isLoading) {
-    return <DiagramSkeleton />;
+    return <div style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>Rendering diagram...</div>;
   }
 
   if (error) {
-    return <DiagramFallback title={title} error={error} />;
+    return (
+      <div style={{ padding: '1rem', textAlign: 'center', color: '#999', border: '1px solid #ccc', borderRadius: '4px' }}>
+        {error}
+      </div>
+    );
   }
 
   return (
     <div
-      className="mermaid-wrapper flex justify-center items-center w-full py-4 overflow-x-auto"
+      className="mermaid-wrapper"
       dangerouslySetInnerHTML={{ __html: svgHtml }}
     />
   );
+}
+
+export function MermaidDiagram({ code, source, chart, content, title = 'Diagram', onError }) {
+  const rawCode = (code || source || chart || content || '').trim();
+  const subDiagrams = parseSubgraphsIntoIndividualDiagrams(rawCode);
+
+  if (subDiagrams.length > 1) {
+    return (
+      <div className="subgraphs-standalone-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
+        {subDiagrams.map((sub, idx) => (
+          <div className="subgraph-standalone-card" key={idx} style={{ width: '100%' }}>
+            {sub.title && (
+              <div className="subgraph-standalone-title">
+                {sub.title}
+              </div>
+            )}
+            <SingleMermaidRender code={sub.code} onError={onError} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <SingleMermaidRender code={rawCode} onError={onError} />;
 }

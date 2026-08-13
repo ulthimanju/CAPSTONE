@@ -128,35 +128,7 @@ export const RichMarkdownRenderer = ({ content, compact = false }) => {
 
   return (
     <div className={`rich-markdown-content${compact ? ' rich-markdown-compact' : ''}`}>
-      {diagram?.diagram_type !== 'none' && diagram?.diagram && (
-        <figure
-          style={{
-            margin: '0 0 var(--space-5)',
-            padding: 'var(--space-4)',
-            border: '1px solid var(--color-border-subtle)',
-            background: 'var(--color-bg-secondary)',
-            borderRadius: 'var(--radius-lg)',
-          }}
-        >
-          <MermaidDiagram
-            source={diagram.diagram}
-            title={diagram.title}
-            sectionId={diagram.id}
-          />
-          {diagram.diagram_caption && (
-            <figcaption
-              style={{
-                marginTop: 'var(--space-2-5)',
-                color: 'var(--color-text-disabled)',
-                fontSize: 'var(--font-size-xs)',
-                lineHeight: '1.5',
-              }}
-            >
-              {diagram.diagram_caption}
-            </figcaption>
-          )}
-        </figure>
-      )}
+
 
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}

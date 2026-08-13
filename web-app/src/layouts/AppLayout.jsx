@@ -5,13 +5,11 @@ import { useAuth } from '../hooks/useAuth';
 
 export const AppLayout = ({
   children,
-  activeTab = 'documents',
+  activeTab = 'summary',
   setActiveTab,
   workspaceId = null,
   workspaceName = null,
   docCount = 0,
-  readyCount = 0,
-  processingCount = 0,
   workspaces = [],
   onSelectWorkspace,
   onRenameWorkspace,
@@ -40,9 +38,6 @@ export const AppLayout = ({
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Sync workspacesList from the prop whenever the parent context updates it.
-  // This is the primary source of truth — the local API fetch below is only a
-  // fallback for contexts where no workspaces prop is provided.
   useEffect(() => {
     if (workspaces && workspaces.length > 0) {
       setWorkspacesList(workspaces);
@@ -50,7 +45,6 @@ export const AppLayout = ({
   }, [workspaces]);
 
   useEffect(() => {
-    // Skip the local fetch if the parent is already providing a live list.
     if (workspaces && workspaces.length > 0) return;
 
     const fetchWorkspaces = async () => {
@@ -74,7 +68,6 @@ export const AppLayout = ({
     }
   }, [user, workspaces]);
 
-  // Click outside listener for dropdown
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -89,26 +82,9 @@ export const AppLayout = ({
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const getTabTitle = () => {
-    switch (activeTab) {
-      case 'summary':
-        return 'AI Summary';
-      case 'learning':
-        return 'Learning Path';
-      case 'rag':
-        return 'RAG Assistant';
-      case 'collab':
-        return 'Collaborators';
-      case 'invitations':
-        return 'Invitations';
-      case 'archived':
-        return 'Archived Workspaces';
-      default:
-        return 'Documents';
-    }
-  };
-
-  const userInitials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'UM';
+  const userInitials = user?.email
+    ? user.email.substring(0, 2).toUpperCase()
+    : 'JS';
 
   const handleNavClick = (tabKey) => {
     if (tabKey === 'invitations') {
@@ -132,292 +108,162 @@ export const AppLayout = ({
 
   return (
     <div className="shell">
-      {/* 1. Brand Island */}
-      <div className="island brand-island">
-        <div className="logo-mark">S</div>
-        <div className="brand-name">SYNAPSE</div>
-      </div>
-
-      {/* 2. Workspace Selector Island */}
-      <div className="island workspace-island" ref={dropdownRef}>
-        <div
-          className="workspace-pill"
-          onClick={() => setIsDropdownOpen((prev) => !prev)}
-          title="Switch Workspace"
-        >
-          <span className="folder-ico">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
-            </svg>
-          </span>
-          <span>{workspaceName || 'No workspace selected'}</span>
-          <span className="chev">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              style={{
-                transform: isDropdownOpen ? 'rotate(180deg)' : 'none',
-                transition: 'transform 0.15s ease',
-              }}
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </span>
+      {/* Sidebar Navigation */}
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          Synapse<span>.</span>
         </div>
 
-        {/* Dropdown Menu */}
-        {isDropdownOpen && (
-          <div className="workspace-dropdown-menu">
-            <div
+        {/* Styled Dropdown Below App Title */}
+        <div className="workspace-dropdown-container" ref={dropdownRef}>
+          <button
+            className="workspace-select-btn"
+            onClick={() => setIsDropdownOpen((prev) => !prev)}
+          >
+            <div className="workspace-select-left">
+              <svg viewBox="0 0 24 24">
+                <path d="M10 2v7.31L5.5 18.5A2 2 0 0 0 7.28 21h9.44a2 2 0 0 0 1.78-2.5L14 9.31V2h-4z"></path>
+                <line x1="8.5" y1="12" x2="15.5" y2="12"></line>
+              </svg>
+              <span>{workspaceName || 'AI research lab'}</span>
+            </div>
+            <svg
+              className="chevron"
+              viewBox="0 0 24 24"
               style={{
-                fontSize: '11px',
-                fontWeight: '700',
-                letterSpacing: '0.08em',
-                color: 'var(--text-faint)',
-                padding: '6px 10px 4px',
-                textTransform: 'uppercase',
+                transform: isDropdownOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s ease',
               }}
             >
-              WORKSPACES
-            </div>
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div className={`dropdown-menu ${isDropdownOpen ? 'open' : ''}`}>
             {workspacesList.length === 0 ? (
-              <div style={{ padding: '8px 10px', fontSize: '12.5px', color: 'var(--text-faint)' }}>
+              <div className="dropdown-item" style={{ color: 'var(--color-text-disabled)' }}>
                 No active workspaces found
               </div>
             ) : (
-              workspacesList.map((ws) => {
-                const isSelected = (ws.id && workspaceId) ? ws.id === workspaceId : ws.name === workspaceName;
-                return (
-                  <div
-                    key={ws.id}
-                    className={`ws-dropdown-item ${isSelected ? 'selected' : ''}`}
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      if (onSelectWorkspace) {
-                        onSelectWorkspace(ws);
-                      } else {
-                        navigate(`/workspaces/${ws.id}`);
-                      }
-                    }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
-                      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
-                    </svg>
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {ws.name}
-                    </span>
-
-                    {/* Action buttons — always visible on hover via CSS */}
-                    <span className="ws-item-actions" onClick={(e) => e.stopPropagation()}>
-                      {/* Rename */}
-                      {onRenameWorkspace && (
-                        <span
-                          className="ws-action-btn"
-                          title="Rename"
-                          onClick={(e) => {
-                            setIsDropdownOpen(false);
-                            onRenameWorkspace(ws, e);
-                          }}
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z" />
-                          </svg>
-                        </span>
-                      )}
-                      {/* Archive */}
-                      {onArchiveWorkspace && (
-                        <span
-                          className="ws-action-btn"
-                          title="Archive"
-                          onClick={(e) => {
-                            onArchiveWorkspace(ws, e);
-                          }}
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="2" y="3" width="20" height="5" rx="1" />
-                            <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" />
-                          </svg>
-                        </span>
-                      )}
-                      {/* Delete */}
-                      {onDeleteWorkspace && (
-                        <span
-                          className="ws-action-btn danger"
-                          title="Delete permanently"
-                          onClick={(e) => {
-                            onDeleteWorkspace(ws, e);
-                          }}
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" />
-                          </svg>
-                        </span>
-                      )}
-                    </span>
-
-                    {isSelected && (
-                      <span className="check-ico">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                          <path d="M20 6 9 17l-5-5" />
-                        </svg>
-                      </span>
-                    )}
-                  </div>
-                );
-              })
+              workspacesList.map((ws) => (
+                <div
+                  key={ws.id}
+                  className="dropdown-item"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    if (onSelectWorkspace) onSelectWorkspace(ws);
+                    else navigate(`/workspaces/${ws.id}`);
+                  }}
+                >
+                  {ws.name}
+                </div>
+              ))
             )}
-
-            {/* Footer: Create Workspace */}
-            <div
-              className="ws-dropdown-footer"
-              onClick={() => {
-                setIsDropdownOpen(false);
-                if (onCreateWorkspace) onCreateWorkspace();
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              <span>Create Workspace</span>
-            </div>
+            {onCreateWorkspace && (
+              <div
+                className="dropdown-item"
+                style={{ borderTop: '1px solid var(--color-border-subtle)', color: 'var(--color-primary)', fontWeight: 500 }}
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  onCreateWorkspace();
+                }}
+              >
+                + Create Workspace
+              </div>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* 3. Status Island */}
-      <div className="island status-island">
-        <div className="header-status">
-          <span className="status-title">{getTabTitle()}</span>
         </div>
-      </div>
 
-      {/* 4. Sidebar: Stack of Islands */}
-      <div className="sidebar">
-        {/* Navigation Island 1: WORKSPACE */}
-        <div className="island nav-island">
-          <div className="nav-label">WORKSPACE</div>
-
-          <button
-            className={`nav-item ${activeTab === 'documents' || !activeTab ? 'active' : ''}`}
-            onClick={() => handleNavClick('documents')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <path d="M14 2v6h6" />
-            </svg>
-            Documents
-            {docCount > 0 && <span className="badge">{docCount}</span>}
-          </button>
-
+        <nav className="nav-section">
+          <span className="nav-label">Workspace Related</span>
           <button
             className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
             onClick={() => handleNavClick('summary')}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2 2 7l10 5 10-5-10-5Z" />
-              <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+            <svg viewBox="0 0 24 24">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
-            AI summary
+            summary
           </button>
-
           <button
             className={`nav-item ${activeTab === 'learning' ? 'active' : ''}`}
             onClick={() => handleNavClick('learning')}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 19V5M4 5l4 4M4 5l-4 4" transform="translate(2)" />
-              <path d="M20 5v14M20 19l-4-4M20 19l4-4" transform="translate(-2)" />
+            <svg viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
             Learning path
           </button>
-
           <button
-            className={`nav-item ${activeTab === 'rag' ? 'active' : ''}`}
+            className={`nav-item ${activeTab === 'rag' || activeTab === 'chat' ? 'active' : ''}`}
             onClick={() => handleNavClick('rag')}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <svg viewBox="0 0 24 24">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
-            RAG assistant
+            Chat
           </button>
-
           <button
             className={`nav-item ${activeTab === 'collab' ? 'active' : ''}`}
             onClick={() => handleNavClick('collab')}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            <svg viewBox="0 0 24 24">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
             Collaborators
-            <span className="badge">1</span>
           </button>
-        </div>
 
-        {/* Navigation Island 2: OTHERS */}
-        <div className="island nav-island">
-          <div className="nav-label">OTHERS</div>
-
+          <span className="nav-label">Actions</span>
           <button
             className={`nav-item ${activeTab === 'invitations' ? 'active' : ''}`}
             onClick={() => handleNavClick('invitations')}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect width="20" height="16" x="2" y="4" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            <svg viewBox="0 0 24 24">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+              <line x1="4" y1="22" x2="4" y2="15"></line>
             </svg>
             Invitations
           </button>
 
-          <button
-            className={`nav-item ${activeTab === 'archived' ? 'active' : ''}`}
-            onClick={() => handleNavClick('archived')}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="3" width="20" height="5" rx="1" />
-              <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4" />
+          <span className="nav-label">System</span>
+          <button className="nav-item" onClick={toggleTheme}>
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
             </svg>
-            Archived Workspaces
+            Theme Toggle Button
           </button>
+        </nav>
 
-          {/* Theme Toggle Button */}
-          <div className="nav-item" onClick={toggleTheme} title="Toggle Theme">
-            {theme === 'dark' ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5" />
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            )}
-            <span>{theme === 'dark' ? 'Light Theme' : 'Dark Theme'}</span>
+        <div className="sidebar-footer">
+          <div className="user-avatar">{userInitials}</div>
+          <div className="user-info">
+            <span className="user-name">
+              {user?.name || (user?.email ? user.email.split('@')[0] : 'John Scholar')}
+            </span>
+            <span className="user-role">Lead Researcher</span>
           </div>
         </div>
+      </aside>
 
-        {/* Account Island */}
-        <div className="island account-island">
-          <div className="account-left">
-            <div className="avatar">{userInitials}</div>
-            <span className="account-name">{user?.name || 'Account'}</span>
-          </div>
-          <span className="logout-ico" onClick={logout} title="Logout">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-            </svg>
-          </span>
-        </div>
+      {/* Main Content Wrapper */}
+      <div className="main-wrapper">
+        <main className="journal-container">{children}</main>
       </div>
-
-      {/* 5. Main Area */}
-      <div className="main">{children}</div>
     </div>
   );
 };

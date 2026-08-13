@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { WorkspaceProvider, useWorkspaceStore } from '../contexts/WorkspaceContext';
 import { AppLayout } from '../layouts/AppLayout';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
+import { MermaidDiagram } from '../components/ui/MermaidDiagram';
 import { LearningUnitModal } from '../components/unit/LearningUnitModal';
 import { WorkspaceRagAssistant } from '../components/workspace/WorkspaceRagAssistant';
 import { WorkspaceCollaborators } from '../components/workspace/WorkspaceCollaborators';
@@ -777,7 +778,7 @@ const WorkspaceDetailPageContent = () => {
       processingCount={processingCount}
       {...layoutActionProps}
     >
-      <div>
+      <div className="workspace-detail-container">
         {/* ============ TAB 1: DOCUMENTS ============ */}
         {activeTab === 'documents' && (
           <div className="main-grid">
@@ -907,143 +908,119 @@ const WorkspaceDetailPageContent = () => {
 
         {/* ============ TAB 2: AI SUMMARY ============ */}
         {activeTab === 'summary' && (
-          <section className="tab-panel active" id="panel-summary">
-            {!summaryLoaded && !summaryData && !summaryStatus ? (
-              <SummarySkeleton />
-            ) : summaryStatus === 'FAILED' ? (
-              <div className="island" style={{ padding: 'var(--space-12) var(--space-8)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-lg)', background: 'var(--color-danger-subtle)', border: '1px solid var(--color-danger-alpha-20)', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-3xl)', marginBottom: 'var(--space-4)' }}>
-                  <i className="ti ti-alert-triangle"></i>
-                </div>
-                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--danger)', marginBottom: '0.5rem' }}>AI generation Failed</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '450px', marginBottom: '1.5rem' }}>
-                  Unable to generate workspace summary at this time. Please try again.
-                </p>
-                <button className="btn btn-primary" onClick={handleGenerateSummary} style={{ padding: '8px 16px', fontSize: '13px' }}>
-                  <i className="ti ti-rotate-clockwise"></i> Retry Generation
-                </button>
+          <div id="tab-summary" className="entry-content active">
+            <header style={{ borderBottom: '2px solid var(--color-border-default)', padding: '0 0 1.5rem 0', marginBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.75rem', fontWeight: 500, lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+                  {summaryData?.title || (workspace?.name ? `${workspace.name} Summary` : "Workspace Summary")}
+                </h1>
               </div>
-            ) : summaryStatus ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
-                <Spinner size="lg" />
-                <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
-                  {summaryProgressText}
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Synthesizing workspace documents using Gemini...</p>
-              </div>
-            ) : summaryData ? (
-              /* ONE SINGLE UNIFIED ISLAND CARD */
-              <div className="island animate-cross-fade" style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                
-                {/* Header Actions Row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-soft)', paddingBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-bg)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 2 2 7l10 5 10-5-10-5Z" />
-                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>
-                        {summaryData.title || 'Workspace Executive Summary'}
-                      </h2>
-                      <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>Synthesized AI Insights</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn" onClick={() => setIsJsonModalOpen(true)} style={{ fontSize: '12.5px', padding: '6px 12px' }}>
-                      Raw JSON
-                    </button>
-                    <button className="btn btn-primary" onClick={handleGenerateSummary} style={{ fontSize: '12.5px', padding: '6px 12px' }}>
-                      Regenerate
-                    </button>
-                  </div>
-                </div>
-
-                {/* Overview Section */}
-                {summaryData.overview && (
-                  <div>
-                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="ti ti-notes"></i> Overview
-                    </h3>
-                    <RichMarkdownRenderer content={summaryData.overview} />
-                  </div>
-                )}
-
-                {/* Key Takeaways Section */}
-                {summaryData.key_takeaways && summaryData.key_takeaways.length > 0 && (
-                  <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--color-primary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="ti ti-bulb"></i> Key Takeaways
-                    </h3>
-                    <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {summaryData.key_takeaways.map((item, idx) => (
-                        <li key={idx} style={{ fontSize: '13.5px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
-                          <RichMarkdownRenderer content={item} compact />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Main Sections */}
-                {summaryData.sections && summaryData.sections.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', borderTop: '1px solid var(--border-soft)', paddingTop: '20px' }}>
-                    {summaryData.sections.map((sec, idx) => {
-                      // If this section's mermaid diagram failed to render,
-                      // hide the entire section (per product decision) rather
-                      // than show a section with a broken/missing diagram.
-                      //
-                      // Alternative: MermaidDiagram already degrades gracefully
-                      // on its own to a small "Diagram preview unavailable"
-                      // pill, so the section's prose (usually the bulk of the
-                      // content, and unaffected by the diagram bug) could stay
-                      // visible instead. To switch to that behavior, remove
-                      // this early-return and just drop the onMermaidError
-                      // prop below — RichMarkdownRenderer already falls back
-                      // per-diagram with no extra wiring needed.
-                      if (hiddenSummarySections.has(idx)) return null;
-
-                      return (
-                        <div key={idx}>
-                          <h4 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '10px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '6px' }}>
-                            {sec.title}
-                          </h4>
-                          <RichMarkdownRenderer
-                            content={sec.content}
-                            onMermaidError={() => hideSummarySection(idx)}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="island" style={{ padding: '3rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--island-2)', border: '1px solid var(--border)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
-                  <i className="ti ti-sparkles"></i>
-                </div>
-                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>AI Summary</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '450px', marginBottom: '1.5rem' }}>
-                  {documents.length === 0
-                    ? 'Upload documents to this workspace to generate an AI summary.'
-                    : 'No summary generated yet. Click below to synthesize key insights from your workspace documents.'}
-                </p>
-                {documents.length > 0 && (
-                  <button className="btn btn-primary" onClick={handleGenerateSummary} style={{ padding: '8px 16px', fontSize: '13px' }}>
-                    <i className="ti ti-sparkles"></i> Generate Summary
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                {summaryData && (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setIsJsonModalOpen(true)}
+                  >
+                    <i className="ti ti-code" style={{ fontSize: '1rem' }}></i>
+                    Raw JSON
                   </button>
                 )}
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleGenerateSummary}
+                  disabled={summaryStatus === 'QUEUED' || summaryStatus === 'PROCESSING'}
+                >
+                  <i className={`ti ${summaryStatus === 'QUEUED' || summaryStatus === 'PROCESSING' ? 'ti-loader animate-spin' : 'ti-refresh'}`} style={{ fontSize: '1rem' }}></i>
+                  {summaryStatus === 'QUEUED' || summaryStatus === 'PROCESSING'
+                    ? (summaryProgressText || 'Generating...')
+                    : summaryData
+                    ? 'Regenerate'
+                    : 'Generate Summary'}
+                </button>
+              </div>
+            </header>
+            
+            <div className="workspace-overview">
+              {summaryData?.overview ? (
+                <RichMarkdownRenderer content={summaryData.overview} />
+              ) : (
+                "This module bridges qualitative fieldwork with precise quantitative modeling. By evaluating systemic feedback loops alongside mathematical rate expressions, researchers can rigorously trace system convergence and operational stability."
+              )}
+            </div>
+
+            {summaryData?.sections && summaryData.sections.length > 0 ? (
+              summaryData.sections.map((sec, idx) => (
+                <div className="content-section" key={idx} id={`section-id-${idx + 1}`}>
+                  <h2>{sec.title}</h2>
+                  <RichMarkdownRenderer content={sec.content} />
+                  {sec.diagram && (
+                    <div className="diagram-container">
+                      <MermaidDiagram source={sec.diagram} title={sec.title} />
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="content-section" id="section-id-1">
+                <h2>Major Concept: Iterative State Convergence</h2>
+                <RichMarkdownRenderer content={"The core evaluation cycle relies on continuous verification of parameter states. When examining system throughput under load $L$, the convergence efficiency factor is governed by the differential evaluation threshold:"} />
+                
+                <div className="math-block">
+                  <RichMarkdownRenderer content={"$$\\eta = \\lim_{t \\to \\infty} \\left( 1 - \\frac{E_{\\text{fix}}(t)}{E_{\\text{total}}(t)} \\right) \\times \\int_{0}^{t} e^{-\\lambda \\tau} \\, d\\tau$$"} />
+                </div>
+
+                <RichMarkdownRenderer content={"As illustrated below, the operational workflow continuously re-evaluates boundary conditions until absolute convergence criterion $\\epsilon < 10^{-4}$ is satisfied."} />
+
+                <div className="diagram-container">
+                  <MermaidDiagram code={"flowchart TD\n  A[Start] --> B{Check}\n  B -- Yes --> C[Done]\n  B -- No --> D[Fix]\n  D --> B"} title="Iterative verification loop showing conditional feedback branches" />
+                </div>
               </div>
             )}
-          </section>
+
+            <div className="key-takeaways-box">
+              <span className="key-takeaways-title">Key Takeaways</span>
+              <ul className="key-takeaways-list">
+                {summaryData?.key_takeaways && summaryData.key_takeaways.length > 0 ? (
+                  summaryData.key_takeaways.map((item, idx) => (
+                    <li key={idx}>
+                      <RichMarkdownRenderer content={item} compact />
+                    </li>
+                  ))
+                ) : (
+                  <>
+                    <li>Continuous loop validation reduces error propagation exponentially over time intervals $t$.</li>
+                    <li>Automated conditional checks secure stable system thresholds prior to final archiving.</li>
+                  </>
+                )}
+              </ul>
+            </div>
+          </div>
         )}
 
         {/* ============ TAB 3: LEARNING PATH ============ */}
         {activeTab === 'learning' && (
           <section className="tab-panel active" id="panel-learning">
+            {/* Top Header */}
+            <div className="summary-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', paddingBottom: 'var(--space-4)', borderBottom: '1px solid var(--color-border-default)' }}>
+              <div>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 600, color: 'var(--color-text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+                  Learning Path Modules
+                </h1>
+              </div>
+
+              {learningPathData && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleGenerateLearningPath}
+                  style={{ gap: 'var(--space-2)', fontSize: '0.85rem' }}
+                >
+                  <i className="ti ti-rotate-clockwise"></i> Regenerate Path
+                </button>
+              )}
+            </div>
+
             {!learningPathLoaded && !learningPathData && !learningPathStatus ? (
               <LearningPathSkeleton />
             ) : learningPathStatus === 'FAILED' ? (
@@ -1068,76 +1045,62 @@ const WorkspaceDetailPageContent = () => {
                 <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Building progressive curriculum units from document outlines using Gemini...</p>
               </div>
             ) : learningPathData ? (
-              <div className="animate-cross-fade" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '1rem 0' }}>
-                {/* Units List */}
+              <div className="animate-cross-fade" style={{ paddingBottom: '2rem' }}>
+                {/* Module Cards Grid */}
                 {learningPathData.units && learningPathData.units.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    {learningPathData.units.map((unit, idx) => (
-                      <div key={idx} style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
-                            {idx + 1}
-                          </div>
-                          <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', margin: 0 }}>
-                            {unit.title}
-                          </h3>
-                        </div>
-
-                        {unit.description && (
-                          <p style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.5', marginBottom: '14px', paddingLeft: '40px' }}>
-                            {unit.description}
-                          </p>
-                        )}
-
-                        {/* Learning Objectives */}
-                        {unit.learning_objectives && unit.learning_objectives.length > 0 && (
-                          <div style={{ paddingLeft: '40px', marginBottom: '14px' }}>
-                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--accent)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                              Learning Objectives
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-6)' }}>
+                    {learningPathData.units.map((unit, idx) => {
+                      const moduleNum = String(idx + 1).padStart(2, '0');
+                      return (
+                        <div
+                          key={idx}
+                          className="module-card-clickable"
+                          onClick={() => navigate(`/workspaces/${workspaceId}/units/${encodeURIComponent(unit.title)}`)}
+                          style={{
+                            backgroundColor: 'var(--color-bg-surface)',
+                            border: '1px solid var(--color-border-default)',
+                            borderRadius: 'var(--radius-ui)',
+                            padding: 'var(--space-6)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            transition: 'border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease',
+                          }}
+                        >
+                          <div>
+                            {/* Module Number Header */}
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                              MODULE {moduleNum}
                             </div>
-                            <ul style={{ paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '4px', margin: 0 }}>
-                              {unit.learning_objectives.map((obj, oIdx) => (
-                                <li key={oIdx} style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: '1.4' }}>
-                                  {obj}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
 
-                        {/* Tags */}
-                        {unit.tags && unit.tags.length > 0 && (
-                          <div style={{ paddingLeft: '40px', display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                            {unit.tags.map((tag, tIdx) => (
-                              <span key={tIdx} style={{ fontSize: '11px', background: 'var(--bg-3)', color: 'var(--text-3)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)', fontFamily: 'var(--mono)' }}>
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                            {/* Module Title */}
+                            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-text-primary)', marginTop: 'var(--space-2)', marginBottom: 'var(--space-3)', lineHeight: 1.3 }}>
+                              {unit.title}
+                            </h3>
 
-                        {/* Open Unit Study Button */}
-                        <div style={{ paddingLeft: '40px', display: 'flex' }}>
-                          <button
-                            className="btn btn-primary"
-                            style={{ fontSize: '12px', padding: '6px 14px', gap: '6px' }}
-                            onClick={() => navigate(`/workspaces/${workspaceId}/units/${encodeURIComponent(unit.title)}`)}
-                          >
-                            <i className="ti ti-book"></i> Open Learning Unit
-                          </button>
+                            {/* Module Description */}
+                            {unit.description && (
+                              <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                                {unit.description}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', textAlign: 'center', padding: '2rem' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-3)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '1rem' }}>
+              <div className="island" style={{ padding: 'var(--space-12) var(--space-8)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-3xl)', marginBottom: 'var(--space-4)' }}>
                   <i className="ti ti-route"></i>
                 </div>
-                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '0.5rem' }}>Learning Path</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-3)', maxWidth: '450px', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
+                  Learning Path Curriculum
+                </h2>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: 'var(--color-text-secondary)', maxWidth: '450px', marginBottom: 'var(--space-6)' }}>
                   {documents.length === 0
                     ? 'Upload documents to build a custom structured learning path.'
                     : 'No learning path generated yet. Create a step-by-step curriculum from your documents.'}

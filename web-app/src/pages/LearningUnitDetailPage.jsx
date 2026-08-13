@@ -4,6 +4,7 @@ import { apiClient } from '../services/api/client';
 import { tokenStorage } from '../lib/tokenStorage';
 import { Spinner } from '../components/ui/Spinner';
 import { RichMarkdownRenderer } from '../components/ui/RichMarkdownRenderer';
+import { MermaidDiagram } from '../components/ui/MermaidDiagram';
 import { useAuth } from '../hooks/useAuth';
 import { AppLayout } from '../layouts/AppLayout';
 
@@ -253,47 +254,47 @@ export const LearningUnitDetailPage = () => {
       workspaceId={workspaceId}
       workspaceName={workspace?.name || null}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-        {/* 1. Header Island Banner */}
-        <div className="island" style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-2) 0' }}>
+        {/* Header & Navbar Section without island backgrounds or inter-gaps */}
+        <header style={{ borderBottom: '2px solid var(--color-border-default)', paddingBottom: '1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3-5)' }}>
             <button
-              className="btn"
-              onClick={() => navigate(`/workspaces/${workspaceId}`)}
-              style={{ fontSize: 'var(--font-size-md)', padding: 'var(--space-1-5) var(--space-3)', gap: 'var(--space-1-5)', borderRadius: 'var(--radius-md)' }}
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => navigate(`/workspaces/${workspaceId}?tab=learning`)}
+              style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-1-5) var(--space-3)', gap: 'var(--space-1-5)' }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
-              Back to Workspace
+              Back to Learning Path
             </button>
             <div style={{ height: '20px', width: '1px', background: 'var(--color-border-subtle)' }}></div>
             <div>
-              <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-disabled)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 LEARNING UNIT
               </span>
-              <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-primary)', margin: 0, lineHeight: '1.3' }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.02em', color: 'var(--color-text-primary)', margin: 0 }}>
                 {decodedTitle}
-              </h2>
+              </h1>
             </div>
           </div>
 
           <button
+            type="button"
             className="btn btn-primary"
             onClick={handleGenerateContent}
             disabled={generating}
-            style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-1-5) var(--space-3-5)', gap: 'var(--space-1-5)' }}
+            style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-2) var(--space-4)', gap: 'var(--space-2)' }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-            </svg>
+            <i className={`ti ${generating ? 'ti-loader animate-spin' : 'ti-refresh'}`} style={{ fontSize: '1rem' }}></i>
             {generating ? 'Regenerating...' : 'Regenerate Study Bundle'}
           </button>
-        </div>
+        </header>
 
-        {/* 2. Sub-Navigation Tabs Bar */}
+        {/* Sub-Navigation Tabs Bar */}
         {contentData && (
-          <div className="island" style={{ padding: 'var(--space-2) var(--space-3)', display: 'flex', gap: 'var(--space-1-5)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', paddingBottom: 'var(--space-2)', borderBottom: '1px solid var(--color-border-subtle)' }}>
             <button
               onClick={() => setActiveTab('summary')}
               className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
@@ -344,7 +345,7 @@ export const LearningUnitDetailPage = () => {
           </div>
         )}
 
-        {/* 3. Main Content Container */}
+        {/* Main Content Container */}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-16)' }}>
             <Spinner size="lg" />
@@ -394,53 +395,48 @@ export const LearningUnitDetailPage = () => {
           </div>
         ) : (
           <>
-            {/* SUB-TAB 1: SUMMARY */}
+            {/* SUB-TAB 1: SUMMARY (Mimics Workspace Summary exact design: no background card container) */}
             {activeTab === 'summary' && contentData.summary && (
-              <div className="island" style={{ padding: 'var(--space-6-5) var(--space-7)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+              <div id="tab-summary" className="entry-content active">
                 {/* Overview */}
                 {contentData.summary.overview && (
-                  <div>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-primary)', marginBottom: 'var(--space-2-5)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      Overview
-                    </h3>
+                  <div className="workspace-overview">
                     <RichMarkdownRenderer content={contentData.summary.overview} />
                   </div>
                 )}
 
+                {/* Sections */}
+                {contentData.summary.sections && contentData.summary.sections.length > 0 &&
+                  contentData.summary.sections.map((sec, idx) => {
+                    if (hiddenSummarySections.has(idx)) return null;
+
+                    return (
+                      <div className="content-section" key={idx} id={`section-id-${idx + 1}`}>
+                        <h2>{sec.title}</h2>
+                        <RichMarkdownRenderer
+                          content={sec.content}
+                          onMermaidError={() => hideSummarySection(idx)}
+                        />
+                        {sec.diagram && (
+                          <div className="diagram-container">
+                            <MermaidDiagram source={sec.diagram} title={sec.title} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
                 {/* Key Takeaways */}
                 {contentData.summary.key_takeaways && contentData.summary.key_takeaways.length > 0 && (
-                  <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-primary)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      Key Takeaways
-                    </h3>
-                    <ul style={{ paddingLeft: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1-5)', margin: 0 }}>
+                  <div className="key-takeaways-box" style={{ marginTop: 'var(--space-6)' }}>
+                    <span className="key-takeaways-title">Key Takeaways</span>
+                    <ul className="key-takeaways-list">
                       {contentData.summary.key_takeaways.map((item, idx) => (
-                        <li key={idx} style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-text-secondary)', lineHeight: '1.5' }}>
+                        <li key={idx}>
                           <RichMarkdownRenderer content={item} compact />
                         </li>
                       ))}
                     </ul>
-                  </div>
-                )}
-
-                {/* Sections */}
-                {contentData.summary.sections && contentData.summary.sections.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5-5)', borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-5)' }}>
-                    {contentData.summary.sections.map((sec, idx) => {
-                      if (hiddenSummarySections.has(idx)) return null;
-
-                      return (
-                        <div key={idx}>
-                          <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2-5)', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 'var(--space-1-5)' }}>
-                            {sec.title}
-                          </h4>
-                          <RichMarkdownRenderer
-                            content={sec.content}
-                            onMermaidError={() => hideSummarySection(idx)}
-                          />
-                        </div>
-                      );
-                    })}
                   </div>
                 )}
               </div>
@@ -448,8 +444,8 @@ export const LearningUnitDetailPage = () => {
 
             {/* SUB-TAB 2: FLASHCARDS */}
             {activeTab === 'flashcards' && contentData.flashcards && contentData.flashcards.length > 0 && (
-              <div className="island" style={{ padding: 'var(--space-8) var(--space-7)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
-                <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-text-disabled)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <div style={{ padding: 'var(--space-6) 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   CARD {cardIndex + 1} OF {contentData.flashcards.length}
                 </div>
 
@@ -458,32 +454,32 @@ export const LearningUnitDetailPage = () => {
                   onClick={() => setIsFlipped(!isFlipped)}
                   style={{
                     width: '100%',
-                    maxWidth: '620px',
-                    minHeight: '260px',
-                    background: 'var(--color-bg-secondary)',
-                    border: '1px solid var(--color-border-subtle)',
-                    borderRadius: 'var(--radius-xl)',
-                    padding: 'var(--space-9)',
+                    maxWidth: '640px',
+                    minHeight: '280px',
+                    background: 'var(--color-bg-surface)',
+                    border: '1px solid var(--color-border-default)',
+                    borderRadius: 'var(--radius-ui)',
+                    padding: 'var(--space-8) var(--space-9)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     textAlign: 'center',
                     cursor: 'pointer',
-                    boxShadow: 'var(--elevation-md)',
-                    transition: 'transform 0.2s ease',
+                    boxShadow: 'var(--elevation-sm)',
+                    transition: 'all 0.2s ease',
                     position: 'relative',
                   }}
                 >
-                  <span style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4-5)', fontSize: 'var(--font-size-xs)', color: 'var(--color-primary)', fontWeight: 'var(--font-weight-bold)', letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                  <span style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-5)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' }}>
                     {isFlipped ? 'Answer' : 'Question'}
                   </span>
-                  <h3 style={{ fontSize: isFlipped ? 'var(--font-size-base)' : 'var(--font-size-lg)', fontWeight: isFlipped ? 'var(--font-weight-normal)' : 'var(--font-weight-semibold)', color: isFlipped ? 'var(--color-text-secondary)' : 'var(--color-text-primary)', lineHeight: '1.6', margin: 0 }}>
+                  <h3 style={{ fontSize: isFlipped ? '1.1rem' : '1.25rem', fontWeight: isFlipped ? 400 : 500, color: isFlipped ? 'var(--color-text-secondary)' : 'var(--color-text-primary)', lineHeight: '1.6', margin: 0, fontFamily: isFlipped ? 'inherit' : 'var(--font-display)' }}>
                     {isFlipped
                       ? contentData.flashcards[cardIndex]?.back
                       : contentData.flashcards[cardIndex]?.front}
                   </h3>
-                  <p style={{ marginTop: 'var(--space-6)', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-disabled)' }}>
+                  <p style={{ marginTop: 'var(--space-6)', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                     Click card to flip ↺
                   </p>
                 </div>
@@ -491,10 +487,10 @@ export const LearningUnitDetailPage = () => {
                 {/* Controls */}
                 <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
                   <button
-                    className="btn"
+                    className="btn btn-secondary"
                     onClick={handlePrevCard}
                     disabled={cardIndex === 0}
-                    style={{ fontSize: 'var(--font-size-md)', padding: 'var(--space-2) var(--space-4-5)', gap: 'var(--space-1-5)' }}
+                    style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-2) var(--space-4-5)', gap: 'var(--space-2)' }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="m15 18-6-6 6-6" />
@@ -505,7 +501,7 @@ export const LearningUnitDetailPage = () => {
                     className="btn btn-primary"
                     onClick={handleNextCard}
                     disabled={cardIndex === contentData.flashcards.length - 1}
-                    style={{ fontSize: 'var(--font-size-md)', padding: 'var(--space-2) var(--space-4-5)', gap: 'var(--space-1-5)' }}
+                    style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-2) var(--space-4-5)', gap: 'var(--space-2)' }}
                   >
                     Next
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -518,38 +514,61 @@ export const LearningUnitDetailPage = () => {
 
             {/* SUB-TAB 3: QUIZ */}
             {activeTab === 'quiz' && contentData.quiz && contentData.quiz.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                <div className="island" style={{ padding: 'var(--space-4) var(--space-5-5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-text-primary)', fontWeight: 'var(--font-weight-bold)' }}>
-                    Score: {quizScore} / {contentData.quiz.length}
-                  </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', padding: 'var(--space-2) 0' }}>
+                {/* Score Header Card */}
+                <div style={{ padding: 'var(--space-4) var(--space-6)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-ui)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      QUIZ PROGRESS
+                    </span>
+                    <div style={{ height: '16px', width: '1px', background: 'var(--color-border-default)' }}></div>
+                    <span style={{ fontSize: '1rem', color: 'var(--color-text-primary)', fontWeight: 600 }}>
+                      Score: <span style={{ color: 'var(--color-primary)' }}>{quizScore}</span> / {contentData.quiz.length}
+                    </span>
+                  </div>
                   <button
-                    className="btn"
+                    className="btn btn-secondary"
                     onClick={handleResetQuiz}
-                    style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1-5) var(--space-3)' }}
+                    style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1-5) var(--space-3.5)' }}
                   >
+                    <i className="ti ti-rotate-clockwise" style={{ marginRight: '0.35rem' }}></i>
                     Reset Quiz
                   </button>
                 </div>
 
+                {/* Quiz Question Cards */}
                 {contentData.quiz.map((q, qIdx) => {
                   const answeredOpt = quizAnswers[qIdx];
                   const isAnswered = answeredOpt !== undefined;
                   return (
-                    <div key={qIdx} className="island" style={{ padding: 'var(--space-5-5) var(--space-6)' }}>
-                      <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-2-5)' }}>
-                        <span style={{ color: 'var(--color-primary)', fontWeight: 'var(--font-weight-bold)' }}>Q{qIdx + 1}.</span> {q.question}
+                    <div
+                      key={qIdx}
+                      style={{
+                        padding: 'var(--space-6) var(--space-7)',
+                        background: 'var(--color-bg-surface)',
+                        border: '1px solid var(--color-border-default)',
+                        borderRadius: 'var(--radius-ui)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 'var(--space-4)',
+                      }}
+                    >
+                      <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 500, color: 'var(--color-text-primary)', margin: 0, display: 'flex', gap: 'var(--space-2-5)', lineHeight: '1.4' }}>
+                        <span style={{ color: 'var(--color-primary)', fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: '1rem' }}>
+                          Q{qIdx + 1}.
+                        </span>
+                        <span>{q.question}</span>
                       </h4>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2-5)', marginBottom: 'var(--space-3-5)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2-5)', marginTop: 'var(--space-2)' }}>
                         {q.options.map((opt, optIdx) => {
                           let optionStyle = {
-                            padding: 'var(--space-3) var(--space-4)',
+                            padding: 'var(--space-3.5) var(--space-4.5)',
                             borderRadius: 'var(--radius-md)',
-                            fontSize: 'var(--font-size-md)',
-                            border: '1px solid var(--color-border-subtle)',
-                            background: 'var(--color-bg-secondary)',
-                            color: 'var(--color-text-secondary)',
+                            fontSize: '0.95rem',
+                            border: '1px solid var(--color-border-default)',
+                            background: 'var(--color-bg-surface)',
+                            color: 'var(--color-text-primary)',
                             cursor: isAnswered ? 'default' : 'pointer',
                             textAlign: 'left',
                             display: 'flex',
@@ -560,14 +579,14 @@ export const LearningUnitDetailPage = () => {
 
                           if (isAnswered) {
                             if (optIdx === q.correct_answer) {
-                              optionStyle.border = '1px solid var(--color-success-alpha-20)';
-                              optionStyle.background = 'var(--color-success-subtle)';
-                              optionStyle.color = 'var(--color-success-text)';
-                              optionStyle.fontWeight = 'var(--font-weight-semibold)';
+                              optionStyle.border = '1px solid var(--color-success-alpha-20, #2e7d32)';
+                              optionStyle.background = 'var(--color-success-subtle, rgba(46, 125, 50, 0.08))';
+                              optionStyle.color = 'var(--color-success-text, #2e7d32)';
+                              optionStyle.fontWeight = 600;
                             } else if (optIdx === answeredOpt) {
-                              optionStyle.border = '1px solid var(--color-danger-alpha-20)';
-                              optionStyle.background = 'var(--color-danger-subtle)';
-                              optionStyle.color = 'var(--color-danger-text)';
+                              optionStyle.border = '1px solid var(--color-danger-alpha-20, #d32f2f)';
+                              optionStyle.background = 'var(--color-danger-subtle, rgba(211, 47, 47, 0.08))';
+                              optionStyle.color = 'var(--color-danger-text, #d32f2f)';
                             }
                           }
 
@@ -578,7 +597,7 @@ export const LearningUnitDetailPage = () => {
                               onClick={() => handleSelectQuizOption(qIdx, optIdx, q.correct_answer)}
                               disabled={isAnswered}
                             >
-                              <span style={{ fontSize: 'var(--font-size-xs)', opacity: 0.7, fontWeight: 'var(--font-weight-bold)' }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', opacity: 0.75, fontWeight: 600 }}>
                                 {String.fromCharCode(65 + optIdx)}.
                               </span>
                               <span>{opt}</span>
@@ -588,9 +607,9 @@ export const LearningUnitDetailPage = () => {
                       </div>
 
                       {isAnswered && (
-                        <div style={{ marginTop: 'var(--space-3-5)', paddingTop: 'var(--space-3-5)', borderTop: '1px solid var(--color-border-subtle)', fontSize: 'var(--font-size-md)', color: 'var(--color-text-secondary)', lineHeight: '1.5' }}>
-                          <strong style={{ color: answeredOpt === q.correct_answer ? 'var(--color-success-text)' : 'var(--color-danger-text)', display: 'block', marginBottom: 'var(--space-1)' }}>
-                            {answeredOpt === q.correct_answer ? '✓ Correct!' : '✗ Incorrect'}
+                        <div style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--color-border-subtle)', fontSize: '0.95rem', color: 'var(--color-text-secondary)', lineHeight: '1.6' }}>
+                          <strong style={{ color: answeredOpt === q.correct_answer ? 'var(--color-success-text, #2e7d32)' : 'var(--color-danger-text, #d32f2f)', display: 'block', marginBottom: 'var(--space-1-5)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                            {answeredOpt === q.correct_answer ? '✓ CORRECT ANSWER' : '✗ INCORRECT ANSWER'}
                           </strong>
                           {q.explanation}
                         </div>
