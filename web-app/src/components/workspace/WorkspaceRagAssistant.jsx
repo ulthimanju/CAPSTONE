@@ -244,9 +244,10 @@ const MessageBubble = ({ msg }) => {
           style={{
             alignSelf: 'flex-end',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.75rem',
-            color: isUser ? 'rgba(255, 255, 255, 0.75)' : 'var(--color-text-muted)',
+            fontSize: 'var(--font-size-xs)',
+            color: isUser ? 'var(--color-text-muted)' : 'var(--color-text-muted)',
             marginTop: 'var(--space-1)',
+            opacity: isUser ? 0.85 : 1,
           }}
         >
           {timeStr}
@@ -411,7 +412,7 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         flexDirection: 'column',
         height: '100%',
         flex: 1,
-        minHeight: '560px',
+        minHeight: '520px',
         background: 'var(--color-bg-base)',
         position: 'relative',
       }}
@@ -431,8 +432,8 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         <h1
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '2.25rem',
-            fontWeight: 500,
+            fontSize: 'var(--font-size-2xl)',
+            fontWeight: 'var(--font-weight-medium)',
             color: 'var(--color-text-primary)',
             margin: 0,
             lineHeight: 1.15,
@@ -446,7 +447,7 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           className="btn btn-secondary"
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.85rem',
+            fontSize: 'var(--font-size-xs)',
             padding: 'var(--space-2) var(--space-4)',
             borderRadius: 'var(--radius-sm)',
             color: 'var(--color-text-primary)',
@@ -493,8 +494,8 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
                 style={{
                   padding: '0 var(--space-4)',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 'var(--font-weight-semibold)',
                   color: 'var(--color-text-muted)',
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
