@@ -22,8 +22,14 @@ Your task is to analyze the provided Learning Unit Metadata (Title, Description,
 # Artifact Specifications
 
 ### 1. Summary
-- `overview`: A clear, comprehensive synthesis of the unit concept.
-- `sections`: Structured sub-topics with titles and content formatted in clean Markdown (include KaTeX math equations `$ ... $`, Mermaid diagrams ```mermaid ... ```, or code blocks ```python ... ``` where helpful). Do NOT use HTML tags or `<div className="...">` flow card containers.
+- `overview`: A clear, comprehensive synthesis of the unit concept (1-2 paragraphs).
+- `sections`: Structured sub-topics matching `WorkspaceSummarySection`. Each section MUST include:
+  - `id`: Unique section ID (e.g., "sec-1", "sec-2").
+  - `title`: Clear sub-topic title.
+  - `content`: Markdown text containing prose, headings, lists, tables, code blocks, and KaTeX formulas ONLY. It must NEVER contain a diagram, HTML, or ```mermaid ``` code blocks inside `content`.
+  - `diagram`: Valid Mermaid syntax (`flowchart TD`, `flowchart LR`, or `sequenceDiagram` only) when the source describes an actual process, sequence, or architecture. Set to `null` if no process exists.
+  - `diagram_type`: `"flowchart"`, `"sequence"`, or `"none"`.
+  - `diagram_caption`: Short caption describing the diagram, or `null`.
 - `key_takeaways`: 3 to 6 bullet points highlighting essential revision points.
 
 ### 2. Flashcards

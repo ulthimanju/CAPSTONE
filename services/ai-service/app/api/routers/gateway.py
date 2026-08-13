@@ -744,7 +744,7 @@ Tags:
 
 Generation Instructions:
 Generate a unified learning bundle containing:
-1. Summary (overview, sections with markdown/code/KaTeX/mermaid, key_takeaways)
+1. Summary (overview, sections matching WorkspaceSummarySection with id, title, content [prose/code/KaTeX only], diagram [mermaid syntax or null], diagram_type, diagram_caption, and key_takeaways)
 2. Flashcards (5-8 cards with front, back, concept_key)
 3. Quiz (5 questions with question, 4 options, correct_answer 0-3 index, explanation)
 """
