@@ -190,50 +190,67 @@ const PromptChip = ({ text, onClick }) => {
 /* ─── Message bubble ─────────────────────────────────────────── */
 const MessageBubble = ({ msg }) => {
   const isUser = msg.sender === 'user';
+
+  // Format time for bottom-right timestamp inside bubble (e.g., "08:14 AM")
+  const formatTimeOnly = (t) => {
+    if (!t) return '';
+    const d = new Date(t);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    const timeMatch = String(t).match(/\d{1,2}:\d{2}\s*(?:AM|PM)?/i);
+    return timeMatch ? timeMatch[0] : String(t);
+  };
+
+  const timeStr = formatTimeOnly(msg.createdAt || msg.timestamp || new Date());
+
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
         alignSelf: isUser ? 'flex-end' : 'flex-start',
-        maxWidth: '85%',
+        maxWidth: '65%',
+        minWidth: '240px',
         animation: 'fadeIn var(--motion-normal) ease-out',
+        marginBottom: 'var(--space-3)',
       }}
     >
       <div
         style={{
-          fontSize: 'var(--font-size-xs)',
-          color: 'var(--color-text-disabled)',
-          marginBottom: 'var(--space-1)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-1)',
-          justifyContent: isUser ? 'flex-end' : 'flex-start',
-        }}
-      >
-        <span style={{ fontWeight: 'var(--font-weight-semibold)', color: isUser ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}>
-          {isUser ? 'You' : 'Assistant'}
-        </span>
-        <span>·</span>
-        <span>{msg.timestamp}</span>
-      </div>
-
-      <div
-        style={{
-          background: isUser ? 'var(--color-primary-subtle)' : 'var(--color-bg-secondary)',
-          border: `1px solid ${isUser ? 'var(--color-primary-alpha-20)' : 'var(--color-border-default)'}`,
-          borderRadius: isUser ? 'var(--radius-xl) var(--radius-xl) var(--radius-xs) var(--radius-xl)' : 'var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-xs)',
-          padding: 'var(--space-3) var(--space-4)',
-          color: 'var(--color-text-primary)',
+          background: isUser ? 'var(--color-primary)' : 'var(--color-bg-secondary)',
+          border: `1px solid ${isUser ? 'var(--color-primary)' : 'var(--color-border-default)'}`,
+          borderRadius: 'var(--radius-sm)',
+          padding: 'var(--space-4) var(--space-5)',
+          color: isUser ? 'var(--color-primary-contrast, #ffffff)' : 'var(--color-text-primary)',
           fontSize: 'var(--font-size-md)',
           lineHeight: '1.6',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: 'var(--elevation-xs)',
         }}
       >
-        {isUser ? (
-          <div>{msg.text}</div>
-        ) : (
-          <RichMarkdownRenderer content={msg.text} />
-        )}
+        <div style={{ flex: 1, paddingBottom: 'var(--space-3)' }}>
+          {isUser ? (
+            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.text}</div>
+          ) : (
+            <RichMarkdownRenderer content={msg.text} />
+          )}
+        </div>
+
+        {/* Bottom-Right Timestamp inside the bubble */}
+        <div
+          style={{
+            alignSelf: 'flex-end',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.75rem',
+            color: isUser ? 'rgba(255, 255, 255, 0.75)' : 'var(--color-text-muted)',
+            marginTop: 'var(--space-1)',
+          }}
+        >
+          {timeStr}
+        </div>
       </div>
     </div>
   );
@@ -292,6 +309,8 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
 
   const handleSend = async (queryToSend) => {
     const text = (queryToSend || inputQuery).trim();
+    if (!text || !canSend) return;
+
     const now = new Date();
     const formattedTimestamp = now.toLocaleString([], {
       month: 'short',
@@ -372,82 +391,72 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
     }
   };
 
-  /* Placeholder text derived from state */
   const inputPlaceholder = {
-    empty: 'Upload documents to enable Q&A…',
-    processing: 'Waiting for documents to finish indexing…',
-    ready: 'Ask a question about your documents…',
+    empty: 'Upload documents to start chat...',
+    processing: 'Indexing documents… chat available shortly',
+    ready: 'Type a message...',
   }[docState];
+
+  // Derive date header for date divider
+  const currentDateStr = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).toUpperCase();
 
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100vh - 120px)',
-        minHeight: '480px',
-        background: 'var(--color-bg-surface)',
-        border: '1px solid var(--color-border-default)',
-        borderRadius: 'var(--radius-xl)',
-        overflow: 'hidden',
+        height: '100%',
+        flex: 1,
+        minHeight: '560px',
+        background: 'var(--color-bg-base)',
+        position: 'relative',
       }}
     >
       {/* ── Header ── */}
       <div
         style={{
-          padding: 'var(--space-3) var(--space-4)',
+          padding: 'var(--space-6) var(--space-8)',
           borderBottom: '1px solid var(--color-border-subtle)',
-          background: 'var(--color-bg-secondary)',
+          background: 'transparent',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2-5)' }}>
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--color-primary-subtle)',
-              color: 'var(--color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 'var(--font-size-base)',
-              flexShrink: 0,
-            }}
-          >
-            <i className="ti ti-message-bot" />
-          </div>
-          <div>
-            <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', lineHeight: 1.2 }}>
-              RAG Assistant
-            </div>
-            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.2, marginTop: '1px' }}>
-              {docState === 'ready'
-                ? `${documents.filter((d) => READY_STATUSES.includes(d.status)).length} document${
-                    documents.filter((d) => READY_STATUSES.includes(d.status)).length !== 1 ? 's' : ''
-                  } indexed`
-                : docState === 'processing'
-                ? 'Indexing documents…'
-                : 'No documents indexed'}
-            </div>
-          </div>
-        </div>
+        <h1
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '2.25rem',
+            fontWeight: 500,
+            color: 'var(--color-text-primary)',
+            margin: 0,
+            lineHeight: 1.15,
+            letterSpacing: '-0.02em',
+          }}
+        >
+          Research Field Chat
+        </h1>
 
-        {hasConversation && (
-          <button
-            className="btn"
-            style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1) var(--space-2-5)', gap: 'var(--space-1)', color: 'var(--color-text-secondary)' }}
-            onClick={handleClearChat}
-            title="Clear conversation"
-          >
-            <i className="ti ti-trash" />
-            Clear
-          </button>
-        )}
+        <button
+          className="btn btn-secondary"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.85rem',
+            padding: 'var(--space-2) var(--space-4)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--color-text-primary)',
+            border: '1px solid var(--color-border-default)',
+            background: 'var(--color-bg-surface)',
+          }}
+          onClick={handleClearChat}
+        >
+          Clear Chat
+        </button>
       </div>
 
       {/* ── Messages / Empty State ── */}
@@ -457,8 +466,7 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          padding: hasConversation ? 'var(--space-4)' : '0',
-          gap: hasConversation ? 'var(--space-3-5)' : '0',
+          padding: hasConversation ? 'var(--space-6) var(--space-8)' : '0',
         }}
       >
         {!hasConversation ? (
@@ -470,6 +478,33 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           />
         ) : (
           <>
+            {/* Centered Date Divider Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: 'var(--space-4) 0 var(--space-6) 0',
+                position: 'relative',
+              }}
+            >
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border-subtle)' }} />
+              <span
+                style={{
+                  padding: '0 var(--space-4)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--color-text-muted)',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {currentDateStr}
+              </span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border-subtle)' }} />
+            </div>
+
             {messages.map((msg) => (
               <MessageBubble key={msg.id} msg={msg} />
             ))}
@@ -484,13 +519,14 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
                   alignSelf: 'flex-start',
                   background: 'var(--color-bg-secondary)',
                   border: '1px solid var(--color-border-default)',
-                  borderRadius: 'var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-xs)',
-                  padding: 'var(--space-2-5) var(--space-3-5)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: 'var(--space-3) var(--space-4)',
                   animation: 'fadeIn var(--motion-normal) ease-out',
+                  marginBottom: 'var(--space-3)',
                 }}
               >
                 <Spinner size="sm" />
-                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>Searching documents…</span>
+                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>Thinking…</span>
               </div>
             )}
 
@@ -499,19 +535,19 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         )}
       </div>
 
-      {/* ── Composer ── */}
+      {/* ── Composer Footer ── */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSend();
         }}
         style={{
-          padding: 'var(--space-3) var(--space-3-5)',
+          padding: 'var(--space-5) var(--space-8)',
           borderTop: '1px solid var(--color-border-subtle)',
           background: 'var(--color-bg-secondary)',
           display: 'flex',
-          gap: 'var(--space-2-5)',
-          alignItems: 'flex-end',
+          gap: 'var(--space-4)',
+          alignItems: 'center',
           flexShrink: 0,
         }}
       >
@@ -521,7 +557,6 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           value={inputQuery}
           onChange={(e) => {
             setInputQuery(e.target.value);
-            /* auto-grow up to ~4 lines */
             e.target.style.height = 'auto';
             e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px';
           }}
@@ -532,16 +567,15 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
             flex: 1,
             background: 'var(--color-bg-surface)',
             border: '1px solid var(--color-border-default)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-2) var(--space-3)',
+            borderRadius: 'var(--radius-sm)',
+            padding: 'var(--space-3) var(--space-4)',
             fontSize: 'var(--font-size-md)',
             color: 'var(--color-text-primary)',
             outline: 'none',
             resize: 'none',
             lineHeight: '1.5',
             fontFamily: 'inherit',
-            overflow: 'hidden',
-            transition: `border-color var(--motion-fast) ease`,
+            transition: 'border-color var(--motion-fast) ease',
           }}
           onFocus={(e) => (e.target.style.borderColor = 'var(--color-primary)')}
           onBlur={(e) => (e.target.style.borderColor = 'var(--color-border-default)')}
@@ -550,17 +584,15 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
           type="submit"
           className="btn btn-primary"
           disabled={!canSend || !inputQuery.trim()}
-          title="Send (Enter)"
           style={{
-            padding: 'var(--space-2) var(--space-4)',
+            padding: 'var(--space-3) var(--space-7)',
             fontSize: 'var(--font-size-md)',
-            gap: 'var(--space-1-5)',
-            flexShrink: 0,
-            alignSelf: 'flex-end',
+            fontWeight: 'var(--font-weight-medium)',
+            borderRadius: 'var(--radius-sm)',
+            minWidth: '90px',
           }}
         >
-          <i className="ti ti-send" />
-          Send
+          {loading ? <Spinner size="sm" /> : 'Send'}
         </button>
       </form>
     </div>
