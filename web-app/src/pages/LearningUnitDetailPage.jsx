@@ -514,32 +514,79 @@ export const LearningUnitDetailPage = () => {
 
             {/* SUB-TAB 3: QUIZ */}
             {activeTab === 'quiz' && contentData.quiz && contentData.quiz.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', padding: 'var(--space-2) 0' }}>
-                {/* Score Header Card */}
-                <div style={{ padding: 'var(--space-4) var(--space-6)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-ui)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                      QUIZ PROGRESS
-                    </span>
-                    <div style={{ height: '16px', width: '1px', background: 'var(--color-border-default)' }}></div>
-                    <span style={{ fontSize: '1rem', color: 'var(--color-text-primary)', fontWeight: 600 }}>
-                      Score: <span style={{ color: 'var(--color-primary)' }}>{quizScore}</span> / {contentData.quiz.length}
-                    </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', padding: 'var(--space-2) 0' }}>
+                {/* Score & Progress Card */}
+                <div
+                  style={{
+                    padding: 'var(--space-4) var(--space-6)',
+                    background: 'var(--color-bg-surface)',
+                    border: '1px solid var(--color-border-default)',
+                    borderRadius: 'var(--radius-lg)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-3)',
+                    boxShadow: 'var(--elevation-xs)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          color: 'var(--color-primary)',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          background: 'var(--color-primary-subtle, rgba(160, 82, 45, 0.1))',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        QUIZ PROGRESS
+                      </span>
+                      <span style={{ fontSize: '0.95rem', color: 'var(--color-text-primary)', fontWeight: 600 }}>
+                        Score: <strong style={{ color: 'var(--color-primary)', fontSize: '1.1rem' }}>{quizScore}</strong> / {contentData.quiz.length}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleResetQuiz}
+                      style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1.5) var(--space-3.5)' }}
+                    >
+                      <i className="ti ti-rotate-clockwise" style={{ marginRight: '0.35rem' }}></i>
+                      Reset Quiz
+                    </button>
                   </div>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleResetQuiz}
-                    style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1-5) var(--space-3.5)' }}
+
+                  {/* Progress Bar Track */}
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '6px',
+                      background: 'var(--color-border-subtle)',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                    }}
                   >
-                    <i className="ti ti-rotate-clockwise" style={{ marginRight: '0.35rem' }}></i>
-                    Reset Quiz
-                  </button>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${(Object.keys(quizAnswers).length / contentData.quiz.length) * 100}%`,
+                        background: 'var(--color-primary)',
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </div>
                 </div>
 
-                {/* Quiz Question Cards */}
+                {/* Quiz Questions List */}
                 {contentData.quiz.map((q, qIdx) => {
                   const answeredOpt = quizAnswers[qIdx];
                   const isAnswered = answeredOpt !== undefined;
+
                   return (
                     <div
                       key={qIdx}
@@ -547,68 +594,156 @@ export const LearningUnitDetailPage = () => {
                         padding: 'var(--space-6) var(--space-7)',
                         background: 'var(--color-bg-surface)',
                         border: '1px solid var(--color-border-default)',
-                        borderRadius: 'var(--radius-ui)',
+                        borderRadius: 'var(--radius-lg)',
+                        boxShadow: 'var(--elevation-xs)',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 'var(--space-4)',
                       }}
                     >
-                      <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 500, color: 'var(--color-text-primary)', margin: 0, display: 'flex', gap: 'var(--space-2-5)', lineHeight: '1.4' }}>
-                        <span style={{ color: 'var(--color-primary)', fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: '1rem' }}>
-                          Q{qIdx + 1}.
+                      {/* Question Badge & Title */}
+                      <div>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: 'var(--color-text-muted)',
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            display: 'inline-block',
+                            marginBottom: 'var(--space-2)',
+                          }}
+                        >
+                          QUESTION {qIdx + 1} OF {contentData.quiz.length}
                         </span>
-                        <span>{q.question}</span>
-                      </h4>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2-5)', marginTop: 'var(--space-2)' }}>
-                        {q.options.map((opt, optIdx) => {
-                          let optionStyle = {
-                            padding: 'var(--space-3.5) var(--space-4.5)',
-                            borderRadius: 'var(--radius-md)',
-                            fontSize: '0.95rem',
-                            border: '1px solid var(--color-border-default)',
-                            background: 'var(--color-bg-surface)',
+                        <h4
+                          style={{
+                            fontFamily: 'var(--font-display)',
+                            fontSize: '1.25rem',
+                            fontWeight: 500,
                             color: 'var(--color-text-primary)',
-                            cursor: isAnswered ? 'default' : 'pointer',
-                            textAlign: 'left',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 'var(--space-3)',
-                            transition: 'all 0.15s ease',
-                          };
+                            margin: 0,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {q.question}
+                        </h4>
+                      </div>
+
+                      {/* Options List */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginTop: 'var(--space-1)' }}>
+                        {q.options.map((opt, optIdx) => {
+                          const isCorrectOpt = optIdx === q.correct_answer;
+                          const isUserSelected = optIdx === answeredOpt;
+
+                          let bgStyle = 'var(--color-bg-surface)';
+                          let borderStyle = '1px solid var(--color-border-default)';
+                          let textColor = 'var(--color-text-primary)';
+                          let badgeBg = 'var(--color-border-subtle)';
+                          let badgeColor = 'var(--color-text-secondary)';
 
                           if (isAnswered) {
-                            if (optIdx === q.correct_answer) {
-                              optionStyle.border = '1px solid var(--color-success-alpha-20, #2e7d32)';
-                              optionStyle.background = 'var(--color-success-subtle, rgba(46, 125, 50, 0.08))';
-                              optionStyle.color = 'var(--color-success-text, #2e7d32)';
-                              optionStyle.fontWeight = 600;
-                            } else if (optIdx === answeredOpt) {
-                              optionStyle.border = '1px solid var(--color-danger-alpha-20, #d32f2f)';
-                              optionStyle.background = 'var(--color-danger-subtle, rgba(211, 47, 47, 0.08))';
-                              optionStyle.color = 'var(--color-danger-text, #d32f2f)';
+                            if (isCorrectOpt) {
+                              bgStyle = 'rgba(34, 197, 94, 0.08)';
+                              borderStyle = '1.5px solid #22c55e';
+                              textColor = '#15803d';
+                              badgeBg = '#22c55e';
+                              badgeColor = '#ffffff';
+                            } else if (isUserSelected) {
+                              bgStyle = 'rgba(239, 68, 68, 0.08)';
+                              borderStyle = '1.5px solid #ef4444';
+                              textColor = '#b91c1c';
+                              badgeBg = '#ef4444';
+                              badgeColor = '#ffffff';
+                            } else {
+                              textColor = 'var(--color-text-disabled)';
                             }
                           }
 
                           return (
                             <button
                               key={optIdx}
-                              style={optionStyle}
                               onClick={() => handleSelectQuizOption(qIdx, optIdx, q.correct_answer)}
                               disabled={isAnswered}
+                              style={{
+                                padding: 'var(--space-3-5) var(--space-4-5)',
+                                borderRadius: 'var(--radius-md)',
+                                fontSize: '0.95rem',
+                                border: borderStyle,
+                                background: bgStyle,
+                                color: textColor,
+                                cursor: isAnswered ? 'default' : 'pointer',
+                                textAlign: 'left',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                transition: 'all 0.15s ease',
+                              }}
                             >
-                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', opacity: 0.75, fontWeight: 600 }}>
-                                {String.fromCharCode(65 + optIdx)}.
-                              </span>
-                              <span>{opt}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3-5)', flex: 1 }}>
+                                <span
+                                  style={{
+                                    minWidth: '28px',
+                                    height: '28px',
+                                    borderRadius: '6px',
+                                    background: badgeBg,
+                                    color: badgeColor,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {String.fromCharCode(65 + optIdx)}
+                                </span>
+                                <span style={{ lineHeight: 1.45 }}>{opt}</span>
+                              </div>
+
+                              {isAnswered && (isCorrectOpt || isUserSelected) && (
+                                <span
+                                  style={{
+                                    marginLeft: 'var(--space-3)',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 700,
+                                    fontFamily: 'var(--font-mono)',
+                                    color: isCorrectOpt ? '#15803d' : '#b91c1c',
+                                  }}
+                                >
+                                  {isCorrectOpt ? '✓ Correct' : '✗ Incorrect'}
+                                </span>
+                              )}
                             </button>
                           );
                         })}
                       </div>
 
+                      {/* Explanation Callout */}
                       {isAnswered && (
-                        <div style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--color-border-subtle)', fontSize: '0.95rem', color: 'var(--color-text-secondary)', lineHeight: '1.6' }}>
-                          <strong style={{ color: answeredOpt === q.correct_answer ? 'var(--color-success-text, #2e7d32)' : 'var(--color-danger-text, #d32f2f)', display: 'block', marginBottom: 'var(--space-1-5)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                        <div
+                          style={{
+                            marginTop: 'var(--space-3)',
+                            padding: 'var(--space-4) var(--space-5)',
+                            borderRadius: 'var(--radius-md)',
+                            borderLeft: `4px solid ${answeredOpt === q.correct_answer ? '#22c55e' : '#ef4444'}`,
+                            background: answeredOpt === q.correct_answer ? 'rgba(34, 197, 94, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                            fontSize: '0.925rem',
+                            color: 'var(--color-text-secondary)',
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          <strong
+                            style={{
+                              color: answeredOpt === q.correct_answer ? '#15803d' : '#b91c1c',
+                              display: 'block',
+                              marginBottom: 'var(--space-1.5)',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.8rem',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
                             {answeredOpt === q.correct_answer ? '✓ CORRECT ANSWER' : '✗ INCORRECT ANSWER'}
                           </strong>
                           {q.explanation}
