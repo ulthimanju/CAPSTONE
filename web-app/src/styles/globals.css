@@ -447,7 +447,7 @@ aside, .sidebar {
   overflow: hidden;
 }
 
-.journal-container > div,
+.journal-container > div:not(.entry-content),
 .workspace-detail-container {
   width: 100%;
   height: 100%;
@@ -503,10 +503,11 @@ header {
  * ENTRY CONTENT (tab panels within main)
  * ========================================== */
 .entry-content,
-.tab-panel {
+.tab-panel,
+.journal-container > .entry-content {
   flex-grow: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: auto !important;
   display: flex;
   flex-direction: column;
   padding: var(--space-8) var(--space-10);
