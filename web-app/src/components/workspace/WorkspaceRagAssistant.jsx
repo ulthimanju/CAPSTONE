@@ -292,13 +292,21 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
 
   const handleSend = async (queryToSend) => {
     const text = (queryToSend || inputQuery).trim();
-    if (!text || !canSend) return;
+    const now = new Date();
+    const formattedTimestamp = now.toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const isoDate = now.toISOString();
 
     const userMsg = {
       id: `user-${Date.now()}`,
       sender: 'user',
       text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: formattedTimestamp,
+      createdAt: isoDate,
     };
 
     const withUser = [...messages, userMsg];
@@ -318,7 +326,8 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         id: `ast-${Date.now()}`,
         sender: 'assistant',
         text: res.data.answer || 'No answer generated.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: formattedTimestamp,
+        createdAt: isoDate,
       };
 
       const final = [...withUser, assistantMsg];
@@ -334,7 +343,8 @@ export const WorkspaceRagAssistant = ({ workspaceId, documents = [], workspaceNa
         id: `err-${Date.now()}`,
         sender: 'assistant',
         text: displayMsg,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: formattedTimestamp,
+        createdAt: isoDate,
       };
       const final = [...withUser, errorMsg];
       setMessages(final);
