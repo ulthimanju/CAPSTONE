@@ -4,41 +4,26 @@ import mermaid from 'mermaid';
 mermaid.initialize({
   startOnLoad: false,
   securityLevel: 'loose',
+  theme: 'default',
 });
 
-function parseSubgraphsIntoIndividualDiagrams(code) {
-  if (!code) return [];
-  const raw = code.trim();
+function sanitizeMermaidCode(code) {
+  if (!code) return '';
+  let cleaned = code.trim();
 
-  // If no subgraph block present, return single diagram
-  if (!/subgraph\s+/i.test(raw)) {
-    return [{ title: null, code: raw }];
+  // Strip code block fences if present
+  cleaned = cleaned.replace(/^```mermaid\s*/i, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
+
+  // Replace escaped newlines
+  cleaned = cleaned.replace(/\\n/g, '\n');
+
+  // Ensure standard diagram header
+  const validHeaderRegex = /^\s*(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|stateDiagram-v2|erDiagram|gantt|pie|gitGraph|mindmap|timeline|C4Context|architecture)/i;
+  if (!validHeaderRegex.test(cleaned)) {
+    cleaned = `flowchart TD\n${cleaned}`;
   }
 
-  // Extract flow direction header (default flowchart TD)
-  const headerMatch = raw.match(/^\s*(flowchart|graph)\s+([A-Za-z]+)/i);
-  const flowHeader = headerMatch ? `${headerMatch[1]} ${headerMatch[2]}` : 'flowchart TD';
-
-  const subgraphRegex = /subgraph\s+(?:"([^"]+)"|([^\s\n"\[\]]+))([\s\S]*?)end/gi;
-  const diagrams = [];
-  let match;
-
-  while ((match = subgraphRegex.exec(raw)) !== null) {
-    const title = (match[1] || match[2] || '').trim();
-    const innerContent = match[3].trim();
-    if (innerContent) {
-      diagrams.push({
-        title,
-        code: `${flowHeader}\n${innerContent}`,
-      });
-    }
-  }
-
-  if (diagrams.length === 0) {
-    return [{ title: null, code: raw }];
-  }
-
-  return diagrams;
+  return cleaned;
 }
 
 function SingleMermaidRender({ code, onError }) {
@@ -48,11 +33,11 @@ function SingleMermaidRender({ code, onError }) {
 
   useEffect(() => {
     let cancelled = false;
+    const sanitized = sanitizeMermaidCode(code);
 
-    if (!code) {
+    if (!sanitized) {
       setIsLoading(false);
       setError('No diagram syntax available');
-      if (onError) onError();
       return;
     }
 
@@ -70,7 +55,7 @@ function SingleMermaidRender({ code, onError }) {
     document.body.appendChild(tempContainer);
 
     mermaid
-      .render(uniqueId, code, tempContainer)
+      .render(uniqueId, sanitized, tempContainer)
       .then(({ svg }) => {
         if (!cancelled) {
           setSvgHtml(svg);
@@ -79,7 +64,7 @@ function SingleMermaidRender({ code, onError }) {
       })
       .catch((err) => {
         if (!cancelled) {
-          console.warn('[Mermaid Error]', err, code);
+          console.warn('[Mermaid Error]', err, sanitized);
           setError('Diagram unavailable');
           setIsLoading(false);
           if (onError) onError(err);
@@ -104,13 +89,13 @@ function SingleMermaidRender({ code, onError }) {
   }, [code, onError]);
 
   if (isLoading) {
-    return <div style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>Rendering diagram...</div>;
+    return <div style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Rendering diagram...</div>;
   }
 
   if (error) {
     return (
-      <div style={{ padding: '1rem', textAlign: 'center', color: '#999', border: '1px solid #ccc', borderRadius: '4px' }}>
-        {error}
+      <div style={{ padding: '0.75rem var(--space-4)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
+        <pre style={{ margin: 0, fontFamily: 'var(--font-mono)', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>{sanitizeMermaidCode(code)}</pre>
       </div>
     );
   }
@@ -119,30 +104,12 @@ function SingleMermaidRender({ code, onError }) {
     <div
       className="mermaid-wrapper"
       dangerouslySetInnerHTML={{ __html: svgHtml }}
+      style={{ overflowX: 'auto', padding: 'var(--space-2) 0', display: 'flex', justifyContent: 'center' }}
     />
   );
 }
 
 export function MermaidDiagram({ code, source, chart, content, title = 'Diagram', onError }) {
   const rawCode = (code || source || chart || content || '').trim();
-  const subDiagrams = parseSubgraphsIntoIndividualDiagrams(rawCode);
-
-  if (subDiagrams.length > 1) {
-    return (
-      <div className="subgraphs-standalone-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
-        {subDiagrams.map((sub, idx) => (
-          <div className="subgraph-standalone-card" key={idx} style={{ width: '100%' }}>
-            {sub.title && (
-              <div className="subgraph-standalone-title">
-                {sub.title}
-              </div>
-            )}
-            <SingleMermaidRender code={sub.code} onError={onError} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return <SingleMermaidRender code={rawCode} onError={onError} />;
 }
