@@ -63,6 +63,15 @@ const CodeBlock = ({ className, children }) => {
   const match = /language-(\w+)/.exec(className || '');
   const lang = match ? match[1] : '';
   const rawCodeString = extractTextContent(children).replace(/\n$/, '');
+
+  if (lang === 'mermaid') {
+    return (
+      <div className="diagram-container" style={{ margin: 'var(--space-4) 0' }}>
+        <MermaidDiagram code={rawCodeString} />
+      </div>
+    );
+  }
+
   const [formattedCode, setFormattedCode] = useState(rawCodeString);
 
   useEffect(() => {

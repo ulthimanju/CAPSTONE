@@ -285,37 +285,19 @@ export const LearningUnitDetailPage = () => {
               Back to Learning Path
             </button>
             <div style={{ height: '16px', width: '1px', background: 'var(--color-border-subtle)' }}></div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2.5)' }}>
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  color: 'var(--color-text-muted)',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  background: 'var(--color-bg-secondary)',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--color-border-subtle)',
-                }}
-              >
-                UNIT
-              </span>
-              <h1
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.35rem',
-                  fontWeight: 600,
-                  lineHeight: 1.25,
-                  letterSpacing: '-0.01em',
-                  color: 'var(--color-text-primary)',
-                  margin: 0,
-                }}
-              >
-                {decodedTitle}
-              </h1>
-            </div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.35rem',
+                fontWeight: 600,
+                lineHeight: 1.25,
+                letterSpacing: '-0.01em',
+                color: 'var(--color-text-primary)',
+                margin: 0,
+              }}
+            >
+              {decodedTitle}
+            </h1>
           </div>
 
           <button
