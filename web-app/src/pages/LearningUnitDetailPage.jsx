@@ -255,26 +255,64 @@ export const LearningUnitDetailPage = () => {
       workspaceName={workspace?.name || null}
     >
       <div className="entry-content">
-        {/* Header & Navbar Section without island backgrounds or inter-gaps */}
-        <header style={{ borderBottom: '2px solid var(--color-border-default)', paddingBottom: '1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3-5)' }}>
+        {/* Compact Header & Navbar Section */}
+        <header
+          style={{
+            display: 'flex',
+            justify: 'space-between',
+            alignItems: 'center',
+            paddingBottom: 'var(--space-3)',
+            marginBottom: 'var(--space-3)',
+            borderBottom: '1px solid var(--color-border-subtle)',
+            flexWrap: 'wrap',
+            gap: 'var(--space-3)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => navigate(`/workspaces/${workspaceId}?tab=learning`)}
-              style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-1-5) var(--space-3)', gap: 'var(--space-1-5)' }}
+              style={{
+                fontSize: 'var(--font-size-xs)',
+                padding: 'var(--space-1.5) var(--space-3)',
+                gap: 'var(--space-1.5)',
+              }}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
               Back to Learning Path
             </button>
-            <div style={{ height: '20px', width: '1px', background: 'var(--color-border-subtle)' }}></div>
-            <div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                LEARNING UNIT
+            <div style={{ height: '16px', width: '1px', background: 'var(--color-border-subtle)' }}></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2.5)' }}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  color: 'var(--color-text-muted)',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  background: 'var(--color-bg-secondary)',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--color-border-subtle)',
+                }}
+              >
+                UNIT
               </span>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 500, lineHeight: 1.2, letterSpacing: '-0.02em', color: 'var(--color-text-primary)', margin: 0 }}>
+              <h1
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.35rem',
+                  fontWeight: 600,
+                  lineHeight: 1.25,
+                  letterSpacing: '-0.01em',
+                  color: 'var(--color-text-primary)',
+                  margin: 0,
+                }}
+              >
                 {decodedTitle}
               </h1>
             </div>
@@ -285,22 +323,39 @@ export const LearningUnitDetailPage = () => {
             className="btn btn-primary"
             onClick={handleGenerateContent}
             disabled={generating}
-            style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-2) var(--space-4)', gap: 'var(--space-2)' }}
+            style={{
+              fontSize: 'var(--font-size-xs)',
+              padding: 'var(--space-1.5) var(--space-3.5)',
+              gap: 'var(--space-1.5)',
+            }}
           >
-            <i className={`ti ${generating ? 'ti-loader animate-spin' : 'ti-refresh'}`} style={{ fontSize: '1rem' }}></i>
+            <i className={`ti ${generating ? 'ti-loader animate-spin' : 'ti-refresh'}`} style={{ fontSize: '0.85rem' }}></i>
             {generating ? 'Regenerating...' : 'Regenerate Study Bundle'}
           </button>
         </header>
 
         {/* Sub-Navigation Tabs Bar */}
         {contentData && (
-          <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', paddingBottom: 'var(--space-2)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 'var(--space-1.5)',
+              marginBottom: 'var(--space-4)',
+              paddingBottom: 'var(--space-2)',
+              borderBottom: '1px solid var(--color-border-subtle)',
+            }}
+          >
             <button
               onClick={() => setActiveTab('summary')}
               className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
-              style={{ width: 'auto', padding: 'var(--space-2) var(--space-4)', borderRadius: 'var(--radius-md)' }}
+              style={{
+                width: 'auto',
+                padding: 'var(--space-1.5) var(--space-3.5)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 'var(--font-size-sm)',
+              }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <path d="M14 2v6h6" />
               </svg>
@@ -310,9 +365,14 @@ export const LearningUnitDetailPage = () => {
             <button
               onClick={() => setActiveTab('flashcards')}
               className={`nav-item ${activeTab === 'flashcards' ? 'active' : ''}`}
-              style={{ width: 'auto', padding: 'var(--space-2) var(--space-4)', borderRadius: 'var(--radius-md)' }}
+              style={{
+                width: 'auto',
+                padding: 'var(--space-1.5) var(--space-3.5)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 'var(--font-size-sm)',
+              }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="2" y="5" width="14" height="14" rx="2" />
                 <path d="M22 9v10a2 2 0 0 1-2 2H8" />
               </svg>
@@ -322,9 +382,14 @@ export const LearningUnitDetailPage = () => {
             <button
               onClick={() => setActiveTab('quiz')}
               className={`nav-item ${activeTab === 'quiz' ? 'active' : ''}`}
-              style={{ width: 'auto', padding: 'var(--space-2) var(--space-4)', borderRadius: 'var(--radius-md)' }}
+              style={{
+                width: 'auto',
+                padding: 'var(--space-1.5) var(--space-3.5)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 'var(--font-size-sm)',
+              }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
               </svg>
@@ -334,9 +399,14 @@ export const LearningUnitDetailPage = () => {
             <button
               onClick={() => setActiveTab('problems')}
               className={`nav-item ${activeTab === 'problems' ? 'active' : ''}`}
-              style={{ width: 'auto', padding: 'var(--space-2) var(--space-4)', borderRadius: 'var(--radius-md)' }}
+              style={{
+                width: 'auto',
+                padding: 'var(--space-1.5) var(--space-3.5)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 'var(--font-size-sm)',
+              }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="16 18 22 12 16 6" />
                 <polyline points="8 6 2 12 8 18" />
               </svg>
