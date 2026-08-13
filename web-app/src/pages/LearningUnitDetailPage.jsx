@@ -254,7 +254,7 @@ export const LearningUnitDetailPage = () => {
       workspaceId={workspaceId}
       workspaceName={workspace?.name || null}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', padding: 'var(--space-2) 0' }}>
+      <div className="entry-content">
         {/* Header & Navbar Section without island backgrounds or inter-gaps */}
         <header style={{ borderBottom: '2px solid var(--color-border-default)', paddingBottom: '1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3-5)' }}>
@@ -514,75 +514,62 @@ export const LearningUnitDetailPage = () => {
 
             {/* SUB-TAB 3: QUIZ */}
             {activeTab === 'quiz' && contentData.quiz && contentData.quiz.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', padding: 'var(--space-2) 0' }}>
-                {/* Score & Progress Card */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                {/* Score Header Island */}
                 <div
+                  className="island"
                   style={{
                     padding: 'var(--space-4) var(--space-6)',
-                    background: 'var(--color-bg-surface)',
-                    border: '1px solid var(--color-border-default)',
-                    borderRadius: 'var(--radius-lg)',
                     display: 'flex',
-                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justify: 'space-between',
+                    flexWrap: 'wrap',
                     gap: 'var(--space-3)',
-                    boxShadow: 'var(--elevation-xs)',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          color: 'var(--color-primary)',
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          background: 'var(--color-primary-subtle, rgba(160, 82, 45, 0.1))',
-                          padding: '0.2rem 0.6rem',
-                          borderRadius: '4px',
-                        }}
-                      >
-                        QUIZ PROGRESS
-                      </span>
-                      <span style={{ fontSize: '0.95rem', color: 'var(--color-text-primary)', fontWeight: 600 }}>
-                        Score: <strong style={{ color: 'var(--color-primary)', fontSize: '1.1rem' }}>{quizScore}</strong> / {contentData.quiz.length}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={handleResetQuiz}
-                      style={{ fontSize: 'var(--font-size-xs)', padding: 'var(--space-1.5) var(--space-3.5)' }}
-                    >
-                      <i className="ti ti-rotate-clockwise" style={{ marginRight: '0.35rem' }}></i>
-                      Reset Quiz
-                    </button>
-                  </div>
-
-                  {/* Progress Bar Track */}
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '6px',
-                      background: 'var(--color-border-subtle)',
-                      borderRadius: '3px',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3-5)' }}>
+                    <span
                       style={{
-                        height: '100%',
-                        width: `${(Object.keys(quizAnswers).length / contentData.quiz.length) * 100}%`,
-                        background: 'var(--color-primary)',
-                        transition: 'width 0.3s ease',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 'var(--font-size-xs)',
+                        fontWeight: 'var(--font-weight-bold)',
+                        color: 'var(--color-text-muted)',
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
                       }}
-                    />
+                    >
+                      QUIZ PROGRESS
+                    </span>
+                    <div style={{ height: '18px', width: '1px', background: 'var(--color-border-subtle)' }}></div>
+                    <span
+                      style={{
+                        fontSize: 'var(--font-size-base)',
+                        fontWeight: 'var(--font-weight-semibold)',
+                        color: 'var(--color-text-primary)',
+                      }}
+                    >
+                      Score:{' '}
+                      <strong style={{ color: 'var(--color-primary)', fontSize: 'var(--font-size-lg)' }}>
+                        {quizScore}
+                      </strong>{' '}
+                      / {contentData.quiz.length}
+                    </span>
                   </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleResetQuiz}
+                    style={{ fontSize: 'var(--font-size-sm)', padding: 'var(--space-1-5) var(--space-3.5)', gap: 'var(--space-1-5)' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                    </svg>
+                    Reset Quiz
+                  </button>
                 </div>
 
-                {/* Quiz Questions List */}
+                {/* Question Cards List */}
                 {contentData.quiz.map((q, qIdx) => {
                   const answeredOpt = quizAnswers[qIdx];
                   const isAnswered = answeredOpt !== undefined;
@@ -590,129 +577,128 @@ export const LearningUnitDetailPage = () => {
                   return (
                     <div
                       key={qIdx}
+                      className="island"
                       style={{
                         padding: 'var(--space-6) var(--space-7)',
-                        background: 'var(--color-bg-surface)',
-                        border: '1px solid var(--color-border-default)',
-                        borderRadius: 'var(--radius-lg)',
-                        boxShadow: 'var(--elevation-xs)',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 'var(--space-4)',
+                        gap: 'var(--space-5)',
                       }}
                     >
-                      {/* Question Badge & Title */}
+                      {/* Question Title Header */}
                       <div>
                         <span
                           style={{
                             fontFamily: 'var(--font-mono)',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            color: 'var(--color-text-muted)',
+                            fontSize: 'var(--font-size-xs)',
+                            fontWeight: 'var(--font-weight-bold)',
+                            color: 'var(--color-primary)',
                             letterSpacing: '0.06em',
                             textTransform: 'uppercase',
-                            display: 'inline-block',
+                            display: 'block',
                             marginBottom: 'var(--space-2)',
                           }}
                         >
                           QUESTION {qIdx + 1} OF {contentData.quiz.length}
                         </span>
-                        <h4
+                        <h3
                           style={{
                             fontFamily: 'var(--font-display)',
-                            fontSize: '1.25rem',
-                            fontWeight: 500,
+                            fontSize: 'var(--font-size-2xl)',
+                            fontWeight: 'var(--font-weight-medium)',
                             color: 'var(--color-text-primary)',
+                            lineHeight: 'var(--line-height-snug)',
                             margin: 0,
-                            lineHeight: 1.4,
                           }}
                         >
                           {q.question}
-                        </h4>
+                        </h3>
                       </div>
 
-                      {/* Options List */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginTop: 'var(--space-1)' }}>
+                      {/* Options Grid */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                         {q.options.map((opt, optIdx) => {
                           const isCorrectOpt = optIdx === q.correct_answer;
                           const isUserSelected = optIdx === answeredOpt;
 
-                          let bgStyle = 'var(--color-bg-surface)';
-                          let borderStyle = '1px solid var(--color-border-default)';
-                          let textColor = 'var(--color-text-primary)';
-                          let badgeBg = 'var(--color-border-subtle)';
-                          let badgeColor = 'var(--color-text-secondary)';
+                          let customStyle = {
+                            width: '100%',
+                            padding: 'var(--space-3-5) var(--space-4-5)',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: 'var(--font-size-base)',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: isAnswered ? 'default' : 'pointer',
+                            transition: 'var(--transition-fast)',
+                          };
 
                           if (isAnswered) {
                             if (isCorrectOpt) {
-                              bgStyle = 'rgba(34, 197, 94, 0.08)';
-                              borderStyle = '1.5px solid #22c55e';
-                              textColor = '#15803d';
-                              badgeBg = '#22c55e';
-                              badgeColor = '#ffffff';
+                              customStyle.background = 'var(--color-success-subtle)';
+                              customStyle.borderColor = 'var(--color-success-alpha-20)';
+                              customStyle.color = 'var(--color-success-text)';
+                              customStyle.fontWeight = 'var(--font-weight-semibold)';
                             } else if (isUserSelected) {
-                              bgStyle = 'rgba(239, 68, 68, 0.08)';
-                              borderStyle = '1.5px solid #ef4444';
-                              textColor = '#b91c1c';
-                              badgeBg = '#ef4444';
-                              badgeColor = '#ffffff';
+                              customStyle.background = 'var(--color-danger-subtle)';
+                              customStyle.borderColor = 'var(--color-danger-alpha-20)';
+                              customStyle.color = 'var(--color-danger-text)';
                             } else {
-                              textColor = 'var(--color-text-disabled)';
+                              customStyle.color = 'var(--color-text-disabled)';
+                              customStyle.opacity = 0.6;
                             }
                           }
 
                           return (
                             <button
                               key={optIdx}
+                              type="button"
+                              className="btn btn-secondary"
+                              style={customStyle}
                               onClick={() => handleSelectQuizOption(qIdx, optIdx, q.correct_answer)}
                               disabled={isAnswered}
-                              style={{
-                                padding: 'var(--space-3-5) var(--space-4-5)',
-                                borderRadius: 'var(--radius-md)',
-                                fontSize: '0.95rem',
-                                border: borderStyle,
-                                background: bgStyle,
-                                color: textColor,
-                                cursor: isAnswered ? 'default' : 'pointer',
-                                textAlign: 'left',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                transition: 'all 0.15s ease',
-                              }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3-5)', flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3.5)' }}>
                                 <span
                                   style={{
-                                    minWidth: '28px',
-                                    height: '28px',
-                                    borderRadius: '6px',
-                                    background: badgeBg,
-                                    color: badgeColor,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
                                     fontFamily: 'var(--font-mono)',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 700,
+                                    fontSize: 'var(--font-size-sm)',
+                                    fontWeight: 'var(--font-weight-bold)',
+                                    opacity: 0.8,
                                   }}
                                 >
-                                  {String.fromCharCode(65 + optIdx)}
+                                  {String.fromCharCode(65 + optIdx)}.
                                 </span>
-                                <span style={{ lineHeight: 1.45 }}>{opt}</span>
+                                <span style={{ lineHeight: 'var(--line-height-normal)' }}>{opt}</span>
                               </div>
 
-                              {isAnswered && (isCorrectOpt || isUserSelected) && (
+                              {isAnswered && isCorrectOpt && (
                                 <span
                                   style={{
-                                    marginLeft: 'var(--space-3)',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 700,
                                     fontFamily: 'var(--font-mono)',
-                                    color: isCorrectOpt ? '#15803d' : '#b91c1c',
+                                    fontSize: 'var(--font-size-xs)',
+                                    fontWeight: 'var(--font-weight-bold)',
+                                    color: 'var(--color-success-text)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.04em',
                                   }}
                                 >
-                                  {isCorrectOpt ? '✓ Correct' : '✗ Incorrect'}
+                                  ✓ Correct
+                                </span>
+                              )}
+                              {isAnswered && isUserSelected && !isCorrectOpt && (
+                                <span
+                                  style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: 'var(--font-size-xs)',
+                                    fontWeight: 'var(--font-weight-bold)',
+                                    color: 'var(--color-danger-text)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.04em',
+                                  }}
+                                >
+                                  ✗ Incorrect
                                 </span>
                               )}
                             </button>
@@ -720,33 +706,40 @@ export const LearningUnitDetailPage = () => {
                         })}
                       </div>
 
-                      {/* Explanation Callout */}
+                      {/* Explanation Section */}
                       {isAnswered && (
                         <div
                           style={{
-                            marginTop: 'var(--space-3)',
-                            padding: 'var(--space-4) var(--space-5)',
-                            borderRadius: 'var(--radius-md)',
-                            borderLeft: `4px solid ${answeredOpt === q.correct_answer ? '#22c55e' : '#ef4444'}`,
-                            background: answeredOpt === q.correct_answer ? 'rgba(34, 197, 94, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-                            fontSize: '0.925rem',
-                            color: 'var(--color-text-secondary)',
-                            lineHeight: 1.6,
+                            marginTop: 'var(--space-2)',
+                            paddingTop: 'var(--space-4)',
+                            borderTop: '1px solid var(--color-border-subtle)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 'var(--space-1-5)',
                           }}
                         >
-                          <strong
+                          <span
                             style={{
-                              color: answeredOpt === q.correct_answer ? '#15803d' : '#b91c1c',
-                              display: 'block',
-                              marginBottom: 'var(--space-1.5)',
                               fontFamily: 'var(--font-mono)',
-                              fontSize: '0.8rem',
-                              letterSpacing: '0.04em',
+                              fontSize: 'var(--font-size-xs)',
+                              fontWeight: 'var(--font-weight-bold)',
+                              color: answeredOpt === q.correct_answer ? 'var(--color-success-text)' : 'var(--color-danger-text)',
+                              letterSpacing: '0.05em',
+                              textTransform: 'uppercase',
                             }}
                           >
                             {answeredOpt === q.correct_answer ? '✓ CORRECT ANSWER' : '✗ INCORRECT ANSWER'}
-                          </strong>
-                          {q.explanation}
+                          </span>
+                          <p
+                            style={{
+                              fontSize: 'var(--font-size-base)',
+                              color: 'var(--color-text-secondary)',
+                              lineHeight: 'var(--line-height-relaxed)',
+                              margin: 0,
+                            }}
+                          >
+                            {q.explanation}
+                          </p>
                         </div>
                       )}
                     </div>
