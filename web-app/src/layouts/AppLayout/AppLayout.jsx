@@ -1,8 +1,5 @@
 /**
  * AppLayout — UI Composition Layer
- *
- * Connects the logic hook to the layout template.
- * Thin by design — no state, no markup.
  */
 
 import React, { useCallback } from 'react';
@@ -11,45 +8,43 @@ import { AppLayoutTemplate }  from './AppLayout.layout';
 
 export function AppLayout({ children, headerSlot }) {
   const {
-    userInitials, userName, userEmail, logout,
-    theme, toggleTheme,
-    isSidebarOpen, closeSidebar, toggleSidebar,
-    workspaces, activeWorkspace, activeWorkspaceId,
-    handleSelectWorkspace, handleNavigate,
+    userInitials,
+    userName,
+    userEmail,
+    logout,
+    toggleTheme,
+    isSidebarOpen,
+    closeSidebar,
+    toggleSidebar,
+    workspaces,
+    activeWorkspaceId,
+    handleSelectWorkspace,
+    activeTab,
+    onSelectTab,
+    onSelectWorkspace,
+    onGoHome,
   } = useAppLayout();
 
-  /**
-   * Central action dispatcher for config-driven sidebar actions.
-   * Add new actions here as the config grows.
-   */
   const handleAction = useCallback((action) => {
     if (action === 'toggle-theme') toggleTheme();
   }, [toggleTheme]);
 
   return (
     <AppLayoutTemplate
-      // Sidebar state
       isSidebarOpen={isSidebarOpen}
       onCloseSidebar={closeSidebar}
       onToggleSidebar={toggleSidebar}
-
-      // Workspace data
       workspaces={workspaces}
-      activeWorkspace={activeWorkspace}
       activeWorkspaceId={activeWorkspaceId}
-      onSelectWorkspace={handleSelectWorkspace}
-
-      // Actions
+      onSelectWorkspace={onSelectWorkspace}
+      activeTab={activeTab}
+      onSelectTab={onSelectTab}
       onAction={handleAction}
-      onGoHome={() => handleNavigate('/workspaces')}
+      onGoHome={onGoHome}
       onLogout={logout}
-
-      // User
       userInitials={userInitials}
       userName={userName}
       userEmail={userEmail}
-
-      // Content
       headerSlot={headerSlot}
     >
       {children}

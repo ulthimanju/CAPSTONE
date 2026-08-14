@@ -11,8 +11,8 @@ import { InvitationsSection, InvitationsHeaderActions } from '@/sections/invitat
 import { AuthSection } from '@/sections/auth';
 
 /**
- * Main Layout Container Component
- * Renders AppLayout shell and passes header action buttons into headerSlot
+ * WorkspaceLayoutWrapper
+ * Dynamically switches active section and header actions reactively based on ?tab=
  */
 function WorkspaceLayoutWrapper() {
   const { workspaceId } = useParams();
@@ -22,36 +22,36 @@ function WorkspaceLayoutWrapper() {
   const renderSection = () => {
     switch (tab) {
       case 'learning':
-        return <LearningSection key={`learning-${workspaceId}`} workspaceId={workspaceId} />;
+        return <LearningSection workspaceId={workspaceId} />;
       case 'documents':
-        return <DocumentsSection key={`documents-${workspaceId}`} workspaceId={workspaceId} />;
+        return <DocumentsSection workspaceId={workspaceId} />;
       case 'chat':
-        return <ChatSection key={`chat-${workspaceId}`} workspaceId={workspaceId} />;
+        return <ChatSection workspaceId={workspaceId} />;
       case 'collaborators':
-        return <CollaboratorsSection key={`collaborators-${workspaceId}`} workspaceId={workspaceId} />;
+        return <CollaboratorsSection workspaceId={workspaceId} />;
       case 'invitations':
-        return <InvitationsSection key="invitations" />;
+        return <InvitationsSection />;
       case 'summary':
       default:
-        return <SummarySection key={`summary-${workspaceId}`} workspaceId={workspaceId} />;
+        return <SummarySection workspaceId={workspaceId} />;
     }
   };
 
   const renderHeaderSlot = () => {
     switch (tab) {
       case 'learning':
-        return <LearningHeaderActions key={`learning-actions-${workspaceId}`} workspaceId={workspaceId} />;
+        return <LearningHeaderActions workspaceId={workspaceId} />;
       case 'documents':
-        return <DocumentsHeaderActions key={`documents-actions-${workspaceId}`} workspaceId={workspaceId} />;
+        return <DocumentsHeaderActions workspaceId={workspaceId} />;
       case 'chat':
-        return <ChatHeaderActions key={`chat-actions-${workspaceId}`} workspaceId={workspaceId} />;
+        return <ChatHeaderActions workspaceId={workspaceId} />;
       case 'collaborators':
-        return <CollaboratorsHeaderActions key={`collaborators-actions-${workspaceId}`} workspaceId={workspaceId} />;
+        return <CollaboratorsHeaderActions workspaceId={workspaceId} />;
       case 'invitations':
-        return <InvitationsHeaderActions key="invitations-actions" />;
+        return <InvitationsHeaderActions />;
       case 'summary':
       default:
-        return <SummaryHeaderActions key={`summary-actions-${workspaceId}`} workspaceId={workspaceId} />;
+        return <SummaryHeaderActions workspaceId={workspaceId} />;
     }
   };
 
@@ -85,7 +85,7 @@ export const AppRoutes = () => {
         }
       />
 
-      {/* Catch-all Fallback */}
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/workspaces" replace />} />
     </Routes>
   );

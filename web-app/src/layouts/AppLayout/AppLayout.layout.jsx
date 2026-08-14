@@ -1,29 +1,14 @@
 /**
  * AppLayout — Layout Layer
  *
- * Pure structural JSX. Receives all state and handlers as props.
- * Contains zero business logic.
- *
- * Component hierarchy:
- *   AppLayout
- *     Sidebar
- *       Brand
- *       WorkspaceSelector  (native <select>)
- *       Navigation         (data-driven from sidebarConfig)
- *         SidebarSection   (renders a section from config)
- *           SidebarItem    (renders a single nav item or action)
- *       UserSection
- *     MainLayout
- *       MainHeader
- *       MainContent
+ * Clean, production-level, responsive layout template.
  */
 
 import React, { useContext } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { Selector } from '../../components/ui/Selector';
-import { sidebarSections, resolvePath, isItemActive, Sun } from './sidebarConfig';
+import { SIDEBAR_CONFIG, Sun } from './sidebarConfig';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Brand
@@ -43,7 +28,7 @@ function Brand({ onClick }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// WorkspaceSelector — using reusable Selector component
+// WorkspaceSelector
 // ──────────────────────────────────────────────────────────────────────────────
 
 function WorkspaceSelector({ workspaces, activeWorkspaceId, onSelect }) {
@@ -69,21 +54,17 @@ function WorkspaceSelector({ workspaces, activeWorkspaceId, onSelect }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// SidebarItem — renders one item from the config
+// SidebarItem
 // ──────────────────────────────────────────────────────────────────────────────
 
-function SidebarItem({ item, workspaceId, onAction }) {
-  const location = useLocation();
-  const navigate = useNavigate();
+function SidebarItem({ item, activeTab, onSelectTab, onAction }) {
   const themeCtx = useContext(ThemeContext);
-  const active   = isItemActive(item, location);
+  const isActive = item.tab ? activeTab === item.tab : false;
 
-  // For theme toggle: swap icon to show current state
   const Icon = item.action === 'toggle-theme'
     ? (themeCtx?.theme === 'dark' ? Sun : Moon)
     : item.icon;
 
-  // Action items (e.g. theme toggle) — render as button
   if (item.action) {
     return (
       <button
@@ -102,30 +83,39 @@ function SidebarItem({ item, workspaceId, onAction }) {
     );
   }
 
-  // Navigation items — render as Link with explicit onClick to guarantee state transition
-  const resolvedHref = resolvePath(item, workspaceId) ?? '/workspaces';
-
   return (
-    <Link
-      to={resolvedHref}
-      onClick={(e) => {
-        e.preventDefault();
-        navigate(resolvedHref);
+    <button
+      type="button"
+      onClick={() => onSelectTab(item.tab)}
+      className={`sidebar-item${isActive ? ' is-active' : ''}`}
+      aria-current={isActive ? 'page' : undefined}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-2) var(--space-3)',
+        borderRadius: 'var(--radius-sm)',
+        border: 'none',
+        background: isActive ? 'var(--bg-raised)' : 'transparent',
+        color: isActive ? 'var(--accent)' : 'var(--text-soft)',
+        fontWeight: isActive ? 'var(--weight-semibold)' : 'normal',
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'all 0.15s ease',
       }}
-      className={`sidebar-item${active ? ' is-active' : ''}`}
-      aria-current={active ? 'page' : undefined}
     >
       <Icon size={17} strokeWidth={1.8} />
       <span>{item.label}</span>
-    </Link>
+    </button>
   );
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// SidebarSection — renders one section from the config
+// SidebarSection
 // ──────────────────────────────────────────────────────────────────────────────
 
-function SidebarSection({ section, workspaceId, onAction }) {
+function SidebarSection({ section, activeTab, onSelectTab, onAction }) {
   return (
     <div className="sidebar-section">
       <div className="sidebar-section-label">{section.label}</div>
@@ -134,7 +124,8 @@ function SidebarSection({ section, workspaceId, onAction }) {
           <SidebarItem
             key={item.id}
             item={item}
-            workspaceId={workspaceId}
+            activeTab={activeTab}
+            onSelectTab={onSelectTab}
             onAction={onAction}
           />
         ))}
@@ -144,17 +135,18 @@ function SidebarSection({ section, workspaceId, onAction }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Navigation — maps over sidebarSections config
+// Navigation
 // ──────────────────────────────────────────────────────────────────────────────
 
-function Navigation({ activeWorkspaceId, onAction }) {
+function Navigation({ activeTab, onSelectTab, onAction }) {
   return (
     <nav className="sidebar-navigation" aria-label="Main navigation">
-      {sidebarSections.map((section) => (
+      {SIDEBAR_CONFIG.map((section) => (
         <SidebarSection
           key={section.label}
           section={section}
-          workspaceId={activeWorkspaceId}
+          activeTab={activeTab}
+          onSelectTab={onSelectTab}
           onAction={onAction}
         />
       ))}
@@ -163,24 +155,21 @@ function Navigation({ activeWorkspaceId, onAction }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// UserSection — Avatar, User Info, Sign Out
+// UserSection
 // ──────────────────────────────────────────────────────────────────────────────
 
 function UserSection({ initials, name, email, onLogout }) {
   return (
     <div className="sidebar-footer">
-      {/* Avatar */}
       <div className="sidebar-footer-avatar" aria-hidden="true">
         {initials}
       </div>
 
-      {/* User info */}
       <div className="sidebar-footer-info">
         <span className="sidebar-footer-name">{name}</span>
         {email && <span className="sidebar-footer-email">{email}</span>}
       </div>
 
-      {/* Sign out */}
       <button
         type="button"
         onClick={onLogout}
@@ -198,17 +187,8 @@ function UserSection({ initials, name, email, onLogout }) {
           alignItems: 'center',
           transition: 'color 150ms ease, background-color 150ms ease',
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--error-subtle)';
-          e.currentTarget.style.color = 'var(--error)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '';
-          e.currentTarget.style.color = 'var(--text-muted)';
-        }}
       >
-        {/* Inline SVG for logout — avoids tabler icon dependency here */}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
           <polyline points="16 17 21 12 16 7" />
           <line x1="21" y1="12" x2="9" y2="12" />
@@ -219,7 +199,7 @@ function UserSection({ initials, name, email, onLogout }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// MainHeader — top bar with mobile hamburger and WorkspaceSelector
+// MainHeader
 // ──────────────────────────────────────────────────────────────────────────────
 
 function MainHeader({
@@ -237,9 +217,8 @@ function MainHeader({
         onClick={onToggleSidebar}
         aria-label="Open navigation"
       >
-        {/* Inline menu icon */}
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-          <line x1="3" y1="6"  x2="21" y2="6"  />
+        <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6" />
           <line x1="3" y1="12" x2="21" y2="12" />
           <line x1="3" y1="18" x2="21" y2="18" />
         </svg>
@@ -263,38 +242,29 @@ function MainHeader({
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// AppLayoutTemplate — root shell
+// AppLayoutTemplate
 // ──────────────────────────────────────────────────────────────────────────────
 
 export function AppLayoutTemplate({
-  // Sidebar state
   isSidebarOpen,
   onCloseSidebar,
   onToggleSidebar,
-
-  // Workspace data
   workspaces,
-  activeWorkspace,
   activeWorkspaceId,
   onSelectWorkspace,
-
-  // Actions
-  onAction,       // handles any action id from sidebarConfig (e.g. "toggle-theme")
+  activeTab,
+  onSelectTab,
+  onAction,
   onGoHome,
   onLogout,
-
-  // User
   userInitials,
   userName,
   userEmail,
-
-  // Content
   children,
   headerSlot,
 }) {
   return (
     <div className="app-layout">
-      {/* Mobile overlay */}
       {isSidebarOpen && (
         <div
           className="sidebar-overlay"
@@ -303,12 +273,12 @@ export function AppLayoutTemplate({
         />
       )}
 
-      {/* ═══════════════ SIDEBAR ═══════════════ */}
       <aside className={`sidebar${isSidebarOpen ? ' is-open' : ''}`} aria-label="Sidebar">
         <Brand onClick={onGoHome} />
 
         <Navigation
-          activeWorkspaceId={activeWorkspaceId}
+          activeTab={activeTab}
+          onSelectTab={onSelectTab}
           onAction={onAction}
         />
 
@@ -320,7 +290,6 @@ export function AppLayoutTemplate({
         />
       </aside>
 
-      {/* ═══════════════ MAIN ═══════════════ */}
       <div className="main-layout">
         <MainHeader
           onToggleSidebar={onToggleSidebar}
