@@ -1,11 +1,12 @@
 /**
  * LearningSection — Structural Layout Layer
  *
- * Renders structured learning path modules as elegant grid cards matching design specs,
+ * Renders structured learning path modules as elegant clickable grid cards,
  * with Generate/Regenerate Learning Path button in the main header via HeaderPortal.
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MarkdownRenderer, Button } from '@/components/ui';
 import { HeaderPortal } from '@/components/layout/HeaderPortal';
 import { BookOpen, Sparkles } from 'lucide-react';
@@ -18,6 +19,8 @@ export function LearningSectionLayout({
   error,
   onGenerate,
 }) {
+  const navigate = useNavigate();
+
   // Extract content payload: backend returns { learning_path: { title, description, units } } or direct
   const rawPayload = learningData?.learning_path !== undefined ? learningData.learning_path : learningData;
   const payload = rawPayload?.learning_path_json || rawPayload?.generated || rawPayload;
@@ -27,10 +30,15 @@ export function LearningSectionLayout({
 
   const hasContent = Boolean(description || (Array.isArray(units) && units.length > 0));
 
+  const handleCardClick = (unit, index) => {
+    const unitParam = unit.id || String(index);
+    navigate(`/workspaces/${workspaceId}/learning/${unitParam}`);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', width: '100%' }}>
       {/* Header Action Portal — places Generate / Regenerate button on main-header right side */}
-      <HeaderPortal>
+      <HeaderPortal target="actions">
         <Button
           variant="primary"
           size="sm"
@@ -158,7 +166,7 @@ export function LearningSectionLayout({
           </Button>
         </div>
       ) : (
-        /* Learning Modules Grid Cards */
+        /* Learning Modules Grid Cards (Title and Description only, Clickable) */
         <div
           style={{
             display: 'grid',
@@ -168,11 +176,18 @@ export function LearningSectionLayout({
           }}
         >
           {units.map((unit, index) => {
-            const moduleNum = String(index + 1).padStart(2, '0');
-
             return (
               <div
                 key={unit.id || index}
+                onClick={() => handleCardClick(unit, index)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleCardClick(unit, index);
+                  }
+                }}
                 style={{
                   background: 'var(--bg-surface)',
                   borderRadius: 'var(--radius-md)',
@@ -181,23 +196,20 @@ export function LearningSectionLayout({
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 'var(--space-3)',
+                  cursor: 'pointer',
                   transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
                 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--line-strong)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--line)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
-                {/* Module Number Label */}
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 'var(--text-xs)',
-                    fontWeight: 'var(--weight-semibold)',
-                    color: 'var(--text-muted)',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  MODULE {moduleNum}
-                </div>
-
                 {/* Module Title */}
                 <h3
                   style={{

@@ -193,9 +193,10 @@ function MainHeader({
   workspaces,
   activeWorkspaceId,
   onSelectWorkspace,
+  isLearningUnitPage,
 }) {
   return (
-    <header className="main-header" aria-label="App header" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <header className="main-header" aria-label="App header" style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
       <button
         type="button"
         className="hamburger-btn"
@@ -209,17 +210,36 @@ function MainHeader({
         </svg>
       </button>
 
-      <div style={{ width: '280px', flexShrink: 0 }}>
-        <WorkspaceSelector
-          workspaces={workspaces}
-          activeWorkspaceId={activeWorkspaceId}
-          onSelect={onSelectWorkspace}
-        />
+      {/* Left Slot: WorkspaceSelector (normal) or Back to Learning Path (unit page) */}
+      <div id="main-header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+        {!isLearningUnitPage && (
+          <div style={{ width: '280px', flexShrink: 0 }}>
+            <WorkspaceSelector
+              workspaces={workspaces}
+              activeWorkspaceId={activeWorkspaceId}
+              onSelect={onSelectWorkspace}
+            />
+          </div>
+        )}
       </div>
 
+      {/* Center Slot: Unit Title (learning unit page) */}
+      <div
+        id="main-header-center"
+        style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minWidth: 0,
+          textAlign: 'center',
+        }}
+      />
+
+      {/* Right Slot: Action Buttons */}
       <div
         id="main-header-actions"
-        style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}
+        style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}
       >
         {headerSlot}
       </div>
@@ -237,6 +257,7 @@ export function AppLayoutTemplate({
   onToggleSidebar,
   workspaces,
   activeWorkspaceId,
+  isLearningUnitPage,
   onSelectWorkspace,
   onAction,
   onGoHome,
@@ -279,6 +300,7 @@ export function AppLayoutTemplate({
           headerSlot={headerSlot}
           workspaces={workspaces}
           activeWorkspaceId={activeWorkspaceId}
+          isLearningUnitPage={isLearningUnitPage}
           onSelectWorkspace={onSelectWorkspace}
         />
 

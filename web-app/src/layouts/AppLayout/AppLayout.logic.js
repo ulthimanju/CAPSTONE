@@ -82,6 +82,7 @@ export function useAppLayout() {
     isLoadingWorkspaces,
     activeWorkspace,
     activeWorkspaceId,
+    isLearningUnitPage: Boolean(location.pathname.match(/\/workspaces\/[^/]+\/learning\/[^/]+/)),
 
     // Actions
     onSelectWorkspace: handleSelectWorkspace,

@@ -5,6 +5,7 @@ import { AppLayout } from '../layouts/AppLayout';
 
 import { SummarySection } from '@/sections/summary';
 import { LearningSection } from '@/sections/learning';
+import { LearningUnitSection } from '@/sections/learning-unit';
 import { DocumentsSection } from '@/sections/documents';
 import { ChatSection } from '@/sections/chat';
 import { CollaboratorsSection } from '@/sections/collaborators';
@@ -82,6 +83,7 @@ export const AppRoutes = () => {
       >
         <Route path="summary" element={<SummarySection />} />
         <Route path="learning" element={<LearningSection />} />
+        <Route path="learning/:unitId" element={<LearningUnitSection />} />
         <Route path="documents" element={<DocumentsSection />} />
         <Route path="chat" element={<ChatSection />} />
         <Route path="collaborators" element={<CollaboratorsSection />} />

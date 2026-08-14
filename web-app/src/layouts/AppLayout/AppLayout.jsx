@@ -18,6 +18,7 @@ export function AppLayout({ children, headerSlot }) {
     toggleSidebar,
     workspaces,
     activeWorkspaceId,
+    isLearningUnitPage,
     onSelectWorkspace,
     onGoHome,
   } = useAppLayout();
@@ -33,6 +34,7 @@ export function AppLayout({ children, headerSlot }) {
       onToggleSidebar={toggleSidebar}
       workspaces={workspaces}
       activeWorkspaceId={activeWorkspaceId}
+      isLearningUnitPage={isLearningUnitPage}
       onSelectWorkspace={onSelectWorkspace}
       onAction={handleAction}
       onGoHome={onGoHome}
