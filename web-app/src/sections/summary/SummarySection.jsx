@@ -16,7 +16,6 @@ export function SummarySection({ workspaceId: propWorkspaceId }) {
     isLoading,
     isGenerating,
     error,
-    refetch,
     generateSummary,
   } = useSummarySection(workspaceId);
 
@@ -27,7 +26,6 @@ export function SummarySection({ workspaceId: propWorkspaceId }) {
       isLoading={isLoading}
       isGenerating={isGenerating}
       error={error}
-      onRefetch={refetch}
       onGenerate={generateSummary}
     />
   );
