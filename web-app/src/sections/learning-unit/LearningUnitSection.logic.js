@@ -21,6 +21,8 @@ export function useLearningUnitSection() {
   }, [user]);
 
   const [unitMeta, setUnitMeta] = useState(null);
+  const unitMetaRef = useRef(null);
+
   const [contentData, setContentData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -38,21 +40,25 @@ export function useLearningUnitSection() {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizScore, setQuizScore] = useState(0);
 
-  // ── 1. Fetch Learning Path to resolve Unit Meta ──────────────────────────────
-  const fetchUnitMeta = useCallback(async () => {
-    if (!workspaceId || !unitId) return null;
+  // ── Unified Unit & Content Loader (stable, only workspaceId / unitId dependent) ──
+  const loadUnitData = useCallback(async () => {
+    if (!workspaceId || !unitId) return;
+
+    setIsLoading(true);
+    setError(null);
 
     try {
       const headers = {};
       if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
       if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
+      // 1. Fetch learning path to resolve unit metadata
       const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
       const rawPayload = res.data?.learning_path !== undefined ? res.data.learning_path : res.data;
       const payload = rawPayload?.learning_path_json || rawPayload?.generated || rawPayload;
       const units = payload?.units || [];
 
-      // Find unit by id, index, or title match
+      // Match unit by id, string index, or encoded/decoded title
       const matchedUnit =
         units.find(
           (u, idx) =>
@@ -64,71 +70,62 @@ export function useLearningUnitSection() {
         units[parseInt(unitId, 10)] ||
         null;
 
-      if (matchedUnit) {
-        setUnitMeta(matchedUnit);
-        return matchedUnit;
+      if (!matchedUnit) {
+        setUnitMeta(null);
+        unitMetaRef.current = null;
+        setContentData(null);
+        setIsLoading(false);
+        return;
       }
-      return null;
+
+      setUnitMeta(matchedUnit);
+      unitMetaRef.current = matchedUnit;
+
+      // 2. Fetch unit study bundle content
+      const contentRes = await apiClient.get(
+        `/api/v1/workspaces/${workspaceId}/units/content?unit_title=${encodeURIComponent(matchedUnit.title)}`,
+        { headers }
+      );
+
+      if (contentRes.data && contentRes.data.content) {
+        setContentData(contentRes.data.content);
+
+        // Restore quiz answers and score from stored DB user_answer values
+        if (contentRes.data.content.quiz && Array.isArray(contentRes.data.content.quiz)) {
+          const initialAnswers = {};
+          let initialScore = 0;
+          contentRes.data.content.quiz.forEach((q, idx) => {
+            if (q.user_answer !== undefined && q.user_answer !== null && q.user_answer !== -1) {
+              initialAnswers[idx] = q.user_answer;
+              if (q.user_answer === q.correct_answer) {
+                initialScore += 1;
+              }
+            }
+          });
+          setQuizAnswers(initialAnswers);
+          setQuizScore(initialScore);
+        }
+      } else {
+        setContentData(null);
+      }
     } catch (err) {
-      console.error('[LearningUnitSection] Failed to fetch learning path curriculum:', err);
-      return null;
+      console.error('[LearningUnitSection] Failed to load unit:', err);
+      setError(err?.response?.data || err?.message || 'Failed to load unit content');
+      setContentData(null);
+    } finally {
+      setIsLoading(false);
     }
   }, [workspaceId, unitId]);
 
-  // ── 2. Fetch Unit Content (Summary, Flashcards, Quiz, Problems) ───────────────
-  const fetchUnitContent = useCallback(
-    async (unit) => {
-      const targetUnit = unit || unitMeta;
-      if (!workspaceId || !targetUnit?.title) return;
+  // ── Initial Load on workspaceId or unitId change ─────────────────────────────
+  useEffect(() => {
+    loadUnitData();
+  }, [loadUnitData]);
 
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const headers = {};
-        if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
-        if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
-
-        const res = await apiClient.get(
-          `/api/v1/workspaces/${workspaceId}/units/content?unit_title=${encodeURIComponent(targetUnit.title)}`,
-          { headers }
-        );
-
-        if (res.data && res.data.content) {
-          setContentData(res.data.content);
-
-          // Restore quiz answers and score
-          if (res.data.content.quiz && Array.isArray(res.data.content.quiz)) {
-            const initialAnswers = {};
-            let initialScore = 0;
-            res.data.content.quiz.forEach((q, idx) => {
-              if (q.user_answer !== undefined && q.user_answer !== null && q.user_answer !== -1) {
-                initialAnswers[idx] = q.user_answer;
-                if (q.user_answer === q.correct_answer) {
-                  initialScore += 1;
-                }
-              }
-            });
-            setQuizAnswers(initialAnswers);
-            setQuizScore(initialScore);
-          }
-        } else {
-          setContentData(null);
-        }
-      } catch (err) {
-        console.error('[LearningUnitSection] Failed to fetch unit content:', err);
-        setError(err?.response?.data || err?.message || 'Failed to load unit content');
-        setContentData(null);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [workspaceId, unitMeta]
-  );
-
-  // ── 3. Generate Unit Study Bundle ───────────────────────────────────────────
+  // ── Generate Unit Study Bundle ───────────────────────────────────────────────
   const handleGenerateContent = useCallback(async () => {
-    if (!workspaceId || !unitMeta?.title) return;
+    const currentMeta = unitMetaRef.current || unitMeta;
+    if (!workspaceId || !currentMeta?.title) return;
 
     setIsGenerating(true);
     setGenerationProgressText('Synthesizing Summary, Flashcards, Quiz & Problems with Gemini...');
@@ -142,17 +139,17 @@ export function useLearningUnitSection() {
       const res = await apiClient.post(
         `/api/v1/ai/workspaces/${workspaceId}/units/generate`,
         {
-          unit_title: unitMeta.title,
-          unit_description: unitMeta.description || '',
-          learning_objectives: unitMeta.learning_objectives || [],
-          tags: unitMeta.tags || [],
+          unit_title: currentMeta.title,
+          unit_description: currentMeta.description || '',
+          learning_objectives: currentMeta.learning_objectives || [],
+          tags: currentMeta.tags || [],
         },
         { headers }
       );
 
       if (res.data) {
         setGenerationProgressText('Completed!');
-        await fetchUnitContent(unitMeta);
+        await loadUnitData();
       }
     } catch (err) {
       console.error('[LearningUnitSection] Failed to trigger unit content generation:', err);
@@ -160,27 +157,9 @@ export function useLearningUnitSection() {
     } finally {
       setIsGenerating(false);
     }
-  }, [workspaceId, unitMeta, fetchUnitContent]);
+  }, [workspaceId, unitMeta, loadUnitData]);
 
-  // ── 4. Initial Load ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      setIsLoading(true);
-      const meta = await fetchUnitMeta();
-      if (isMounted && meta) {
-        await fetchUnitContent(meta);
-      } else if (isMounted) {
-        setIsLoading(false);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [fetchUnitMeta, fetchUnitContent]);
-
-  // ── 5. Real-Time SSE Listener for Unit Generation ───────────────────────────
+  // ── Real-Time SSE Listener for Unit Generation ───────────────────────────────
   useEffect(() => {
     if (!workspaceId || !unitMeta?.title) return;
     const token = tokenStorage.getAccessToken();
@@ -196,7 +175,7 @@ export function useLearningUnitSection() {
         if (
           (data.event_name === 'LearningUnitGeneration' || data.event === 'LearningUnitGeneration') &&
           data.workspace_id === workspaceId &&
-          data.unit_title === unitMeta.title
+          data.unit_title === (unitMetaRef.current?.title || unitMeta?.title)
         ) {
           if (data.status === 'QUEUED') {
             setGenerationProgressText('Queued...');
@@ -207,7 +186,7 @@ export function useLearningUnitSection() {
           } else if (data.status === 'COMPLETED') {
             setGenerationProgressText('Completed!');
             setIsGenerating(false);
-            fetchUnitContent(unitMeta);
+            loadUnitData();
           } else if (data.status === 'FAILED') {
             setGenerationProgressText('Failed: ' + (data.error || 'Unknown error'));
             setIsGenerating(false);
@@ -220,9 +199,9 @@ export function useLearningUnitSection() {
     };
 
     return () => eventSource.close();
-  }, [workspaceId, unitMeta, fetchUnitContent]);
+  }, [workspaceId, unitMeta?.title, loadUnitData]);
 
-  // ── 6. Flashcards Helpers ───────────────────────────────────────────────────
+  // ── Flashcards Helpers ───────────────────────────────────────────────────────
   const handlePrevCard = useCallback(() => {
     setIsFlipped(false);
     setCardIndex((prev) => (prev > 0 ? prev - 1 : prev));
@@ -239,7 +218,7 @@ export function useLearningUnitSection() {
     setIsFlipped((prev) => !prev);
   }, []);
 
-  // ── 7. Quiz Helpers ─────────────────────────────────────────────────────────
+  // ── Quiz Helpers ─────────────────────────────────────────────────────────────
   const handleSelectQuizOption = useCallback(
     async (qIdx, optIdx) => {
       if (quizAnswers[qIdx] !== undefined) return;
@@ -262,10 +241,11 @@ export function useLearningUnitSection() {
       try {
         const headers = {};
         if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+        const currentMeta = unitMetaRef.current || unitMeta;
         await apiClient.patch(
           `/api/v1/workspaces/${workspaceId}/units/quiz-progress`,
           {
-            unit_title: unitMeta.title,
+            unit_title: currentMeta?.title,
             quiz_json: updatedQuiz,
           },
           { headers }
@@ -281,7 +261,9 @@ export function useLearningUnitSection() {
     setQuizAnswers({});
     setQuizScore(0);
 
-    if (!contentData?.quiz || !unitMeta?.title) return;
+    const currentMeta = unitMetaRef.current || unitMeta;
+    if (!contentData?.quiz || !currentMeta?.title) return;
+
     const resetQuiz = contentData.quiz.map((q) => ({
       ...q,
       user_answer: -1,
@@ -294,7 +276,7 @@ export function useLearningUnitSection() {
       await apiClient.patch(
         `/api/v1/workspaces/${workspaceId}/units/quiz-progress`,
         {
-          unit_title: unitMeta.title,
+          unit_title: currentMeta.title,
           quiz_json: resetQuiz,
         },
         { headers }
@@ -309,7 +291,13 @@ export function useLearningUnitSection() {
     unitId,
     unitMeta,
     contentData,
-    hasContent: Boolean(contentData && (contentData.summary || contentData.flashcards || contentData.quiz || contentData.problems)),
+    hasContent: Boolean(
+      contentData &&
+        (contentData.summary ||
+          contentData.flashcards?.length > 0 ||
+          contentData.quiz?.length > 0 ||
+          contentData.problems?.length > 0)
+    ),
     isLoading,
     isGenerating,
     generationProgressText,
@@ -332,6 +320,6 @@ export function useLearningUnitSection() {
 
     // Actions
     onGenerate: handleGenerateContent,
-    refetch: () => fetchUnitContent(unitMeta),
+    refetch: loadUnitData,
   };
 }
