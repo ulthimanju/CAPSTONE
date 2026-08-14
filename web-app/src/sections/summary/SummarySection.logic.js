@@ -1,22 +1,24 @@
 /**
  * SummarySection — Business Logic Layer
- *
- * Fetches workspace summary API payload and handles manual generation trigger.
- * Passes raw state directly to layout layer.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '@/services/api/client';
 import { useAuth } from '@/hooks/useAuth';
 
 export function useSummarySection(workspaceId) {
   const { user } = useAuth();
 
+  // Stable ref for user so fetchSummary doesn't recreate on every render
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+
   const [summaryData, setSummaryData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
 
+  // Stable fetchSummary — only recreates when workspaceId changes, not user
   const fetchSummary = useCallback(async () => {
     if (!workspaceId) return;
     setIsLoading(true);
@@ -24,8 +26,8 @@ export function useSummarySection(workspaceId) {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/summary`, { headers });
       setSummaryData(res.data);
@@ -35,7 +37,7 @@ export function useSummarySection(workspaceId) {
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId, user]);
+  }, [workspaceId]); // no `user` dep — reads via stable ref
 
   const handleGenerateSummary = useCallback(async () => {
     if (!workspaceId) return;
@@ -44,8 +46,8 @@ export function useSummarySection(workspaceId) {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       await apiClient.post(`/api/v1/workspaces/${workspaceId}/summary`, {}, { headers });
     } catch (err) {
@@ -53,8 +55,9 @@ export function useSummarySection(workspaceId) {
       setError(err?.response?.data || err?.message || 'Generation request failed');
       setIsGenerating(false);
     }
-  }, [workspaceId, user]);
+  }, [workspaceId]); // no `user` dep
 
+  // SSE for real-time generation updates — stable because fetchSummary is now stable
   useEffect(() => {
     if (!workspaceId) return;
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -79,14 +82,13 @@ export function useSummarySection(workspaceId) {
             setError(data.message || 'Generation failed');
           }
         }
-      } catch (e) {
-        /* silent catch */
-      }
+      } catch (e) { /* silent */ }
     };
 
     return () => eventSource.close();
-  }, [workspaceId, fetchSummary]);
+  }, [workspaceId, fetchSummary]); // fetchSummary is now stable
 
+  // Initial fetch — runs once on mount (workspaceId changes)
   useEffect(() => {
     fetchSummary();
   }, [fetchSummary]);
