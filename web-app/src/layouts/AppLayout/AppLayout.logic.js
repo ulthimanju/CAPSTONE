@@ -84,7 +84,16 @@ export function useAppLayout() {
         const res  = await apiClient.get('/api/v1/workspaces', { headers });
         const data = res.data;
         if (!cancelled) {
-          setWorkspaces(Array.isArray(data) ? data : (data.workspaces ?? []));
+          const wsList = Array.isArray(data) ? data : (data.workspaces ?? []);
+          setWorkspaces(wsList);
+
+          // Auto-select first workspace and default to summary section if on base /workspaces route
+          if (wsList.length > 0) {
+            const currentWs = extractWorkspaceId(location.pathname);
+            if (!currentWs || location.pathname === '/workspaces' || location.pathname === '/workspaces/') {
+              navigate(`/workspaces/${wsList[0].id}`, { replace: true });
+            }
+          }
         }
       } catch (err) {
         console.error('[AppLayout] Failed to fetch workspaces:', err);
@@ -95,7 +104,7 @@ export function useAppLayout() {
 
     fetchWorkspaces();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, location.pathname, navigate]);
 
   // ── Derived values ───────────────────────────────────────────────────────
   const activeTab        = resolveActiveTab(location.pathname, searchParams);
