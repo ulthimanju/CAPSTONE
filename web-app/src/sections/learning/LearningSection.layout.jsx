@@ -2,14 +2,13 @@
  * LearningSection — Structural Layout Layer
  *
  * Renders structured learning path curriculum units with MarkdownRenderer,
- * individual unit expand/collapse, and an option to inspect raw API JSON payload.
+ * individual unit expand/collapse, and header action via HeaderPortal.
  */
 
 import React, { useState } from 'react';
-import { MarkdownRenderer, Button, Card, Badge } from '@/components/ui';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
-import { BookOpen, CheckCircle, ChevronDown, ChevronUp, Code2, Sparkles } from 'lucide-react';
+import { MarkdownRenderer, Button, Badge } from '@/components/ui';
+import { HeaderPortal } from '@/components/layout/HeaderPortal';
+import { BookOpen, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 export function LearningSectionLayout({
   workspaceId,
@@ -17,10 +16,8 @@ export function LearningSectionLayout({
   isLoading,
   isGenerating,
   error,
-  onRefetch,
   onGenerate,
 }) {
-  const [showRaw, setShowRaw] = useState(false);
   const [expandedUnits, setExpandedUnits] = useState({});
 
   // Extract content payload: backend returns { learning_path: { title, description, units } } or direct
@@ -42,21 +39,18 @@ export function LearningSectionLayout({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', width: '100%' }}>
-      {/* Page Header with Actions */}
-      <PageHeader
-        title={title}
-        description="Structured curriculum and learning modules derived from your workspace documents"
-      >
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <CopyPayloadButton payload={learningData} />
-          <Button variant="secondary" size="sm" onClick={onRefetch} disabled={isLoading || isGenerating}>
-            Refetch Payload
-          </Button>
-          <Button variant="primary" size="sm" onClick={onGenerate} loading={isGenerating} disabled={isLoading}>
-            Generate Learning Path
-          </Button>
-        </div>
-      </PageHeader>
+      {/* Header Action Portal — places Generate / Regenerate Learning Path button on main-header right side */}
+      <HeaderPortal>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onGenerate}
+          loading={isGenerating}
+          disabled={isLoading}
+        >
+          {hasContent ? 'Regenerate Learning Path' : 'Generate Learning Path'}
+        </Button>
+      </HeaderPortal>
 
       {/* Error Banner */}
       {error && (
@@ -217,17 +211,6 @@ export function LearningSectionLayout({
                   {title}
                 </h2>
               </div>
-
-              {/* Raw JSON inspection toggle */}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowRaw(!showRaw)}
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}
-              >
-                <Code2 size={14} style={{ marginRight: 'var(--space-1)' }} />
-                {showRaw ? 'Hide Raw JSON' : 'Inspect Raw JSON'}
-              </Button>
             </div>
 
             {description && (
@@ -236,46 +219,6 @@ export function LearningSectionLayout({
               </div>
             )}
           </div>
-
-          {/* Raw JSON Drawer (collapsible) */}
-          {showRaw && (
-            <div
-              style={{
-                background: 'var(--bg-sunken)',
-                border: '1px solid var(--line)',
-                borderRadius: 'var(--radius-md)',
-                padding: 'var(--space-4)',
-                overflowX: 'auto',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: 'var(--space-2)',
-                  fontSize: 'var(--text-xs)',
-                  color: 'var(--accent)',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: 'var(--weight-semibold)',
-                }}
-              >
-                <span>RAW LEARNING PATH PAYLOAD</span>
-                <span>{JSON.stringify(learningData).length} bytes</span>
-              </div>
-              <pre
-                style={{
-                  margin: 0,
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 'var(--text-xs)',
-                  color: 'var(--text)',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {JSON.stringify(learningData, null, 2)}
-              </pre>
-            </div>
-          )}
 
           {/* Units List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>

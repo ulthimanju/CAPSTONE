@@ -16,7 +16,6 @@ export function LearningSection({ workspaceId: propWorkspaceId }) {
     isLoading,
     isGenerating,
     error,
-    refetch,
     generateLearningPath,
   } = useLearningSection(workspaceId);
 
@@ -27,7 +26,6 @@ export function LearningSection({ workspaceId: propWorkspaceId }) {
       isLoading={isLoading}
       isGenerating={isGenerating}
       error={error}
-      onRefetch={refetch}
       onGenerate={generateLearningPath}
     />
   );
