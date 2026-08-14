@@ -105,6 +105,12 @@ export function useAppLayout() {
 
     // Actions
     onSelectWorkspace: handleSelectWorkspace,
-    onGoHome: () => navigate('/workspaces'),
+    onGoHome: () => {
+      if (activeWorkspaceId) {
+        navigate(`/workspaces/${activeWorkspaceId}`);
+      } else {
+        navigate('/workspaces');
+      }
+    },
   };
 }

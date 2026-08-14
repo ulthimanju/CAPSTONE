@@ -138,7 +138,8 @@ function WorkspaceIndexRedirect() {
 
         if (!cancelled) {
           if (list.length > 0) {
-            navigate(`/workspaces/${list[0].id}/summary`, { replace: true });
+            // Navigate to workspace root — no tab is forced, index route shows summary by default
+            navigate(`/workspaces/${list[0].id}`, { replace: true });
           } else {
             setLoading(false);
           }
