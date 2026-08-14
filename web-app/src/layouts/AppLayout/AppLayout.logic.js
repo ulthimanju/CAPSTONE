@@ -14,14 +14,12 @@ import { apiClient } from '../../services/api/client';
 export function useAppLayout() {
   const navigate = useNavigate();
   const { workspaceId: paramWorkspaceId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const themeCtx = useContext(ThemeContext);
 
   // ── Active tab from URL query params (defaults to 'summary') ───────────────
-  const activeTab = useMemo(() => {
-    return searchParams.get('tab') || 'summary';
-  }, [searchParams]);
+  const activeTab = searchParams.get('tab') || 'summary';
 
   // ── Sidebar UI State ───────────────────────────────────────────────────────
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -100,18 +98,18 @@ export function useAppLayout() {
   const closeWsDropdown = useCallback(() => setIsWsDropdownOpen(false), []);
 
   /**
-   * Set active tab via URL search params (instant, zero page reload)
+   * Set active tab via navigate() which guarantees instant React Router state updates
    */
   const handleSelectTab = useCallback((tabId) => {
     setIsSidebarOpen(false);
+    const wsId = activeWorkspaceId;
+    const base = wsId ? `/workspaces/${wsId}` : '/workspaces';
     if (!tabId || tabId === 'summary') {
-      searchParams.delete('tab');
-      setSearchParams(searchParams);
+      navigate(base);
     } else {
-      searchParams.set('tab', tabId);
-      setSearchParams(searchParams);
+      navigate(`${base}?tab=${tabId}`);
     }
-  }, [searchParams, setSearchParams]);
+  }, [navigate, activeWorkspaceId]);
 
   /**
    * Switch workspace and preserve or reset active tab
@@ -119,7 +117,9 @@ export function useAppLayout() {
   const handleSelectWorkspace = useCallback((ws) => {
     setIsWsDropdownOpen(false);
     const currentTab = searchParams.get('tab');
-    const targetUrl = currentTab ? `/workspaces/${ws.id}?tab=${currentTab}` : `/workspaces/${ws.id}`;
+    const targetUrl = currentTab && currentTab !== 'summary'
+      ? `/workspaces/${ws.id}?tab=${currentTab}`
+      : `/workspaces/${ws.id}`;
     navigate(targetUrl);
   }, [navigate, searchParams]);
 
