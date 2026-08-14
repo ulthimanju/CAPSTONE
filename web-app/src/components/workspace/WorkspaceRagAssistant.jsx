@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { apiClient } from '../../services/api/client';
 import { Spinner } from '../ui/Spinner';
-import { RichMarkdownRenderer } from '../ui/RichMarkdownRenderer';
 import { useAuth } from '../../hooks/useAuth';
 
 /* ─── Derive document states ─────────────────────────────────── */
@@ -232,11 +231,7 @@ const MessageBubble = ({ msg }) => {
         }}
       >
         <div style={{ flex: 1, paddingBottom: 'var(--space-3)' }}>
-          {isUser ? (
-            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.text}</div>
-          ) : (
-            <RichMarkdownRenderer content={msg.text} />
-          )}
+          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.text}</div>
         </div>
 
         {/* Bottom-Right Timestamp inside the bubble */}

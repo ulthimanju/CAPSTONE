@@ -1,0 +1,196 @@
+/* =============================================================================
+ * BUTTON COMPONENT SYSTEM STYLES
+ * Matches button.html specifications & rules.
+ * Uses centralized CSS tokens from index.css.
+ * ============================================================================= */
+
+/* Base button */
+.btn {
+  height: 40px;
+  min-width: 96px;
+  padding: 0 16px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 4px);
+
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* ── Sizes ────────────────────────────────────────────────────────────────── */
+.btn-sm {
+  height: 32px;
+  min-width: 80px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.btn-md {
+  height: 40px;
+  min-width: 96px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.btn-lg {
+  height: 48px;
+  min-width: 112px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+
+/* ── Core Variants ───────────────────────────────────────────────────────── */
+
+/* Primary */
+.btn-primary {
+  background: var(--button-primary-bg, var(--accent));
+  color: #ffffff;
+  border-color: var(--button-primary-bg, var(--accent));
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--button-primary-hover-bg, var(--accent-hover));
+  border-color: var(--button-primary-hover-bg, var(--accent-hover));
+}
+
+/* Secondary */
+.btn-secondary {
+  background: var(--button-secondary-bg, transparent);
+  color: var(--text);
+  border-color: var(--button-secondary-border, var(--line));
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--button-secondary-hover-bg, var(--bg-raised));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Ghost */
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: transparent;
+  min-width: auto;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-raised);
+  color: var(--accent);
+}
+
+/* Outline */
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* Destructive / Danger */
+.btn-danger {
+  background: var(--button-danger-bg, var(--error));
+  color: #ffffff;
+  border-color: var(--button-danger-bg, var(--error));
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--button-danger-hover-bg, var(--error-text));
+  border-color: var(--button-danger-hover-bg, var(--error-text));
+}
+
+/* Success */
+.btn-success {
+  background: var(--button-success-bg, var(--ok));
+  color: #ffffff;
+  border-color: var(--button-success-bg, var(--ok));
+}
+
+.btn-success:hover:not(:disabled) {
+  background: var(--button-success-hover-bg, var(--ok-text));
+  border-color: var(--button-success-hover-bg, var(--ok-text));
+}
+
+/* Link */
+.btn-link {
+  min-width: auto;
+  height: auto;
+  padding: 4px 0;
+  background: transparent;
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.btn-link:hover:not(:disabled) {
+  color: var(--accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Layout Modifiers ─────────────────────────────────────────────────────── */
+
+/* Icon Button (Icon only) */
+.btn-icon {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+}
+
+.btn-sm.btn-icon {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+}
+
+.btn-lg.btn-icon {
+  width: 48px;
+  min-width: 48px;
+  padding: 0;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--bg-raised);
+  border-color: var(--line);
+}
+
+/* Icon + Text */
+.btn-with-icon svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+/* Full Width */
+.btn-full {
+  width: 100%;
+}

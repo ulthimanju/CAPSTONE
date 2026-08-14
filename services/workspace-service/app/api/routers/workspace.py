@@ -1,7 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from app.api.dependencies.auth import get_current_user_id
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.database import (
+    get_db,
     get_workspace_repository,
     get_member_repository,
     get_activity_repository,
@@ -196,15 +198,23 @@ async def get_workspace_learning_path(
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
+    db: AsyncSession = Depends(get_db),
 ):
-    ws = await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
     cached_lp = await cache.get_workspace_learning_path(workspace_id)
     if cached_lp is not None:
         return {"learning_path": cached_lp}
 
-    if ws.learning_path_json:
-        await cache.set_workspace_learning_path(workspace_id, ws.learning_path_json)
-    return {"learning_path": ws.learning_path_json}
+    # Query ONLY the learning_path_json column to prevent loading entire workspace entity
+    from app.infrastructure.database.models import WorkspaceModel
+    from sqlalchemy import select
+    stmt = select(WorkspaceModel.learning_path_json).where(WorkspaceModel.id == workspace_id)
+    result = await db.execute(stmt)
+    lp_json = result.scalar_one_or_none()
+
+    if lp_json:
+        await cache.set_workspace_learning_path(workspace_id, lp_json)
+    return {"learning_path": lp_json}
 
 
 @router.put("/{workspace_id}/learning-path")

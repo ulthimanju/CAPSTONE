@@ -8,7 +8,7 @@ from collections import defaultdict
 import httpx
 from datetime import datetime, timezone
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Header, status
 from app.infrastructure.clients.providers.gemini_provider import GeminiClient, TokenCounter
 from app.schemas.gateway import (
     EmbeddingRequest,
@@ -417,17 +417,8 @@ def select_representative_passages(
 
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
 
-@router.post("/workspaces/{workspace_id}/summary", response_model=WorkspaceSummaryResponse)
-async def generate_workspace_summary_endpoint(
-    workspace_id: str,
-    authorization: str | None = Header(None),
-    user_id: UUID = Depends(get_current_user_id),
-):
+async def _process_summary_generation(workspace_id: str, authorization: str | None, user_id_str: str):
     ws_id = workspace_id
-    user_id_str = str(user_id)
-    await _publish_summary_event(ws_id, "QUEUED", user_id=user_id_str)
-    await _publish_summary_event(ws_id, "STARTED", user_id=user_id_str)
-
     workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
     document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
 
@@ -435,105 +426,80 @@ async def generate_workspace_summary_endpoint(
         await _publish_summary_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
 
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
-            # 1. Fetch Workspace Metadata (forward Authorization header)
             headers = {"Authorization": authorization} if authorization else {}
             ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
             if ws_res.status_code != 200:
                 raise HTTPException(status_code=404, detail="Workspace metadata not found")
             ws_meta = ws_res.json()
 
-            # 2. Fetch Processed Document Chunks
-            chunks_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/chunks", headers=headers)
-            if chunks_res.status_code != 200:
-                raise HTTPException(status_code=500, detail="Failed to retrieve workspace document chunks")
-            chunks_data = chunks_res.json().get("chunks", [])
+            docs_res = await client.get(f"{document_url}/api/v1/documents?workspace_id={ws_id}", headers=headers)
+            docs_list = docs_res.json().get("documents", []) if docs_res.status_code == 200 else []
 
-        # 3. Assemble Workspace Knowledge Map & Representative Detailed Source Context
-        workspace_map = []
-        for index, chunk in enumerate(chunks_data, start=1):
-            knowledge_map = build_chunk_knowledge_map(chunk)
-            if knowledge_map:
-                workspace_map.append(f"--- Workspace Chunk {index} ---\n{knowledge_map}")
+            doc_summaries = []
+            for doc in docs_list:
+                doc_id = doc["id"]
+                sum_res = await client.get(f"{document_url}/api/v1/documents/{doc_id}/summary", headers=headers)
+                if sum_res.status_code == 200 and sum_res.json().get("summary"):
+                    doc_summaries.append(f"--- Document: {doc.get('filename')} ---\n{sum_res.json()['summary']}")
+                else:
+                    kw_res = await client.get(f"{document_url}/api/v1/documents/{doc_id}/keywords", headers=headers)
+                    kws = ", ".join(kw_res.json().get("keywords", [])) if kw_res.status_code == 200 else "None"
+                    doc_summaries.append(f"--- Document: {doc.get('filename')} ---\nKeywords: {kws}")
 
-        workspace_map_text = "\n\n".join(workspace_map)
+        context_parts = [
+            f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
+            f"Description: {ws_meta.get('description', 'N/A')}\n",
+            "--- INDIVIDUAL DOCUMENT SUMMARIES & KNOWLEDGE OUTLINE ---",
+            "\n\n".join(doc_summaries) if doc_summaries else "No processed documents available yet.",
+        ]
 
-        # Select region-representative granular passages across the entire workspace
-        selected_passages = select_representative_passages(chunks_data, detailed_token_budget=9000)
+        assembled_prompt = "\n".join(context_parts)
+        if len(assembled_prompt) > 40000:
+            assembled_prompt = assembled_prompt[:40000] + "\n... [Context Truncated]"
 
-        detailed_sources = []
-        for index, item in enumerate(selected_passages, start=1):
-            detailed_sources.append(
-                f"--- Detailed Excerpt {index} ---\nSource: {item['title']}\n\n{item['content']}"
-            )
-
-        detailed_context = "\n\n".join(detailed_sources)
-
-        assembled_prompt = f"""Workspace Title: {ws_meta.get('name', 'Untitled')}
-Description: {ws_meta.get('description', 'N/A')}
-
-WORKSPACE KNOWLEDGE MAP
-=======================
-
-{workspace_map_text}
-
-DETAILED SOURCE MATERIAL
-========================
-
-{detailed_context}
-
-Generate the comprehensive workspace summary using the entire workspace knowledge map and the detailed source material."""
-
-        # 4. Build System Instruction using WorkspaceSummaryPromptBuilder
         sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction()
 
-        # 5. Call Gemini with configured default model & strict JSON schema validation (32,768 output token budget)
         gemini_res = await gemini_client.generate_text(
             prompt=assembled_prompt,
             system_instruction=sys_instruction,
             model=settings.gemini_default_model,
             temperature=0.3,
             top_p=0.95,
-            max_output_tokens=32768,
+            max_output_tokens=4096,
             response_mime_type="application/json",
             response_schema=WorkspaceSummaryResponse,
         )
 
-        # 6. Validate Response Schema
-        summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
+        ws_summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
 
-        summary_chunk_ids = set()
-        for sec in summary_validated.sections:
-            if sec.source_chunk_ids:
-                summary_chunk_ids.update(sec.source_chunk_ids)
-
-        total_chunks = len(chunks_data)
-        coverage_ratio = (len(summary_chunk_ids) / total_chunks) if total_chunks else 0.0
-        logger.info(
-            "Workspace summary coverage: %.1f%% (%d/%d chunks referenced in section provenance)",
-            coverage_ratio * 100,
-            len(summary_chunk_ids),
-            total_chunks,
-            extra={"workspace_id": ws_id, "coverage_ratio": coverage_ratio}
-        )
-
-        # 7. Persist Summary via workspace-service
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             headers = {"Authorization": authorization} if authorization else {}
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/summary",
-                json={"summary_json": summary_validated.model_dump()},
-                headers=headers
+                json={"summary_json": ws_summary_validated.model_dump()},
+                headers=headers,
             )
 
-        # 8. Publish COMPLETED event
         await _publish_summary_event(ws_id, "COMPLETED", user_id=user_id_str)
-
-        return summary_validated
 
     except Exception as e:
         await _publish_summary_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
         logger.exception("Error generating workspace summary", extra={"workspace_id": ws_id})
-        raise HTTPException(status_code=500, detail=f"Failed to generate workspace summary: {str(e)}")
+
+
+@router.post("/workspaces/{workspace_id}/summary", status_code=status.HTTP_202_ACCEPTED)
+async def generate_workspace_summary_endpoint(
+    workspace_id: str,
+    background_tasks: BackgroundTasks,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
+):
+    ws_id = workspace_id
+    user_id_str = str(user_id)
+    await _publish_summary_event(ws_id, "QUEUED", user_id=user_id_str)
+    await _publish_summary_event(ws_id, "STARTED", user_id=user_id_str)
+    background_tasks.add_task(_process_summary_generation, ws_id, authorization, user_id_str)
+    return {"status": "accepted", "workspace_id": ws_id, "message": "Summary generation started"}
 
 
 from app.domain.prompts.learning_path_prompt_builder import LearningPathPromptBuilder
@@ -566,38 +532,28 @@ async def _publish_learning_path_event(workspace_id: str, status: str, user_id: 
         logger.warning(f"Notice: Failed to publish LearningPathGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
 
-@router.post("/workspaces/{workspace_id}/learning-path", response_model=LearningPathResponse)
-async def generate_workspace_learning_path_endpoint(
-    workspace_id: str,
-    authorization: str | None = Header(None),
-    user_id: UUID = Depends(get_current_user_id),
-):
-    ws_id = workspace_id
-    user_id_str = str(user_id)
-    await _publish_learning_path_event(ws_id, "QUEUED", user_id=user_id_str)
-    await _publish_learning_path_event(ws_id, "STARTED", user_id=user_id_str)
+from fastapi import BackgroundTasks
 
+async def _process_learning_path_generation(workspace_id: str, authorization: str | None, user_id_str: str):
+    ws_id = workspace_id
     workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
     document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
 
     try:
         await _publish_learning_path_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
 
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
-            # 1. Fetch Workspace Metadata
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=120.0)) as client:
             headers = {"Authorization": authorization} if authorization else {}
             ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
             if ws_res.status_code != 200:
                 raise HTTPException(status_code=404, detail="Workspace metadata not found")
             ws_meta = ws_res.json()
 
-            # 2. Fetch Processed Document Hierarchy / Outline (Not full text)
             outline_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/outline", headers=headers)
             if outline_res.status_code != 200:
                 raise HTTPException(status_code=500, detail="Failed to retrieve workspace document outline")
             outline_data = outline_res.json().get("outline", "")
 
-        # 3. Assemble Workspace Outline Context (Max ~13,000 tokens)
         context_parts = [
             f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
             f"Description: {ws_meta.get('description', 'N/A')}\n",
@@ -606,14 +562,11 @@ async def generate_workspace_learning_path_endpoint(
         ]
 
         assembled_prompt = "\n".join(context_parts)
-        # Truncate if outline exceeds 13000 tokens (~52000 chars)
         if len(assembled_prompt) > 52000:
             assembled_prompt = assembled_prompt[:52000] + "\n... [Workspace Outline Truncated]"
 
-        # 4. Build System Instruction using LearningPathPromptBuilder
         sys_instruction = LearningPathPromptBuilder.build_system_instruction()
 
-        # 5. Call Gemini with configured default model & strict JSON schema validation
         gemini_res = await gemini_client.generate_text(
             prompt=assembled_prompt,
             system_instruction=sys_instruction,
@@ -625,10 +578,8 @@ async def generate_workspace_learning_path_endpoint(
             response_schema=LearningPathResponse,
         )
 
-        # 6. Validate Response Schema
         lp_validated = LearningPathResponse.model_validate_json(gemini_res["text"])
 
-        # 7. Persist Learning Path via workspace-service
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             headers = {"Authorization": authorization} if authorization else {}
             await client.put(
@@ -637,15 +588,26 @@ async def generate_workspace_learning_path_endpoint(
                 headers=headers,
             )
 
-        # 8. Publish COMPLETED event
         await _publish_learning_path_event(ws_id, "COMPLETED", user_id=user_id_str)
-
-        return lp_validated
 
     except Exception as e:
         await _publish_learning_path_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
         logger.exception("Error generating workspace learning path", extra={"workspace_id": ws_id})
-        raise HTTPException(status_code=500, detail=f"Failed to generate workspace learning path: {str(e)}")
+
+
+@router.post("/workspaces/{workspace_id}/learning-path", status_code=status.HTTP_202_ACCEPTED)
+async def generate_workspace_learning_path_endpoint(
+    workspace_id: str,
+    background_tasks: BackgroundTasks,
+    authorization: str | None = Header(None),
+    user_id: UUID = Depends(get_current_user_id),
+):
+    ws_id = workspace_id
+    user_id_str = str(user_id)
+    await _publish_learning_path_event(ws_id, "QUEUED", user_id=user_id_str)
+    await _publish_learning_path_event(ws_id, "STARTED", user_id=user_id_str)
+    background_tasks.add_task(_process_learning_path_generation, ws_id, authorization, user_id_str)
+    return {"status": "accepted", "workspace_id": ws_id, "message": "Learning path generation started"}
 
 
 async def _publish_unit_generation_event(

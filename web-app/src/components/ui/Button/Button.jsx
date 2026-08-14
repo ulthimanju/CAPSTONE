@@ -1,13 +1,7 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import { cn } from "@/lib/cn";
-import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
-
-const contentSizeMap = {
-  sm: "xs",
-  md: "sm",
-  lg: "md",
-};
+import "./button.css";
 
 const spinnerColorMap = {
   primary: "default",
@@ -15,79 +9,87 @@ const spinnerColorMap = {
   outline: "primary",
   ghost: "primary",
   danger: "default",
+  success: "default",
+  link: "primary",
 };
 
 /**
- * Generic button component.
- *
- * @param {Object} props
- * @param {React.ReactNode} props.children
- * @param {"primary"|"secondary"|"outline"|"ghost"|"danger"} [props.variant]
- * @param {"sm"|"md"|"lg"} [props.size]
- * @param {string} [props.leftIcon]
- * @param {string} [props.rightIcon]
- * @param {boolean} [props.loading]
- * @param {boolean} [props.disabled]
- * @param {boolean} [props.fullWidth]
- * @param {string} [props.className]
+ * Reusable Button Component system.
+ * Handles primary, secondary, ghost, outline, danger, success, link variants,
+ * sizes (sm, md, lg), fullWidth, icon composition, and native HTML button props.
  */
-export function Button({
-  children,
-  variant = "primary",
-  size = "md",
-  leftIcon,
-  rightIcon,
-  loading = false,
-  disabled = false,
-  fullWidth = false,
-  className,
-  style,
-  ...props
-}) {
-  const contentSize = contentSizeMap[size];
-  const spinnerColor = spinnerColorMap[variant];
+export const Button = forwardRef(function Button(
+  {
+    children,
+    variant = "primary",
+    size = "md",
+    fullWidth = false,
+    icon,
+    leftIcon,
+    rightIcon,
+    loading = false,
+    disabled = false,
+    type = "button",
+    className,
+    ...props
+  },
+  ref
+) {
   const isDisabled = disabled || loading;
+  const isIconOnly = !children && Boolean(icon || leftIcon);
 
-  const sizeClass = {
-    sm: "btn-sm",
-    md: "",
-    lg: "btn-lg",
-  }[size] || "";
-
+  // Variant class mapping
   const variantClass = {
     primary: "btn-primary",
     secondary: "btn-secondary",
-    outline: "btn-outline",
     ghost: "btn-ghost",
+    outline: "btn-outline",
     danger: "btn-danger",
+    success: "btn-success",
+    link: "btn-link",
   }[variant] || "btn-primary";
+
+  // Size class mapping
+  const sizeClass = {
+    sm: "btn-sm",
+    md: "btn-md",
+    lg: "btn-lg",
+  }[size] || "btn-md";
+
+  const renderIcon = (iconToRender) => {
+    if (!iconToRender) return null;
+    return (
+      <span className="btn-icon-wrapper" style={{ display: "inline-flex", alignItems: "center" }}>
+        {iconToRender}
+      </span>
+    );
+  };
 
   return (
     <button
-      type="button"
+      ref={ref}
+      type={type}
       className={cn(
         "btn",
         variantClass,
         sizeClass,
+        isIconOnly && "btn-icon",
+        (icon || leftIcon || rightIcon) && !isIconOnly && "btn-with-icon",
         fullWidth && "btn-full",
         className
       )}
-      style={{
-        width: fullWidth ? '100%' : undefined,
-        ...style,
-      }}
       disabled={isDisabled}
       {...props}
     >
       {loading ? (
-        <Spinner size={contentSize} color={spinnerColor} />
+        <Spinner size={size === "lg" ? "md" : "sm"} color={spinnerColorMap[variant] || "default"} />
       ) : (
-        leftIcon && <Icon name={leftIcon} size={contentSize} />
+        renderIcon(icon || leftIcon)
       )}
 
-      <span>{children}</span>
+      {children && <span>{children}</span>}
 
-      {!loading && rightIcon && <Icon name={rightIcon} size={contentSize} />}
+      {!loading && renderIcon(rightIcon)}
     </button>
   );
-}
+});

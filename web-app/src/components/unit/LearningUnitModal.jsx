@@ -3,7 +3,6 @@ import { apiClient } from '../../services/api/client';
 import { tokenStorage } from '../../lib/tokenStorage';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { Spinner } from '../ui/Spinner';
-import { RichMarkdownRenderer } from '../ui/RichMarkdownRenderer';
 import { useAuth } from '../../hooks/useAuth';
 
 export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
@@ -322,7 +321,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
                       <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-primary)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-1-5)' }}>
                         <i className="ti ti-notes"></i> Overview
                       </h4>
-                      <RichMarkdownRenderer content={contentData.summary.overview} />
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{contentData.summary.overview}</div>
                     </div>
                   )}
 
@@ -335,7 +334,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
                       <ul style={{ paddingLeft: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', margin: 0 }}>
                         {contentData.summary.key_takeaways.map((item, idx) => (
                           <li key={idx} style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                            <RichMarkdownRenderer content={item} compact />
+                            <span>{item}</span>
                           </li>
                         ))}
                       </ul>
@@ -353,10 +352,7 @@ export const LearningUnitModal = ({ open, onClose, unit, workspaceId }) => {
                             <h4 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2-5)', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 'var(--space-1-5)' }}>
                               {sec.title}
                             </h4>
-                            <RichMarkdownRenderer
-                              content={sec.content}
-                              onMermaidError={() => hideSummarySection(idx)}
-                            />
+                            <div style={{ whiteSpace: 'pre-wrap' }}>{sec.content}</div>
                           </div>
                         );
                       })}

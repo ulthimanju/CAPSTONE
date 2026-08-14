@@ -29,11 +29,6 @@ Treat this hierarchy as the knowledge map of the workspace and infer an optimal 
    Each unit must be lightweight and contain ONLY the following fields:
    - `title`: Clear, descriptive title of the learning milestone.
    - `description`: 1–2 concise sentences introducing the scope and focus of the unit.
-   - `learning_objectives`: Exactly 2 to 5 measurable learning objectives.
-     - Each objective MUST begin with an educational action verb (e.g., Explain, Describe, Analyze, Compare, Design, Implement, Evaluate, Differentiate, Apply).
-     - Objectives must define what the learner will accomplish after completing the unit.
-   - `tags`: 3 to 8 relevant concept/technology tags (e.g., "sql", "joins", "normalization", "relational-algebra").
-     - NEVER use generic tags like "study", "notes", "learning", or "education".
 
 4. **Formatting & Output**:
    - Output ONLY valid JSON matching the requested schema.

@@ -1,0 +1,183 @@
+/* =============================================================================
+ * SELECTOR COMPONENT SYSTEM STYLES
+ * Matches Selector Component System specifications.
+ * Uses centralized theme tokens from index.css.
+ * ============================================================================= */
+
+.selector {
+  position: relative;
+  width: 100%;
+  font-family: var(--font-body);
+}
+
+/* ── Trigger ──────────────────────────────────────────────────────────────── */
+.selector-trigger {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--bg);
+  color: var(--text);
+
+  font-size: var(--text-base, 14px);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.selector-trigger:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.selector-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.selector-trigger.is-open {
+  border-color: var(--accent);
+}
+
+.selector-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: var(--bg-sunken);
+  border-color: var(--line-soft);
+  color: var(--text-faint);
+}
+
+.selector-value-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.selector-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.selector-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selector-value.is-placeholder {
+  color: var(--text-muted);
+}
+
+.selector-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 150ms ease, color 150ms ease;
+}
+
+.selector-trigger:hover:not(:disabled) .selector-chevron,
+.selector-trigger.is-open .selector-chevron {
+  color: var(--accent);
+}
+
+.selector-chevron.is-rotated {
+  transform: rotate(180deg);
+}
+
+/* ── Dropdown Menu ────────────────────────────────────────────────────────── */
+.selector-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: var(--z-dropdown, 100);
+
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 4px);
+  box-shadow: var(--shadow-md);
+
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Option ───────────────────────────────────────────────────────────────── */
+.selector-option {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  border: 0;
+  background: transparent;
+  color: var(--text);
+
+  font-family: var(--font-body);
+  font-size: var(--text-base, 14px);
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.selector-option-label-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.selector-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selector-option:hover:not(:disabled) {
+  background: var(--bg-raised);
+  color: var(--accent);
+}
+
+.selector-option.is-selected {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.selector-option-check {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.selector-option:disabled,
+.selector-option.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  color: var(--text-faint);
+}

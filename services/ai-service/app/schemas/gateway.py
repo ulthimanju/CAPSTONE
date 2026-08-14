@@ -102,8 +102,6 @@ class ChatRequest(BaseModel):
 class LearningUnit(BaseModel):
     title: str = Field(..., description="Title of the learning milestone")
     description: str = Field(..., description="1-2 sentence introduction to unit scope")
-    learning_objectives: list[str] = Field(default_factory=list, description="2-5 measurable objectives with action verbs")
-    tags: list[str] = Field(default_factory=list, description="3-8 concept/tech tags")
 
 
 class LearningPathResponse(BaseModel):

@@ -4,7 +4,7 @@ import { API_ENDPOINTS } from '../../constants/api';
 
 export const authService = {
   getGoogleLoginUrl: () => {
-    return `${apiConfig.baseUrl}${API_ENDPOINTS.OAUTH.GOOGLE_LOGIN}`;
+    return API_ENDPOINTS.OAUTH.GOOGLE_LOGIN;
   },
   refreshToken: async (token = null) => {
     const payload = token ? { refresh_token: token } : {};

@@ -332,6 +332,33 @@ async def proxy_identity(request: Request, path: str = ""):
     return await proxy_request(settings.service_identity_url, request)
 
 
+@app.api_route("/api/v1/workspaces/{workspace_id}/learning-path", methods=["POST"])
+async def proxy_learning_path_generation(request: Request, workspace_id: str):
+    target_url = f"{settings.service_ai_url}/api/v1/ai/workspaces/{workspace_id}/learning-path"
+    if request.url.query:
+        target_url += f"?{request.url.query}"
+    headers = dict(request.headers)
+    headers.pop("host", None)
+    req_id = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    headers["X-Request-ID"] = req_id
+    headers["X-Correlation-ID"] = req_id
+    content = await request.body()
+    req = client.build_request(
+        method=request.method,
+        url=target_url,
+        headers=headers,
+        content=content,
+        cookies=request.cookies,
+    )
+    res = await client.send(req, stream=True)
+    return StreamingResponse(
+        res.aiter_raw(),
+        status_code=res.status_code,
+        headers=dict(res.headers),
+        background=None,
+    )
+
+
 @app.api_route("/api/v1/workspaces/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/workspaces", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/invitations/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
