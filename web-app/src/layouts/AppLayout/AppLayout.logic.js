@@ -57,7 +57,7 @@ export function useAppLayout() {
   }, [user]);
 
   // ── Active Workspace derivation ───────────────────────────────────────────
-  const activeWorkspaceId = paramWorkspaceId || (workspaces.length > 0 ? workspaces[0]?.id : null);
+  const activeWorkspaceId = paramWorkspaceId ?? null;
   const activeWorkspace = useMemo(() => {
     return workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0] ?? null;
   }, [workspaces, activeWorkspaceId]);

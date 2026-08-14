@@ -37,7 +37,21 @@ function SummaryRoute() {
 
 function LearningRoute() {
   const { workspaceId } = useParams();
-  return <LearningSection workspaceId={workspaceId} />;
+
+  return (
+    <div
+      style={{
+        padding: '40px',
+        background: 'red',
+        color: 'white',
+        fontSize: '32px',
+        fontWeight: 'bold',
+        borderRadius: '8px',
+      }}
+    >
+      LEARNING ROUTE IS RENDERING — {workspaceId}
+    </div>
+  );
 }
 
 function DocumentsRoute() {
