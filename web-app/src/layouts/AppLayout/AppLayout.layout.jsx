@@ -19,7 +19,7 @@
  */
 
 import React, { useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { Selector } from '../../components/ui/Selector';
@@ -74,6 +74,7 @@ function WorkspaceSelector({ workspaces, activeWorkspaceId, onSelect }) {
 
 function SidebarItem({ item, workspaceId, onAction }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const themeCtx = useContext(ThemeContext);
   const active   = isItemActive(item, location);
 
@@ -101,12 +102,16 @@ function SidebarItem({ item, workspaceId, onAction }) {
     );
   }
 
-  // Navigation items — render as Link with explicit onClick navigation
+  // Navigation items — render as Link with explicit onClick to guarantee state transition
   const resolvedHref = resolvePath(item, workspaceId) ?? '/workspaces';
 
   return (
     <Link
       to={resolvedHref}
+      onClick={(e) => {
+        e.preventDefault();
+        navigate(resolvedHref);
+      }}
       className={`sidebar-item${active ? ' is-active' : ''}`}
       aria-current={active ? 'page' : undefined}
     >
