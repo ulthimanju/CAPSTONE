@@ -1,10 +1,10 @@
 /**
  * AppLayout — Business Logic Layer
  *
- * Handles workspace auto-selection, theme toggle, and workspace switching.
+ * Handles workspace fetching, active workspace derivation, and theme toggling.
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
+import { useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -44,11 +44,6 @@ export function useAppLayout() {
 
         if (!isCancelled) {
           setWorkspaces(list);
-
-          // Auto-select first workspace if on root /workspaces
-          if (list.length > 0 && (!paramWorkspaceId || location.pathname === '/workspaces' || location.pathname === '/workspaces/')) {
-            navigate(`/workspaces/${list[0].id}/summary`, { replace: true });
-          }
         }
       } catch (err) {
         console.error('[AppLayout] Failed to load workspaces:', err);
@@ -59,7 +54,7 @@ export function useAppLayout() {
 
     loadWorkspaces();
     return () => { isCancelled = true; };
-  }, [user, paramWorkspaceId, location.pathname, navigate]);
+  }, [user]);
 
   // ── Active Workspace derivation ───────────────────────────────────────────
   const activeWorkspaceId = paramWorkspaceId || (workspaces.length > 0 ? workspaces[0]?.id : null);
