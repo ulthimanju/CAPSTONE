@@ -1,26 +1,16 @@
 /**
  * ChatSection — UI Composition Layer
- *
- * Connects useChatSection hook to ChatSectionLayout.
  */
 
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import { useChatSection } from './ChatSection.logic';
 import { ChatSectionLayout } from './ChatSection.layout';
-import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
 
-export function ChatHeaderActions({ workspaceId }) {
-  const { chatResponse, searchResults } = useChatSection(workspaceId);
-  const payloadToCopy = chatResponse || searchResults || null;
+export function ChatSection({ workspaceId: propWorkspaceId }) {
+  const { workspaceId: paramWorkspaceId } = useParams();
+  const workspaceId = propWorkspaceId || paramWorkspaceId;
 
-  return (
-    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-      <CopyPayloadButton payload={payloadToCopy} />
-    </div>
-  );
-}
-
-export function ChatSection({ workspaceId }) {
   const {
     question,
     setQuestion,

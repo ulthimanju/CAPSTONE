@@ -1,18 +1,19 @@
 /**
  * InvitationsSection — Business Logic Layer
  *
- * Handles listing pending invitations (`GET /api/v1/invitations/pending`),
- * accepting an invitation (`POST /api/v1/invitations/:id/accept`),
- * and rejecting an invitation (`POST /api/v1/invitations/:id/reject`).
- * Directly passes raw received API payload to layout layer.
+ * Handles listing pending invitations, accepting, and rejecting invitations.
+ * Uses stable userRef and runs effects cleanly.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '@/services/api/client';
 import { useAuth } from '@/hooks/useAuth';
 
 export function useInvitationsSection() {
   const { user } = useAuth();
+
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const [invitationsData, setInvitationsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +25,8 @@ export function useInvitationsSection() {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       const res = await apiClient.get('/api/v1/invitations/pending', { headers });
       setInvitationsData(res.data);
@@ -35,7 +36,7 @@ export function useInvitationsSection() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   const handleAcceptInvitation = useCallback(
     async (invitationId) => {
@@ -44,8 +45,8 @@ export function useInvitationsSection() {
 
       try {
         const headers = {};
-        if (user?.id) headers['X-User-ID'] = user.id;
-        if (user?.email) headers['X-User-Email'] = user.email;
+        if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+        if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
         await apiClient.post(`/api/v1/invitations/${invitationId}/accept`, {}, { headers });
         await fetchInvitations();
@@ -54,7 +55,7 @@ export function useInvitationsSection() {
         setError(err?.response?.data || err?.message || 'Failed to accept invitation');
       }
     },
-    [user, fetchInvitations]
+    [fetchInvitations]
   );
 
   const handleRejectInvitation = useCallback(
@@ -64,8 +65,8 @@ export function useInvitationsSection() {
 
       try {
         const headers = {};
-        if (user?.id) headers['X-User-ID'] = user.id;
-        if (user?.email) headers['X-User-Email'] = user.email;
+        if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+        if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
         await apiClient.post(`/api/v1/invitations/${invitationId}/reject`, {}, { headers });
         await fetchInvitations();
@@ -74,7 +75,7 @@ export function useInvitationsSection() {
         setError(err?.response?.data || err?.message || 'Failed to reject invitation');
       }
     },
-    [user, fetchInvitations]
+    [fetchInvitations]
   );
 
   useEffect(() => {

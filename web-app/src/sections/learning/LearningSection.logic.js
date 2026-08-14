@@ -2,15 +2,18 @@
  * LearningSection — Business Logic Layer
  *
  * Handles fetching learning path API payload and manual AI generation trigger.
- * Passes raw API payload directly to layout layer.
+ * Uses stable userRef and runs effects cleanly per workspaceId lifecycle.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '@/services/api/client';
 import { useAuth } from '@/hooks/useAuth';
 
 export function useLearningSection(workspaceId) {
   const { user } = useAuth();
+
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const [learningData, setLearningData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +27,8 @@ export function useLearningSection(workspaceId) {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
       setLearningData(res.data);
@@ -35,7 +38,7 @@ export function useLearningSection(workspaceId) {
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId, user]);
+  }, [workspaceId]);
 
   const handleGenerateLearningPath = useCallback(async () => {
     if (!workspaceId) return;
@@ -44,8 +47,8 @@ export function useLearningSection(workspaceId) {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       await apiClient.post(`/api/v1/workspaces/${workspaceId}/learning-path`, {}, { headers });
     } catch (err) {
@@ -53,7 +56,7 @@ export function useLearningSection(workspaceId) {
       setError(err?.response?.data || err?.message || 'Generation request failed');
       setIsGenerating(false);
     }
-  }, [workspaceId, user]);
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!workspaceId) return;

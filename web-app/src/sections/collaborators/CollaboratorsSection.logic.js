@@ -1,18 +1,19 @@
 /**
  * CollaboratorsSection — Business Logic Layer
  *
- * Handles listing workspace members (`GET /api/v1/workspaces/:id/members`),
- * inviting new collaborators (`POST /api/v1/workspaces/:id/members`),
- * and removing members (`DELETE /api/v1/workspaces/:id/members/:memberUserId`).
- * Directly passes raw received API payload to layout layer.
+ * Handles listing workspace members, inviting new collaborators, and removing members.
+ * Uses stable userRef and runs effects cleanly per workspaceId lifecycle.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '@/services/api/client';
 import { useAuth } from '@/hooks/useAuth';
 
 export function useCollaboratorsSection(workspaceId) {
   const { user } = useAuth();
+
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const [membersData, setMembersData] = useState(null);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -28,8 +29,8 @@ export function useCollaboratorsSection(workspaceId) {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/members`, { headers });
       setMembersData(res.data);
@@ -39,7 +40,7 @@ export function useCollaboratorsSection(workspaceId) {
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId, user]);
+  }, [workspaceId]);
 
   const handleInviteCollaborator = useCallback(async () => {
     if (!workspaceId || !inviteEmail.trim()) return;
@@ -48,8 +49,8 @@ export function useCollaboratorsSection(workspaceId) {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       await apiClient.post(
         `/api/v1/workspaces/${workspaceId}/members`,
@@ -67,7 +68,7 @@ export function useCollaboratorsSection(workspaceId) {
     } finally {
       setIsInviting(false);
     }
-  }, [workspaceId, inviteEmail, inviteRole, user, fetchMembers]);
+  }, [workspaceId, inviteEmail, inviteRole, fetchMembers]);
 
   const handleRemoveMember = useCallback(
     async (memberUserId) => {
@@ -76,8 +77,8 @@ export function useCollaboratorsSection(workspaceId) {
 
       try {
         const headers = {};
-        if (user?.id) headers['X-User-ID'] = user.id;
-        if (user?.email) headers['X-User-Email'] = user.email;
+        if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+        if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
         await apiClient.delete(`/api/v1/workspaces/${workspaceId}/members/${memberUserId}`, { headers });
         await fetchMembers();
@@ -86,7 +87,7 @@ export function useCollaboratorsSection(workspaceId) {
         setError(err?.response?.data || err?.message || 'Failed to remove member');
       }
     },
-    [workspaceId, user, fetchMembers]
+    [workspaceId, fetchMembers]
   );
 
   useEffect(() => {

@@ -2,15 +2,18 @@
  * DocumentsSection — Business Logic Layer
  *
  * Handles fetching documents list, file upload (raw form-data), and deleting documents.
- * Passes raw received API payload directly to layout layer.
+ * Uses stable userRef and runs effects cleanly per workspaceId lifecycle.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '@/services/api/client';
 import { useAuth } from '@/hooks/useAuth';
 
 export function useDocumentsSection(workspaceId) {
   const { user } = useAuth();
+
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const [documentsData, setDocumentsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +27,8 @@ export function useDocumentsSection(workspaceId) {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       const res = await apiClient.get(`/api/v1/documents?workspace_id=${workspaceId}`, { headers });
       setDocumentsData(res.data);
@@ -35,7 +38,7 @@ export function useDocumentsSection(workspaceId) {
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId, user]);
+  }, [workspaceId]);
 
   const handleUploadFile = useCallback(async (file) => {
     if (!workspaceId || !file) return;
@@ -50,8 +53,8 @@ export function useDocumentsSection(workspaceId) {
       const headers = {
         'Content-Type': 'multipart/form-data',
       };
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       await apiClient.post('/api/v1/documents/raw', formData, { headers });
       await fetchDocuments();
@@ -61,7 +64,7 @@ export function useDocumentsSection(workspaceId) {
     } finally {
       setIsUploading(false);
     }
-  }, [workspaceId, user, fetchDocuments]);
+  }, [workspaceId, fetchDocuments]);
 
   const handleDeleteDocument = useCallback(async (documentId) => {
     if (!documentId) return;
@@ -69,8 +72,8 @@ export function useDocumentsSection(workspaceId) {
 
     try {
       const headers = {};
-      if (user?.id) headers['X-User-ID'] = user.id;
-      if (user?.email) headers['X-User-Email'] = user.email;
+      if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
+      if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
       await apiClient.delete(`/api/v1/documents/${documentId}`, { headers });
       await fetchDocuments();
@@ -78,7 +81,7 @@ export function useDocumentsSection(workspaceId) {
       console.error('[DocumentsSection] Delete failed:', err);
       setError(err?.response?.data || err?.message || 'Delete failed');
     }
-  }, [user, fetchDocuments]);
+  }, [fetchDocuments]);
 
   useEffect(() => {
     fetchDocuments();

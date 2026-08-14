@@ -3,26 +3,14 @@
  */
 
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import { useCollaboratorsSection } from './CollaboratorsSection.logic';
 import { CollaboratorsSectionLayout } from './CollaboratorsSection.layout';
-import { Button } from '@/components/ui/Button';
 
-import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
+export function CollaboratorsSection({ workspaceId: propWorkspaceId }) {
+  const { workspaceId: paramWorkspaceId } = useParams();
+  const workspaceId = propWorkspaceId || paramWorkspaceId;
 
-export function CollaboratorsHeaderActions({ workspaceId }) {
-  const { membersData, isLoading, isInviting, refetch } = useCollaboratorsSection(workspaceId);
-
-  return (
-    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-      <CopyPayloadButton payload={membersData} />
-      <Button variant="secondary" size="sm" onClick={refetch} disabled={isLoading || isInviting}>
-        Refetch Members
-      </Button>
-    </div>
-  );
-}
-
-export function CollaboratorsSection({ workspaceId }) {
   const {
     membersData,
     inviteEmail,

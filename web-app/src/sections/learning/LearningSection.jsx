@@ -3,29 +3,14 @@
  */
 
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import { useLearningSection } from './LearningSection.logic';
 import { LearningSectionLayout } from './LearningSection.layout';
-import { Button } from '@/components/ui/Button';
 
-import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
+export function LearningSection({ workspaceId: propWorkspaceId }) {
+  const { workspaceId: paramWorkspaceId } = useParams();
+  const workspaceId = propWorkspaceId || paramWorkspaceId;
 
-export function LearningHeaderActions({ workspaceId }) {
-  const { learningData, isLoading, isGenerating, refetch, generateLearningPath } = useLearningSection(workspaceId);
-
-  return (
-    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-      <CopyPayloadButton payload={learningData} />
-      <Button variant="secondary" size="sm" onClick={refetch} disabled={isLoading || isGenerating}>
-        Refetch Payload
-      </Button>
-      <Button variant="primary" size="sm" onClick={generateLearningPath} loading={isGenerating} disabled={isLoading}>
-        Generate Learning Path
-      </Button>
-    </div>
-  );
-}
-
-export function LearningSection({ workspaceId }) {
   const {
     learningData,
     isLoading,

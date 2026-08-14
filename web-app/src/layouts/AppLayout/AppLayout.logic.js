@@ -1,14 +1,17 @@
 /**
  * AppLayout — Business Logic Layer
  *
- * Handles workspace fetching, active workspace derivation, and theme toggling.
+ * Consumes useWorkspaceStore for workspace collection and derives UI states.
+ * Uses location and params to keep URL strictly authoritative.
  */
 
 import { useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
-import { apiClient } from '../../services/api/client';
+import { useWorkspaceStore } from '../../store/workspaceStore';
+
+const WORKSPACE_TABS = ['summary', 'learning', 'documents', 'chat', 'collaborators', 'invitations'];
 
 export function useAppLayout() {
   const navigate = useNavigate();
@@ -17,49 +20,27 @@ export function useAppLayout() {
   const { user, logout } = useAuth();
   const themeCtx = useContext(ThemeContext);
 
+  const { workspaces, isLoading: isLoadingWorkspaces, fetchWorkspaces } = useWorkspaceStore();
+
   // ── Sidebar Drawer UI State ────────────────────────────────────────────────
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [workspaces, setWorkspaces] = useState([]);
-  const [isLoadingWorkspaces, setIsLoadingWorkspaces] = useState(false);
 
   // Close sidebar on mobile route change
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
 
-  // Fetch workspaces once authenticated
+  // Fetch workspaces once authenticated (managed cleanly by Zustand store)
   useEffect(() => {
-    if (!user) return;
-    let isCancelled = false;
+    if (user) {
+      fetchWorkspaces(user);
+    }
+  }, [user, fetchWorkspaces]);
 
-    const loadWorkspaces = async () => {
-      setIsLoadingWorkspaces(true);
-      try {
-        const headers = {};
-        if (user?.id) headers['X-User-ID'] = user.id;
-        if (user?.email) headers['X-User-Email'] = user.email;
-
-        const res = await apiClient.get('/api/v1/workspaces', { headers });
-        const list = Array.isArray(res.data) ? res.data : (res.data?.workspaces ?? []);
-
-        if (!isCancelled) {
-          setWorkspaces(list);
-        }
-      } catch (err) {
-        console.error('[AppLayout] Failed to load workspaces:', err);
-      } finally {
-        if (!isCancelled) setIsLoadingWorkspaces(false);
-      }
-    };
-
-    loadWorkspaces();
-    return () => { isCancelled = true; };
-  }, [user]);
-
-  // ── Active Workspace derivation ───────────────────────────────────────────
+  // ── Active Workspace derivation (strictly URL authoritative) ───────────────
   const activeWorkspaceId = paramWorkspaceId ?? null;
   const activeWorkspace = useMemo(() => {
-    return workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0] ?? null;
+    return workspaces.find((w) => w.id === activeWorkspaceId) ?? null;
   }, [workspaces, activeWorkspaceId]);
 
   // ── User initials ─────────────────────────────────────────────────────────
@@ -72,12 +53,11 @@ export function useAppLayout() {
   const userName = user?.name || (user?.email ? user.email.split('@')[0] : 'User');
   const userEmail = user?.email || '';
 
-  // ── Workspace switch handler (preserves current subpath) ───────────────────
+  // ── Workspace switch handler (preserves valid current tab) ──────────────────
   const handleSelectWorkspace = useCallback((ws) => {
-    const parts = location.pathname.split('/').filter(Boolean);
-    // e.g. ['workspaces', 'ws-123', 'learning'] -> currentSubpath = 'learning'
-    const currentSubpath = parts.length >= 3 ? parts[2] : 'summary';
-    navigate(`/workspaces/${ws.id}/${currentSubpath}`);
+    const match = location.pathname.match(/^\/workspaces\/[^/]+\/([^/]+)$/);
+    const currentTab = (match?.[1] && WORKSPACE_TABS.includes(match[1])) ? match[1] : 'summary';
+    navigate(`/workspaces/${ws.id}/${currentTab}`);
   }, [navigate, location.pathname]);
 
   return {
@@ -107,7 +87,7 @@ export function useAppLayout() {
     onSelectWorkspace: handleSelectWorkspace,
     onGoHome: () => {
       if (activeWorkspaceId) {
-        navigate(`/workspaces/${activeWorkspaceId}`);
+        navigate(`/workspaces/${activeWorkspaceId}/summary`);
       } else {
         navigate('/workspaces');
       }

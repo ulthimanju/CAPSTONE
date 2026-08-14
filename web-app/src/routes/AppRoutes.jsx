@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, Outlet, useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
 import { AppLayout } from '../layouts/AppLayout';
 
@@ -10,12 +10,12 @@ import { ChatSection } from '@/sections/chat';
 import { CollaboratorsSection } from '@/sections/collaborators';
 import { InvitationsSection } from '@/sections/invitations';
 import { AuthSection } from '@/sections/auth';
-import { apiClient } from '@/services/api/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 import { Spinner } from '@/components/ui/Spinner';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AppLayoutShell — persistent shell containing Sidebar, Header & Outlet
+// AppLayoutShell — routing boundary composing persistent layout with Outlet
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AppLayoutShell() {
@@ -27,97 +27,33 @@ function AppLayoutShell() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Route wrappers passing workspaceId param down to sections
-// ─────────────────────────────────────────────────────────────────────────────
-
-function SummaryRoute() {
-  const { workspaceId } = useParams();
-  return <SummarySection workspaceId={workspaceId} />;
-}
-
-function LearningRoute() {
-  const { workspaceId } = useParams();
-
-  return (
-    <div
-      style={{
-        padding: '40px',
-        background: 'red',
-        color: 'white',
-        fontSize: '32px',
-        fontWeight: 'bold',
-        borderRadius: '8px',
-      }}
-    >
-      LEARNING ROUTE IS RENDERING — {workspaceId}
-    </div>
-  );
-}
-
-function DocumentsRoute() {
-  const { workspaceId } = useParams();
-  return <DocumentsSection workspaceId={workspaceId} />;
-}
-
-function ChatRoute() {
-  const { workspaceId } = useParams();
-  return <ChatSection workspaceId={workspaceId} />;
-}
-
-function CollaboratorsRoute() {
-  const { workspaceId } = useParams();
-  return <CollaboratorsSection workspaceId={workspaceId} />;
-}
-
-function InvitationsRoute() {
-  return <InvitationsSection />;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // WorkspaceIndexRedirect — /workspaces → /workspaces/:firstId/summary
 // ─────────────────────────────────────────────────────────────────────────────
 
 function WorkspaceIndexRedirect() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const { workspaces, isLoading, isInitialized, fetchWorkspaces } = useWorkspaceStore();
 
   useEffect(() => {
     if (!user) return;
-    let cancelled = false;
-
-    const run = async () => {
-      try {
-        const headers = {};
-        if (user?.id) headers['X-User-ID'] = user.id;
-        if (user?.email) headers['X-User-Email'] = user.email;
-
-        const res = await apiClient.get('/api/v1/workspaces', { headers });
-        const list = Array.isArray(res.data) ? res.data : (res.data?.workspaces ?? []);
-
-        if (!cancelled) {
-          if (list.length > 0) {
-            navigate(`/workspaces/${list[0].id}/summary`, { replace: true });
-          } else {
-            setLoading(false);
-          }
-        }
-      } catch (err) {
-        console.error('[WorkspaceIndexRedirect]', err);
-        if (!cancelled) setLoading(false);
+    fetchWorkspaces(user).then((list) => {
+      if (list && list.length > 0) {
+        navigate(`/workspaces/${list[0].id}/summary`, { replace: true });
       }
-    };
+    });
+  }, [user, fetchWorkspaces, navigate]);
 
-    run();
-    return () => { cancelled = true; };
-  }, [user, navigate]);
-
-  if (loading) {
+  if (isLoading || !isInitialized) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size="lg" />
       </div>
     );
+  }
+
+  if (workspaces.length > 0) {
+    return <Navigate to={`/workspaces/${workspaces[0].id}/summary`} replace />;
   }
 
   return (
@@ -130,7 +66,7 @@ function WorkspaceIndexRedirect() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AppRoutes
+// AppRoutes — Single Source of Truth for Routing
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const AppRoutes = () => {
@@ -144,22 +80,22 @@ export const AppRoutes = () => {
         path="/workspaces/:workspaceId"
         element={<ProtectedRoute><AppLayoutShell /></ProtectedRoute>}
       >
-        <Route path="summary" element={<SummaryRoute />} />
-        <Route path="learning" element={<LearningRoute />} />
-        <Route path="documents" element={<DocumentsRoute />} />
-        <Route path="chat" element={<ChatRoute />} />
-        <Route path="collaborators" element={<CollaboratorsRoute />} />
-        <Route path="invitations" element={<InvitationsRoute />} />
+        <Route path="summary" element={<SummarySection />} />
+        <Route path="learning" element={<LearningSection />} />
+        <Route path="documents" element={<DocumentsSection />} />
+        <Route path="chat" element={<ChatSection />} />
+        <Route path="collaborators" element={<CollaboratorsSection />} />
+        <Route path="invitations" element={<InvitationsSection />} />
         <Route index element={<Navigate to="summary" replace />} />
       </Route>
 
-      {/* /workspaces — pick first workspace and redirect */}
+      {/* Root workspaces redirect */}
       <Route
         path="/workspaces"
         element={<ProtectedRoute><WorkspaceIndexRedirect /></ProtectedRoute>}
       />
 
-      {/* Fallback */}
+      {/* Catch-all fallback */}
       <Route path="*" element={<Navigate to="/workspaces" replace />} />
     </Routes>
   );
