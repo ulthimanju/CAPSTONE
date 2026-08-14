@@ -17,25 +17,42 @@ import { AuthSection } from '@/sections/auth';
 function WorkspaceLayoutWrapper() {
   const { workspaceId } = useParams();
   const [searchParams] = useSearchParams();
-  const tab = searchParams.get('tab');
+  const tab = searchParams.get('tab') || 'summary';
 
   const renderSection = () => {
-    if (tab === 'learning') return <LearningSection workspaceId={workspaceId} />;
-    if (tab === 'documents') return <DocumentsSection workspaceId={workspaceId} />;
-    if (tab === 'chat') return <ChatSection workspaceId={workspaceId} />;
-    if (tab === 'collaborators') return <CollaboratorsSection workspaceId={workspaceId} />;
-    if (tab === 'invitations') return <InvitationsSection />;
-    return <SummarySection workspaceId={workspaceId} />;
+    switch (tab) {
+      case 'learning':
+        return <LearningSection key={`learning-${workspaceId}`} workspaceId={workspaceId} />;
+      case 'documents':
+        return <DocumentsSection key={`documents-${workspaceId}`} workspaceId={workspaceId} />;
+      case 'chat':
+        return <ChatSection key={`chat-${workspaceId}`} workspaceId={workspaceId} />;
+      case 'collaborators':
+        return <CollaboratorsSection key={`collaborators-${workspaceId}`} workspaceId={workspaceId} />;
+      case 'invitations':
+        return <InvitationsSection key="invitations" />;
+      case 'summary':
+      default:
+        return <SummarySection key={`summary-${workspaceId}`} workspaceId={workspaceId} />;
+    }
   };
 
   const renderHeaderSlot = () => {
-    if (tab === 'learning') return <LearningHeaderActions workspaceId={workspaceId} />;
-    if (tab === 'documents') return <DocumentsHeaderActions workspaceId={workspaceId} />;
-    if (tab === 'chat') return <ChatHeaderActions workspaceId={workspaceId} />;
-    if (tab === 'collaborators') return <CollaboratorsHeaderActions workspaceId={workspaceId} />;
-    if (tab === 'invitations') return <InvitationsHeaderActions />;
-    if (!tab || tab === 'summary') return <SummaryHeaderActions workspaceId={workspaceId} />;
-    return null;
+    switch (tab) {
+      case 'learning':
+        return <LearningHeaderActions key={`learning-actions-${workspaceId}`} workspaceId={workspaceId} />;
+      case 'documents':
+        return <DocumentsHeaderActions key={`documents-actions-${workspaceId}`} workspaceId={workspaceId} />;
+      case 'chat':
+        return <ChatHeaderActions key={`chat-actions-${workspaceId}`} workspaceId={workspaceId} />;
+      case 'collaborators':
+        return <CollaboratorsHeaderActions key={`collaborators-actions-${workspaceId}`} workspaceId={workspaceId} />;
+      case 'invitations':
+        return <InvitationsHeaderActions key="invitations-actions" />;
+      case 'summary':
+      default:
+        return <SummaryHeaderActions key={`summary-actions-${workspaceId}`} workspaceId={workspaceId} />;
+    }
   };
 
   return (
