@@ -5,7 +5,7 @@
  */
 
 import React, { useContext } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useParams } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { Selector } from '../../components/ui/Selector';
@@ -58,7 +58,8 @@ function WorkspaceSelector({ workspaces, activeWorkspaceId, onSelect }) {
 // SidebarItem — renders button for actions, NavLink for routes
 // ──────────────────────────────────────────────────────────────────────────────
 
-function SidebarItem({ item, workspaceId, onAction }) {
+function SidebarItem({ item, onAction }) {
+  const { workspaceId } = useParams();
   const themeCtx = useContext(ThemeContext);
 
   const Icon = item.action === 'toggle-theme'
