@@ -1,14 +1,15 @@
 /**
  * AppLayout — Layout Layer
  *
- * Clean, production-level, responsive layout template.
+ * Clean, production-level, responsive layout using NavLink for instant active states.
  */
 
 import React, { useContext } from 'react';
+import { NavLink } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { Selector } from '../../components/ui/Selector';
-import { SIDEBAR_CONFIG, Sun } from './sidebarConfig';
+import { SIDEBAR_NAV_SECTIONS, Sun } from './sidebarConfig';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Brand
@@ -54,12 +55,11 @@ function WorkspaceSelector({ workspaces, activeWorkspaceId, onSelect }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// SidebarItem
+// SidebarItem — renders button for actions, NavLink for routes
 // ──────────────────────────────────────────────────────────────────────────────
 
-function SidebarItem({ item, activeTab, onSelectTab, onAction }) {
+function SidebarItem({ item, workspaceId, onAction }) {
   const themeCtx = useContext(ThemeContext);
-  const isActive = item.tab ? activeTab === item.tab : false;
 
   const Icon = item.action === 'toggle-theme'
     ? (themeCtx?.theme === 'dark' ? Sun : Moon)
@@ -83,31 +83,18 @@ function SidebarItem({ item, activeTab, onSelectTab, onAction }) {
     );
   }
 
+  const targetPath = workspaceId
+    ? `/workspaces/${workspaceId}/${item.subpath}`
+    : `/workspaces`;
+
   return (
-    <button
-      type="button"
-      onClick={() => onSelectTab(item.tab)}
-      className={`sidebar-item${isActive ? ' is-active' : ''}`}
-      aria-current={isActive ? 'page' : undefined}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-3)',
-        padding: 'var(--space-2) var(--space-3)',
-        borderRadius: 'var(--radius-sm)',
-        border: 'none',
-        background: isActive ? 'var(--bg-raised)' : 'transparent',
-        color: isActive ? 'var(--accent)' : 'var(--text-soft)',
-        fontWeight: isActive ? 'var(--weight-semibold)' : 'normal',
-        cursor: 'pointer',
-        textAlign: 'left',
-        transition: 'all 0.15s ease',
-      }}
+    <NavLink
+      to={targetPath}
+      className={({ isActive }) => `sidebar-item${isActive ? ' is-active' : ''}`}
     >
       <Icon size={17} strokeWidth={1.8} />
       <span>{item.label}</span>
-    </button>
+    </NavLink>
   );
 }
 
@@ -115,7 +102,7 @@ function SidebarItem({ item, activeTab, onSelectTab, onAction }) {
 // SidebarSection
 // ──────────────────────────────────────────────────────────────────────────────
 
-function SidebarSection({ section, activeTab, onSelectTab, onAction }) {
+function SidebarSection({ section, workspaceId, onAction }) {
   return (
     <div className="sidebar-section">
       <div className="sidebar-section-label">{section.label}</div>
@@ -124,8 +111,7 @@ function SidebarSection({ section, activeTab, onSelectTab, onAction }) {
           <SidebarItem
             key={item.id}
             item={item}
-            activeTab={activeTab}
-            onSelectTab={onSelectTab}
+            workspaceId={workspaceId}
             onAction={onAction}
           />
         ))}
@@ -138,15 +124,14 @@ function SidebarSection({ section, activeTab, onSelectTab, onAction }) {
 // Navigation
 // ──────────────────────────────────────────────────────────────────────────────
 
-function Navigation({ activeTab, onSelectTab, onAction }) {
+function Navigation({ workspaceId, onAction }) {
   return (
     <nav className="sidebar-navigation" aria-label="Main navigation">
-      {SIDEBAR_CONFIG.map((section) => (
+      {SIDEBAR_NAV_SECTIONS.map((section) => (
         <SidebarSection
           key={section.label}
           section={section}
-          activeTab={activeTab}
-          onSelectTab={onSelectTab}
+          workspaceId={workspaceId}
           onAction={onAction}
         />
       ))}
@@ -252,8 +237,6 @@ export function AppLayoutTemplate({
   workspaces,
   activeWorkspaceId,
   onSelectWorkspace,
-  activeTab,
-  onSelectTab,
   onAction,
   onGoHome,
   onLogout,
@@ -277,8 +260,7 @@ export function AppLayoutTemplate({
         <Brand onClick={onGoHome} />
 
         <Navigation
-          activeTab={activeTab}
-          onSelectTab={onSelectTab}
+          workspaceId={activeWorkspaceId}
           onAction={onAction}
         />
 

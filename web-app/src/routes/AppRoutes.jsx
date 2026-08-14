@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
 import { AppLayout } from '../layouts/AppLayout';
 import { SummarySection, SummaryHeaderActions } from '@/sections/summary';
@@ -11,55 +11,64 @@ import { InvitationsSection, InvitationsHeaderActions } from '@/sections/invitat
 import { AuthSection } from '@/sections/auth';
 
 /**
- * WorkspaceLayoutWrapper
- * Dynamically switches active section and header actions reactively based on ?tab=
+ * Route wrappers for each section providing its AppLayout shell and header action buttons
  */
-function WorkspaceLayoutWrapper() {
+function SummaryRoute() {
   const { workspaceId } = useParams();
-  const [searchParams] = useSearchParams();
-  const tab = searchParams.get('tab') || 'summary';
-
-  const renderSection = () => {
-    switch (tab) {
-      case 'learning':
-        return <LearningSection workspaceId={workspaceId} />;
-      case 'documents':
-        return <DocumentsSection workspaceId={workspaceId} />;
-      case 'chat':
-        return <ChatSection workspaceId={workspaceId} />;
-      case 'collaborators':
-        return <CollaboratorsSection workspaceId={workspaceId} />;
-      case 'invitations':
-        return <InvitationsSection />;
-      case 'summary':
-      default:
-        return <SummarySection workspaceId={workspaceId} />;
-    }
-  };
-
-  const renderHeaderSlot = () => {
-    switch (tab) {
-      case 'learning':
-        return <LearningHeaderActions workspaceId={workspaceId} />;
-      case 'documents':
-        return <DocumentsHeaderActions workspaceId={workspaceId} />;
-      case 'chat':
-        return <ChatHeaderActions workspaceId={workspaceId} />;
-      case 'collaborators':
-        return <CollaboratorsHeaderActions workspaceId={workspaceId} />;
-      case 'invitations':
-        return <InvitationsHeaderActions />;
-      case 'summary':
-      default:
-        return <SummaryHeaderActions workspaceId={workspaceId} />;
-    }
-  };
-
   return (
-    <AppLayout headerSlot={renderHeaderSlot()}>
-      {renderSection()}
+    <AppLayout headerSlot={<SummaryHeaderActions workspaceId={workspaceId} />}>
+      <SummarySection workspaceId={workspaceId} />
     </AppLayout>
   );
+}
+
+function LearningRoute() {
+  const { workspaceId } = useParams();
+  return (
+    <AppLayout headerSlot={<LearningHeaderActions workspaceId={workspaceId} />}>
+      <LearningSection workspaceId={workspaceId} />
+    </AppLayout>
+  );
+}
+
+function DocumentsRoute() {
+  const { workspaceId } = useParams();
+  return (
+    <AppLayout headerSlot={<DocumentsHeaderActions workspaceId={workspaceId} />}>
+      <DocumentsSection workspaceId={workspaceId} />
+    </AppLayout>
+  );
+}
+
+function ChatRoute() {
+  const { workspaceId } = useParams();
+  return (
+    <AppLayout headerSlot={<ChatHeaderActions workspaceId={workspaceId} />}>
+      <ChatSection workspaceId={workspaceId} />
+    </AppLayout>
+  );
+}
+
+function CollaboratorsRoute() {
+  const { workspaceId } = useParams();
+  return (
+    <AppLayout headerSlot={<CollaboratorsHeaderActions workspaceId={workspaceId} />}>
+      <CollaboratorsSection workspaceId={workspaceId} />
+    </AppLayout>
+  );
+}
+
+function InvitationsRoute() {
+  return (
+    <AppLayout headerSlot={<InvitationsHeaderActions />}>
+      <InvitationsSection />
+    </AppLayout>
+  );
+}
+
+function WorkspaceRootRedirect() {
+  const { workspaceId } = useParams();
+  return <Navigate to={`/workspaces/${workspaceId}/summary`} replace />;
 }
 
 export const AppRoutes = () => {
@@ -75,12 +84,68 @@ export const AppRoutes = () => {
         }
       />
 
-      {/* Protected Workspace Routes */}
+      {/* Protected Workspace Sub-Routes */}
       <Route
-        path="/workspaces/:workspaceId?"
+        path="/workspaces/:workspaceId/summary"
         element={
           <ProtectedRoute>
-            <WorkspaceLayoutWrapper />
+            <SummaryRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces/:workspaceId/learning"
+        element={
+          <ProtectedRoute>
+            <LearningRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces/:workspaceId/documents"
+        element={
+          <ProtectedRoute>
+            <DocumentsRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces/:workspaceId/chat"
+        element={
+          <ProtectedRoute>
+            <ChatRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces/:workspaceId/collaborators"
+        element={
+          <ProtectedRoute>
+            <CollaboratorsRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces/:workspaceId/invitations"
+        element={
+          <ProtectedRoute>
+            <InvitationsRoute />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces/:workspaceId"
+        element={
+          <ProtectedRoute>
+            <WorkspaceRootRedirect />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces"
+        element={
+          <ProtectedRoute>
+            <SummaryRoute />
           </ProtectedRoute>
         }
       />

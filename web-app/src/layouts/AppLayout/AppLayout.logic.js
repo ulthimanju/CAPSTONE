@@ -1,45 +1,31 @@
 /**
  * AppLayout — Business Logic Layer
  *
- * Production-ready, robust workspace management, tab state synchronizer,
- * and auto-navigation for Synapse SPA.
+ * Handles workspace auto-selection, theme toggle, and workspace switching.
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../services/api/client';
 
 export function useAppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { workspaceId: paramWorkspaceId } = useParams();
-  const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const themeCtx = useContext(ThemeContext);
 
-  // ── Active tab from URL query params (defaults to 'summary') ───────────────
-  const activeTab = searchParams.get('tab') || 'summary';
-
-  // ── Sidebar UI State ───────────────────────────────────────────────────────
+  // ── Sidebar Drawer UI State ────────────────────────────────────────────────
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isWsDropdownOpen, setIsWsDropdownOpen] = useState(false);
-  const wsDropdownRef = useRef(null);
-
-  // ── Workspace State ────────────────────────────────────────────────────────
   const [workspaces, setWorkspaces] = useState([]);
   const [isLoadingWorkspaces, setIsLoadingWorkspaces] = useState(false);
 
-  // Close workspace dropdown on outside click
+  // Close sidebar on mobile route change
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (wsDropdownRef.current && !wsDropdownRef.current.contains(e.target)) {
-        setIsWsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   // Fetch workspaces once authenticated
   useEffect(() => {
@@ -59,9 +45,9 @@ export function useAppLayout() {
         if (!isCancelled) {
           setWorkspaces(list);
 
-          // Auto-select first workspace on initial load if route has no workspaceId
-          if (list.length > 0 && !paramWorkspaceId) {
-            navigate(`/workspaces/${list[0].id}`, { replace: true });
+          // Auto-select first workspace if on root /workspaces
+          if (list.length > 0 && (!paramWorkspaceId || location.pathname === '/workspaces' || location.pathname === '/workspaces/')) {
+            navigate(`/workspaces/${list[0].id}/summary`, { replace: true });
           }
         }
       } catch (err) {
@@ -73,15 +59,15 @@ export function useAppLayout() {
 
     loadWorkspaces();
     return () => { isCancelled = true; };
-  }, [user, paramWorkspaceId, navigate]);
+  }, [user, paramWorkspaceId, location.pathname, navigate]);
 
-  // ── Derived active workspace ───────────────────────────────────────────────
+  // ── Active Workspace derivation ───────────────────────────────────────────
   const activeWorkspaceId = paramWorkspaceId || (workspaces.length > 0 ? workspaces[0]?.id : null);
   const activeWorkspace = useMemo(() => {
     return workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0] ?? null;
   }, [workspaces, activeWorkspaceId]);
 
-  // ── User presentation derivation ───────────────────────────────────────────
+  // ── User initials ─────────────────────────────────────────────────────────
   const userInitials = useMemo(() => {
     if (user?.name) return user.name.slice(0, 2).toUpperCase();
     if (user?.email) return user.email.slice(0, 2).toUpperCase();
@@ -91,37 +77,13 @@ export function useAppLayout() {
   const userName = user?.name || (user?.email ? user.email.split('@')[0] : 'User');
   const userEmail = user?.email || '';
 
-  // ── Navigation Handlers ───────────────────────────────────────────────────
-  const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
-  const toggleSidebar = useCallback(() => setIsSidebarOpen((prev) => !prev), []);
-  const toggleWsDropdown = useCallback(() => setIsWsDropdownOpen((prev) => !prev), []);
-  const closeWsDropdown = useCallback(() => setIsWsDropdownOpen(false), []);
-
-  /**
-   * Set active tab via navigate() which guarantees instant React Router state updates
-   */
-  const handleSelectTab = useCallback((tabId) => {
-    setIsSidebarOpen(false);
-    const wsId = activeWorkspaceId;
-    const base = wsId ? `/workspaces/${wsId}` : '/workspaces';
-    if (!tabId || tabId === 'summary') {
-      navigate(base);
-    } else {
-      navigate(`${base}?tab=${tabId}`);
-    }
-  }, [navigate, activeWorkspaceId]);
-
-  /**
-   * Switch workspace and preserve or reset active tab
-   */
+  // ── Workspace switch handler (preserves current subpath) ───────────────────
   const handleSelectWorkspace = useCallback((ws) => {
-    setIsWsDropdownOpen(false);
-    const currentTab = searchParams.get('tab');
-    const targetUrl = currentTab && currentTab !== 'summary'
-      ? `/workspaces/${ws.id}?tab=${currentTab}`
-      : `/workspaces/${ws.id}`;
-    navigate(targetUrl);
-  }, [navigate, searchParams]);
+    const parts = location.pathname.split('/').filter(Boolean);
+    // e.g. ['workspaces', 'ws-123', 'learning'] -> currentSubpath = 'learning'
+    const currentSubpath = parts.length >= 3 ? parts[2] : 'summary';
+    navigate(`/workspaces/${ws.id}/${currentSubpath}`);
+  }, [navigate, location.pathname]);
 
   return {
     // Auth & User
@@ -135,14 +97,10 @@ export function useAppLayout() {
     theme: themeCtx?.theme ?? 'light',
     toggleTheme: themeCtx?.toggleTheme ?? (() => {}),
 
-    // Sidebar & Dropdown UI
+    // Sidebar UI
     isSidebarOpen,
-    closeSidebar,
-    toggleSidebar,
-    isWsDropdownOpen,
-    toggleWsDropdown,
-    closeWsDropdown,
-    wsDropdownRef,
+    closeSidebar: () => setIsSidebarOpen(false),
+    toggleSidebar: () => setIsSidebarOpen((v) => !v),
 
     // Workspace state
     workspaces,
@@ -150,9 +108,7 @@ export function useAppLayout() {
     activeWorkspace,
     activeWorkspaceId,
 
-    // Tab Navigation
-    activeTab,
-    onSelectTab: handleSelectTab,
+    // Actions
     onSelectWorkspace: handleSelectWorkspace,
     onGoHome: () => navigate('/workspaces'),
   };

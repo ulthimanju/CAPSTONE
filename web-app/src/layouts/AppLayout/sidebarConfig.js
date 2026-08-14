@@ -1,7 +1,7 @@
 /**
  * Sidebar Navigation Configuration
  *
- * Single source of truth for all sidebar sections and navigation items.
+ * Single source of truth for all sidebar sections and navigation routes.
  */
 
 import {
@@ -18,22 +18,22 @@ import {
 
 export { Sun, Moon };
 
-export const SIDEBAR_CONFIG = [
+export const SIDEBAR_NAV_SECTIONS = [
   {
     label: 'Workspace Related',
     items: [
-      { id: 'summary',       label: 'Summary',       icon: House,         tab: 'summary'       },
-      { id: 'learning',      label: 'Learning Path', icon: BookOpen,      tab: 'learning'      },
-      { id: 'documents',     label: 'Documents',     icon: FileText,      tab: 'documents'     },
-      { id: 'chat',          label: 'Chat',          icon: MessageSquare, tab: 'chat'          },
-      { id: 'collaborators', label: 'Collaborators', icon: Users,         tab: 'collaborators' },
+      { id: 'summary',       label: 'Summary',       icon: House,         subpath: 'summary'       },
+      { id: 'learning',      label: 'Learning Path', icon: BookOpen,      subpath: 'learning'      },
+      { id: 'documents',     label: 'Documents',     icon: FileText,      subpath: 'documents'     },
+      { id: 'chat',          label: 'Chat',          icon: MessageSquare, subpath: 'chat'          },
+      { id: 'collaborators', label: 'Collaborators', icon: Users,         subpath: 'collaborators' },
     ],
   },
   {
     label: 'Actions',
     items: [
-      { id: 'invitations', label: 'Invitations',         icon: Mail,    tab: 'invitations' },
-      { id: 'archived',    label: 'Archived Workspaces', icon: Archive, tab: 'archived'    },
+      { id: 'invitations', label: 'Invitations',         icon: Mail,    subpath: 'invitations' },
+      { id: 'archived',    label: 'Archived Workspaces', icon: Archive, subpath: 'archived'    },
     ],
   },
   {
