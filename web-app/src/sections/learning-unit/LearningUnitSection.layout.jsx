@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MarkdownRenderer, MermaidRenderer, Button, Badge, Spinner } from '@/components/ui';
+import { MarkdownRenderer, MermaidRenderer, Button, Badge } from '@/components/ui';
 import { HeaderPortal } from '@/components/layout/HeaderPortal';
 import {
   ArrowLeft,
@@ -20,8 +20,6 @@ import {
   ChevronRight,
   RotateCcw,
   ExternalLink,
-  CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 
 export function LearningUnitSectionLayout({
@@ -55,10 +53,15 @@ export function LearningUnitSectionLayout({
   const navigate = useNavigate();
 
   const title = unitMeta?.title || 'Learning Unit';
-  const flashcards = contentData?.flashcards || [];
-  const quiz = contentData?.quiz || [];
-  const problems = contentData?.problems || [];
-  const summary = contentData?.summary || null;
+
+  // Normalize data structures
+  const flashcards = Array.isArray(contentData?.flashcards) ? contentData.flashcards : [];
+  const quiz = Array.isArray(contentData?.quiz) ? contentData.quiz : [];
+  const problems = Array.isArray(contentData?.problems) ? contentData.problems : [];
+
+  const rawSummary = contentData?.summary;
+  const summary = rawSummary?.summary_json || rawSummary?.generated || rawSummary;
+  const isSummaryString = typeof summary === 'string';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', width: '100%' }}>
@@ -273,8 +276,7 @@ export function LearningUnitSectionLayout({
           {/* ── TAB 1: SUMMARY ──────────────────────────────────────────────── */}
           {activeTab === 'summary' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-              {/* Executive Overview */}
-              {summary?.overview && (
+              {isSummaryString && summary.trim() ? (
                 <div
                   style={{
                     background: 'var(--bg-surface)',
@@ -283,102 +285,121 @@ export function LearningUnitSectionLayout({
                     padding: 'var(--space-6)',
                   }}
                 >
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 'var(--text-xs)',
-                      fontWeight: 'var(--weight-bold)',
-                      color: 'var(--accent)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--tracking-wider)',
-                      marginBottom: 'var(--space-3)',
-                    }}
-                  >
-                    Unit Overview
-                  </div>
-                  <MarkdownRenderer content={summary.overview} />
+                  <MarkdownRenderer content={summary} />
                 </div>
-              )}
-
-              {/* Key Takeaways */}
-              {summary?.key_takeaways && summary.key_takeaways.length > 0 && (
-                <div
-                  style={{
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: 'var(--space-6)',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 'var(--text-xs)',
-                      fontWeight: 'var(--weight-bold)',
-                      color: 'var(--accent)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--tracking-wider)',
-                      marginBottom: 'var(--space-3)',
-                    }}
-                  >
-                    Key Takeaways
-                  </div>
-                  <ul style={{ margin: 0, paddingLeft: 'var(--space-5)', color: 'var(--text-soft)' }}>
-                    {summary.key_takeaways.map((item, idx) => (
-                      <li key={idx} style={{ marginBottom: 'var(--space-2)', lineHeight: 'var(--leading-normal)' }}>
-                        <MarkdownRenderer content={item} style={{ display: 'inline' }} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Sections */}
-              {summary?.sections && summary.sections.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-                  {summary.sections.map((sec, idx) => (
+              ) : (
+                <>
+                  {/* Executive Overview */}
+                  {summary?.overview && (
                     <div
-                      key={idx}
                       style={{
                         background: 'var(--bg-surface)',
                         border: '1px solid var(--line)',
                         borderRadius: 'var(--radius-lg)',
                         padding: 'var(--space-6)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 'var(--space-4)',
                       }}
                     >
-                      <h3
+                      <div
                         style={{
-                          fontFamily: 'var(--font-display)',
-                          fontSize: 'var(--text-xl)',
-                          fontWeight: 'var(--weight-semibold)',
-                          color: 'var(--text)',
-                          margin: 0,
-                          paddingBottom: 'var(--space-2)',
-                          borderBottom: '1px solid var(--line-soft)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 'var(--text-xs)',
+                          fontWeight: 'var(--weight-bold)',
+                          color: 'var(--accent)',
+                          textTransform: 'uppercase',
+                          letterSpacing: 'var(--tracking-wider)',
+                          marginBottom: 'var(--space-3)',
                         }}
                       >
-                        {sec.title}
-                      </h3>
-                      <MarkdownRenderer content={sec.content} />
-                      {sec.diagram && sec.diagram !== 'none' && (
+                        Unit Overview
+                      </div>
+                      <MarkdownRenderer content={summary.overview} />
+                    </div>
+                  )}
+
+                  {/* Key Takeaways */}
+                  {summary?.key_takeaways && summary.key_takeaways.length > 0 && (
+                    <div
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--line)',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: 'var(--space-6)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 'var(--text-xs)',
+                          fontWeight: 'var(--weight-bold)',
+                          color: 'var(--accent)',
+                          textTransform: 'uppercase',
+                          letterSpacing: 'var(--tracking-wider)',
+                          marginBottom: 'var(--space-3)',
+                        }}
+                      >
+                        Key Takeaways
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: 'var(--space-5)', color: 'var(--text-soft)' }}>
+                        {summary.key_takeaways.map((item, idx) => (
+                          <li key={idx} style={{ marginBottom: 'var(--space-2)', lineHeight: 'var(--leading-normal)' }}>
+                            <MarkdownRenderer
+                              content={typeof item === 'string' ? item : JSON.stringify(item)}
+                              style={{ display: 'inline' }}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Sections */}
+                  {summary?.sections && summary.sections.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+                      {summary.sections.map((sec, idx) => (
                         <div
+                          key={idx}
                           style={{
-                            marginTop: 'var(--space-3)',
-                            background: 'var(--bg-sunken)',
-                            border: '1px solid var(--line-soft)',
-                            borderRadius: 'var(--radius-md)',
-                            padding: 'var(--space-4)',
+                            background: 'var(--bg-surface)',
+                            border: '1px solid var(--line)',
+                            borderRadius: 'var(--radius-lg)',
+                            padding: 'var(--space-6)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 'var(--space-4)',
                           }}
                         >
-                          <MermaidRenderer chart={sec.diagram} />
+                          <h3
+                            style={{
+                              fontFamily: 'var(--font-display)',
+                              fontSize: 'var(--text-xl)',
+                              fontWeight: 'var(--weight-semibold)',
+                              color: 'var(--text)',
+                              margin: 0,
+                              paddingBottom: 'var(--space-2)',
+                              borderBottom: '1px solid var(--line-soft)',
+                            }}
+                          >
+                            {sec.title}
+                          </h3>
+                          <MarkdownRenderer content={sec.content} />
+                          {sec.diagram && sec.diagram !== 'none' && (
+                            <div
+                              style={{
+                                marginTop: 'var(--space-3)',
+                                background: 'var(--bg-sunken)',
+                                border: '1px solid var(--line-soft)',
+                                borderRadius: 'var(--radius-md)',
+                                padding: 'var(--space-4)',
+                              }}
+                            >
+                              <MermaidRenderer chart={sec.diagram} />
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -548,7 +569,7 @@ export function LearningUnitSectionLayout({
                         </h4>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2-5)', marginBottom: 'var(--space-3)' }}>
-                          {q.options.map((opt, optIdx) => {
+                          {q.options?.map((opt, optIdx) => {
                             let border = '1px solid var(--line)';
                             let background = 'var(--bg-raised)';
                             let color = 'var(--text)';

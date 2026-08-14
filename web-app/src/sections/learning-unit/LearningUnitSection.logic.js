@@ -40,7 +40,7 @@ export function useLearningUnitSection() {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizScore, setQuizScore] = useState(0);
 
-  // ── Unified Unit & Content Loader (stable, only workspaceId / unitId dependent) ──
+  // ── Unified Unit & Content Loader ───────────────────────────────────────────
   const loadUnitData = useCallback(async () => {
     if (!workspaceId || !unitId) return;
 
@@ -52,49 +52,76 @@ export function useLearningUnitSection() {
       if (userRef.current?.id) headers['X-User-ID'] = userRef.current.id;
       if (userRef.current?.email) headers['X-User-Email'] = userRef.current.email;
 
-      // 1. Fetch learning path to resolve unit metadata
-      const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
-      const rawPayload = res.data?.learning_path !== undefined ? res.data.learning_path : res.data;
-      const payload = rawPayload?.learning_path_json || rawPayload?.generated || rawPayload;
-      const units = payload?.units || [];
+      const decodedUnitId = decodeURIComponent(unitId || '').trim();
+      const numIdx = parseInt(unitId, 10);
 
-      // Match unit by id, string index, or encoded/decoded title
+      // 1. Fetch learning path to resolve unit metadata
+      let units = [];
+      try {
+        const res = await apiClient.get(`/api/v1/workspaces/${workspaceId}/learning-path`, { headers });
+        let rawPayload = res.data?.learning_path !== undefined ? res.data.learning_path : res.data;
+        if (typeof rawPayload === 'string') {
+          try { rawPayload = JSON.parse(rawPayload); } catch (e) { /* silent */ }
+        }
+        const payload = rawPayload?.learning_path_json || rawPayload?.generated || rawPayload;
+        const parsedPayload = typeof payload === 'string' ? JSON.parse(payload) : payload;
+        units = parsedPayload?.units || [];
+      } catch (e) {
+        console.warn('[LearningUnitSection] Could not load learning-path curriculum, falling back to direct unit title lookup:', e);
+      }
+
+      // Match unit by id, index, or title
       const matchedUnit =
         units.find(
           (u, idx) =>
-            u.id === unitId ||
+            (u.id && String(u.id) === unitId) ||
+            (u.unit_id && String(u.unit_id) === unitId) ||
             String(idx) === unitId ||
-            encodeURIComponent(u.title) === unitId ||
-            u.title === decodeURIComponent(unitId)
+            (u.title && u.title.trim().toLowerCase() === decodedUnitId.toLowerCase())
         ) ||
-        units[parseInt(unitId, 10)] ||
-        null;
-
-      if (!matchedUnit) {
-        setUnitMeta(null);
-        unitMetaRef.current = null;
-        setContentData(null);
-        setIsLoading(false);
-        return;
-      }
+        (!isNaN(numIdx) && units[numIdx]) ||
+        { title: decodedUnitId, description: '' };
 
       setUnitMeta(matchedUnit);
       unitMetaRef.current = matchedUnit;
 
+      const lookupTitle = matchedUnit.title || decodedUnitId;
+
       // 2. Fetch unit study bundle content
       const contentRes = await apiClient.get(
-        `/api/v1/workspaces/${workspaceId}/units/content?unit_title=${encodeURIComponent(matchedUnit.title)}`,
+        `/api/v1/workspaces/${workspaceId}/units/content?unit_title=${encodeURIComponent(lookupTitle)}`,
         { headers }
       );
 
-      if (contentRes.data && contentRes.data.content) {
-        setContentData(contentRes.data.content);
+      const rawContent = contentRes.data?.content !== undefined ? contentRes.data.content : contentRes.data;
+
+      if (rawContent) {
+        let normalized = rawContent;
+        if (typeof rawContent === 'string') {
+          try { normalized = JSON.parse(rawContent); } catch (e) { /* silent */ }
+        }
+
+        // Normalize flashcards, quiz, problems if stringified
+        if (typeof normalized?.flashcards === 'string') {
+          try { normalized.flashcards = JSON.parse(normalized.flashcards); } catch (e) { /* silent */ }
+        }
+        if (typeof normalized?.quiz === 'string') {
+          try { normalized.quiz = JSON.parse(normalized.quiz); } catch (e) { /* silent */ }
+        }
+        if (typeof normalized?.problems === 'string') {
+          try { normalized.problems = JSON.parse(normalized.problems); } catch (e) { /* silent */ }
+        }
+        if (typeof normalized?.summary === 'string' && normalized.summary.startsWith('{')) {
+          try { normalized.summary = JSON.parse(normalized.summary); } catch (e) { /* silent */ }
+        }
+
+        setContentData(normalized);
 
         // Restore quiz answers and score from stored DB user_answer values
-        if (contentRes.data.content.quiz && Array.isArray(contentRes.data.content.quiz)) {
+        if (normalized?.quiz && Array.isArray(normalized.quiz)) {
           const initialAnswers = {};
           let initialScore = 0;
-          contentRes.data.content.quiz.forEach((q, idx) => {
+          normalized.quiz.forEach((q, idx) => {
             if (q.user_answer !== undefined && q.user_answer !== null && q.user_answer !== -1) {
               initialAnswers[idx] = q.user_answer;
               if (q.user_answer === q.correct_answer) {
@@ -286,18 +313,33 @@ export function useLearningUnitSection() {
     }
   }, [contentData, workspaceId, unitMeta]);
 
+  // Robust hasContent check
+  const hasContent = Boolean(
+    contentData &&
+      (
+        Boolean(
+          contentData.summary &&
+            (typeof contentData.summary === 'string'
+              ? contentData.summary.trim().length > 0
+              : Boolean(
+                  contentData.summary.overview ||
+                    contentData.summary.sections?.length > 0 ||
+                    contentData.summary.key_takeaways?.length > 0 ||
+                    Object.keys(contentData.summary).length > 0
+                ))
+        ) ||
+        (Array.isArray(contentData.flashcards) && contentData.flashcards.length > 0) ||
+        (Array.isArray(contentData.quiz) && contentData.quiz.length > 0) ||
+        (Array.isArray(contentData.problems) && contentData.problems.length > 0)
+      )
+  );
+
   return {
     workspaceId,
     unitId,
     unitMeta,
     contentData,
-    hasContent: Boolean(
-      contentData &&
-        (contentData.summary ||
-          contentData.flashcards?.length > 0 ||
-          contentData.quiz?.length > 0 ||
-          contentData.problems?.length > 0)
-    ),
+    hasContent,
     isLoading,
     isGenerating,
     generationProgressText,
