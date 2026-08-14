@@ -7,6 +7,8 @@
 
 import React, { useState } from 'react';
 import { MarkdownRenderer, Button, Card, Badge } from '@/components/ui';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
 import { BookOpen, CheckCircle, ChevronDown, ChevronUp, Code2, Sparkles } from 'lucide-react';
 
 export function LearningSectionLayout({
@@ -40,6 +42,22 @@ export function LearningSectionLayout({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', width: '100%' }}>
+      {/* Page Header with Actions */}
+      <PageHeader
+        title={title}
+        description="Structured curriculum and learning modules derived from your workspace documents"
+      >
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <CopyPayloadButton payload={learningData} />
+          <Button variant="secondary" size="sm" onClick={onRefetch} disabled={isLoading || isGenerating}>
+            Refetch Payload
+          </Button>
+          <Button variant="primary" size="sm" onClick={onGenerate} loading={isGenerating} disabled={isLoading}>
+            Generate Learning Path
+          </Button>
+        </div>
+      </PageHeader>
+
       {/* Error Banner */}
       {error && (
         <div

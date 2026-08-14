@@ -5,7 +5,7 @@
  */
 
 import React, { useContext } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Moon } from 'lucide-react';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { Selector } from '../../components/ui/Selector';
@@ -58,10 +58,7 @@ function WorkspaceSelector({ workspaces, activeWorkspaceId, onSelect }) {
 // SidebarItem — renders button for actions, NavLink for routes
 // ──────────────────────────────────────────────────────────────────────────────
 
-function SidebarItem({ item, onAction }) {
-  const { workspaceId } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
+function SidebarItem({ item, workspaceId, onAction }) {
   const themeCtx = useContext(ThemeContext);
 
   const Icon = item.action === 'toggle-theme'
@@ -90,24 +87,14 @@ function SidebarItem({ item, onAction }) {
     ? `/workspaces/${workspaceId}/${item.subpath}`
     : `/workspaces`;
 
-  // Exact match for active state
-  const isActive = location.pathname === targetPath;
-
-  const handleClick = (e) => {
-    e.preventDefault();
-    navigate(targetPath);
-  };
-
   return (
-    <a
-      href={targetPath}
-      onClick={handleClick}
-      className={`sidebar-item${isActive ? ' is-active' : ''}`}
-      aria-current={isActive ? 'page' : undefined}
+    <NavLink
+      to={targetPath}
+      className={({ isActive }) => `sidebar-item${isActive ? ' is-active' : ''}`}
     >
       <Icon size={17} strokeWidth={1.8} />
       <span>{item.label}</span>
-    </a>
+    </NavLink>
   );
 }
 

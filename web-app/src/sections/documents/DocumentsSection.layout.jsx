@@ -6,15 +6,59 @@
 
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
 
 export function DocumentsSectionLayout({
   workspaceId,
   documentsData,
   isLoading,
+  isUploading,
   error,
+  onRefetch,
+  onUploadFile,
+  onDeleteDocument,
 }) {
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file && onUploadFile) {
+      onUploadFile(file);
+      e.target.value = '';
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      {/* Page Header with Actions */}
+      <PageHeader
+        title="Documents"
+        description="Manage uploaded workspace documents and knowledge sources"
+      >
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <CopyPayloadButton payload={documentsData} />
+          <Button variant="secondary" size="sm" onClick={onRefetch} disabled={isLoading || isUploading}>
+            Refetch List
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            loading={isUploading}
+            disabled={isLoading}
+          >
+            Upload Document
+          </Button>
+        </div>
+      </PageHeader>
+
       {/* Error state */}
       {error && (
         <div

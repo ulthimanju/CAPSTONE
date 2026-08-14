@@ -7,6 +7,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
 
 export function ChatSectionLayout({
   workspaceId,
@@ -19,8 +21,18 @@ export function ChatSectionLayout({
   onSendQuestion,
   onSemanticSearch,
 }) {
+  const payloadToCopy = chatResponse || searchResults || null;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+      {/* Page Header */}
+      <PageHeader
+        title="AI Assistant & Chat"
+        description="Ask questions and perform semantic search across workspace knowledge"
+      >
+        <CopyPayloadButton payload={payloadToCopy} />
+      </PageHeader>
+
       {/* Input box */}
       <div
         style={{

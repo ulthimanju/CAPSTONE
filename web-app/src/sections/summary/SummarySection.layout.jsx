@@ -7,6 +7,8 @@
 
 import React, { useState } from 'react';
 import { MarkdownRenderer, MermaidRenderer, Button, Card, Badge } from '@/components/ui';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
 
 export function SummarySectionLayout({
   workspaceId,
@@ -31,6 +33,22 @@ export function SummarySectionLayout({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', width: '100%' }}>
+      {/* Page Header with Actions */}
+      <PageHeader
+        title="Workspace Summary"
+        description="Synthesized overview and key takeaways generated from your documents"
+      >
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <CopyPayloadButton payload={summaryData} />
+          <Button variant="secondary" size="sm" onClick={onRefetch} disabled={isLoading || isGenerating}>
+            Refetch Payload
+          </Button>
+          <Button variant="primary" size="sm" onClick={onGenerate} loading={isGenerating} disabled={isLoading}>
+            Generate Summary
+          </Button>
+        </div>
+      </PageHeader>
+
       {/* Error Banner */}
       {error && (
         <div

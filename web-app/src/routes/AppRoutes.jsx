@@ -1,66 +1,62 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
 import { AppLayout } from '../layouts/AppLayout';
 
-import { SummarySection, SummaryHeaderActions } from '@/sections/summary';
-import { LearningSection, LearningHeaderActions } from '@/sections/learning';
-import { DocumentsSection, DocumentsHeaderActions } from '@/sections/documents';
-import { ChatSection, ChatHeaderActions } from '@/sections/chat';
-import { CollaboratorsSection, CollaboratorsHeaderActions } from '@/sections/collaborators';
-import { InvitationsSection, InvitationsHeaderActions } from '@/sections/invitations';
+import { SummarySection } from '@/sections/summary';
+import { LearningSection } from '@/sections/learning';
+import { DocumentsSection } from '@/sections/documents';
+import { ChatSection } from '@/sections/chat';
+import { CollaboratorsSection } from '@/sections/collaborators';
+import { InvitationsSection } from '@/sections/invitations';
 import { AuthSection } from '@/sections/auth';
 import { apiClient } from '@/services/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Spinner } from '@/components/ui/Spinner';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WorkspaceShell
-//
-// Renders the correct section based on the `:section` URL param.
-// AppLayout stays mounted across tab switches — only the section content swaps.
-// Stable `key` props on sections prevent unnecessary remounts.
+// AppLayoutShell — persistent shell containing Sidebar, Header & Outlet
 // ─────────────────────────────────────────────────────────────────────────────
 
-function WorkspaceShell() {
-  const { workspaceId, section = 'summary' } = useParams();
-
-  let sectionNode;
-  let headerSlot;
-
-  switch (section) {
-    case 'learning':
-      sectionNode = <LearningSection key={`learning-${workspaceId}`} workspaceId={workspaceId} />;
-      headerSlot  = <LearningHeaderActions workspaceId={workspaceId} />;
-      break;
-    case 'documents':
-      sectionNode = <DocumentsSection key={`documents-${workspaceId}`} workspaceId={workspaceId} />;
-      headerSlot  = <DocumentsHeaderActions workspaceId={workspaceId} />;
-      break;
-    case 'chat':
-      sectionNode = <ChatSection key={`chat-${workspaceId}`} workspaceId={workspaceId} />;
-      headerSlot  = <ChatHeaderActions workspaceId={workspaceId} />;
-      break;
-    case 'collaborators':
-      sectionNode = <CollaboratorsSection key={`collaborators-${workspaceId}`} workspaceId={workspaceId} />;
-      headerSlot  = <CollaboratorsHeaderActions workspaceId={workspaceId} />;
-      break;
-    case 'invitations':
-      sectionNode = <InvitationsSection key={`invitations-${workspaceId}`} workspaceId={workspaceId} />;
-      headerSlot  = <InvitationsHeaderActions />;
-      break;
-    case 'summary':
-    default:
-      sectionNode = <SummarySection key={`summary-${workspaceId}`} workspaceId={workspaceId} />;
-      headerSlot  = <SummaryHeaderActions workspaceId={workspaceId} />;
-      break;
-  }
-
+function AppLayoutShell() {
   return (
-    <AppLayout headerSlot={headerSlot}>
-      {sectionNode}
+    <AppLayout>
+      <Outlet />
     </AppLayout>
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Route wrappers passing workspaceId param down to sections
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SummaryRoute() {
+  const { workspaceId } = useParams();
+  return <SummarySection workspaceId={workspaceId} />;
+}
+
+function LearningRoute() {
+  const { workspaceId } = useParams();
+  return <LearningSection workspaceId={workspaceId} />;
+}
+
+function DocumentsRoute() {
+  const { workspaceId } = useParams();
+  return <DocumentsSection workspaceId={workspaceId} />;
+}
+
+function ChatRoute() {
+  const { workspaceId } = useParams();
+  return <ChatSection workspaceId={workspaceId} />;
+}
+
+function CollaboratorsRoute() {
+  const { workspaceId } = useParams();
+  return <CollaboratorsSection workspaceId={workspaceId} />;
+}
+
+function InvitationsRoute() {
+  return <InvitationsSection />;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,17 +125,19 @@ export const AppRoutes = () => {
       {/* Public */}
       <Route path="/login" element={<PublicRoute><AuthSection /></PublicRoute>} />
 
-      {/* Workspace with explicit section — WorkspaceShell stays mounted, section swaps */}
-      <Route
-        path="/workspaces/:workspaceId/:section"
-        element={<ProtectedRoute><WorkspaceShell /></ProtectedRoute>}
-      />
-
-      {/* Workspace without section — default to summary */}
+      {/* Persistent Workspace Layout Route */}
       <Route
         path="/workspaces/:workspaceId"
-        element={<ProtectedRoute><WorkspaceShell /></ProtectedRoute>}
-      />
+        element={<ProtectedRoute><AppLayoutShell /></ProtectedRoute>}
+      >
+        <Route path="summary" element={<SummaryRoute />} />
+        <Route path="learning" element={<LearningRoute />} />
+        <Route path="documents" element={<DocumentsRoute />} />
+        <Route path="chat" element={<ChatRoute />} />
+        <Route path="collaborators" element={<CollaboratorsRoute />} />
+        <Route path="invitations" element={<InvitationsRoute />} />
+        <Route index element={<Navigate to="summary" replace />} />
+      </Route>
 
       {/* /workspaces — pick first workspace and redirect */}
       <Route

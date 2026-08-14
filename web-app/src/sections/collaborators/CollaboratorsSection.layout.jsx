@@ -7,6 +7,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
 
 export function CollaboratorsSectionLayout({
   workspaceId,
@@ -18,10 +20,25 @@ export function CollaboratorsSectionLayout({
   isLoading,
   isInviting,
   error,
+  onRefetch,
   onInviteCollaborator,
+  onRemoveMember,
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+      {/* Page Header */}
+      <PageHeader
+        title="Collaborators"
+        description="Manage workspace team members, roles, and permissions"
+      >
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <CopyPayloadButton payload={membersData} />
+          <Button variant="secondary" size="sm" onClick={onRefetch} disabled={isLoading || isInviting}>
+            Refetch Members
+          </Button>
+        </div>
+      </PageHeader>
+
       {/* Invite bar */}
       <div
         style={{

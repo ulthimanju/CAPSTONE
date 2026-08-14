@@ -6,14 +6,32 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
 
 export function InvitationsSectionLayout({
   invitationsData,
   isLoading,
   error,
+  onRefetch,
+  onAcceptInvitation,
+  onRejectInvitation,
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+      {/* Page Header */}
+      <PageHeader
+        title="Workspace Invitations"
+        description="View and respond to pending workspace collaboration invitations"
+      >
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <CopyPayloadButton payload={invitationsData} />
+          <Button variant="secondary" size="sm" onClick={onRefetch} disabled={isLoading}>
+            Refetch Invitations
+          </Button>
+        </div>
+      </PageHeader>
+
       {/* Error state */}
       {error && (
         <div
