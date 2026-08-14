@@ -217,11 +217,12 @@ function MainHeader({
         />
       </div>
 
-      {headerSlot && (
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          {headerSlot}
-        </div>
-      )}
+      <div
+        id="main-header-actions"
+        style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}
+      >
+        {headerSlot}
+      </div>
     </header>
   );
 }

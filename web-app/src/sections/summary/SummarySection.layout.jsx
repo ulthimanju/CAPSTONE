@@ -1,11 +1,13 @@
 /**
  * SummarySection — Structural Layout Layer
  *
- * Beautifully renders workspace summary using MarkdownRenderer and MermaidRenderer.
+ * Beautifully renders workspace summary using MarkdownRenderer and MermaidRenderer,
+ * with Generate Summary action placed in the main header right side via HeaderPortal.
  */
 
 import React from 'react';
 import { MarkdownRenderer, MermaidRenderer, Button } from '@/components/ui';
+import { HeaderPortal } from '@/components/layout/HeaderPortal';
 
 export function SummarySectionLayout({
   workspaceId,
@@ -27,20 +29,18 @@ export function SummarySectionLayout({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', width: '100%' }}>
-      {/* Top Action Bar if content exists */}
-      {hasContent && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onGenerate}
-            loading={isGenerating}
-            disabled={isLoading}
-          >
-            Generate Summary
-          </Button>
-        </div>
-      )}
+      {/* Header Action Portal — places Generate / Regenerate Summary button on main-header right side */}
+      <HeaderPortal>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onGenerate}
+          loading={isGenerating}
+          disabled={isLoading}
+        >
+          {hasContent ? 'Regenerate Summary' : 'Generate Summary'}
+        </Button>
+      </HeaderPortal>
 
       {/* Error Banner */}
       {error && (
@@ -108,7 +108,7 @@ export function SummarySectionLayout({
             No Workspace Summary Generated Yet
           </div>
           <div style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)' }}>
-            Click "Generate Summary" to synthesize document knowledge into a structured summary.
+            Click "Generate Summary" in the header to synthesize document knowledge into a structured summary.
           </div>
           <Button variant="primary" size="md" onClick={onGenerate}>
             Generate Summary
