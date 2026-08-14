@@ -15,11 +15,9 @@ export function ChatSection({ workspaceId: propWorkspaceId }) {
     question,
     setQuestion,
     chatResponse,
-    searchResults,
     isLoading,
     error,
     sendQuestion,
-    semanticSearch,
   } = useChatSection(workspaceId);
 
   return (
@@ -28,11 +26,9 @@ export function ChatSection({ workspaceId: propWorkspaceId }) {
       question={question}
       setQuestion={setQuestion}
       chatResponse={chatResponse}
-      searchResults={searchResults}
       isLoading={isLoading}
       error={error}
       onSendQuestion={sendQuestion}
-      onSemanticSearch={semanticSearch}
     />
   );
 }
