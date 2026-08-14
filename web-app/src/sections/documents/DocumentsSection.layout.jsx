@@ -1,13 +1,13 @@
 /**
  * DocumentsSection — Structural Layout Layer
  *
- * Displays the raw received documents list JSON payload and provides file upload trigger.
+ * Displays the workspace documents and provides file upload in main-header via HeaderPortal.
  */
 
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/Button';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
+import { HeaderPortal } from '@/components/layout/HeaderPortal';
+import { Upload } from 'lucide-react';
 
 export function DocumentsSectionLayout({
   workspaceId,
@@ -15,7 +15,6 @@ export function DocumentsSectionLayout({
   isLoading,
   isUploading,
   error,
-  onRefetch,
   onUploadFile,
   onDeleteDocument,
 }) {
@@ -37,27 +36,20 @@ export function DocumentsSectionLayout({
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
-      {/* Page Header with Actions */}
-      <PageHeader
-        title="Documents"
-        description="Manage uploaded workspace documents and knowledge sources"
-      >
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <CopyPayloadButton payload={documentsData} />
-          <Button variant="secondary" size="sm" onClick={onRefetch} disabled={isLoading || isUploading}>
-            Refetch List
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            loading={isUploading}
-            disabled={isLoading}
-          >
-            Upload Document
-          </Button>
-        </div>
-      </PageHeader>
+
+      {/* Header Action Portal — places Upload Document button on main-header right side */}
+      <HeaderPortal target="actions">
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          loading={isUploading}
+          disabled={isLoading}
+        >
+          <Upload size={14} style={{ marginRight: '6px' }} />
+          Upload Document
+        </Button>
+      </HeaderPortal>
 
       {/* Error state */}
       {error && (

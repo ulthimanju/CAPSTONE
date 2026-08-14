@@ -16,7 +16,6 @@ export function DocumentsSection({ workspaceId: propWorkspaceId }) {
     isLoading,
     isUploading,
     error,
-    refetch,
     uploadFile,
     deleteDocument,
   } = useDocumentsSection(workspaceId);
@@ -28,7 +27,6 @@ export function DocumentsSection({ workspaceId: propWorkspaceId }) {
       isLoading={isLoading}
       isUploading={isUploading}
       error={error}
-      onRefetch={refetch}
       onUploadFile={uploadFile}
       onDeleteDocument={deleteDocument}
     />
