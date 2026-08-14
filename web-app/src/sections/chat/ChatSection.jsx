@@ -4,6 +4,9 @@
  * Connects useChatSection hook to ChatSectionLayout.
  */
 
+import React from 'react';
+import { useChatSection } from './ChatSection.logic';
+import { ChatSectionLayout } from './ChatSection.layout';
 import { CopyPayloadButton } from '@/components/ui/CopyPayloadButton';
 
 export function ChatHeaderActions({ workspaceId }) {
