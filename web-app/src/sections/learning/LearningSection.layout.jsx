@@ -1,14 +1,14 @@
 /**
  * LearningSection — Structural Layout Layer
  *
- * Renders structured learning path curriculum units with MarkdownRenderer,
- * individual unit expand/collapse, and header action via HeaderPortal.
+ * Renders structured learning path modules as elegant grid cards matching design specs,
+ * with Generate/Regenerate Learning Path button in the main header via HeaderPortal.
  */
 
-import React, { useState } from 'react';
-import { MarkdownRenderer, Button, Badge } from '@/components/ui';
+import React from 'react';
+import { MarkdownRenderer, Button } from '@/components/ui';
 import { HeaderPortal } from '@/components/layout/HeaderPortal';
-import { BookOpen, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { BookOpen, Sparkles } from 'lucide-react';
 
 export function LearningSectionLayout({
   workspaceId,
@@ -18,28 +18,18 @@ export function LearningSectionLayout({
   error,
   onGenerate,
 }) {
-  const [expandedUnits, setExpandedUnits] = useState({});
-
   // Extract content payload: backend returns { learning_path: { title, description, units } } or direct
   const rawPayload = learningData?.learning_path !== undefined ? learningData.learning_path : learningData;
   const payload = rawPayload?.learning_path_json || rawPayload?.generated || rawPayload;
 
-  const title = payload?.title || 'Workspace Curriculum';
   const description = payload?.description;
   const units = payload?.units || [];
 
   const hasContent = Boolean(description || (Array.isArray(units) && units.length > 0));
 
-  const toggleUnit = (index) => {
-    setExpandedUnits((prev) => ({
-      ...prev,
-      [index]: !prev[index],
-    }));
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', width: '100%' }}>
-      {/* Header Action Portal — places Generate / Regenerate Learning Path button on main-header right side */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', width: '100%' }}>
+      {/* Header Action Portal — places Generate / Regenerate button on main-header right side */}
       <HeaderPortal>
         <Button
           variant="primary"
@@ -118,7 +108,7 @@ export function LearningSectionLayout({
         >
           Loading learning path...
         </div>
-      ) : !hasContent ? (
+      ) : !hasContent && !isGenerating ? (
         /* Empty State */
         <div
           style={{
@@ -126,7 +116,7 @@ export function LearningSectionLayout({
             textAlign: 'center',
             background: 'var(--bg-surface)',
             borderRadius: 'var(--radius-lg)',
-            border: '1px solid var(--line)',
+            border: '1px dashed var(--line)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -162,162 +152,82 @@ export function LearningSectionLayout({
               Synthesize your workspace documentation into a structured, step-by-step modular curriculum.
             </div>
           </div>
-          <Button variant="primary" size="md" onClick={onGenerate} loading={isGenerating}>
+          <Button variant="primary" size="md" onClick={onGenerate}>
             <Sparkles size={16} style={{ marginRight: 'var(--space-2)' }} />
             Generate Learning Path
           </Button>
         </div>
       ) : (
-        /* Structured Learning Path View */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          {/* Header Card / Curriculum Overview */}
-          <div
-            style={{
-              background: 'var(--bg-surface)',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--line)',
-              padding: 'var(--space-6)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-4)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                flexWrap: 'wrap',
-                gap: 'var(--space-3)',
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <Badge variant="primary" size="sm">
-                    Curriculum
-                  </Badge>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    {units.length} Learning {units.length === 1 ? 'Unit' : 'Units'}
-                  </span>
-                </div>
-                <h2
+        /* Learning Modules Grid Cards */
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: 'var(--space-6)',
+            width: '100%',
+          }}
+        >
+          {units.map((unit, index) => {
+            const moduleNum = String(index + 1).padStart(2, '0');
+
+            return (
+              <div
+                key={unit.id || index}
+                style={{
+                  background: 'var(--bg-surface)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--line)',
+                  padding: 'var(--space-6) var(--space-7)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-3)',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+                }}
+              >
+                {/* Module Number Label */}
+                <div
                   style={{
-                    fontSize: 'var(--text-2xl)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 'var(--weight-semibold)',
+                    color: 'var(--text-muted)',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  MODULE {moduleNum}
+                </div>
+
+                {/* Module Title */}
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 'var(--text-xl)',
                     fontWeight: 'var(--weight-bold)',
                     color: 'var(--text)',
+                    lineHeight: 'var(--leading-snug)',
                     margin: 0,
                   }}
                 >
-                  {title}
-                </h2>
-              </div>
-            </div>
+                  {unit.title}
+                </h3>
 
-            {description && (
-              <div style={{ borderTop: '1px solid var(--line-soft)', paddingTop: 'var(--space-3)' }}>
-                <MarkdownRenderer content={description} />
-              </div>
-            )}
-          </div>
-
-          {/* Units List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <h3
-              style={{
-                fontSize: 'var(--text-lg)',
-                fontWeight: 'var(--weight-semibold)',
-                color: 'var(--text)',
-                margin: 0,
-                paddingLeft: 'var(--space-1)',
-              }}
-            >
-              Learning Modules & Milestones
-            </h3>
-
-            {units.map((unit, index) => {
-              const isExpanded = Boolean(expandedUnits[index]);
-
-              return (
-                <div
-                  key={unit.id || index}
-                  style={{
-                    background: 'var(--bg-surface)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--line)',
-                    overflow: 'hidden',
-                    transition: 'border-color 0.15s ease',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleUnit(index)}
+                {/* Module Description */}
+                {unit.description && (
+                  <div
                     style={{
-                      width: '100%',
-                      padding: 'var(--space-4) var(--space-5)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      color: 'inherit',
-                      gap: 'var(--space-4)',
+                      fontFamily: 'var(--font-body)',
+                      fontSize: 'var(--text-sm)',
+                      lineHeight: 'var(--leading-relaxed)',
+                      color: 'var(--text-soft)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flex: 1 }}>
-                      <div
-                        style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: 'var(--radius-full)',
-                          background: 'var(--bg-raised)',
-                          border: '1px solid var(--line)',
-                          color: 'var(--accent)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 'var(--text-xs)',
-                          fontFamily: 'var(--font-mono)',
-                          fontWeight: 'var(--weight-bold)',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {index + 1}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span
-                          style={{
-                            fontSize: 'var(--text-base)',
-                            fontWeight: 'var(--weight-semibold)',
-                            color: 'var(--text)',
-                          }}
-                        >
-                          {unit.title}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-muted)' }}>
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </div>
-                  </button>
-
-                  {isExpanded && (
-                    <div
-                      style={{
-                        padding: 'var(--space-4) var(--space-5) var(--space-5)',
-                        borderTop: '1px solid var(--line-soft)',
-                        background: 'var(--bg-raised)',
-                      }}
-                    >
-                      <MarkdownRenderer content={unit.description} />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    <MarkdownRenderer content={unit.description} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
