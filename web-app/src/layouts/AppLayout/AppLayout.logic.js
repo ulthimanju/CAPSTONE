@@ -87,10 +87,11 @@ export function useAppLayout() {
           const wsList = Array.isArray(data) ? data : (data.workspaces ?? []);
           setWorkspaces(wsList);
 
-          // Auto-select first workspace and default to summary section if on base /workspaces route
+          // Auto-select first workspace on initial load if on bare /workspaces route
           if (wsList.length > 0) {
-            const currentWs = extractWorkspaceId(location.pathname);
-            if (!currentWs || location.pathname === '/workspaces' || location.pathname === '/workspaces/') {
+            const currentPath = window.location.pathname;
+            const currentWs = extractWorkspaceId(currentPath);
+            if (!currentWs || currentPath === '/workspaces' || currentPath === '/workspaces/') {
               navigate(`/workspaces/${wsList[0].id}`, { replace: true });
             }
           }
@@ -104,7 +105,7 @@ export function useAppLayout() {
 
     fetchWorkspaces();
     return () => { cancelled = true; };
-  }, [user, location.pathname, navigate]);
+  }, [user, navigate]);
 
   // ── Derived values ───────────────────────────────────────────────────────
   const activeTab        = resolveActiveTab(location.pathname, searchParams);

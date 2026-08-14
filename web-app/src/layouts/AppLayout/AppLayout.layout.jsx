@@ -101,12 +101,12 @@ function SidebarItem({ item, workspaceId, onAction }) {
     );
   }
 
-  // Navigation items — render as Link
-  const resolvedHref = resolvePath(item, workspaceId);
+  // Navigation items — render as Link with explicit onClick navigation
+  const resolvedHref = resolvePath(item, workspaceId) ?? '/workspaces';
 
   return (
     <Link
-      to={resolvedHref ?? '/workspaces'}
+      to={resolvedHref}
       className={`sidebar-item${active ? ' is-active' : ''}`}
       aria-current={active ? 'page' : undefined}
     >
