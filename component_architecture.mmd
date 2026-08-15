@@ -2,6 +2,8 @@ flowchart LR
 
 USER[User / Client]
 
+WEB[web-app (React 18 + Vite)]
+
 GW[api-gateway]
 
 ID[identity-service]
@@ -32,7 +34,9 @@ GEMINI[Gemini]
 
 GOOGLE[Google OAuth]
 
-USER --> GW
+USER --> WEB
+
+WEB --> GW
 
 GW --> ID
 GW --> WS
