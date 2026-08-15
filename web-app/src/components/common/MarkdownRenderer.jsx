@@ -164,19 +164,72 @@ const defaultComponents = {
 };
 
 /**
- * Preprocesses markdown text to prevent bold currency expressions (e.g. "**$50** to **$60**", "$50 to $60")
- * from being misparsed by remark-math as multi-word LaTeX math equations, while keeping valid LaTeX inline
- * and block math ($50\%$, $\frac{1}{2}$, $0.50$, $$...$$) intact.
+ * Converts LaTeX vertical fraction notation (\frac{A}{B}) into clean inline division (A/B)
+ */
+function replaceLatexFractions(str) {
+  if (!str || (!str.includes('\\frac') && !str.includes('\\tfrac') && !str.includes('\\cfrac'))) {
+    return str;
+  }
+
+  function findMatchingBrace(text, startIdx) {
+    let depth = 0;
+    for (let i = startIdx; i < text.length; i++) {
+      if (text[i] === '{') depth++;
+      else if (text[i] === '}') {
+        depth--;
+        if (depth === 0) return i;
+      }
+    }
+    return -1;
+  }
+
+  let result = '';
+  let i = 0;
+  while (i < str.length) {
+    const fracMatch = str.slice(i).match(/^\\(?:frac|tfrac|cfrac)\s*\{/);
+    if (fracMatch) {
+      const numStart = i + fracMatch[0].length;
+      const numEnd = findMatchingBrace(str, numStart - 1);
+      if (numEnd !== -1 && str[numEnd + 1] === '{') {
+        const denStart = numEnd + 2;
+        const denEnd = findMatchingBrace(str, denStart - 1);
+        if (denEnd !== -1) {
+          const num = replaceLatexFractions(str.slice(numStart, numEnd).trim());
+          const den = replaceLatexFractions(str.slice(denStart, denEnd).trim());
+          const needsParenNum = /[+\-]/.test(num) && !num.startsWith('(');
+          const needsParenDen = /[+\-*\/]/.test(den) && !den.startsWith('(');
+          const fmtNum = needsParenNum ? `(${num})` : num;
+          const fmtDen = needsParenDen ? `(${den})` : den;
+          result += `${fmtNum}/${fmtDen}`;
+          i = denEnd + 1;
+          continue;
+        }
+      }
+    }
+    result += str[i];
+    i++;
+  }
+  return result;
+}
+
+/**
+ * Preprocesses markdown text:
+ * 1. Converts stacked LaTeX fractions (\frac{1}{2}) to clean inline division (1/2)
+ * 2. Prevents bold currency expressions ("**$50** to **$60**") from triggering math mode
+ * 3. Keeps valid LaTeX math and equations intact
  */
 export function preprocessMarkdownForMath(text) {
   if (!text || typeof text !== 'string') return text;
 
-  // Protect code blocks (```...``` and `...`) and display math ($$...$$) from being modified
+  // Protect code blocks (```...``` and `...`) from being modified
   const protectedBlocks = [];
-  let processed = text.replace(/(```[\s\S]*?```|`[^`\n]+`|\$\$[\s\S]*?\$\$)/g, (match) => {
+  let processed = text.replace(/(```[\s\S]*?```|`[^`\n]+`)/g, (match) => {
     protectedBlocks.push(match);
-    return `__PROTECTED_MATH_BLOCK_${protectedBlocks.length - 1}__`;
+    return `__PROTECTED_CODE_BLOCK_${protectedBlocks.length - 1}__`;
   });
+
+  // Convert LaTeX fractions (\frac{A}{B}) to inline division (A/B)
+  processed = replaceLatexFractions(processed);
 
   // 1. Escape currency inside bold/italic markdown spans (e.g. "**$50** to **$60**" or "*$50*")
   processed = processed.replace(
@@ -192,11 +245,9 @@ export function preprocessMarkdownForMath(text) {
 
   // 3. Fix false-positive inline math spans where text between $...$ contains markdown emphasis or multi-word sentences
   processed = processed.replace(/\$([^\$\n]+)\$/g, (match, inner) => {
-    // If it contains markdown bold/italic asterisks or underscores across words
     if (/\*{1,2}|_{1,2}/.test(inner)) {
       return `\\$${inner}\\$`;
     }
-    // If it contains common English sentence words with spaces and has no LaTeX backslash commands
     const hasBackslash = inner.includes('\\');
     const hasEnglishWords = /\s+(to|from|and|or|in|with|for|the|is|are|was|were|increases|decreases|than|means|which|simplifies)\s+/i.test(inner);
     if (!hasBackslash && hasEnglishWords) {
@@ -206,7 +257,7 @@ export function preprocessMarkdownForMath(text) {
   });
 
   // Restore protected blocks
-  processed = processed.replace(/__PROTECTED_MATH_BLOCK_(\d+)__/g, (_, idx) => protectedBlocks[Number(idx)] || '');
+  processed = processed.replace(/__PROTECTED_CODE_BLOCK_(\d+)__/g, (_, idx) => protectedBlocks[Number(idx)] || '');
 
   return processed;
 }

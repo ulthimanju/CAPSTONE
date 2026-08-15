@@ -102,11 +102,11 @@ describe('AI Tutor RAG Chat Component', () => {
     expect(processed).toContain('$$\\text{Difference} = 60 - 50 = 10$$');
   });
 
-  it('preserves valid inline LaTeX math expressions intact', () => {
+  it('preserves valid inline LaTeX math expressions intact and renders fractions as 1/2', () => {
     const input = "For example, $50\\%$ means 50 out of 100, which simplifies to the fraction $\\frac{1}{2}$ or the decimal $0.50$, multiply by $100$ and add the $\\%$ sign.";
     const processed = preprocessMarkdownForMath(input);
     expect(processed).toContain('$50\\%$');
-    expect(processed).toContain('$\\frac{1}{2}$');
+    expect(processed).toContain('$1/2$');
     expect(processed).toContain('$0.50$');
     expect(processed).toContain('$100$');
     expect(processed).toContain('$\\%$');
