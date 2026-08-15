@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/Input';
 import { inviteMemberRequestSchema } from '../schemas/memberSchemas';
 import { useInviteMemberMutation } from '../hooks/useMembers';
 import { cn } from '@/lib/cn';
+import { toast } from 'sonner';
 
 export function InviteCollaboratorModal({ workspaceId, open, onOpenChange, onSuccess }) {
   const {
@@ -32,10 +33,21 @@ export function InviteCollaboratorModal({ workspaceId, open, onOpenChange, onSuc
   });
 
   const inviteMutation = useInviteMemberMutation(workspaceId, {
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      const targetEmail = variables?.email || data?.invited_email || 'collaborator';
+      const assignedRole = variables?.role || data?.role || 'EDITOR';
+      toast.success(`Invitation successfully sent to ${targetEmail} as ${assignedRole}!`);
       reset();
       onOpenChange(false);
       onSuccess?.(data);
+    },
+    onError: (err) => {
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.detail ||
+        err?.message ||
+        'Failed to send invitation. Please verify the email and try again.';
+      toast.error(errorMsg);
     },
   });
 
