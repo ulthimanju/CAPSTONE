@@ -9,8 +9,9 @@ import {
   uploadDocumentFormSchema,
 } from '@/features/documents/schemas/documentSchemas';
 import { DocumentListTable } from '@/features/documents/components/DocumentListTable';
-import { UploadDocumentModal } from '@/features/documents/components/UploadDocumentModal';
 import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPage';
+import { Header } from '@/components/layout/Header';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 import { documentApi } from '@/features/documents/api/documentApi';
 
 describe('Document Schemas & File Size Rules', () => {
@@ -115,8 +116,12 @@ describe('DocumentListTable Component', () => {
   });
 });
 
-describe('UploadDocumentModal Component', () => {
-  it('validates file selection and submits upload mutation', async () => {
+describe('Direct Document Upload Flow in Header', () => {
+  beforeEach(() => {
+    useWorkspaceStore.setState({ activeWorkspaceId: 'ws-123' });
+  });
+
+  it('directly triggers upload mutation when file is selected without intermediary confirmation modal', async () => {
     const user = userEvent.setup();
     const uploadSpy = vi.spyOn(documentApi, 'uploadDocumentFile').mockResolvedValue({
       id: 'doc-new',
@@ -128,21 +133,14 @@ describe('UploadDocumentModal Component', () => {
       created_at: '2026-08-15T10:00:00Z',
     });
 
-    const onOpenChange = vi.fn();
-    renderWithProviders(
-      <UploadDocumentModal workspaceId="ws-123" open={true} onOpenChange={onOpenChange} />
-    );
+    renderWithProviders(<Header />);
 
-    expect(screen.getByRole('heading', { name: /upload document/i })).toBeInTheDocument();
+    const uploadBtn = screen.getByRole('button', { name: /upload document/i });
+    expect(uploadBtn).toBeInTheDocument();
 
     const file = new File(['sample content'], 'Syllabus.pdf', { type: 'application/pdf' });
     const input = document.querySelector('input[type="file"]');
     await user.upload(input, file);
-
-    expect(screen.getByText('Syllabus.pdf')).toBeInTheDocument();
-
-    const uploadBtn = screen.getByRole('button', { name: /upload document/i });
-    await user.click(uploadBtn);
 
     await waitFor(() => {
       expect(uploadSpy).toHaveBeenCalledWith(
@@ -157,9 +155,7 @@ describe('UploadDocumentModal Component', () => {
   it('rejects oversized image with error message', async () => {
     const user = userEvent.setup();
 
-    renderWithProviders(
-      <UploadDocumentModal workspaceId="ws-123" open={true} onOpenChange={vi.fn()} />
-    );
+    renderWithProviders(<Header />);
 
     // 15MB Image (> 10MB limit)
     const bigImage = new File(['a'.repeat(15 * 1024 * 1024)], 'screenshot.png', { type: 'image/png' });
@@ -167,7 +163,7 @@ describe('UploadDocumentModal Component', () => {
     await user.upload(input, bigImage);
 
     expect(
-      screen.getByText(/image file size exceeds maximum allowed limit of 10 mb/i)
+      await screen.findByText(/image file size exceeds maximum allowed limit of 10 mb/i)
     ).toBeInTheDocument();
   });
 });
