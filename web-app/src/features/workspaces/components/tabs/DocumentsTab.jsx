@@ -3,7 +3,6 @@ import { useOutletContext } from 'react-router-dom';
 import { FileText, Upload, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { GoogleDriveIcon } from '@/components/ui/GoogleDriveIcon';
 import { useWorkspaceDocumentsQuery } from '@/features/documents/hooks/useDocuments';
 import { UploadDocumentModal } from '@/features/documents/components/UploadDocumentModal';
 import { DocumentListTable } from '@/features/documents/components/DocumentListTable';
@@ -38,14 +37,6 @@ export function DocumentsTab({ workspace: propWorkspace }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            leftIcon={<GoogleDriveIcon className="h-4 w-4" />}
-            className="text-xs"
-          >
-            Import from Drive
-          </Button>
-
           <Button
             onClick={() => setIsUploadModalOpen(true)}
             leftIcon={<Upload className="h-4 w-4" />}
