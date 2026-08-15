@@ -306,6 +306,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
     ports:
+      - "80:5173"
       - "5173:5173"
     networks:
       - cpa-network

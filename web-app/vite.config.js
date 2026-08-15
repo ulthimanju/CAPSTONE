@@ -17,9 +17,7 @@ export default defineConfig({
       usePolling: true, // Required for Docker volume mounts on Windows/Linux to trigger HMR
       interval: 100,
     },
-    hmr: {
-      clientPort: 5173,
-    },
+    hmr: true,
     proxy: {
       '/api': {
         target: process.env.VITE_API_GATEWAY_URL || 'http://localhost:8000',
