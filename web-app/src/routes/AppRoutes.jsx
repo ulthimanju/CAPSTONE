@@ -10,6 +10,7 @@ import { OverviewTab } from '@/features/workspaces/components/tabs/OverviewTab';
 import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab';
 import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
 import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
+import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPage';
 import { ROUTES } from '@/config/constants';
 
 export function AppRoutes() {
@@ -27,6 +28,7 @@ export function AppRoutes() {
             <Route index element={<OverviewTab />} />
             <Route path="overview" element={<OverviewTab />} />
             <Route path="documents" element={<DocumentsTab />} />
+            <Route path="documents/:documentId" element={<DocumentReaderPage />} />
             <Route path="collaborators" element={<CollaboratorsTab />} />
             <Route path="settings" element={<SettingsTab />} />
           </Route>
