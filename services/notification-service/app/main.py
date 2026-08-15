@@ -10,7 +10,10 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from app.infrastructure.database.mongo import init_mongo_indices, close_mongo_client
+    await init_mongo_indices()
     yield
+    await close_mongo_client()
 
 app = FastAPI(title="Notification Service", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CorrelationIdMiddleware)
@@ -28,6 +31,7 @@ import asyncio
 from fastapi.responses import JSONResponse
 from app.config.settings import settings
 from shared.health import check_redis, check_rabbitmq
+from app.infrastructure.database.mongo import check_mongo_health
 
 
 @app.get("/health/live")
@@ -40,16 +44,18 @@ async def liveness_check():
 async def readiness_check():
     rabbit_task = check_rabbitmq(settings.rabbitmq_url)
     redis_task = check_redis(settings.redis_url)
+    mongo_task = check_mongo_health()
 
-    (rabbit_ok, rabbit_status), (redis_ok, redis_status) = await asyncio.gather(
-        rabbit_task, redis_task
+    (rabbit_ok, rabbit_status), (redis_ok, redis_status), (mongo_ok, mongo_status) = await asyncio.gather(
+        rabbit_task, redis_task, mongo_task
     )
 
     checks = {
         "rabbitmq": rabbit_status,
         "redis": redis_status,
+        "mongodb": mongo_status,
     }
-    all_ok = rabbit_ok and redis_ok
+    all_ok = rabbit_ok and redis_ok and mongo_ok
     status_code = 200 if all_ok else 503
     return JSONResponse(
         status_code=status_code,

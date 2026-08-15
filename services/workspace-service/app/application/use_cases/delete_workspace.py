@@ -29,6 +29,7 @@ class DeleteWorkspaceUseCase:
         if workspace.owner_id != user_id:
             raise HTTPException(status_code=403, detail="Only owner can delete workspace")
 
+        ws_name = workspace.name
         activity = WorkspaceActivity(
             id=generate_uuid(),
             workspace_id=workspace_id,
@@ -36,10 +37,27 @@ class DeleteWorkspaceUseCase:
             activity_type=ActivityType.WORKSPACE_DELETED,
             entity_type="workspace",
             entity_id=workspace_id,
-            metadata_json={},
+            metadata_json={"action": "DELETE", "workspace_name": ws_name},
             created_at=datetime.now(timezone.utc),
         )
         await self.activity_repo.record_activity(activity)
+
+        # Dispatch real-time and persistent MongoDB notification
+        try:
+            from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            await dispatch_workspace_notification(
+                event_name="workspace.deleted",
+                workspace_id=workspace_id,
+                workspace_name=ws_name,
+                actor_id=user_id,
+                actor_name=None,
+                title="Workspace Deleted",
+                message=f"Workspace '{ws_name}' was permanently deleted",
+                metadata={"action": "DELETE", "workspace_name": ws_name},
+                recipient_ids=[user_id],
+            )
+        except Exception:
+            pass
 
         res = await self.workspace_repo.delete(workspace_id)
         await self.cache.invalidate(workspace_id)

@@ -47,9 +47,26 @@ class RestoreWorkspaceUseCase:
             activity_type=ActivityType.WORKSPACE_RESTORED,
             entity_type="workspace",
             entity_id=workspace_id,
-            metadata_json={},
+            metadata_json={"action": "RESTORE"},
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
+
+        # Dispatch real-time and persistent MongoDB notification
+        try:
+            from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            await dispatch_workspace_notification(
+                event_name="workspace.restored",
+                workspace_id=workspace_id,
+                workspace_name=workspace.name,
+                actor_id=user_id,
+                actor_name=None,
+                title="Workspace Restored",
+                message=f"Workspace '{workspace.name}' has been restored to active status",
+                metadata={"action": "RESTORE", "workspace_name": workspace.name},
+                recipient_ids=[user_id],
+            )
+        except Exception:
+            pass
 
         return WorkspaceResponse.model_validate(updated)

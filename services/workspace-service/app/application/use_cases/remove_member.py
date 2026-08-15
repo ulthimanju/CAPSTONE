@@ -45,10 +45,27 @@ class RemoveMemberUseCase:
                 activity_type=ActivityType.MEMBER_REMOVED,
                 entity_type="member",
                 entity_id=member_user_id,
-                metadata_json={"removed_user_id": str(member_user_id)},
+                metadata_json={"removed_user_id": str(member_user_id), "workspace_name": workspace.name},
                 created_at=datetime.now(timezone.utc),
             )
             await self.activity_repo.record_activity(activity)
             await self.cache.invalidate_user_workspaces(member_user_id)
             await self.cache.invalidate_workspace_members(workspace_id)
+
+            # Dispatch real-time and persistent MongoDB notification
+            try:
+                from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+                await dispatch_workspace_notification(
+                    event_name="workspace.collaborator_removed",
+                    workspace_id=workspace_id,
+                    workspace_name=workspace.name,
+                    actor_id=actor_id,
+                    actor_name=None,
+                    title="Collaborator Removed",
+                    message=f"Collaborator was removed from workspace '{workspace.name}'",
+                    metadata={"removed_user_id": str(member_user_id), "workspace_name": workspace.name},
+                    recipient_ids=[actor_id, member_user_id],
+                )
+            except Exception:
+                pass
         return success

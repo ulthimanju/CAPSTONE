@@ -47,9 +47,26 @@ class ArchiveWorkspaceUseCase:
             activity_type=ActivityType.WORKSPACE_ARCHIVED,
             entity_type="workspace",
             entity_id=workspace_id,
-            metadata_json={},
+            metadata_json={"action": "ARCHIVE"},
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
+
+        # Dispatch real-time and persistent MongoDB notification
+        try:
+            from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            await dispatch_workspace_notification(
+                event_name="workspace.archived",
+                workspace_id=workspace_id,
+                workspace_name=workspace.name,
+                actor_id=user_id,
+                actor_name=None,
+                title="Workspace Archived",
+                message=f"Workspace '{workspace.name}' has been archived",
+                metadata={"action": "ARCHIVE", "workspace_name": workspace.name},
+                recipient_ids=[user_id],
+            )
+        except Exception:
+            pass
 
         return WorkspaceResponse.model_validate(updated)

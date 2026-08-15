@@ -1,6 +1,6 @@
 import uuid
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from app.schemas.notification import PlatformEvent, NotificationListResponse
@@ -31,51 +31,54 @@ async def stream_notifications(user_id: uuid.UUID = Depends(get_current_user_id)
 
 @router.post("/events")
 async def publish_platform_event(event: PlatformEvent):
-    # Enforce notification event idempotency
-    is_new, item = notification_store.add_event_notification(event)
+    # Enforce notification event idempotency and persist in MongoDB
+    is_new, item = await notification_store.add_event_notification_async(event)
     if not is_new:
         return {"status": "skipped_duplicate", "event_id": str(event.event_id)}
 
     # Stream real-time event to connected SSE clients
-    channel_id = str(event.user_id) if event.user_id else "global"
+    channel_id = str(event.recipient_id or event.user_id) if (event.recipient_id or event.user_id) else "global"
     await sse_manager.broadcast_event(event, channel_id=channel_id)
 
     # Send real email notification for workspace invitations if target email is present
     if event.event_name == "WorkspaceInvitationSent" or "invitation" in event.event_name.lower():
-        invited_email = getattr(event, "invited_email", None) or (event.metadata_json or {}).get("invited_email")
-        role_val = getattr(event, "role", None) or (event.metadata_json or {}).get("role") or "VIEWER"
+        invited_email = getattr(event, "invited_email", None) or (event.metadata or {}).get("invited_email")
+        role_val = getattr(event, "role", None) or (event.metadata or {}).get("role") or "VIEWER"
         if invited_email:
             try:
                 from app.infrastructure.services.email_service import EmailNotificationService
                 email_svc = EmailNotificationService()
                 email_svc.send_invitation_email(
                     to_email=invited_email,
-                    workspace_name=str(event.workspace_id),
+                    workspace_name=str(event.workspace_name or event.workspace_id),
                     role=str(role_val),
                 )
-            except Exception as mail_err:
+            except Exception:
                 pass
 
-    return {"status": "broadcasted", "event_id": str(event.event_id)}
+    return {"status": "broadcasted", "event_id": str(event.event_id), "notification_id": str(item.id) if item else None}
 
-
-from fastapi import APIRouter, Depends, HTTPException, Query
 
 @router.get("", response_model=NotificationListResponse)
 async def list_notifications(
     user_id: uuid.UUID = Depends(get_current_user_id),
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ):
-    items = notification_store.get_user_notifications(user_id)
-    unread = notification_store.get_unread_count(user_id)
-    paginated = items[offset : offset + limit]
-    return NotificationListResponse(notifications=paginated, unread_count=unread)
+    items = await notification_store.get_user_notifications_async(user_id, limit=limit, offset=offset)
+    unread = await notification_store.get_unread_count_async(user_id)
+    return NotificationListResponse(notifications=items, unread_count=unread)
+
+
+@router.patch("/read-all")
+async def mark_all_as_read(user_id: uuid.UUID = Depends(get_current_user_id)):
+    count = await notification_store.mark_all_as_read_async(user_id)
+    return {"status": "success", "modified_count": count}
 
 
 @router.patch("/{notification_id}/read")
-async def mark_as_read(notification_id: uuid.UUID):
-    success = notification_store.mark_as_read(notification_id)
+async def mark_as_read(notification_id: uuid.UUID, user_id: uuid.UUID = Depends(get_current_user_id)):
+    success = await notification_store.mark_as_read_async(notification_id, user_id=user_id)
     if not success:
         raise HTTPException(status_code=404, detail="Notification not found")
     return {"status": "success"}

@@ -129,23 +129,20 @@ class InviteMemberUseCase:
         )
         await self.activity_repo.record_activity(activity)
 
-        # Dispatch notification event to notification-service (email notification)
+        # Dispatch notification event to notification-service (email notification & persistent in MongoDB)
         try:
-            import os, httpx
-            notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
-            async with httpx.AsyncClient(timeout=3.0) as client:
-                await client.post(
-                    f"{notification_url}/api/v1/notifications/events",
-                    json={
-                        "event_id": str(generate_uuid()),
-                        "event_name": "WorkspaceInvitationSent",
-                        "workspace_id": str(workspace_id),
-                        "user_id": str(req.user_id) if req.user_id else None,
-                        "status": "PENDING",
-                        "metadata_json": {"invited_email": target_email, "role": req.role.value},
-                        "timestamp": now.timestamp(),
-                    }
-                )
+            from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            await dispatch_workspace_notification(
+                event_name="workspace.collaborator_invited",
+                workspace_id=workspace_id,
+                workspace_name=workspace.name,
+                actor_id=invited_by,
+                actor_name=None,
+                title="Collaborator Invited",
+                message=f"Invited '{target_email or target_user_id}' as {req.role.value} to workspace '{workspace.name}'",
+                metadata={"collaborator_email": target_email, "role": req.role.value, "workspace_name": workspace.name},
+                recipient_ids=[invited_by, target_user_id] if target_user_id else [invited_by],
+            )
         except Exception:
             pass
 

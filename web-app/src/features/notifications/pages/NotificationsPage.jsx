@@ -1,51 +1,65 @@
 import React, { useState } from 'react';
-import { useParams, useOutletContext } from 'react-router-dom';
-import { Bell, CheckCheck, Clock, Mail, FileText, Sparkles } from 'lucide-react';
+import {
+  Bell,
+  CheckCheck,
+  Clock,
+  Mail,
+  FileText,
+  Sparkles,
+  Archive,
+  RotateCcw,
+  Edit3,
+  UserPlus,
+  UserMinus,
+  Trash2,
+  Folder,
+} from 'lucide-react';
+import {
+  useNotificationsQuery,
+  useMarkNotificationReadMutation,
+  useMarkAllNotificationsReadMutation,
+} from '../hooks/useNotifications';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { toast } from 'sonner';
 
 export function NotificationsPage() {
-  const { workspaceId } = useParams();
-  const context = useOutletContext() || {};
-  const workspace = context.workspace;
-
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'UNREAD'
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'notif-1',
-      title: 'Workspace Initialized',
-      message: workspace?.name
-        ? `Workspace "${workspace.name}" is ready for collaboration and document processing.`
-        : 'Welcome to SYNAPSE! Start by uploading your study materials.',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      type: 'SYSTEM',
-      read: false,
+
+  const { data, isLoading, error } = useNotificationsQuery({ limit: 100 });
+  const markReadMutation = useMarkNotificationReadMutation();
+  const markAllReadMutation = useMarkAllNotificationsReadMutation({
+    onSuccess: () => {
+      toast.success('All notifications marked as read');
     },
-    {
-      id: 'notif-2',
-      title: 'AI Tutor Ready',
-      message: 'Vector indexing is enabled for contextual questions and answers.',
-      timestamp: new Date(Date.now() - 86400000).toISOString(),
-      type: 'TUTOR',
-      read: true,
-    },
-  ]);
+  });
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const rawNotifications = data?.notifications || [];
+  const unreadCount = data?.unread_count ?? rawNotifications.filter((n) => n.status === 'UNREAD').length;
 
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const handleToggleRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
-    );
-  };
-
-  const filteredNotifications = notifications.filter((n) =>
-    filter === 'UNREAD' ? !n.read : true
+  const filteredNotifications = rawNotifications.filter((n) =>
+    filter === 'UNREAD' ? n.status === 'UNREAD' : true
   );
+
+  const getNotificationIcon = (item) => {
+    const evt = (item.event_type || item.title || '').toLowerCase();
+    if (evt.includes('archive')) return <Archive className="h-4 w-4" />;
+    if (evt.includes('restore') || evt.includes('unarchive')) return <RotateCcw className="h-4 w-4" />;
+    if (evt.includes('rename') || evt.includes('update')) return <Edit3 className="h-4 w-4" />;
+    if (evt.includes('invite') || evt.includes('join')) return <UserPlus className="h-4 w-4" />;
+    if (evt.includes('remove') || evt.includes('leave')) return <UserMinus className="h-4 w-4" />;
+    if (evt.includes('delete')) return <Trash2 className="h-4 w-4" />;
+    if (evt.includes('document')) return <FileText className="h-4 w-4" />;
+    if (item.type === 'TUTOR') return <Sparkles className="h-4 w-4" />;
+    if (item.type === 'INVITE') return <Mail className="h-4 w-4" />;
+    return <Bell className="h-4 w-4" />;
+  };
+
+  const handleToggleRead = (item) => {
+    if (item.status === 'UNREAD') {
+      markReadMutation.mutate(item.id);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
@@ -61,7 +75,7 @@ export function NotificationsPage() {
             )}
           </div>
           <p className="mt-1 font-body text-xs text-text/70">
-            Activity updates, document processing alerts, and collaborator invitations.
+            Workspace events, member updates, and real-time activity stored in MongoDB.
           </p>
         </div>
 
@@ -95,7 +109,8 @@ export function NotificationsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleMarkAllRead}
+              onClick={() => markAllReadMutation.mutate()}
+              isLoading={markAllReadMutation.isPending}
               leftIcon={<CheckCheck className="h-3.5 w-3.5" />}
               className="text-xs"
             >
@@ -105,8 +120,15 @@ export function NotificationsPage() {
         </div>
       </div>
 
+      {/* Loading state */}
+      {isLoading && (
+        <div className="py-16 text-center text-xs font-mono text-text/60">
+          Loading notifications...
+        </div>
+      )}
+
       {/* Notifications List */}
-      {filteredNotifications.length === 0 ? (
+      {!isLoading && filteredNotifications.length === 0 ? (
         <Card className="flex flex-col items-center justify-center border-dashed border-sep-line py-16 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-ui border border-sep-line bg-sand text-accent">
             <Bell className="h-6 w-6" aria-hidden="true" />
@@ -117,66 +139,76 @@ export function NotificationsPage() {
           <p className="mt-1 max-w-sm font-body text-xs text-text/70 leading-relaxed">
             {filter === 'UNREAD'
               ? 'You have caught up with all unread notifications.'
-              : 'You have no notifications in this workspace yet.'}
+              : 'You have no notifications yet.'}
           </p>
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredNotifications.map((item) => (
-            <Card
-              key={item.id}
-              onClick={() => handleToggleRead(item.id)}
-              className={`cursor-pointer transition-colors p-4 flex items-start justify-between gap-4 border ${
-                item.read
-                  ? 'bg-surface/60 border-sep-line/60 opacity-80'
-                  : 'bg-surface border-sep-line hover:border-accent shadow-xs'
-              }`}
-            >
-              <div className="flex items-start gap-3.5">
-                <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border ${
-                    item.read
-                      ? 'bg-sand/40 border-sep-line/40 text-text/50'
-                      : 'bg-sand border-sep-line text-accent'
-                  }`}
-                >
-                  {item.type === 'TUTOR' ? (
-                    <Sparkles className="h-4 w-4" />
-                  ) : item.type === 'INVITE' ? (
-                    <Mail className="h-4 w-4" />
-                  ) : (
-                    <Bell className="h-4 w-4" />
-                  )}
-                </div>
+          {filteredNotifications.map((item) => {
+            const isRead = item.status === 'READ';
+            return (
+              <Card
+                key={item.id}
+                onClick={() => handleToggleRead(item)}
+                className={`cursor-pointer transition-colors p-4 flex items-start justify-between gap-4 border ${
+                  isRead
+                    ? 'bg-surface/60 border-sep-line/60 opacity-80'
+                    : 'bg-surface border-sep-line hover:border-accent shadow-xs'
+                }`}
+              >
+                <div className="flex items-start gap-3.5">
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border ${
+                      isRead
+                        ? 'bg-sand/40 border-sep-line/40 text-text/50'
+                        : 'bg-sand border-sep-line text-accent'
+                    }`}
+                  >
+                    {getNotificationIcon(item)}
+                  </div>
 
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4
-                      className={`text-xs font-semibold ${
-                        item.read ? 'text-text/80' : 'text-text font-bold'
-                      }`}
-                    >
-                      {item.title}
-                    </h4>
-                    {!item.read && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4
+                        className={`text-xs ${
+                          isRead ? 'text-text/80 font-medium' : 'text-text font-bold'
+                        }`}
+                      >
+                        {item.title}
+                      </h4>
+                      {!isRead && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                      )}
+                      {item.workspace_name && (
+                        <span className="rounded bg-sand px-1.5 py-0.5 font-mono text-[9px] text-accent border border-sep-line/50">
+                          {item.workspace_name}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 font-body text-xs text-text/70 leading-relaxed">
+                      {item.message}
+                    </p>
+
+                    {/* Metadata details if renamed */}
+                    {item.metadata?.old_name && item.metadata?.new_name && (
+                      <p className="mt-1 font-mono text-[10px] text-text/60">
+                        Renamed from <span className="line-through">{item.metadata.old_name}</span> to <span className="font-semibold text-text">{item.metadata.new_name}</span>
+                      </p>
                     )}
-                  </div>
-                  <p className="mt-1 font-body text-xs text-text/70 leading-relaxed">
-                    {item.message}
-                  </p>
-                  <div className="mt-2 flex items-center gap-1 font-mono text-[10px] text-text/50">
-                    <Clock className="h-3 w-3" />
-                    <span>{new Date(item.timestamp).toLocaleString()}</span>
+
+                    <div className="mt-2 flex items-center gap-1 font-mono text-[10px] text-text/50">
+                      <Clock className="h-3 w-3" />
+                      <span>{new Date(item.created_at || Date.now()).toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <span className="font-mono text-[10px] text-text/40 shrink-0">
-                {item.read ? 'Read' : 'Click to mark read'}
-              </span>
-            </Card>
-          ))}
+                <span className="font-mono text-[10px] text-text/40 shrink-0">
+                  {isRead ? 'Read' : 'Click to mark read'}
+                </span>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

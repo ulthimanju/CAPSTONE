@@ -38,8 +38,12 @@ class UpdateWorkspaceUseCase:
         if not (is_owner or is_editor):
             raise HTTPException(status_code=403, detail="Permission denied to update workspace")
 
-        if req.name is not None:
+        old_name = workspace.name
+        is_renamed = False
+
+        if req.name is not None and req.name != old_name:
             workspace.name = req.name
+            is_renamed = True
         if req.visibility is not None:
             workspace.visibility = req.visibility
         if req.domain_type is not None:
@@ -53,6 +57,11 @@ class UpdateWorkspaceUseCase:
         if user_id != workspace.owner_id:
             await self.cache.invalidate_user_workspaces(user_id)
 
+        meta_fields = {"updated_fields": list(req.model_dump(exclude_unset=True).keys())}
+        if is_renamed:
+            meta_fields["old_name"] = old_name
+            meta_fields["new_name"] = workspace.name
+
         activity = WorkspaceActivity(
             id=generate_uuid(),
             workspace_id=workspace_id,
@@ -60,10 +69,34 @@ class UpdateWorkspaceUseCase:
             activity_type=ActivityType.WORKSPACE_UPDATED,
             entity_type="workspace",
             entity_id=workspace_id,
-            metadata_json={"updated_fields": list(req.model_dump(exclude_unset=True).keys())},
+            metadata_json=meta_fields,
             created_at=datetime.now(timezone.utc),
         )
         await self.activity_repo.record_activity(activity)
+
+        # Dispatch real-time and persistent MongoDB notification
+        try:
+            from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            evt_name = "workspace.renamed" if is_renamed else "workspace.updated"
+            notif_title = "Workspace Renamed" if is_renamed else "Workspace Settings Updated"
+            notif_msg = (
+                f"Workspace renamed from '{old_name}' to '{workspace.name}'"
+                if is_renamed
+                else f"Workspace '{workspace.name}' settings were updated"
+            )
+            await dispatch_workspace_notification(
+                event_name=evt_name,
+                workspace_id=workspace_id,
+                workspace_name=workspace.name,
+                actor_id=user_id,
+                actor_name=None,
+                title=notif_title,
+                message=notif_msg,
+                metadata=meta_fields,
+                recipient_ids=[user_id],
+            )
+        except Exception:
+            pass
 
         res = WorkspaceResponse.model_validate(updated)
         res.user_role = member.role if member else WorkspaceRole.OWNER

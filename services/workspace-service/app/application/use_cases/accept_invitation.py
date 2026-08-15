@@ -76,12 +76,29 @@ class AcceptInvitationUseCase:
             activity_type=ActivityType.MEMBER_JOINED,
             entity_type="member",
             entity_id=member.id,
-            metadata_json={"invitation_id": str(invitation_id)},
+            metadata_json={"invitation_id": str(invitation_id), "role": assigned_role.value if hasattr(assigned_role, "value") else str(assigned_role)},
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
 
         await self.cache.invalidate_user_workspaces(user_id)
         await self.cache.invalidate_workspace_members(invitation.workspace_id)
+
+        # Dispatch real-time and persistent MongoDB notification
+        try:
+            from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            await dispatch_workspace_notification(
+                event_name="workspace.collaborator_joined",
+                workspace_id=invitation.workspace_id,
+                workspace_name=str(invitation.workspace_id),
+                actor_id=user_id,
+                actor_name=user_email or str(user_id),
+                title="Collaborator Joined",
+                message=f"Collaborator '{user_email or user_id}' joined the workspace",
+                metadata={"role": assigned_role.value if hasattr(assigned_role, "value") else str(assigned_role), "user_email": user_email},
+                recipient_ids=[invitation.invited_by, user_id],
+            )
+        except Exception:
+            pass
 
         return InvitationResponse.model_validate(updated_invitation)

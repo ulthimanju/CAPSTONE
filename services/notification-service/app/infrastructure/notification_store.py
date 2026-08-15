@@ -1,86 +1,265 @@
-import os
 import uuid
 import logging
+from datetime import datetime, timezone
 from typing import List, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy import select, update, delete
-
 from app.schemas.notification import NotificationItem, PlatformEvent
-from app.constants.enums import NotificationStatus, NotificationType
-from app.infrastructure.database.models import ProcessedNotificationEventModel, NotificationHistoryModel
+from app.constants.enums import NotificationStatus, NotificationType, NotificationPriority
+from app.infrastructure.database.mongo import get_mongo_db
 from shared.constants import SYSTEM_USER_ID
 
 logger = logging.getLogger(__name__)
 
 
 class NotificationStore:
-    def __init__(self, session: AsyncSession | None = None):
-        self.session = session
+    def __init__(self):
         self._memory_processed: set[uuid.UUID] = set()
         self._memory_items: dict[uuid.UUID, NotificationItem] = {}
 
+    def _determine_notification_type(self, event_name: str) -> NotificationType:
+        name_lower = event_name.lower()
+        if "workspace" in name_lower:
+            return NotificationType.WORKSPACE
+        if "document" in name_lower:
+            return NotificationType.DOCUMENT
+        return NotificationType.SYSTEM
+
     async def add_event_notification_async(
-        self, event: PlatformEvent, session: AsyncSession
+        self, event: PlatformEvent
     ) -> Tuple[bool, NotificationItem | None]:
         """
-        Production PostgreSQL implementation: Performs atomic INSERT ON CONFLICT DO NOTHING.
-        If rowcount == 0, the event was already processed by another replica or prior to restart.
+        Saves a workspace or platform event as a rich JSON document in MongoDB collection 'notifications'.
+        Enforces idempotency using event_id + user_id.
         """
-        # 1. Atomic PostgreSQL insert into processed_notification_events table
-        stmt = (
-            pg_insert(ProcessedNotificationEventModel)
-            .values(event_id=event.event_id)
-            .on_conflict_do_nothing(index_elements=["event_id"])
-        )
-        res = await session.execute(stmt)
-        if res.rowcount == 0:
-            logger.info(f"PostgreSQL Notification Idempotency: Event {event.event_id} already exists. Skipping duplicate delivery.")
-            return False, None
+        user_id = event.recipient_id or event.user_id or SYSTEM_USER_ID
+        notif_id = uuid.uuid4()
+        notif_type = self._determine_notification_type(event.event_name)
 
-        # 2. Insert notification record
-        user_id = event.user_id or SYSTEM_USER_ID
+        title = event.title or f"{event.event_name} {event.status}"
+        message = event.message or f"Event {event.event_name} updated"
+
         item = NotificationItem(
-            id=uuid.uuid4(),
+            id=notif_id,
             event_id=event.event_id,
             user_id=user_id,
-            title=f"{event.event_name} {event.status}",
-            message=event.message or f"Event {event.event_name} status updated to {event.status}",
-            type=NotificationType.DOCUMENT if "Document" in event.event_name else NotificationType.SYSTEM,
-            payload=event.payload,
+            recipient_id=user_id,
+            workspace_id=event.workspace_id,
+            workspace_name=event.workspace_name or (event.metadata or {}).get("workspace_name"),
+            actor_id=event.actor_id,
+            actor_name=event.actor_name or (event.metadata or {}).get("actor_name"),
+            event_type=event.event_name,
+            title=title,
+            message=message,
+            type=notif_type,
+            priority=NotificationPriority.NORMAL,
+            status=NotificationStatus.UNREAD,
+            version=1,
+            metadata=event.metadata or {},
+            payload=event.payload or {},
+            created_at=datetime.now(timezone.utc),
+            read_at=None,
         )
 
-        history_model = NotificationHistoryModel(
-            id=item.id,
-            event_id=item.event_id,
-            user_id=item.user_id,
-            title=item.title,
-            message=item.message,
-            type=item.type.value if hasattr(item.type, "value") else str(item.type),
-            status=item.status.value if hasattr(item.status, "value") else str(item.status),
-        )
-        session.add(history_model)
-        await session.flush()
-        return True, item
+        try:
+            db = get_mongo_db()
+            notifications_col = db["notifications"]
+
+            # Idempotency check: check if event already recorded for this user
+            if event.event_id:
+                existing = await notifications_col.find_one({
+                    "event_id": str(event.event_id),
+                    "user_id": str(user_id)
+                })
+                if existing:
+                    logger.info(f"MongoDB Notification Idempotency: Event {event.event_id} already exists for user {user_id}. Skipping.")
+                    return False, None
+
+            # Prepare complete JSON document
+            doc = {
+                "id": str(item.id),
+                "event_id": str(event.event_id) if event.event_id else None,
+                "user_id": str(user_id),
+                "recipient_id": str(user_id),
+                "workspace_id": str(event.workspace_id) if event.workspace_id else None,
+                "workspace_name": item.workspace_name,
+                "actor_id": str(event.actor_id) if event.actor_id else None,
+                "actor_name": item.actor_name,
+                "event_type": item.event_type,
+                "title": item.title,
+                "message": item.message,
+                "type": item.type.value if hasattr(item.type, "value") else str(item.type),
+                "priority": item.priority.value if hasattr(item.priority, "value") else str(item.priority),
+                "status": item.status.value if hasattr(item.status, "value") else str(item.status),
+                "version": item.version,
+                "metadata": item.metadata,
+                "payload": item.payload,
+                "created_at": item.created_at,
+                "read_at": None,
+            }
+
+            await notifications_col.insert_one(doc)
+            logger.info(f"Saved notification {item.id} (event: {event.event_name}) to MongoDB for user {user_id}")
+            return True, item
+        except Exception as exc:
+            logger.warning(f"MongoDB insert failed ({exc}), storing in in-memory fallback store.")
+            self._memory_items[item.id] = item
+            return True, item
+
+    async def get_user_notifications_async(
+        self, user_id: uuid.UUID, limit: int = 50, offset: int = 0
+    ) -> List[NotificationItem]:
+        """
+        Fetches user's notifications from MongoDB sorted by created_at descending.
+        """
+        try:
+            db = get_mongo_db()
+            notifications_col = db["notifications"]
+            query = {
+                "$or": [
+                    {"user_id": str(user_id)},
+                    {"recipient_id": str(user_id)},
+                    {"user_id": str(SYSTEM_USER_ID)},
+                ]
+            }
+            cursor = notifications_col.find(query).sort("created_at", -1).skip(offset).limit(limit)
+            docs = await cursor.to_list(length=limit)
+
+            results: List[NotificationItem] = []
+            for d in docs:
+                results.append(
+                    NotificationItem(
+                        id=uuid.UUID(d["id"]) if isinstance(d.get("id"), str) else d.get("id", uuid.uuid4()),
+                        event_id=uuid.UUID(d["event_id"]) if d.get("event_id") else None,
+                        user_id=uuid.UUID(d["user_id"]) if isinstance(d.get("user_id"), str) else user_id,
+                        recipient_id=uuid.UUID(d["recipient_id"]) if d.get("recipient_id") else None,
+                        workspace_id=uuid.UUID(d["workspace_id"]) if d.get("workspace_id") else None,
+                        workspace_name=d.get("workspace_name"),
+                        actor_id=uuid.UUID(d["actor_id"]) if d.get("actor_id") else None,
+                        actor_name=d.get("actor_name"),
+                        event_type=d.get("event_type"),
+                        title=d.get("title", ""),
+                        message=d.get("message", ""),
+                        type=NotificationType(d.get("type", "SYSTEM")),
+                        priority=NotificationPriority(d.get("priority", "NORMAL")),
+                        status=NotificationStatus(d.get("status", "UNREAD")),
+                        version=d.get("version", 1),
+                        metadata=d.get("metadata", {}),
+                        payload=d.get("payload", {}),
+                        created_at=d.get("created_at", datetime.now(timezone.utc)),
+                        read_at=d.get("read_at"),
+                    )
+                )
+            return results
+        except Exception as exc:
+            logger.warning(f"MongoDB find failed ({exc}), falling back to in-memory store.")
+            return self.get_user_notifications(user_id)[offset : offset + limit]
+
+    async def get_unread_count_async(self, user_id: uuid.UUID) -> int:
+        """
+        Counts unread notifications for the given user in MongoDB.
+        """
+        try:
+            db = get_mongo_db()
+            notifications_col = db["notifications"]
+            query = {
+                "$and": [
+                    {
+                        "$or": [
+                            {"user_id": str(user_id)},
+                            {"recipient_id": str(user_id)},
+                            {"user_id": str(SYSTEM_USER_ID)},
+                        ]
+                    },
+                    {"status": NotificationStatus.UNREAD.value},
+                ]
+            }
+            return await notifications_col.count_documents(query)
+        except Exception as exc:
+            logger.warning(f"MongoDB unread count failed ({exc}), falling back to in-memory store.")
+            return self.get_unread_count(user_id)
+
+    async def mark_as_read_async(self, notification_id: uuid.UUID, user_id: uuid.UUID | None = None) -> bool:
+        """
+        Marks a specific notification as READ in MongoDB.
+        """
+        try:
+            db = get_mongo_db()
+            notifications_col = db["notifications"]
+            query = {"id": str(notification_id)}
+            update_data = {
+                "$set": {
+                    "status": NotificationStatus.READ.value,
+                    "read_at": datetime.now(timezone.utc),
+                }
+            }
+            res = await notifications_col.update_one(query, update_data)
+            return res.modified_count > 0 or res.matched_count > 0
+        except Exception as exc:
+            logger.warning(f"MongoDB mark_as_read failed ({exc}), updating in-memory store.")
+            return self.mark_as_read(notification_id)
+
+    async def mark_all_as_read_async(self, user_id: uuid.UUID) -> int:
+        """
+        Marks all unread notifications for a user as READ in MongoDB.
+        """
+        try:
+            db = get_mongo_db()
+            notifications_col = db["notifications"]
+            query = {
+                "$and": [
+                    {
+                        "$or": [
+                            {"user_id": str(user_id)},
+                            {"recipient_id": str(user_id)},
+                            {"user_id": str(SYSTEM_USER_ID)},
+                        ]
+                    },
+                    {"status": NotificationStatus.UNREAD.value},
+                ]
+            }
+            update_data = {
+                "$set": {
+                    "status": NotificationStatus.READ.value,
+                    "read_at": datetime.now(timezone.utc),
+                }
+            }
+            res = await notifications_col.update_many(query, update_data)
+            return res.modified_count
+        except Exception as exc:
+            logger.warning(f"MongoDB mark_all_as_read failed ({exc}).")
+            for item in self._memory_items.values():
+                if item.user_id == user_id or item.user_id == SYSTEM_USER_ID:
+                    item.status = NotificationStatus.READ
+            return len(self._memory_items)
 
     def add_event_notification(self, event: PlatformEvent) -> Tuple[bool, NotificationItem | None]:
         """
         Synchronous fallback for unit tests and simple in-memory verification.
         """
         if event.event_id in self._memory_processed:
-            logger.info(f"Notification Store: Event {event.event_id} already processed. Skipping.")
             return False, None
 
         self._memory_processed.add(event.event_id)
-        user_id = event.user_id or SYSTEM_USER_ID
+        user_id = event.recipient_id or event.user_id or SYSTEM_USER_ID
+        notif_type = self._determine_notification_type(event.event_name)
+
         item = NotificationItem(
             id=uuid.uuid4(),
             event_id=event.event_id,
             user_id=user_id,
-            title=f"{event.event_name} {event.status}",
+            recipient_id=user_id,
+            workspace_id=event.workspace_id,
+            workspace_name=event.workspace_name or (event.metadata or {}).get("workspace_name"),
+            actor_id=event.actor_id,
+            actor_name=event.actor_name or (event.metadata or {}).get("actor_name"),
+            event_type=event.event_name,
+            title=event.title or f"{event.event_name} {event.status}",
             message=event.message or f"Event {event.event_name} status updated to {event.status}",
-            type=NotificationType.DOCUMENT if "Document" in event.event_name else NotificationType.SYSTEM,
-            payload=event.payload,
+            type=notif_type,
+            priority=NotificationPriority.NORMAL,
+            status=NotificationStatus.UNREAD,
+            metadata=event.metadata or {},
+            payload=event.payload or {},
+            created_at=datetime.now(timezone.utc),
         )
         self._memory_items[item.id] = item
         return True, item
@@ -98,55 +277,6 @@ class NotificationStore:
             self._memory_items[notification_id].status = NotificationStatus.READ
             return True
         return False
-
-    async def update_notification_status_with_version(
-        self,
-        notification_id: uuid.UUID,
-        new_status: NotificationStatus,
-        expected_version: int,
-        session: AsyncSession,
-    ) -> bool:
-        from fastapi import HTTPException, status as http_status
-
-        status_val = new_status.value if hasattr(new_status, "value") else str(new_status)
-        stmt = (
-            update(NotificationHistoryModel)
-            .where(
-                NotificationHistoryModel.id == notification_id,
-                NotificationHistoryModel.version == expected_version,
-            )
-            .values(
-                status=status_val,
-                version=NotificationHistoryModel.version + 1,
-            )
-        )
-        res = await session.execute(stmt)
-        await session.flush()
-        if res.rowcount == 0:
-            raise HTTPException(
-                status_code=http_status.HTTP_409_CONFLICT,
-                detail="Notification history record was modified by another process.",
-            )
-        return True
-
-    async def cleanup_expired_processed_events(
-        self,
-        retention_days: int = 30,
-        session: AsyncSession | None = None,
-    ) -> int:
-        from datetime import datetime, timezone, timedelta
-        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
-
-        sess = session or self.session
-        if not sess:
-            return 0
-
-        stmt = delete(ProcessedNotificationEventModel).where(
-            ProcessedNotificationEventModel.processed_at < cutoff
-        )
-        res = await sess.execute(stmt)
-        await sess.flush()
-        return res.rowcount or 0
 
 
 notification_store = NotificationStore()
