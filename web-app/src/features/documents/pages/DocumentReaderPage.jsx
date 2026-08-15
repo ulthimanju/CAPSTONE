@@ -44,21 +44,32 @@ const markdownComponents = {
     <tr className="hover:bg-surface-hover/50 transition-colors" {...props} />
   ),
   th: ({ node, ...props }) => (
-    <th className="px-4 py-3 font-bold text-text border-r border-sep-line last:border-r-0" {...props} />
+    <th className="px-4 py-3 align-top font-bold text-text border-r border-sep-line last:border-r-0" {...props} />
   ),
   td: ({ node, ...props }) => (
-    <td className="px-4 py-3 text-text/80 border-r border-sep-line last:border-r-0 leading-normal" {...props} />
+    <td className="px-4 py-3 align-top text-text/80 border-r border-sep-line last:border-r-0 leading-normal" {...props} />
   ),
-  code: ({ node, inline, className, children, ...props }) => {
-    if (inline) {
+  p: ({ node, ...props }) => (
+    <p className="mb-2 last:mb-0 leading-relaxed" {...props} />
+  ),
+  code: ({ node, className, children, ...props }) => {
+    const isMultiLine = typeof children === 'string' && children.includes('\n');
+    const hasLanguage = Boolean(className && /language-/.test(className));
+    const isBlockCode = hasLanguage || isMultiLine;
+
+    if (!isBlockCode) {
       return (
-        <code className="rounded bg-sand px-1.5 py-0.5 font-mono text-xs font-semibold text-accent" {...props}>
+        <code
+          className="rounded bg-sand/70 px-1.5 py-0.5 font-mono text-[11px] sm:text-xs font-semibold text-accent border border-sep-line/40 inline align-baseline"
+          {...props}
+        >
           {children}
         </code>
       );
     }
+
     return (
-      <div className="my-3 overflow-x-auto rounded-ui border border-sep-line bg-sand/30 p-3.5 font-mono text-xs text-text">
+      <div className="my-3 overflow-x-auto rounded-ui border border-sep-line bg-sand/30 p-3 font-mono text-xs text-text shadow-sm">
         <code className="block leading-relaxed" {...props}>
           {children}
         </code>
