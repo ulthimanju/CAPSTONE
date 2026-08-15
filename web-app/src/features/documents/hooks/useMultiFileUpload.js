@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { documentApi } from '../api/documentApi';
 import { useUploadQueueStore } from '@/store/uploadQueueStore';
 import { DOCUMENT_QUERY_KEYS } from './useDocuments';
+import { getErrorMessage } from '@/lib/errorUtils';
 
 const ALLOWED_EXTENSIONS = [
   'pdf', 'docx', 'wps', 'pptx', 'key', 'xlsx', 'csv', 'png', 'jpg', 'jpeg', 'tif', 'tiff'
@@ -88,7 +89,7 @@ export function useMultiFileUpload(workspaceId) {
           queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
         });
       } catch (err) {
-        const message = err?.response?.data?.detail || err?.message || 'Upload failed.';
+        const message = getErrorMessage(err, 'Upload failed. Please try again.');
         setItemFailed(current.id, message);
       } finally {
         await executeNext();
