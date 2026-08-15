@@ -16,6 +16,7 @@ import { CollaboratorsTab } from '@/features/workspaces/components/tabs/Collabor
 import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
 import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPage';
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage';
+import { InvitationsPage } from '@/features/invitations/pages/InvitationsPage';
 import { ArchivedWorkspacesPage } from '@/features/workspaces/pages/ArchivedWorkspacesPage';
 import { ROUTES } from '@/config/constants';
 
@@ -30,6 +31,7 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path={ROUTES.WORKSPACES} element={<WorkspacesPage />} />
+          <Route path="/invitations" element={<InvitationsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/archived-workspaces" element={<ArchivedWorkspacesPage />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />}>
@@ -43,6 +45,7 @@ export function AppRoutes() {
             <Route path="manage" element={<ManageWorkspaceTab />} />
             <Route path="collaborators" element={<ManageWorkspaceTab />} />
             <Route path="settings" element={<ManageWorkspaceTab />} />
+            <Route path="invitations" element={<InvitationsPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
           </Route>
         </Route>

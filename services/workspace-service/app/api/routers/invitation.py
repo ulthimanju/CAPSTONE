@@ -27,13 +27,28 @@ from app.constants.enums import InvitationStatus, WorkspaceRole
 router = APIRouter(prefix="/invitations", tags=["Invitations"])
 
 
+def _extract_user_email(request: Request, authorization: str | None) -> str | None:
+    user_email = request.headers.get("x-user-email") or request.headers.get("X-User-Email")
+    if not user_email and authorization and authorization.startswith("Bearer "):
+        try:
+            from shared.security.jwt import JWTManager, JWTSettings
+            from app.config.settings import settings
+            jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
+            claims = jwt_mgr.get_claims(authorization.removeprefix("Bearer ").strip())
+            user_email = claims.email
+        except Exception:
+            pass
+    return user_email
+
+
 @router.get("/pending")
 async def list_pending_invitations(
     request: Request,
+    authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    user_email = request.headers.get("x-user-email") or request.headers.get("X-User-Email")
+    user_email = _extract_user_email(request, authorization)
 
     conditions = [WorkspaceInvitationModel.invited_user_id == user_id]
 
@@ -70,12 +85,13 @@ async def list_pending_invitations(
 async def accept_invitation(
     invitation_id: UUID,
     request: Request,
+    authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
     inv_repo: InvitationRepository = Depends(get_invitation_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
-    user_email = request.headers.get("x-user-email") or request.headers.get("X-User-Email")
+    user_email = _extract_user_email(request, authorization)
     use_case = AcceptInvitationUseCase(inv_repo, mem_repo, act_repo)
     return await use_case.execute(invitation_id, user_id, user_email)
 
@@ -84,10 +100,11 @@ async def accept_invitation(
 async def reject_invitation(
     invitation_id: UUID,
     request: Request,
+    authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
     inv_repo: InvitationRepository = Depends(get_invitation_repository),
 ):
-    user_email = request.headers.get("x-user-email") or request.headers.get("X-User-Email")
+    user_email = _extract_user_email(request, authorization)
     use_case = RejectInvitationUseCase(inv_repo)
     res = await use_case.execute(invitation_id, user_id, user_email)
     try:

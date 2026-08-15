@@ -108,6 +108,30 @@ export const memberApi = {
   },
 
   /**
+   * List pending invitations received by the current user across all workspaces.
+   */
+  getUserPendingInvitations: async () => {
+    const response = await apiClient.get('/api/v1/invitations/pending');
+    return response.data;
+  },
+
+  /**
+   * Accept an invitation and join the workspace.
+   */
+  acceptInvitation: async (invitationId) => {
+    const response = await apiClient.post(`/api/v1/invitations/${invitationId}/accept`);
+    return response.data;
+  },
+
+  /**
+   * Reject a received invitation.
+   */
+  rejectInvitation: async (invitationId) => {
+    const response = await apiClient.post(`/api/v1/invitations/${invitationId}/reject`);
+    return response.data;
+  },
+
+  /**
    * List recent workspace activity audit log.
    */
   getActivities: async (workspaceId, limit = 50) => {

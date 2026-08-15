@@ -239,16 +239,24 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     });
   });
 
-  it('renders Notifications and Archived Workspaces items at the bottom of the sidebar right above profile dropdown', async () => {
+  it('renders Invitations, Notifications, and Archived Workspaces items at the bottom of the sidebar right above profile dropdown', async () => {
     renderWithProviders(
       <Sidebar />,
       { route: '/workspaces/e4b3c2a1-0000-4000-8000-000000000001' }
     );
 
+    // Verify Invitations link right above Notifications
+    const invitesLink = screen.getByRole('link', { name: /invitations/i });
+    expect(invitesLink).toBeInTheDocument();
+    expect(invitesLink).toHaveAttribute('href', '/workspaces/e4b3c2a1-0000-4000-8000-000000000001/invitations');
+
     // Verify Notifications link
     const notifLink = screen.getByRole('link', { name: /notifications/i });
     expect(notifLink).toBeInTheDocument();
     expect(notifLink).toHaveAttribute('href', '/workspaces/e4b3c2a1-0000-4000-8000-000000000001/notifications');
+
+    // Verify Invitations link comes before Notifications link
+    expect(invitesLink.compareDocumentPosition(notifLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     // Verify Archived Workspaces link
     const archivedLink = screen.getByRole('link', { name: /archived workspaces/i });

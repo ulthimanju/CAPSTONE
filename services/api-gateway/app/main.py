@@ -388,6 +388,7 @@ async def proxy_learning_path_generation(request: Request, workspace_id: str):
 @app.api_route("/api/v1/workspaces/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/workspaces", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/invitations/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+@app.api_route("/api/v1/invitations", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_workspace(request: Request, path: str = ""):
     return await proxy_request(settings.service_workspace_url, request)
 

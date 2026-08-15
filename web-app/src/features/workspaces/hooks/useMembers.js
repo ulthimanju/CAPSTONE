@@ -235,3 +235,58 @@ export function useTransferOwnershipMutation(workspaceId, options = {}) {
     ...options,
   });
 }
+
+/**
+ * Hook to fetch all pending invitations received by the current user across workspaces.
+ */
+export function useUserPendingInvitationsQuery(options = {}) {
+  return useQuery({
+    queryKey: ['user-pending-invitations'],
+    queryFn: () => memberApi.getUserPendingInvitations(),
+    staleTime: 1000 * 10,
+    ...options,
+  });
+}
+
+/**
+ * Mutation hook to accept an invitation.
+ */
+export function useAcceptUserInvitationMutation(options = {}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (invitationId) => memberApi.acceptInvitation(invitationId),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      queryClient.invalidateQueries({ queryKey: memberKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      options.onSuccess?.(data, variables, context);
+    },
+    onError: (error, variables, context) => {
+      options.onError?.(error, variables, context);
+    },
+    ...options,
+  });
+}
+
+/**
+ * Mutation hook to reject an invitation.
+ */
+export function useRejectUserInvitationMutation(options = {}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (invitationId) => memberApi.rejectInvitation(invitationId),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] });
+      queryClient.invalidateQueries({ queryKey: memberKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      options.onSuccess?.(data, variables, context);
+    },
+    onError: (error, variables, context) => {
+      options.onError?.(error, variables, context);
+    },
+    ...options,
+  });
+}
