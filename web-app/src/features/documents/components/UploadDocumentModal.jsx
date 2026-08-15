@@ -7,7 +7,7 @@ import {
   Presentation,
   X,
   AlertCircle,
-  CheckCircle2,
+  FolderOpen,
 } from 'lucide-react';
 import {
   Dialog,
@@ -47,7 +47,6 @@ export function UploadDocumentModal({ workspaceId, open, onOpenChange }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
   const uploadMutation = useUploadDocumentMutation(workspaceId, {
@@ -87,27 +86,6 @@ export function UploadDocumentModal({ workspaceId, open, onOpenChange }) {
     }
 
     setSelectedFile(file);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      validateAndSetFile(e.dataTransfer.files[0]);
-    }
   };
 
   const handleFileChange = (e) => {
@@ -157,27 +135,24 @@ export function UploadDocumentModal({ workspaceId, open, onOpenChange }) {
             onChange={handleFileChange}
           />
 
-          {/* Dropzone Area */}
+          {/* File Picker Trigger Button */}
           {!selectedFile && (
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex flex-col items-center justify-center rounded-ui border-2 border-dashed p-6 text-center cursor-pointer transition-all duration-150 ${
-                isDragOver
-                  ? 'border-accent bg-sand/70 scale-[0.99]'
-                  : 'border-sep-line bg-bg hover:border-accent hover:bg-surface-hover'
-              }`}
-            >
+            <div className="flex flex-col items-center justify-center rounded-ui border border-sep-line bg-sand/40 p-6 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-ui border border-sep-line bg-surface-raised text-accent">
-                <UploadCloud className="h-6 w-6" aria-hidden="true" />
+                <FolderOpen className="h-6 w-6" aria-hidden="true" />
               </div>
 
-              <p className="mt-3 font-display text-sm font-bold text-text">
-                Click to browse or drag and drop file here
-              </p>
-              <p className="mt-1 font-mono text-[11px] text-text/60">
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  leftIcon={<UploadCloud className="h-4 w-4" />}
+                >
+                  Choose File
+                </Button>
+              </div>
+
+              <p className="mt-3 font-mono text-[11px] text-text/60">
                 PDF, DOCX, PPTX, XLSX, CSV (up to 50MB) • PNG, JPG (up to 10MB)
               </p>
             </div>
