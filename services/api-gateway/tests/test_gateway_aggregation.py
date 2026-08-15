@@ -63,3 +63,26 @@ def test_get_workspace_overview_aggregation(respx_mock):
     data = res.json()
     assert data["workspace"]["name"] == "Data Structures"
     assert data["total_documents"] == 1
+
+
+@respx.mock
+def test_get_document_overview_aggregation(respx_mock):
+    doc_id = uuid.uuid4()
+
+    respx_mock.get(f"{settings.service_document_url}/api/v1/documents/{doc_id}").respond(
+        200, json={"id": str(doc_id), "filename": "chapter1.pdf"}
+    )
+    respx_mock.get(f"{settings.service_document_url}/api/v1/documents/{doc_id}/markdown").respond(
+        200, json={"markdown": "# Chapter 1\nIntroduction to Machine Learning"}
+    )
+    respx_mock.get(f"{settings.service_document_url}/api/v1/documents/{doc_id}/chunks").respond(
+        200, json={"chunks": [{"id": str(uuid.uuid4()), "title": "Chunk 1"}]}
+    )
+
+    client = TestClient(app)
+    res = client.get(f"/api/v1/documents/{doc_id}/overview")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["document"]["filename"] == "chapter1.pdf"
+    assert data["total_chunks"] == 1
+    assert "Chapter 1" in data["markdown_snippet"]
