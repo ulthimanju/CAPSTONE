@@ -26,24 +26,27 @@ class UpdateWorkspaceUseCase:
         self.activity_repo = activity_repo
         self.cache = cache_manager or WorkspaceCacheManager()
 
-    async def execute(self, workspace_id: UUID, user_id: UUID, req: UpdateWorkspaceRequest) -> WorkspaceResponse:
+    async def execute(self, workspace_id: UUID, user_id: UUID, req: UpdateWorkspaceRequest, user_email: str | None = None) -> WorkspaceResponse:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail="Workspace not found")
 
-        member = await self.member_repo.get_member(workspace_id, user_id)
+        caller_member = await self.member_repo.get_member(workspace_id, user_id)
         is_owner = workspace.owner_id == user_id
-        is_editor = member and member.role in (WorkspaceRole.OWNER, WorkspaceRole.EDITOR)
+        is_admin = caller_member and caller_member.role in [WorkspaceRole.OWNER, WorkspaceRole.ADMIN]
 
-        if not (is_owner or is_editor):
+        if not (is_owner or is_admin):
             raise HTTPException(status_code=403, detail="Permission denied to update workspace")
 
         old_name = workspace.name
         is_renamed = False
-
-        if req.name is not None and req.name != old_name:
-            workspace.name = req.name
-            is_renamed = True
+        if req.name is not None:
+            clean_name = req.name.strip()
+            if not clean_name:
+                raise HTTPException(status_code=400, detail="Workspace name cannot be empty")
+            if clean_name != workspace.name:
+                is_renamed = True
+                workspace.name = clean_name
         if req.visibility is not None:
             workspace.visibility = req.visibility
         if req.domain_type is not None:
@@ -57,7 +60,10 @@ class UpdateWorkspaceUseCase:
         if user_id != workspace.owner_id:
             await self.cache.invalidate_user_workspaces(user_id)
 
-        meta_fields = {"updated_fields": list(req.model_dump(exclude_unset=True).keys())}
+        meta_fields = {
+            "updated_fields": list(req.model_dump(exclude_unset=True).keys()),
+            "user_email": user_email,
+        }
         if is_renamed:
             meta_fields["old_name"] = old_name
             meta_fields["new_name"] = workspace.name
@@ -79,17 +85,17 @@ class UpdateWorkspaceUseCase:
             from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
             evt_name = "workspace.renamed" if is_renamed else "workspace.updated"
             notif_title = "Workspace Renamed" if is_renamed else "Workspace Settings Updated"
-            notif_msg = (
-                f"Workspace renamed from '{old_name}' to '{workspace.name}'"
-                if is_renamed
-                else f"Workspace '{workspace.name}' settings were updated"
-            )
+            if is_renamed:
+                notif_msg = f"Workspace renamed from '{old_name}' to '{workspace.name}' by {user_email}" if user_email else f"Workspace renamed from '{old_name}' to '{workspace.name}'"
+            else:
+                notif_msg = f"Workspace '{workspace.name}' settings were updated by {user_email}" if user_email else f"Workspace '{workspace.name}' settings were updated"
+
             await dispatch_workspace_notification(
                 event_name=evt_name,
                 workspace_id=workspace_id,
                 workspace_name=workspace.name,
                 actor_id=user_id,
-                actor_name=None,
+                actor_name=user_email,
                 title=notif_title,
                 message=notif_msg,
                 metadata=meta_fields,
@@ -99,5 +105,5 @@ class UpdateWorkspaceUseCase:
             pass
 
         res = WorkspaceResponse.model_validate(updated)
-        res.user_role = member.role if member else WorkspaceRole.OWNER
+        res.user_role = caller_member.role if caller_member else WorkspaceRole.OWNER
         return res

@@ -26,7 +26,13 @@ class InviteMemberUseCase:
         self.invitation_repo = invitation_repo
         self.activity_repo = activity_repo
 
-    async def execute(self, workspace_id: UUID, invited_by: UUID, req: InviteMemberRequest) -> InvitationResponse:
+    async def execute(
+        self,
+        workspace_id: UUID,
+        invited_by: UUID,
+        req: InviteMemberRequest,
+        inviter_email: str | None = None,
+    ) -> InvitationResponse:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail="Workspace not found")
@@ -96,26 +102,34 @@ class InviteMemberUseCase:
                     inv.status = InvitationStatus.EXPIRED
                     await self.invitation_repo.update(inv)
                 else:
-                    same_user = target_user_id and inv.invited_user_id == target_user_id
-                    same_email = target_email and inv.invited_email and inv.invited_email.lower().strip() == target_email
-                    if same_user or same_email:
+                    email_match = (
+                        target_email
+                        and inv.invited_email
+                        and inv.invited_email.lower().strip() == target_email
+                    )
+                    user_match = (
+                        target_user_id
+                        and inv.invited_user_id
+                        and inv.invited_user_id == target_user_id
+                    )
+                    if email_match or user_match:
                         raise HTTPException(
                             status_code=400,
                             detail=f"An active invitation has already been sent to '{target_email or target_user_id}'. You can resend or revoke it from the list below."
                         )
+
         invitation = WorkspaceInvitation(
             id=generate_uuid(),
             workspace_id=workspace_id,
             invited_by=invited_by,
-            invited_user_id=target_user_id,
             invited_email=target_email,
+            invited_user_id=target_user_id,
             role=req.role,
             status=InvitationStatus.PENDING,
-            expires_at=now + timedelta(days=7),
+            expires_at=expires_at,
             created_at=now,
-            accepted_at=None,
         )
-        invitation = await self.invitation_repo.create_invitation(invitation)
+        await self.invitation_repo.create(invitation)
 
         activity = WorkspaceActivity(
             id=generate_uuid(),
@@ -124,7 +138,7 @@ class InviteMemberUseCase:
             activity_type=ActivityType.MEMBER_INVITED,
             entity_type="invitation",
             entity_id=invitation.id,
-            metadata_json={"invited_email": target_email or str(req.user_id), "role": req.role.value},
+            metadata_json={"invited_email": target_email or str(req.user_id), "role": req.role.value, "inviter_email": inviter_email},
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
@@ -132,15 +146,20 @@ class InviteMemberUseCase:
         # Dispatch notification event to notification-service (email notification & persistent in MongoDB)
         try:
             from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            display_msg = (
+                f"{inviter_email} invited '{target_email or target_user_id}' as {req.role.value} to workspace '{workspace.name}'"
+                if inviter_email
+                else f"Invited '{target_email or target_user_id}' as {req.role.value} to workspace '{workspace.name}'"
+            )
             await dispatch_workspace_notification(
                 event_name="workspace.collaborator_invited",
                 workspace_id=workspace_id,
                 workspace_name=workspace.name,
                 actor_id=invited_by,
-                actor_name=None,
+                actor_name=inviter_email,
                 title="Collaborator Invited",
-                message=f"Invited '{target_email or target_user_id}' as {req.role.value} to workspace '{workspace.name}'",
-                metadata={"collaborator_email": target_email, "role": req.role.value, "workspace_name": workspace.name},
+                message=display_msg,
+                metadata={"collaborator_email": target_email, "role": req.role.value, "workspace_name": workspace.name, "inviter_email": inviter_email},
                 recipient_ids=[invited_by, target_user_id] if target_user_id else [invited_by],
             )
         except Exception:

@@ -3,7 +3,7 @@ import logging
 import httpx
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.api.dependencies.auth import get_current_user_id
+from app.api.dependencies.auth import get_current_user_id, get_current_user_email
 from app.api.dependencies.database import (
     get_workspace_repository,
     get_member_repository,
@@ -104,13 +104,14 @@ async def invite_member(
     workspace_id: UUID,
     req: InviteMemberRequest,
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
     inv_repo: InvitationRepository = Depends(get_invitation_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
     use_case = InviteMemberUseCase(ws_repo, mem_repo, inv_repo, act_repo)
-    return await use_case.execute(workspace_id, user_id, req)
+    return await use_case.execute(workspace_id, user_id, req, user_email)
 
 
 @router.delete("/members/{member_user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -118,12 +119,13 @@ async def remove_member(
     workspace_id: UUID,
     member_user_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
     use_case = RemoveMemberUseCase(ws_repo, mem_repo, act_repo)
-    await use_case.execute(workspace_id, user_id, member_user_id)
+    await use_case.execute(workspace_id, user_id, member_user_id, user_email)
     return None
 
 
@@ -131,12 +133,13 @@ async def remove_member(
 async def leave_workspace(
     workspace_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
     use_case = RemoveMemberUseCase(ws_repo, mem_repo, act_repo)
-    await use_case.execute(workspace_id, user_id, user_id)
+    await use_case.execute(workspace_id, user_id, user_id, user_email)
     return None
 
 

@@ -23,7 +23,7 @@ class ArchiveWorkspaceUseCase:
         self.activity_repo = activity_repo
         self.cache = cache_manager or WorkspaceCacheManager()
 
-    async def execute(self, workspace_id: UUID, user_id: UUID) -> WorkspaceResponse:
+    async def execute(self, workspace_id: UUID, user_id: UUID, user_email: str | None = None) -> WorkspaceResponse:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail="Workspace not found")
@@ -47,7 +47,7 @@ class ArchiveWorkspaceUseCase:
             activity_type=ActivityType.WORKSPACE_ARCHIVED,
             entity_type="workspace",
             entity_id=workspace_id,
-            metadata_json={"action": "ARCHIVE"},
+            metadata_json={"action": "ARCHIVE", "user_email": user_email},
             created_at=now,
         )
         await self.activity_repo.record_activity(activity)
@@ -55,15 +55,16 @@ class ArchiveWorkspaceUseCase:
         # Dispatch real-time and persistent MongoDB notification
         try:
             from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            display_msg = f"Workspace '{workspace.name}' was archived by {user_email}" if user_email else f"Workspace '{workspace.name}' has been archived"
             await dispatch_workspace_notification(
                 event_name="workspace.archived",
                 workspace_id=workspace_id,
                 workspace_name=workspace.name,
                 actor_id=user_id,
-                actor_name=None,
+                actor_name=user_email,
                 title="Workspace Archived",
-                message=f"Workspace '{workspace.name}' has been archived",
-                metadata={"action": "ARCHIVE", "workspace_name": workspace.name},
+                message=display_msg,
+                metadata={"action": "ARCHIVE", "workspace_name": workspace.name, "user_email": user_email},
                 recipient_ids=[user_id],
             )
         except Exception:

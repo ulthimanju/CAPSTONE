@@ -1,6 +1,6 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query, status
-from app.api.dependencies.auth import get_current_user_id
+from fastapi import APIRouter, Depends, Query, status, HTTPException
+from app.api.dependencies.auth import get_current_user_id, get_current_user_email
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.database import (
     get_db,
@@ -45,32 +45,27 @@ async def create_workspace(
 
 @router.get("", response_model=WorkspaceListResponse)
 async def list_workspaces(
-    user_id: UUID = Depends(get_current_user_id),
-    limit: int = Query(default=getattr(settings, "default_page_size", 20), ge=1, le=getattr(settings, "max_page_size", 100)),
+    limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    status: str = Query(default="ACTIVE"),
+    user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
 ):
     use_case = ListWorkspacesUseCase(ws_repo, mem_repo)
-    result = await use_case.execute(user_id)
-    ws_list = result.workspaces if hasattr(result, "workspaces") else result
-    paginated = ws_list[offset : offset + limit]
-    return WorkspaceListResponse(workspaces=paginated, total=len(ws_list))
+    return await use_case.execute(user_id, limit, offset, status)
 
 
 @router.get("/archived/list", response_model=WorkspaceListResponse)
 async def list_archived_workspaces(
-    user_id: UUID = Depends(get_current_user_id),
-    limit: int = Query(default=getattr(settings, "default_page_size", 20), ge=1, le=getattr(settings, "max_page_size", 100)),
+    limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
 ):
-    archived = await ws_repo.list_archived_by_user_id(user_id)
-    paginated = archived[offset : offset + limit]
-    return WorkspaceListResponse(
-        workspaces=[WorkspaceResponse.model_validate(w) for w in paginated],
-        total=len(archived)
-    )
+    use_case = ListWorkspacesUseCase(ws_repo, mem_repo)
+    return await use_case.execute(user_id, limit, offset, status="ARCHIVED")
 
 
 @router.get("/{workspace_id}", response_model=WorkspaceResponse)
@@ -89,34 +84,37 @@ async def update_workspace(
     workspace_id: UUID,
     req: UpdateWorkspaceRequest,
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
     use_case = UpdateWorkspaceUseCase(ws_repo, mem_repo, act_repo)
-    return await use_case.execute(workspace_id, user_id, req)
+    return await use_case.execute(workspace_id, user_id, req, user_email)
 
 
 @router.post("/{workspace_id}/archive", response_model=WorkspaceResponse)
 async def archive_workspace(
     workspace_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
     use_case = ArchiveWorkspaceUseCase(ws_repo, act_repo)
-    return await use_case.execute(workspace_id, user_id)
+    return await use_case.execute(workspace_id, user_id, user_email)
 
 
 @router.post("/{workspace_id}/restore", response_model=WorkspaceResponse)
 async def restore_workspace(
     workspace_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
     use_case = RestoreWorkspaceUseCase(ws_repo, act_repo)
-    return await use_case.execute(workspace_id, user_id)
+    return await use_case.execute(workspace_id, user_id, user_email)
 
 
 from app.constants.enums import WorkspaceRole
@@ -445,9 +443,10 @@ async def save_learning_unit_content(
 async def delete_workspace(
     workspace_id: UUID,
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
     use_case = DeleteWorkspaceUseCase(ws_repo, act_repo)
-    await use_case.execute(workspace_id, user_id)
+    await use_case.execute(workspace_id, user_id, user_email)
     return None

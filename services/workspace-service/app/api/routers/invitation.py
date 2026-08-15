@@ -1,12 +1,11 @@
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi import status
+from fastapi import APIRouter, Depends, HTTPException, Request, Header, status
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
-from app.api.dependencies.auth import get_current_user_id
+from app.api.dependencies.auth import get_current_user_id, get_current_user_email
 from app.api.dependencies.database import (
     get_member_repository,
     get_invitation_repository,
@@ -27,29 +26,12 @@ from app.constants.enums import InvitationStatus, WorkspaceRole
 router = APIRouter(prefix="/invitations", tags=["Invitations"])
 
 
-def _extract_user_email(request: Request, authorization: str | None) -> str | None:
-    user_email = request.headers.get("x-user-email") or request.headers.get("X-User-Email")
-    if not user_email and authorization and authorization.startswith("Bearer "):
-        try:
-            from shared.security.jwt import JWTManager, JWTSettings
-            from app.config.settings import settings
-            jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
-            claims = jwt_mgr.get_claims(authorization.removeprefix("Bearer ").strip())
-            user_email = claims.email
-        except Exception:
-            pass
-    return user_email
-
-
 @router.get("/pending")
 async def list_pending_invitations(
-    request: Request,
-    authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     db: AsyncSession = Depends(get_db),
 ):
-    user_email = _extract_user_email(request, authorization)
-
     conditions = [WorkspaceInvitationModel.invited_user_id == user_id]
 
     if user_email:

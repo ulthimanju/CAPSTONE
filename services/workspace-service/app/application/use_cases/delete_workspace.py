@@ -22,7 +22,7 @@ class DeleteWorkspaceUseCase:
         self.activity_repo = activity_repo
         self.cache = cache_manager or WorkspaceCacheManager()
 
-    async def execute(self, workspace_id: UUID, user_id: UUID) -> bool:
+    async def execute(self, workspace_id: UUID, user_id: UUID, user_email: str | None = None) -> bool:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail="Workspace not found")
@@ -37,7 +37,7 @@ class DeleteWorkspaceUseCase:
             activity_type=ActivityType.WORKSPACE_DELETED,
             entity_type="workspace",
             entity_id=workspace_id,
-            metadata_json={"action": "DELETE", "workspace_name": ws_name},
+            metadata_json={"action": "DELETE", "workspace_name": ws_name, "user_email": user_email},
             created_at=datetime.now(timezone.utc),
         )
         await self.activity_repo.record_activity(activity)
@@ -45,15 +45,16 @@ class DeleteWorkspaceUseCase:
         # Dispatch real-time and persistent MongoDB notification
         try:
             from app.infrastructure.services.notification_dispatcher import dispatch_workspace_notification
+            display_msg = f"Workspace '{ws_name}' was permanently deleted by {user_email}" if user_email else f"Workspace '{ws_name}' was permanently deleted"
             await dispatch_workspace_notification(
                 event_name="workspace.deleted",
                 workspace_id=workspace_id,
                 workspace_name=ws_name,
                 actor_id=user_id,
-                actor_name=None,
+                actor_name=user_email,
                 title="Workspace Deleted",
-                message=f"Workspace '{ws_name}' was permanently deleted",
-                metadata={"action": "DELETE", "workspace_name": ws_name},
+                message=display_msg,
+                metadata={"action": "DELETE", "workspace_name": ws_name, "user_email": user_email},
                 recipient_ids=[user_id],
             )
         except Exception:
