@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
 import { cn } from '@/lib/cn';
 
 export function Header({ title, children, className }) {
@@ -23,8 +24,11 @@ export function Header({ title, children, className }) {
           <Menu className="h-5 w-5" aria-hidden="true" />
         </button>
 
+        {/* Workspace Selector Dropdown in Main Header */}
+        <WorkspaceSelector />
+
         {title && (
-          <h1 className="font-display text-lg font-semibold tracking-tight text-text sm:text-xl">
+          <h1 className="font-display text-lg font-semibold tracking-tight text-text sm:text-xl hidden md:block">
             {title}
           </h1>
         )}

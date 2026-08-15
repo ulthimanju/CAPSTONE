@@ -2,14 +2,15 @@ import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Routes, Route } from 'react-router-dom';
 import { renderWithProviders } from './utils';
 import {
   workspaceResponseSchema,
   workspaceListResponseSchema,
   createWorkspaceRequestSchema,
 } from '@/features/workspaces/schemas/workspaceSchemas';
-import { WorkspaceCard } from '@/features/workspaces/components/WorkspaceCard';
 import { WorkspacesPage } from '@/features/workspaces/pages/WorkspacesPage';
+import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
 import { CreateWorkspaceModal } from '@/features/workspaces/components/CreateWorkspaceModal';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
@@ -131,25 +132,57 @@ describe('WorkspaceStore', () => {
   });
 });
 
-describe('WorkspaceCard Component', () => {
-  it('renders workspace title, technical badge, and role', () => {
-    const workspace = {
-      id: 'e4b3c2a1-0000-4000-8000-000000000001',
-      owner_id: '00f3d58e-ce22-4d1f-a665-bbf8266aa2a8',
-      name: 'Advanced Computer Networks',
+describe('WorkspaceSelector Component in Header', () => {
+  const mockWorkspaces = [
+    {
+      id: 'ws-1',
+      owner_id: 'usr-1',
+      name: 'Distributed Systems (CS401)',
       domain_type: 'TECHNICAL',
       visibility: 'PRIVATE',
       status: 'ACTIVE',
       created_at: '2026-08-15T09:30:00Z',
       updated_at: '2026-08-15T10:15:00Z',
       user_role: 'OWNER',
-    };
+    },
+    {
+      id: 'ws-2',
+      owner_id: 'usr-1',
+      name: 'Economics 101',
+      domain_type: 'NON_TECHNICAL',
+      visibility: 'INTERNAL',
+      status: 'ACTIVE',
+      created_at: '2026-08-15T09:30:00Z',
+      updated_at: '2026-08-15T10:15:00Z',
+      user_role: 'EDITOR',
+    },
+  ];
 
-    renderWithProviders(<WorkspaceCard workspace={workspace} />);
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    useAuthStore.setState({
+      user: { id: 'usr-1', email: 'test@example.com', name: 'Manjunatha U' },
+      isAuthenticated: true,
+    });
+    useWorkspaceStore.setState({ activeWorkspaceId: 'ws-1' });
+    vi.spyOn(workspaceApi, 'getWorkspaces').mockResolvedValue({
+      total: 2,
+      workspaces: mockWorkspaces,
+    });
+  });
 
-    expect(screen.getByText('Advanced Computer Networks')).toBeInTheDocument();
-    expect(screen.getByText('Technical')).toBeInTheDocument();
-    expect(screen.getByText('OWNER')).toBeInTheDocument();
+  it('renders active workspace in header selector and opens dropdown with New Workspace at bottom', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<WorkspaceSelector />);
+
+    expect(await screen.findByText('Distributed Systems (CS401)')).toBeInTheDocument();
+
+    const triggerBtn = screen.getByRole('button', { name: /select workspace/i });
+    await user.click(triggerBtn);
+
+    expect(await screen.findByText('Economics 101')).toBeInTheDocument();
+    expect(screen.getByText('New Workspace')).toBeInTheDocument();
   });
 });
 
@@ -222,20 +255,20 @@ describe('WorkspacesPage Component', () => {
 
     expect(await screen.findByText('No workspaces found')).toBeInTheDocument();
 
-    const newBtn = screen.getByRole('button', { name: /new workspace/i });
-    await user.click(newBtn);
+    const createBtn = screen.getByRole('button', { name: /create workspace/i });
+    await user.click(createBtn);
 
     expect(await screen.findByText('Create New Workspace')).toBeInTheDocument();
   });
 
-  it('renders workspace grid when workspaces exist', async () => {
+  it('redirects to active workspace detail view when workspaces exist', async () => {
     vi.spyOn(workspaceApi, 'getWorkspaces').mockResolvedValue({
-      total: 2,
+      total: 1,
       workspaces: [
         {
-          id: 'e4b3c2a1-0000-4000-8000-000000000001',
-          owner_id: '00f3d58e-ce22-4d1f-a665-bbf8266aa2a8',
-          name: 'Distributed Systems',
+          id: 'ws-100',
+          owner_id: 'usr-1',
+          name: 'Compiler Design',
           domain_type: 'TECHNICAL',
           visibility: 'PRIVATE',
           status: 'ACTIVE',
@@ -243,26 +276,17 @@ describe('WorkspacesPage Component', () => {
           updated_at: '2026-08-15T10:15:00Z',
           user_role: 'OWNER',
         },
-        {
-          id: 'b9a8c7d6-0000-4000-8000-000000000002',
-          owner_id: '55a1b2c3-1111-4000-8000-000000000099',
-          name: 'Microeconomics',
-          domain_type: 'NON_TECHNICAL',
-          visibility: 'INTERNAL',
-          status: 'ACTIVE',
-          created_at: '2026-08-14T14:20:00Z',
-          updated_at: '2026-08-15T08:00:00Z',
-          user_role: 'EDITOR',
-        },
       ],
     });
 
-    renderWithProviders(<WorkspacesPage />);
+    renderWithProviders(
+      <Routes>
+        <Route path="/workspaces" element={<WorkspacesPage />} />
+        <Route path="/workspaces/ws-100" element={<div>Workspace 100 View</div>} />
+      </Routes>,
+      { route: '/workspaces' }
+    );
 
-    expect(await screen.findByText('Distributed Systems')).toBeInTheDocument();
-    expect(screen.getByText('Microeconomics')).toBeInTheDocument();
-    expect(screen.getByText('2 Workspaces')).toBeInTheDocument();
-    expect(screen.getByText('Technical')).toBeInTheDocument();
-    expect(screen.getByText('Non-Technical')).toBeInTheDocument();
+    expect(await screen.findByText('Workspace 100 View')).toBeInTheDocument();
   });
 });
