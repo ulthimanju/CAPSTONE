@@ -97,8 +97,18 @@ describe('AI Tutor RAG Chat Component', () => {
   it('renders currency dollar amounts cleanly without KaTeX math corruption', () => {
     const input = "If a product's price increases from **$50** to **$60**:\n\n$$\\text{Difference} = 60 - 50 = 10$$";
     const processed = preprocessMarkdownForMath(input);
-    expect(processed).toContain('**\\$50**');
-    expect(processed).toContain('**\\$60**');
+    expect(processed).toContain('**\\\\$50**');
+    expect(processed).toContain('**\\\\$60**');
     expect(processed).toContain('$$\\text{Difference} = 60 - 50 = 10$$');
+  });
+
+  it('preserves valid inline LaTeX math expressions intact', () => {
+    const input = "For example, $50\\%$ means 50 out of 100, which simplifies to the fraction $\\frac{1}{2}$ or the decimal $0.50$, multiply by $100$ and add the $\\%$ sign.";
+    const processed = preprocessMarkdownForMath(input);
+    expect(processed).toContain('$50\\%$');
+    expect(processed).toContain('$\\frac{1}{2}$');
+    expect(processed).toContain('$0.50$');
+    expect(processed).toContain('$100$');
+    expect(processed).toContain('$\\%$');
   });
 });

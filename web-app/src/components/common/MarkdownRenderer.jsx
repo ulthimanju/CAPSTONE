@@ -164,8 +164,9 @@ const defaultComponents = {
 };
 
 /**
- * Preprocesses markdown text to prevent currency expressions (e.g. "$50 to $60", "**$50**", "$100/mo")
- * from being misparsed by remark-math as inline LaTeX math equations.
+ * Preprocesses markdown text to prevent bold currency expressions (e.g. "**$50** to **$60**", "$50 to $60")
+ * from being misparsed by remark-math as multi-word LaTeX math equations, while keeping valid LaTeX inline
+ * and block math ($50\%$, $\frac{1}{2}$, $0.50$, $$...$$) intact.
  */
 export function preprocessMarkdownForMath(text) {
   if (!text || typeof text !== 'string') return text;
@@ -177,15 +178,28 @@ export function preprocessMarkdownForMath(text) {
     return `__PROTECTED_MATH_BLOCK_${protectedBlocks.length - 1}__`;
   });
 
-  // Escape currency dollar signs (e.g., "$50", "**$50**", "$60.00", "$10k", "$1,000")
-  // Replace $ followed by digits directly without consuming surrounding characters like ** or spaces
-  processed = processed.replace(/\$(\d+(?:,\d{3})*(?:\.\d+)?(?:k|m|b|bn|tn)?)/gi, '\\$$$1');
+  // 1. Escape currency inside bold/italic markdown spans (e.g. "**$50** to **$60**" or "*$50*")
+  processed = processed.replace(
+    /(\*{1,2}|_{1,2})\$(\d+(?:,\d{3})*(?:\.\d+)?(?:k|m|b|bn|tn)?)\1/gi,
+    '$1\\$$$2$1'
+  );
 
-  // Fix multi-word false positive inline math spans (e.g. "$50 to $60" or "$50 and $60")
+  // 2. Escape standalone multi-word currency ranges (e.g. "$50 to $60" or "$50 - $60")
+  processed = processed.replace(
+    /\$(\d+(?:,\d{3})*(?:\.\d+)?)\s+(to|and|or|from|-)\s+\$(\d+(?:,\d{3})*(?:\.\d+)?)/gi,
+    '\\$$$1 $2 \\$$$3'
+  );
+
+  // 3. Fix false-positive inline math spans where text between $...$ contains markdown emphasis or multi-word sentences
   processed = processed.replace(/\$([^\$\n]+)\$/g, (match, inner) => {
-    const hasMathSymbols = /[\\_^{}=+<>]/.test(inner);
-    const hasEnglishConnectors = /\b(to|from|and|or|in|with|for|the|is|are|was|were|increases|decreases|than)\b/i.test(inner);
-    if (!hasMathSymbols && hasEnglishConnectors) {
+    // If it contains markdown bold/italic asterisks or underscores across words
+    if (/\*{1,2}|_{1,2}/.test(inner)) {
+      return `\\$${inner}\\$`;
+    }
+    // If it contains common English sentence words with spaces and has no LaTeX backslash commands
+    const hasBackslash = inner.includes('\\');
+    const hasEnglishWords = /\s+(to|from|and|or|in|with|for|the|is|are|was|were|increases|decreases|than|means|which|simplifies)\s+/i.test(inner);
+    if (!hasBackslash && hasEnglishWords) {
       return `\\$${inner}\\$`;
     }
     return match;
@@ -217,7 +231,11 @@ export function MarkdownRenderer({
   if (allowHtml) {
     rehypePlugins.push(rehypeRaw, [rehypeSanitize, sanitizeSchema]);
   }
-  rehypePlugins.push(rehypeKatex, rehypeSlug, rehypeHighlight);
+  rehypePlugins.push(
+    [rehypeKatex, { output: 'htmlAndMathml', throwOnError: false, strict: false, errorColor: '#cc0000' }],
+    rehypeSlug,
+    rehypeHighlight
+  );
 
   return (
     <div
