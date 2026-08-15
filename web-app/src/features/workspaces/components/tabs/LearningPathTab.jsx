@@ -5,14 +5,11 @@ import {
   Compass,
   Sparkles,
   Layers,
-  CheckCircle2,
-  Clock,
   Loader2,
   ChevronRight,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
@@ -67,37 +64,6 @@ export function LearningPathTab({ workspace: propWorkspace }) {
 
   return (
     <div className="space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-sep-line pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-display text-lg font-bold text-text">
-              Learning Path
-            </h2>
-            <Badge variant="outline" className="font-mono text-[10px] text-accent border-accent/30 bg-accent/5">
-              Adaptive Curriculum
-            </Badge>
-          </div>
-          <p className="font-body text-xs text-text/70">
-            Progressive curriculum sequenced from your uploaded notes, textbooks, and syllabus.
-          </p>
-        </div>
-
-        {hasPath && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerate}
-            isLoading={generateMutation.isPending || isGenerating}
-            leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
-            className="text-xs border-sep-line hover:border-accent"
-            title="Regenerate learning path curriculum with Gemini 2.5 Flash"
-          >
-            {isGenerating || generateMutation.isPending ? 'Synthesizing...' : 'Regenerate Path'}
-          </Button>
-        )}
-      </div>
-
       {/* Generating Active State */}
       {isGenerating ? (
         <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border border-accent/40 bg-surface-raised/80 shadow-sm animate-pulse-subtle">
@@ -178,13 +144,10 @@ export function LearningPathTab({ workspace: propWorkspace }) {
                 className="p-5 flex flex-col justify-between hover:border-accent/60 transition-all shadow-xs group"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2 border-b border-sep-line/60 pb-2.5">
+                  <div className="border-b border-sep-line/60 pb-2.5">
                     <span className="font-mono text-[11px] font-bold text-accent uppercase tracking-wider">
                       Unit {index + 1}
                     </span>
-                    <Badge variant="outline" className="font-mono text-[10px]">
-                      Milestone
-                    </Badge>
                   </div>
 
                   <h4 className="font-display text-sm sm:text-base font-bold text-text mt-3 group-hover:text-accent transition-colors">
@@ -196,11 +159,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
                   </p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-sep-line/40 flex items-center justify-between font-mono text-[11px] text-text/60">
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-sage" />
-                    <span>Unit Milestone</span>
-                  </span>
+                <div className="mt-4 pt-3 border-t border-sep-line/40 flex items-center justify-end font-mono text-[11px]">
                   <span className="flex items-center gap-1 text-accent font-medium">
                     <span>Explore Unit</span>
                     <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
