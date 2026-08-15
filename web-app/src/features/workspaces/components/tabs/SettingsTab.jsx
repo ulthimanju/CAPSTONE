@@ -204,11 +204,10 @@ export function SettingsTab({ workspace: propWorkspace }) {
 
             <Button
               type="button"
-              variant="outline"
+              variant="danger"
               onClick={handleDelete}
               isLoading={deleteMutation.isPending}
-              leftIcon={<Trash2 className="h-4 w-4 text-danger" />}
-              className="border-danger/40 text-danger hover:bg-danger hover:text-white"
+              leftIcon={<Trash2 className="h-4 w-4" />}
             >
               Delete Workspace
             </Button>
