@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, Trash2, Terminal, BookOpen, Lock, Users, Globe, Check } from 'lucide-react';
+import { Save, Trash2, Archive, Terminal, BookOpen, Lock, Users, Globe, Check } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { createWorkspaceRequestSchema } from '../../schemas/workspaceSchemas';
-import { useUpdateWorkspaceMutation, useDeleteWorkspaceMutation } from '../../hooks/useWorkspaces';
+import {
+  useUpdateWorkspaceMutation,
+  useDeleteWorkspaceMutation,
+  useArchiveWorkspaceMutation,
+} from '../../hooks/useWorkspaces';
 import { ROUTES } from '@/config/constants';
 import { cn } from '@/lib/cn';
 
@@ -18,6 +22,7 @@ export function SettingsTab({ workspace: propWorkspace }) {
 
   const navigate = useNavigate();
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const {
@@ -38,6 +43,13 @@ export function SettingsTab({ workspace: propWorkspace }) {
     onSuccess: () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+    },
+  });
+
+  const archiveMutation = useArchiveWorkspaceMutation({
+    onSuccess: () => {
+      setIsArchiveDialogOpen(false);
+      navigate('/archived-workspaces', { replace: true });
     },
   });
 
@@ -189,7 +201,7 @@ export function SettingsTab({ workspace: propWorkspace }) {
             />
           </div>
 
-          {/* Action Buttons: Save Changes on Left, Delete Workspace on Right */}
+          {/* Action Buttons: Save Changes on Left, Archive and Delete Workspace on Right */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-sep-line">
             <Button
               type="submit"
@@ -199,18 +211,43 @@ export function SettingsTab({ workspace: propWorkspace }) {
               {saveSuccess ? 'Saved Changes' : 'Save Changes'}
             </Button>
 
-            <Button
-              type="button"
-              variant="danger"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              isLoading={deleteMutation.isPending}
-              leftIcon={<Trash2 className="h-4 w-4" />}
-            >
-              Delete Workspace
-            </Button>
+            <div className="flex items-center gap-2.5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsArchiveDialogOpen(true)}
+                isLoading={archiveMutation.isPending}
+                leftIcon={<Archive className="h-4 w-4" />}
+              >
+                Archive Workspace
+              </Button>
+
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                isLoading={deleteMutation.isPending}
+                leftIcon={<Trash2 className="h-4 w-4" />}
+              >
+                Delete Workspace
+              </Button>
+            </div>
           </div>
         </form>
       </Card>
+
+      {/* App Modal for Archive Confirmation */}
+      <ConfirmDialog
+        open={isArchiveDialogOpen}
+        onOpenChange={setIsArchiveDialogOpen}
+        title="Archive Workspace"
+        description={`Are you sure you want to archive "${workspace.name}"? The workspace will become read-only and will be moved to your Archived Workspaces list.`}
+        confirmText="Archive Workspace"
+        cancelText="Cancel"
+        variant="primary"
+        isLoading={archiveMutation.isPending}
+        onConfirm={() => archiveMutation.mutate(workspace.id)}
+      />
 
       {/* App Modal for Delete Confirmation */}
       <ConfirmDialog

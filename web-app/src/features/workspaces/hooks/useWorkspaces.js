@@ -79,6 +79,28 @@ export function useUpdateWorkspaceMutation(workspaceId, options = {}) {
 }
 
 /**
+ * Mutation hook to archive a workspace.
+ */
+export function useArchiveWorkspaceMutation(options = {}) {
+  const queryClient = useQueryClient();
+  const clearActiveWorkspace = useWorkspaceStore((state) => state.clearActiveWorkspace);
+
+  return useMutation({
+    mutationFn: (workspaceId) => workspaceApi.archiveWorkspace(workspaceId),
+    onSuccess: (data, workspaceId, context) => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      clearActiveWorkspace();
+      options.onSuccess?.(data, workspaceId, context);
+    },
+    onError: (error, variables, context) => {
+      options.onError?.(error, variables, context);
+    },
+    ...options,
+  });
+}
+
+/**
  * Mutation hook to delete a workspace.
  */
 export function useDeleteWorkspaceMutation(options = {}) {

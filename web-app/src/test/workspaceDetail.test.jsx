@@ -211,6 +211,34 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     });
   });
 
+  it('renders Archive Workspace button before Delete Workspace button and opens archive dialog on click', async () => {
+    const user = userEvent.setup();
+    const archiveSpy = vi.spyOn(workspaceApi, 'archiveWorkspace').mockResolvedValue({
+      id: 'e4b3c2a1-0000-4000-8000-000000000001',
+      status: 'ARCHIVED',
+    });
+
+    renderAppWithSidebarAndDetail('/workspaces/e4b3c2a1-0000-4000-8000-000000000001/manage');
+
+    const archiveBtn = await screen.findByRole('button', { name: /archive workspace/i });
+    const deleteBtn = screen.getByRole('button', { name: /delete workspace/i });
+
+    expect(archiveBtn).toBeInTheDocument();
+    expect(deleteBtn).toBeInTheDocument();
+
+    // Verify Archive button appears before Delete button in DOM order
+    expect(archiveBtn.compareDocumentPosition(deleteBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.click(archiveBtn);
+
+    const confirmArchiveModalBtn = await screen.findByRole('button', { name: /^archive workspace$/i });
+    await user.click(confirmArchiveModalBtn);
+
+    await waitFor(() => {
+      expect(archiveSpy).toHaveBeenCalledWith('e4b3c2a1-0000-4000-8000-000000000001');
+    });
+  });
+
   it('renders Notifications and Archived Workspaces items at the bottom of the sidebar right above profile dropdown', async () => {
     renderWithProviders(
       <Sidebar />,

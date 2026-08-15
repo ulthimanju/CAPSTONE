@@ -22,6 +22,21 @@ export const workspaceApi = {
   },
 
   /**
+   * Fetches archived workspaces for the current user.
+   */
+  getArchivedWorkspaces: async ({ limit = 50, offset = 0 } = {}) => {
+    const response = await apiClient.get('/api/v1/workspaces/archived/list', {
+      params: { limit, offset },
+    });
+    const parseResult = workspaceListResponseSchema.safeParse(response.data);
+    if (!parseResult.success) {
+      console.warn('ArchivedWorkspaceList schema validation warning:', parseResult.error);
+      return response.data;
+    }
+    return parseResult.data;
+  },
+
+  /**
    * Fetches a single workspace by ID.
    */
   getWorkspaceById: async (workspaceId) => {

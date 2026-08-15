@@ -27,6 +27,7 @@ import {
   ChevronUp,
   UserCheck,
   Settings,
+  Archive,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +37,11 @@ import { Input } from '@/components/ui/Input';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { InviteCollaboratorModal } from '../InviteCollaboratorModal';
 import { createWorkspaceRequestSchema } from '../../schemas/workspaceSchemas';
-import { useUpdateWorkspaceMutation, useDeleteWorkspaceMutation } from '../../hooks/useWorkspaces';
+import {
+  useUpdateWorkspaceMutation,
+  useDeleteWorkspaceMutation,
+  useArchiveWorkspaceMutation,
+} from '../../hooks/useWorkspaces';
 import {
   useMembersQuery,
   useInvitationsQuery,
@@ -64,6 +69,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   useWorkspaceMemberSSE(workspace?.id);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,6 +103,17 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     },
     onError: (err) => {
       toast.error(getErrorMessage(err, 'Failed to update workspace settings'));
+    },
+  });
+
+  const archiveWorkspaceMutation = useArchiveWorkspaceMutation({
+    onSuccess: () => {
+      setIsArchiveDialogOpen(false);
+      toast.success('Workspace archived successfully');
+      navigate('/archived-workspaces', { replace: true });
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, 'Failed to archive workspace'));
     },
   });
 
@@ -435,15 +452,27 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                 </Button>
 
                 {isOwner && (
-                  <Button
-                    type="button"
-                    variant="danger"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    isLoading={deleteWorkspaceMutation.isPending}
-                    leftIcon={<Trash2 className="h-4 w-4" />}
-                  >
-                    Delete Workspace
-                  </Button>
+                  <div className="flex items-center gap-2.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsArchiveDialogOpen(true)}
+                      isLoading={archiveWorkspaceMutation.isPending}
+                      leftIcon={<Archive className="h-4 w-4" />}
+                    >
+                      Archive Workspace
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="danger"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                      isLoading={deleteWorkspaceMutation.isPending}
+                      leftIcon={<Trash2 className="h-4 w-4" />}
+                    >
+                      Delete Workspace
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
@@ -749,6 +778,19 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
         isOwner={isOwner}
+      />
+
+      {/* Archive Workspace Confirmation Modal */}
+      <ConfirmDialog
+        open={isArchiveDialogOpen}
+        onOpenChange={setIsArchiveDialogOpen}
+        title="Archive Workspace"
+        description={`Are you sure you want to archive "${workspace.name}"? The workspace will become read-only and will be moved to your Archived Workspaces list.`}
+        confirmText="Archive Workspace"
+        cancelText="Cancel"
+        variant="primary"
+        isLoading={archiveWorkspaceMutation.isPending}
+        onConfirm={() => archiveWorkspaceMutation.mutate(workspace.id)}
       />
 
       {/* Delete Workspace Confirmation Modal */}
