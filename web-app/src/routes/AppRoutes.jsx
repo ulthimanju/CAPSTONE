@@ -4,14 +4,26 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { AuthCallbackPage } from '@/features/auth/pages/AuthCallbackPage';
+import { DashboardPage } from '@/features/workspaces/pages/DashboardPage';
 import { ROUTES } from '@/config/constants';
 
-function DashboardPlaceholder() {
+function WorkspaceDetailPlaceholder() {
   return (
     <div className="p-6">
-      <h2 className="font-display text-xl font-bold text-text">Dashboard</h2>
+      <h2 className="font-display text-xl font-bold text-text">Workspace View</h2>
       <p className="mt-1 font-body text-sm text-text/70">
-        Welcome to SYNAPSE. Select or create a workspace to begin collaborative AI learning.
+        Workspace content modules, documents, and collaboration tools.
+      </p>
+    </div>
+  );
+}
+
+function DocumentsPlaceholder() {
+  return (
+    <div className="p-6">
+      <h2 className="font-display text-xl font-bold text-text">Document Hub</h2>
+      <p className="mt-1 font-body text-sm text-text/70">
+        Synced Google Drive documents and syllabus files.
       </p>
     </div>
   );
@@ -27,10 +39,10 @@ export function AppRoutes() {
       {/* Protected Application Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route path={ROUTES.DASHBOARD} element={<DashboardPlaceholder />} />
-          <Route path={ROUTES.WORKSPACES} element={<DashboardPlaceholder />} />
-          <Route path="/workspaces/:workspaceId" element={<DashboardPlaceholder />} />
-          <Route path={ROUTES.DOCUMENTS} element={<DashboardPlaceholder />} />
+          <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+          <Route path={ROUTES.WORKSPACES} element={<DashboardPage />} />
+          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPlaceholder />} />
+          <Route path={ROUTES.DOCUMENTS} element={<DocumentsPlaceholder />} />
         </Route>
       </Route>
 

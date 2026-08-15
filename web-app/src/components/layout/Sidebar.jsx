@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { UserProfileMenu } from './UserProfileMenu';
+import { SidebarNav } from './SidebarNav';
 import { cn } from '@/lib/cn';
 
 export function Sidebar({ header, footer, children, className }) {
@@ -52,7 +53,7 @@ export function Sidebar({ header, footer, children, className }) {
 
       {/* Navigation / Main Scrollable Content */}
       <nav aria-label="Main Navigation" className="flex-1 overflow-y-auto p-4 space-y-1">
-        {children}
+        {children !== undefined ? children : <SidebarNav />}
       </nav>
 
       {/* Sidebar Footer / User Profile Menu */}

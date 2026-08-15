@@ -1,0 +1,24 @@
+import { z } from 'zod';
+
+export const workspaceDomainTypeSchema = z.enum(['TECHNICAL', 'NON_TECHNICAL']);
+export const workspaceVisibilitySchema = z.enum(['PRIVATE', 'INTERNAL', 'PUBLIC']);
+export const workspaceStatusSchema = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
+export const workspaceRoleSchema = z.enum(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']);
+
+export const workspaceResponseSchema = z.object({
+  id: z.string().uuid(),
+  owner_id: z.string().uuid(),
+  name: z.string().min(1).max(255),
+  domain_type: workspaceDomainTypeSchema.default('TECHNICAL'),
+  visibility: workspaceVisibilitySchema.default('PRIVATE'),
+  status: workspaceStatusSchema.default('ACTIVE'),
+  created_at: z.string(),
+  updated_at: z.string(),
+  archived_at: z.string().nullable().optional(),
+  user_role: workspaceRoleSchema.nullable().optional(),
+});
+
+export const workspaceListResponseSchema = z.object({
+  total: z.number().int().nonnegative(),
+  workspaces: z.array(workspaceResponseSchema),
+});
