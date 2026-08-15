@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 import * as Sentry from '@sentry/react';
 
 import App from './App';
+import { ErrorBoundaryFallback } from '@/components/common/ErrorBoundaryFallback';
 import './index.css';
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
@@ -28,24 +29,9 @@ const queryClient = new QueryClient({
   },
 });
 
-function ErrorFallback({ error, resetErrorBoundary }) {
-  return (
-    <div role="alert" className="p-4 m-4 border border-red-200 rounded-md bg-red-50 text-red-700">
-      <p className="font-semibold">Something went wrong:</p>
-      <pre className="text-sm mt-1">{error?.message}</pre>
-      <button
-        onClick={resetErrorBoundary}
-        className="mt-3 px-4 py-1.5 bg-black text-white text-sm rounded-md hover:bg-gray-800"
-      >
-        Try again
-      </button>
-    </div>
-  );
-}
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <App />
