@@ -1,7 +1,0 @@
-# Files & Purpose
-
-| File                | Tool Used            | Why                                         |
-| ------------------- | -------------------- | ------------------------------------------- |
-| `Input.jsx`         | React (`forwardRef`) | Rendering, icons, error text, accessibility |
-| `Input.variants.js` | CVA                  | Variants, sizes, validation states          |
-| `index.js`          | —                    | Barrel export                               |

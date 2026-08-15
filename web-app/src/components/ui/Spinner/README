@@ -1,7 +1,0 @@
-# Files & Purpose
-
-| File                  | Tool Used | Why                              |
-| --------------------- | --------- | -------------------------------- |
-| `Spinner.jsx`         | React     | Rendering logic                  |
-| `Spinner.variants.js` | CVA       | Controls size and color variants |
-| `index.js`            | —         | Barrel export                    |
