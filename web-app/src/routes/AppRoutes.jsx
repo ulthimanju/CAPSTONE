@@ -5,18 +5,8 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { AuthCallbackPage } from '@/features/auth/pages/AuthCallbackPage';
 import { WorkspacesPage } from '@/features/workspaces/pages/WorkspacesPage';
+import { WorkspaceDetailPage } from '@/features/workspaces/pages/WorkspaceDetailPage';
 import { ROUTES } from '@/config/constants';
-
-function WorkspaceDetailPlaceholder() {
-  return (
-    <div className="p-6">
-      <h2 className="font-display text-xl font-bold text-text">Workspace View</h2>
-      <p className="mt-1 font-body text-sm text-text/70">
-        Workspace content modules, documents, and collaboration tools.
-      </p>
-    </div>
-  );
-}
 
 function DocumentsPlaceholder() {
   return (
@@ -40,7 +30,7 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path={ROUTES.WORKSPACES} element={<WorkspacesPage />} />
-          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPlaceholder />} />
+          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />} />
           <Route path={ROUTES.DOCUMENTS} element={<DocumentsPlaceholder />} />
         </Route>
       </Route>

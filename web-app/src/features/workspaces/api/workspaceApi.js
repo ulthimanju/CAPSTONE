@@ -47,6 +47,35 @@ export const workspaceApi = {
     }
     return parseResult.data;
   },
+
+  /**
+   * Updates an existing workspace.
+   */
+  updateWorkspace: async (workspaceId, data) => {
+    const response = await apiClient.patch(`/api/v1/workspaces/${workspaceId}`, data);
+    const parseResult = workspaceResponseSchema.safeParse(response.data);
+    if (!parseResult.success) {
+      console.warn('WorkspaceResponse schema validation warning on update:', parseResult.error);
+      return response.data;
+    }
+    return parseResult.data;
+  },
+
+  /**
+   * Archives a workspace.
+   */
+  archiveWorkspace: async (workspaceId) => {
+    const response = await apiClient.post(`/api/v1/workspaces/${workspaceId}/archive`);
+    return response.data;
+  },
+
+  /**
+   * Deletes a workspace.
+   */
+  deleteWorkspace: async (workspaceId) => {
+    const response = await apiClient.delete(`/api/v1/workspaces/${workspaceId}`);
+    return response.data;
+  },
 };
 
 export default workspaceApi;

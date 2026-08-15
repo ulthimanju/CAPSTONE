@@ -23,4 +23,5 @@ export {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from './DropdownMenu';
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
 export { GoogleDriveIcon } from './GoogleDriveIcon';

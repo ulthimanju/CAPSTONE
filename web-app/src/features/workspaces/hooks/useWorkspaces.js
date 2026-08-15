@@ -45,12 +45,53 @@ export function useCreateWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (newWorkspace) => workspaceApi.createWorkspace(newWorkspace),
     onSuccess: (data, variables, context) => {
-      // Invalidate all workspace lists so UI updates immediately
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       if (data?.id) {
         setActiveWorkspaceId(data.id);
       }
       options.onSuccess?.(data, variables, context);
+    },
+    onError: (error, variables, context) => {
+      options.onError?.(error, variables, context);
+    },
+    ...options,
+  });
+}
+
+/**
+ * Mutation hook to update an existing workspace.
+ */
+export function useUpdateWorkspaceMutation(workspaceId, options = {}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data) => workspaceApi.updateWorkspace(workspaceId, data),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      options.onSuccess?.(data, variables, context);
+    },
+    onError: (error, variables, context) => {
+      options.onError?.(error, variables, context);
+    },
+    ...options,
+  });
+}
+
+/**
+ * Mutation hook to delete a workspace.
+ */
+export function useDeleteWorkspaceMutation(options = {}) {
+  const queryClient = useQueryClient();
+  const clearActiveWorkspace = useWorkspaceStore((state) => state.clearActiveWorkspace);
+
+  return useMutation({
+    mutationFn: (workspaceId) => workspaceApi.deleteWorkspace(workspaceId),
+    onSuccess: (data, workspaceId, context) => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.removeQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      clearActiveWorkspace();
+      options.onSuccess?.(data, workspaceId, context);
     },
     onError: (error, variables, context) => {
       options.onError?.(error, variables, context);
