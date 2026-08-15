@@ -112,24 +112,16 @@ export function ArchivedWorkspacesPage() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => restoreMutation.mutate(workspace.id)}
-                    isLoading={restoreMutation.isPending}
-                    leftIcon={<RotateCcw className="h-3 w-3" />}
-                    className="text-xs px-2.5 py-1"
-                  >
-                    Restore
-                  </Button>
-
-                  <Link to={`/workspaces/${workspace.id}`}>
-                    <Button variant="ghost" size="sm" className="text-xs px-2.5 py-1">
-                      View
-                    </Button>
-                  </Link>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => restoreMutation.mutate(workspace.id)}
+                  isLoading={restoreMutation.isPending}
+                  leftIcon={<RotateCcw className="h-3 w-3" />}
+                  className="text-xs px-2.5 py-1"
+                >
+                  Restore
+                </Button>
               </div>
             </Card>
           ))}
