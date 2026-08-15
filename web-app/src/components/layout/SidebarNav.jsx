@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FileText, Sparkles, Bot, Users, Settings } from 'lucide-react';
+import { FileText, Sparkles, Bot, Route, Users, Settings } from 'lucide-react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
@@ -36,6 +36,12 @@ export function SidebarNav() {
       to: `${basePath}/chat`,
       icon: Bot,
       isActive: location.pathname.startsWith(`${basePath}/chat`),
+    },
+    {
+      label: 'Learning Path',
+      to: `${basePath}/learning-path`,
+      icon: Route,
+      isActive: location.pathname.startsWith(`${basePath}/learning-path`),
     },
     {
       label: 'Collaborators',

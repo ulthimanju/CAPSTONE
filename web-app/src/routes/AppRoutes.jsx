@@ -9,6 +9,7 @@ import { WorkspaceDetailPage } from '@/features/workspaces/pages/WorkspaceDetail
 import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab';
 import { SummaryTab } from '@/features/summary/pages/SummaryTab';
 import { ChatPage } from '@/features/chat/pages/ChatPage';
+import { LearningPathTab } from '@/features/workspaces/components/tabs/LearningPathTab';
 import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
 import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
 import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPage';
@@ -31,6 +32,7 @@ export function AppRoutes() {
             <Route path="documents/:documentId" element={<DocumentReaderPage />} />
             <Route path="summary" element={<SummaryTab />} />
             <Route path="chat" element={<ChatPage />} />
+            <Route path="learning-path" element={<LearningPathTab />} />
             <Route path="collaborators" element={<CollaboratorsTab />} />
             <Route path="settings" element={<SettingsTab />} />
           </Route>

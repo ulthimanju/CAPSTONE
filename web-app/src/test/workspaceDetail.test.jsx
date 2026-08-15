@@ -115,6 +115,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
                 <Route path="documents" element={<DocumentsTab />} />
                 <Route path="summary" element={<SummaryTab />} />
                 <Route path="chat" element={<div>AI Tutor View</div>} />
+                <Route path="learning-path" element={<div>Learning Path View</div>} />
                 <Route path="collaborators" element={<CollaboratorsTab />} />
                 <Route path="settings" element={<SettingsTab />} />
               </Route>
@@ -126,13 +127,14 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     );
   };
 
-  it('renders sidebar navigation links (Documents, Summary, AI Tutor, Collaborators, Settings) and default Documents view', async () => {
+  it('renders sidebar navigation links (Documents, Summary, AI Tutor, Learning Path, Collaborators, Settings) and default Documents view', async () => {
     renderAppWithSidebarAndDetail();
 
     // Verify Sidebar navigation items
     expect(screen.getByRole('link', { name: /documents/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /summary/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ai tutor/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /learning path/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /collaborators/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
 
