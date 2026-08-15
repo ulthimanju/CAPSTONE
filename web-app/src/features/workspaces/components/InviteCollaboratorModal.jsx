@@ -93,21 +93,42 @@ export function InviteCollaboratorModal({ workspaceId, open, onOpenChange, onSuc
               name="role"
               control={control}
               render={({ field }) => (
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => field.onChange('ADMIN')}
+                    className={cn(
+                      'flex flex-col items-start gap-1 rounded-ui border p-2.5 text-left transition-all',
+                      field.value === 'ADMIN'
+                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                        : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover hover:border-sep-line/80'
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold">
+                      <Shield className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      Admin
+                    </div>
+                    <div className="text-[10px] text-text/60 font-body leading-tight">
+                      Manage members & docs
+                    </div>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => field.onChange('EDITOR')}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-ui border p-3 text-left transition-all',
+                      'flex flex-col items-start gap-1 rounded-ui border p-2.5 text-left transition-all',
                       field.value === 'EDITOR'
                         ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
                         : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover hover:border-sep-line/80'
                     )}
                   >
-                    <Edit3 className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <div>
-                      <div className="text-xs font-bold font-mono">Editor</div>
-                      <div className="text-[10px] text-text/60 font-body">Can edit & upload</div>
+                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold">
+                      <Edit3 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      Editor
+                    </div>
+                    <div className="text-[10px] text-text/60 font-body leading-tight">
+                      Edit notes & upload
                     </div>
                   </button>
 
@@ -115,16 +136,18 @@ export function InviteCollaboratorModal({ workspaceId, open, onOpenChange, onSuc
                     type="button"
                     onClick={() => field.onChange('VIEWER')}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-ui border p-3 text-left transition-all',
+                      'flex flex-col items-start gap-1 rounded-ui border p-2.5 text-left transition-all',
                       field.value === 'VIEWER'
                         ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
                         : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover hover:border-sep-line/80'
                     )}
                   >
-                    <Eye className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <div>
-                      <div className="text-xs font-bold font-mono">Viewer</div>
-                      <div className="text-[10px] text-text/60 font-body">Read-only study</div>
+                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold">
+                      <Eye className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      Viewer
+                    </div>
+                    <div className="text-[10px] text-text/60 font-body leading-tight">
+                      Read-only study
                     </div>
                   </button>
                 </div>

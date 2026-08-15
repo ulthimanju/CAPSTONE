@@ -73,10 +73,47 @@ export const memberApi = {
   },
 
   /**
+   * Resend an invitation (extends 7 days).
+   */
+  resendInvitation: async (invitationId) => {
+    const response = await apiClient.post(`/api/v1/invitations/${invitationId}/resend`);
+    return response.data;
+  },
+
+  /**
    * Cancel/revoke an active invitation.
    */
   cancelInvitation: async (invitationId) => {
     const response = await apiClient.delete(`/api/v1/invitations/${invitationId}`);
+    return response.data;
+  },
+
+  /**
+   * Leave a workspace (for non-owners).
+   */
+  leaveWorkspace: async (workspaceId) => {
+    const response = await apiClient.post(`/api/v1/workspaces/${workspaceId}/leave`);
+    return response.data;
+  },
+
+  /**
+   * Transfer workspace ownership to another member.
+   */
+  transferOwnership: async (workspaceId, newOwnerId) => {
+    const response = await apiClient.post(
+      `/api/v1/workspaces/${workspaceId}/transfer-ownership`,
+      { new_owner_id: newOwnerId }
+    );
+    return response.data;
+  },
+
+  /**
+   * List recent workspace activity audit log.
+   */
+  getActivities: async (workspaceId, limit = 50) => {
+    const response = await apiClient.get(
+      `/api/v1/workspaces/${workspaceId}/activities?limit=${limit}`
+    );
     return response.data;
   },
 };

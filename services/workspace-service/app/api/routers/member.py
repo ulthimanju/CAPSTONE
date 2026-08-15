@@ -75,7 +75,31 @@ async def list_members(
     return response
 
 
+@router.get("/invitations", response_model=list[InvitationResponse])
+async def list_workspace_invitations(
+    workspace_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
+    inv_repo: InvitationRepository = Depends(get_invitation_repository),
+):
+    workspace = await ws_repo.get_by_id(workspace_id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    caller_mem = await mem_repo.get_member(workspace_id, user_id)
+    if not caller_mem and workspace.owner_id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied to workspace invitations")
+
+    invitations = await inv_repo.list_by_workspace(workspace_id)
+    return [
+        InvitationResponse.model_validate(inv)
+        for inv in invitations
+        if getattr(inv.status, "value", str(inv.status)) == "PENDING"
+    ]
+
+
 @router.post("/members", response_model=InvitationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/invite", response_model=InvitationResponse, status_code=status.HTTP_201_CREATED)
 async def invite_member(
     workspace_id: UUID,
     req: InviteMemberRequest,
@@ -130,6 +154,7 @@ async def transfer_ownership(
 
 
 @router.put("/members/{member_user_id}", response_model=MemberResponse)
+@router.patch("/members/{member_user_id}/role", response_model=MemberResponse)
 async def update_member_role(
     workspace_id: UUID,
     member_user_id: UUID,
