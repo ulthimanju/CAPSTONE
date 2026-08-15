@@ -250,6 +250,9 @@ services:
     dns:
       - 8.8.8.8
       - 1.1.1.1
+    extra_hosts:
+      - "generativelanguage.googleapis.com:172.217.114.4"
+      - "oauth2.googleapis.com:192.178.211.95"
     env_file:
       - .env.common
       - services/ai-service/.env
