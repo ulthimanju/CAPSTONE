@@ -4,7 +4,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class PlatformSettings(BaseSettings):
-    model_config = SettingsConfigDict(extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env.common", ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # App Metadata
     app_name: str = "service"
@@ -14,7 +18,7 @@ class PlatformSettings(BaseSettings):
     log_level: str = "INFO"
 
     # JWT Config
-    jwt_secret: str
+    jwt_secret: str = "change-me-in-production-secret-key-minimum-32-chars!!"
     jwt_algorithm: str = "HS256"
     jwt_issuer: str = "identity-service"
     jwt_audience: str = "cpa-services"

@@ -4,8 +4,13 @@ import time
 import asyncio
 
 from typing import Any, AsyncGenerator
-from google import genai
-from google.genai import types
+
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+    types = None
 
 from app.config.settings import settings
 from app.constants.enums import AIProvider, ModelType
@@ -15,9 +20,9 @@ class TokenCounter:
     @staticmethod
     def estimate_tokens(text: str) -> int:
         # Standard estimation: ~4 chars per token for English text
-        if not text:
+        if not text or not text.strip():
             return 0
-        return max(1, len(text) // 4)
+        return max(1, len(text.strip()) // 4)
 
 
 class GeminiClient:

@@ -1,11 +1,9 @@
-from enum import StrEnum
+from shared.enums.identity import (
+    Role,
+    OAuthProvider,
+)
 
-
-class Role(StrEnum):
-    STUDENT = "student"
-    TEACHER = "teacher"
-    ADMIN = "admin"
-
-
-class OAuthProvider(StrEnum):
-    GOOGLE = "google"
+__all__ = [
+    "Role",
+    "OAuthProvider",
+]

@@ -1,8 +1,6 @@
 flowchart LR
 
-USER[User]
-
-WEB[web-app]
+USER[User / Client]
 
 GW[api-gateway]
 
@@ -34,9 +32,7 @@ GEMINI[Gemini]
 
 GOOGLE[Google OAuth]
 
-USER --> WEB
-
-WEB --> GW
+USER --> GW
 
 GW --> ID
 GW --> WS

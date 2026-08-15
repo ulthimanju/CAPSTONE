@@ -5,16 +5,13 @@ from shared.config import PlatformSettings
 
 class AIServiceSettings(PlatformSettings):
     app_name: str = "ai-service"
-    google_api_key: str = Field(default="", env="GOOGLE_API_KEY")
+    google_api_key: str = ""
     gemini_default_model: str = "gemini-flash-latest"
     gemini_embedding_model: str = "gemini-embedding-001"
 
-
-
-
-    workspace_service_url: str = Field(default="http://workspace-service:8000", env="WORKSPACE_SERVICE_URL")
-    rag_service_url: str = Field(default="http://rag-service:8000", env="RAG_SERVICE_URL")
-    document_service_url: str = Field(default="http://document-service:8000", env="DOCUMENT_SERVICE_URL")
+    workspace_service_url: str = "http://workspace-service:8000"
+    rag_service_url: str = "http://rag-service:8000"
+    document_service_url: str = "http://document-service:8000"
 
 
 settings = AIServiceSettings()

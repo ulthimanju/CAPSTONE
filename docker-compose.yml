@@ -95,7 +95,7 @@ services:
   identity-service:
     build:
       context: .
-      dockerfile: services/identity-service/docker/Dockerfile
+      dockerfile: services/identity-service/Dockerfile
     container_name: cpa_identity_service
     env_file:
       - .env.common
@@ -204,17 +204,6 @@ services:
       - rag-service
       - ai-service
       - notification-service
-    restart: unless-stopped
-
-  web-app:
-    build:
-      context: .
-      dockerfile: web-app/Dockerfile
-    container_name: cpa_web_app
-    ports:
-      - "80:80"
-    depends_on:
-      - api-gateway
     restart: unless-stopped
 
 # ─────────────────────────────────────────────────────────────

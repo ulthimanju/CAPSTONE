@@ -45,7 +45,9 @@ MANIFEST
 
 # Python Virtual Environments
 .venv/
+**/.venv/
 venv/
+**/venv/
 ENV/
 env/
 env.bak/
@@ -54,24 +56,13 @@ venv.bak/
 
 # Python Testing & Coverage
 .pytest_cache/
+**/.pytest_cache/
 .coverage
 .coverage.*
 htmlcov/
 .tox/
 .nox/
 .hypothesis/
-
-# Node.js / Web-App Frontend
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-.npm/
-.eslintcache
-.vite/
-web-app/dist/
-web-app/node_modules/
 
 # Database & Persistent Storage Mounts
 postgres_data/

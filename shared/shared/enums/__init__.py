@@ -32,6 +32,20 @@ from shared.enums.processing import (
     ProcessingJobType,
     ProcessingStatus,
 )
+from shared.enums.rag import (
+    EmbeddingStatus,
+    EmbeddingModel,
+)
+from shared.enums.identity import (
+    Role,
+    OAuthProvider,
+)
+from shared.enums.ai import (
+    AIProvider,
+    ModelType,
+    RequestType,
+    RequestStatus,
+)
 
 __all__ = [
     "DocumentStatus",
@@ -58,4 +72,12 @@ __all__ = [
     "EventStatus",
     "ProcessingJobType",
     "ProcessingStatus",
+    "EmbeddingStatus",
+    "EmbeddingModel",
+    "Role",
+    "OAuthProvider",
+    "AIProvider",
+    "ModelType",
+    "RequestType",
+    "RequestStatus",
 ]
