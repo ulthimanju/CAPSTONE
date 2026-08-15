@@ -135,6 +135,13 @@ services:
       context: .
       dockerfile: services/identity-service/Dockerfile
     container_name: cpa_identity_service
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    extra_hosts:
+      - "oauth2.googleapis.com:192.178.211.95"
+      - "openidconnect.googleapis.com:172.217.118.4"
+      - "accounts.google.com:192.178.211.84"
     env_file:
       - .env.common
       - services/identity-service/.env
@@ -159,6 +166,9 @@ services:
       context: .
       dockerfile: services/workspace-service/Dockerfile
     container_name: cpa_workspace_service
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/workspace-service/.env
@@ -181,6 +191,9 @@ services:
       context: .
       dockerfile: services/document-service/Dockerfile
     container_name: cpa_document_service
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/document-service/.env
@@ -207,6 +220,9 @@ services:
       context: .
       dockerfile: services/rag-service/Dockerfile
     container_name: cpa_rag_service
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/rag-service/.env
@@ -231,6 +247,9 @@ services:
       context: .
       dockerfile: services/ai-service/Dockerfile
     container_name: cpa_ai_service
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/ai-service/.env
@@ -250,6 +269,9 @@ services:
       context: .
       dockerfile: services/notification-service/Dockerfile
     container_name: cpa_notification_service
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/notification-service/.env
@@ -274,6 +296,9 @@ services:
       context: .
       dockerfile: services/api-gateway/Dockerfile
     container_name: cpa_api_gateway
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/api-gateway/.env

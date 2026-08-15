@@ -87,14 +87,29 @@ class GoogleOAuthClient(OAuthClientInterface):
             if not access_token:
                 raise GoogleOAuthError("No access token returned by Google.")
 
-            uinfo_resp = await http_client.get(
-                "https://openidconnect.googleapis.com/v1/userinfo",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            if uinfo_resp.status_code != 200:
-                raise GoogleOAuthError("Failed to retrieve user profile info from Google.")
+            import json
+            import base64
 
-            user_info = uinfo_resp.json()
+            user_info = None
+            id_token_str = tokens.get("id_token")
+            if id_token_str and "." in id_token_str:
+                try:
+                    payload_b64 = id_token_str.split(".")[1]
+                    payload_b64 += "=" * ((4 - len(payload_b64) % 4) % 4)
+                    user_info = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
+                except Exception:
+                    pass
+
+            if not user_info:
+                uinfo_resp = await http_client.get(
+                    "https://openidconnect.googleapis.com/v1/userinfo",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                if uinfo_resp.status_code == 200:
+                    user_info = uinfo_resp.json()
+
+            if not user_info or not user_info.get("email"):
+                raise GoogleOAuthError("Failed to retrieve user profile info from Google.")
 
         user_dto = GoogleUserDTO(
             sub=user_info["sub"],
