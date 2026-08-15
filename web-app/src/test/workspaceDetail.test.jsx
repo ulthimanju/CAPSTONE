@@ -211,7 +211,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     });
   });
 
-  it('renders Notifications and Archived Chats items at the bottom of the sidebar right above profile dropdown', async () => {
+  it('renders Notifications and Archived Workspaces items at the bottom of the sidebar right above profile dropdown', async () => {
     renderWithProviders(
       <Sidebar />,
       { route: '/workspaces/e4b3c2a1-0000-4000-8000-000000000001' }
@@ -222,10 +222,10 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     expect(notifLink).toBeInTheDocument();
     expect(notifLink).toHaveAttribute('href', '/workspaces/e4b3c2a1-0000-4000-8000-000000000001/notifications');
 
-    // Verify Archived Chats link
-    const archivedLink = screen.getByRole('link', { name: /archived chats/i });
+    // Verify Archived Workspaces link
+    const archivedLink = screen.getByRole('link', { name: /archived workspaces/i });
     expect(archivedLink).toBeInTheDocument();
-    expect(archivedLink).toHaveAttribute('href', '/workspaces/e4b3c2a1-0000-4000-8000-000000000001/archived-chats');
+    expect(archivedLink).toHaveAttribute('href', '/archived-workspaces');
 
     // Verify User Profile Menu / Dropdown button exists right below
     expect(screen.getByRole('button', { name: /user profile menu/i })).toBeInTheDocument();

@@ -15,9 +15,7 @@ export function Sidebar({ header, footer, children, className }) {
   const notificationsPath = activeWorkspaceId
     ? `/workspaces/${activeWorkspaceId}/notifications`
     : '/notifications';
-  const archivedChatsPath = activeWorkspaceId
-    ? `/workspaces/${activeWorkspaceId}/archived-chats`
-    : '/archived-chats';
+  const archivedWorkspacesPath = '/archived-workspaces';
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -66,7 +64,7 @@ export function Sidebar({ header, footer, children, className }) {
         {children !== undefined ? children : <SidebarNav />}
       </nav>
 
-      {/* Bottom Nav Items: Notifications & Archived Chats */}
+      {/* Bottom Nav Items: Notifications & Archived Workspaces */}
       <div className="shrink-0 px-3 py-1.5 border-t border-sep-line/60 space-y-1">
         <NavLink
           to={notificationsPath}
@@ -84,7 +82,7 @@ export function Sidebar({ header, footer, children, className }) {
           <span>Notifications</span>
         </NavLink>
         <NavLink
-          to={archivedChatsPath}
+          to={archivedWorkspacesPath}
           onClick={closeMobileSidebar}
           className={({ isActive }) =>
             cn(
@@ -96,7 +94,7 @@ export function Sidebar({ header, footer, children, className }) {
           }
         >
           <Archive className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>Archived Chats</span>
+          <span>Archived Workspaces</span>
         </NavLink>
       </div>
 
