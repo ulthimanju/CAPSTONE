@@ -41,6 +41,7 @@ import { useAuthStore } from '@/store/authStore';
 import { ROUTES } from '@/config/constants';
 import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errorUtils';
 
 export function CollaboratorsTab({ workspace: propWorkspace }) {
   const context = useOutletContext() || {};
@@ -83,7 +84,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
       toast.success('Collaborator removed successfully');
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || err.message || 'Failed to remove collaborator');
+      toast.error(getErrorMessage(err, 'Failed to remove collaborator'));
     },
   });
 
@@ -92,7 +93,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
       toast.success('Member role updated successfully');
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || err.message || 'Failed to update member role');
+      toast.error(getErrorMessage(err, 'Failed to update member role'));
     },
   });
 
@@ -101,7 +102,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
       toast.success('Invitation revoked');
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || err.message || 'Failed to revoke invitation');
+      toast.error(getErrorMessage(err, 'Failed to revoke invitation'));
     },
   });
 
@@ -110,7 +111,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
       toast.success('Invitation resent with +7 days validity');
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || err.message || 'Failed to resend invitation');
+      toast.error(getErrorMessage(err, 'Failed to resend invitation'));
     },
   });
 
@@ -121,7 +122,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
       navigate(ROUTES.WORKSPACES);
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || err.message || 'Failed to leave workspace');
+      toast.error(getErrorMessage(err, 'Failed to leave workspace'));
     },
   });
 
@@ -131,7 +132,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
       toast.success('Workspace ownership transferred successfully');
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.detail || err.message || 'Failed to transfer ownership');
+      toast.error(getErrorMessage(err, 'Failed to transfer ownership'));
     },
   });
 

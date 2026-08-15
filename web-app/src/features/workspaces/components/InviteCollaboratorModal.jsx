@@ -28,6 +28,7 @@ import { inviteMemberRequestSchema } from '../schemas/memberSchemas';
 import { useInviteMemberMutation } from '../hooks/useMembers';
 import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errorUtils';
 
 export function InviteCollaboratorModal({
   workspaceId,
@@ -62,11 +63,10 @@ export function InviteCollaboratorModal({
       onSuccess?.(data);
     },
     onError: (err) => {
-      const errorMsg =
-        err?.response?.data?.detail ||
-        err?.response?.data?.message ||
-        err?.message ||
-        'Failed to send invitation. Please verify the email and try again.';
+      const errorMsg = getErrorMessage(
+        err,
+        'Failed to send invitation. Please verify the email and try again.'
+      );
       toast.error(errorMsg);
     },
   });
@@ -272,10 +272,10 @@ export function InviteCollaboratorModal({
               <div className="space-y-0.5">
                 <span className="font-bold">Invitation Failed:</span>
                 <p className="font-body text-xs text-danger/90">
-                  {inviteMutation.error?.response?.data?.detail ||
-                    inviteMutation.error?.response?.data?.message ||
-                    inviteMutation.error?.message ||
-                    'Unable to send invitation. Please verify the email and try again.'}
+                  {getErrorMessage(
+                    inviteMutation.error,
+                    'Unable to send invitation. Please verify the email and try again.'
+                  )}
                 </p>
               </div>
             </div>
