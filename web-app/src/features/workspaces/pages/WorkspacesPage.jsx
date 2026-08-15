@@ -1,11 +1,13 @@
-import React from 'react';
-import { Loader2, FolderPlus, Layers, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Loader2, FolderPlus, Layers, AlertCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { WorkspaceCard } from '../components/WorkspaceCard';
+import { CreateWorkspaceModal } from '../components/CreateWorkspaceModal';
 import { useWorkspacesQuery } from '../hooks/useWorkspaces';
 
 export function WorkspacesPage() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data, isLoading, isError, error, refetch } = useWorkspacesQuery();
 
   const workspaces = data?.workspaces || [];
@@ -14,7 +16,7 @@ export function WorkspacesPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header section */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-text sm:text-3xl">
             Workspaces
@@ -29,6 +31,13 @@ export function WorkspacesPage() {
             <Layers className="h-4 w-4 text-accent" aria-hidden="true" />
             <span>{total} {total === 1 ? 'Workspace' : 'Workspaces'}</span>
           </div>
+
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            leftIcon={<Plus className="h-4 w-4" />}
+          >
+            New Workspace
+          </Button>
         </div>
       </div>
 
@@ -69,8 +78,15 @@ export function WorkspacesPage() {
               No workspaces found
             </h2>
             <p className="mt-1 max-w-sm font-body text-xs text-text/70 leading-relaxed">
-              Create or join a workspace to start collaborative course study, document parsing, and AI tutoring.
+              Create your first workspace to start collaborative course study, document parsing, and AI tutoring.
             </p>
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              leftIcon={<Plus className="h-4 w-4" />}
+              className="mt-5"
+            >
+              Create Workspace
+            </Button>
           </Card>
         )}
 
@@ -83,6 +99,12 @@ export function WorkspacesPage() {
           </div>
         )}
       </div>
+
+      {/* Create Workspace Modal Dialog */}
+      <CreateWorkspaceModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      />
     </div>
   );
 }

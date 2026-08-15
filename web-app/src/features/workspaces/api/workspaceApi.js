@@ -1,5 +1,9 @@
 import apiClient from '@/lib/api';
-import { workspaceListResponseSchema, workspaceResponseSchema } from '../schemas/workspaceSchemas';
+import {
+  workspaceListResponseSchema,
+  workspaceResponseSchema,
+  createWorkspaceRequestSchema,
+} from '../schemas/workspaceSchemas';
 
 export const workspaceApi = {
   /**
@@ -25,6 +29,20 @@ export const workspaceApi = {
     const parseResult = workspaceResponseSchema.safeParse(response.data);
     if (!parseResult.success) {
       console.warn('WorkspaceResponse schema validation warning:', parseResult.error);
+      return response.data;
+    }
+    return parseResult.data;
+  },
+
+  /**
+   * Creates a new workspace.
+   */
+  createWorkspace: async (data) => {
+    const validatedPayload = createWorkspaceRequestSchema.parse(data);
+    const response = await apiClient.post('/api/v1/workspaces', validatedPayload);
+    const parseResult = workspaceResponseSchema.safeParse(response.data);
+    if (!parseResult.success) {
+      console.warn('WorkspaceResponse schema validation warning on create:', parseResult.error);
       return response.data;
     }
     return parseResult.data;

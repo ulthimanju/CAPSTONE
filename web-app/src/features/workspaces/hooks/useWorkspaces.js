@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { workspaceApi } from '../api/workspaceApi';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 
 export const workspaceKeys = {
   all: ['workspaces'],
@@ -30,6 +31,30 @@ export function useWorkspaceQuery(workspaceId, options = {}) {
     queryFn: () => workspaceApi.getWorkspaceById(workspaceId),
     enabled: !!workspaceId,
     staleTime: 1000 * 60 * 2,
+    ...options,
+  });
+}
+
+/**
+ * Mutation hook to create a new workspace.
+ */
+export function useCreateWorkspaceMutation(options = {}) {
+  const queryClient = useQueryClient();
+  const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
+
+  return useMutation({
+    mutationFn: (newWorkspace) => workspaceApi.createWorkspace(newWorkspace),
+    onSuccess: (data, variables, context) => {
+      // Invalidate all workspace lists so UI updates immediately
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      if (data?.id) {
+        setActiveWorkspaceId(data.id);
+      }
+      options.onSuccess?.(data, variables, context);
+    },
+    onError: (error, variables, context) => {
+      options.onError?.(error, variables, context);
+    },
     ...options,
   });
 }

@@ -1,13 +1,16 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from './utils';
 import {
   workspaceResponseSchema,
   workspaceListResponseSchema,
+  createWorkspaceRequestSchema,
 } from '@/features/workspaces/schemas/workspaceSchemas';
 import { WorkspaceCard } from '@/features/workspaces/components/WorkspaceCard';
 import { WorkspacesPage } from '@/features/workspaces/pages/WorkspacesPage';
+import { CreateWorkspaceModal } from '@/features/workspaces/components/CreateWorkspaceModal';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { workspaceApi } from '@/features/workspaces/api/workspaceApi';
@@ -69,6 +72,20 @@ describe('Workspace Zod Schemas', () => {
 
     const result = workspaceResponseSchema.safeParse(invalidDomainWorkspace);
     expect(result.success).toBe(false);
+  });
+
+  it('validates createWorkspaceRequestSchema defaults and constraints', () => {
+    const valid = { name: 'Compiler Design' };
+    const res = createWorkspaceRequestSchema.safeParse(valid);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.name).toBe('Compiler Design');
+      expect(res.data.domain_type).toBe('TECHNICAL');
+      expect(res.data.visibility).toBe('PRIVATE');
+    }
+
+    const empty = { name: '' };
+    expect(createWorkspaceRequestSchema.safeParse(empty).success).toBe(false);
   });
 
   it('validates a workspace list response', () => {
@@ -136,6 +153,55 @@ describe('WorkspaceCard Component', () => {
   });
 });
 
+describe('CreateWorkspaceModal Component', () => {
+  it('submits valid form with name, domain type, and visibility', async () => {
+    const user = userEvent.setup();
+    const mockCreated = {
+      id: 'e4b3c2a1-0000-4000-8000-000000000001',
+      owner_id: '00f3d58e-ce22-4d1f-a665-bbf8266aa2a8',
+      name: 'Deep Learning',
+      domain_type: 'TECHNICAL',
+      visibility: 'INTERNAL',
+      status: 'ACTIVE',
+      created_at: '2026-08-15T09:30:00Z',
+      updated_at: '2026-08-15T10:15:00Z',
+      user_role: 'OWNER',
+    };
+
+    const createSpy = vi.spyOn(workspaceApi, 'createWorkspace').mockResolvedValue(mockCreated);
+    const onOpenChange = vi.fn();
+    const onSuccess = vi.fn();
+
+    renderWithProviders(
+      <CreateWorkspaceModal
+        open={true}
+        onOpenChange={onOpenChange}
+        onSuccess={onSuccess}
+      />
+    );
+
+    const nameInput = screen.getByLabelText(/workspace name/i);
+    await user.type(nameInput, 'Deep Learning');
+
+    const internalBtn = screen.getByRole('button', { name: /internal/i });
+    await user.click(internalBtn);
+
+    const submitBtn = screen.getByRole('button', { name: /create workspace/i });
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith({
+        name: 'Deep Learning',
+        domain_type: 'TECHNICAL',
+        visibility: 'INTERNAL',
+      });
+    });
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onSuccess).toHaveBeenCalledWith(mockCreated);
+  });
+});
+
 describe('WorkspacesPage Component', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -145,7 +211,8 @@ describe('WorkspacesPage Component', () => {
     });
   });
 
-  it('renders empty state when no workspaces exist', async () => {
+  it('renders empty state when no workspaces exist and opens create modal', async () => {
+    const user = userEvent.setup();
     vi.spyOn(workspaceApi, 'getWorkspaces').mockResolvedValue({
       total: 0,
       workspaces: [],
@@ -154,9 +221,11 @@ describe('WorkspacesPage Component', () => {
     renderWithProviders(<WorkspacesPage />);
 
     expect(await screen.findByText('No workspaces found')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Create or join a workspace to start collaborative course study/i)
-    ).toBeInTheDocument();
+
+    const newBtn = screen.getByRole('button', { name: /new workspace/i });
+    await user.click(newBtn);
+
+    expect(await screen.findByText('Create New Workspace')).toBeInTheDocument();
   });
 
   it('renders workspace grid when workspaces exist', async () => {

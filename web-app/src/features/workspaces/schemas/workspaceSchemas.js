@@ -5,6 +5,16 @@ export const workspaceVisibilitySchema = z.enum(['PRIVATE', 'INTERNAL', 'PUBLIC'
 export const workspaceStatusSchema = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
 export const workspaceRoleSchema = z.enum(['OWNER', 'ADMIN', 'EDITOR', 'VIEWER']);
 
+export const createWorkspaceRequestSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Workspace name is required')
+    .max(255, 'Workspace name must be less than 255 characters'),
+  domain_type: workspaceDomainTypeSchema.default('TECHNICAL'),
+  visibility: workspaceVisibilitySchema.default('PRIVATE'),
+});
+
 export const workspaceResponseSchema = z.object({
   id: z.string().uuid(),
   owner_id: z.string().uuid(),
