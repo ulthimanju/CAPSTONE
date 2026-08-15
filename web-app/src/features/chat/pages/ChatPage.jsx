@@ -5,7 +5,6 @@ import {
   Sparkles,
   RotateCcw,
   Loader2,
-  HelpCircle,
   Copy,
   Check,
 } from 'lucide-react';
@@ -17,13 +16,6 @@ import {
 } from '../hooks/useChat';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
 import { toast } from 'sonner';
-
-const SUGGESTED_PROMPTS = [
-  'Explain the difference between Monolithic and Microkernel architectures.',
-  'What are the necessary conditions for a Deadlock to occur?',
-  'How does Demand Paging with virtual memory work?',
-  'Compare Preemptive and Non-Preemptive CPU Scheduling algorithms.',
-];
 
 function formatMessageDate(timestamp) {
   const date = new Date(timestamp);
@@ -148,28 +140,14 @@ export function ChatPage() {
         </div>
 
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#dfd7c2] text-accent mb-3 shadow-sm border border-[#cfc5ae]">
               <Sparkles className="h-6 w-6" />
             </div>
             <h3 className="font-display text-base font-bold text-[#2c271e]">Ask Your AI Study Tutor</h3>
             <p className="mt-1 max-w-md text-xs text-[#7a715d] font-sans">
-              Interactive tutoring anchored to your uploaded notes, slides, and textbooks. Choose a topic below or type your own question.
+              Interactive tutoring anchored to your uploaded notes, slides, and textbooks. Type your question below to start learning.
             </p>
-
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-xl text-left">
-              {SUGGESTED_PROMPTS.map((prompt, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleSend(prompt)}
-                  className="rounded-md border border-[#cfc5ae] bg-[#dfd7c2]/60 p-3 text-xs text-[#2c271e] transition-all hover:bg-[#dfd7c2] hover:border-accent shadow-xs flex items-start gap-2"
-                >
-                  <HelpCircle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
-                  <span className="leading-snug">{prompt}</span>
-                </button>
-              ))}
-            </div>
           </div>
         ) : (
           messages.map((msg, index) => {

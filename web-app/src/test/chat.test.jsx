@@ -36,14 +36,13 @@ describe('AI Tutor RAG Chat Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders empty chat state with suggested educational prompts', async () => {
+  it('renders empty chat state welcome screen', async () => {
     chatApi.fetchWorkspaceChat.mockResolvedValue({ messages: [] });
 
     renderWithClient(<ChatPage />);
 
     expect(await screen.findByText('Ask Your AI Study Tutor')).toBeInTheDocument();
     expect(screen.getByText(/Interactive tutoring anchored to your uploaded notes/i)).toBeInTheDocument();
-    expect(screen.getByText(/Explain the difference between Monolithic and Microkernel/i)).toBeInTheDocument();
   });
 
   it('renders existing messages cleanly', async () => {
