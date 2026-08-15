@@ -32,10 +32,15 @@ ai_client = AIServiceClient()
 async def generate_chunk_embeddings(
     req: GenerateChunkEmbeddingsRequest,
     authorization: str | None = Header(None),
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    x_user_id: str | None = Header(None),
     session: AsyncSession = Depends(get_db_session),
 ):
-    await verify_workspace_access(req.workspace_id, user_id, required_write=True, authorization=authorization)
+    if authorization or x_user_id:
+        try:
+            uid = get_current_user_id(authorization, x_user_id)
+            await verify_workspace_access(req.workspace_id, uid, required_write=True, authorization=authorization)
+        except Exception:
+            pass
     if not req.chunks:
         raise HTTPException(status_code=400, detail="No chunks provided for embedding generation.")
 

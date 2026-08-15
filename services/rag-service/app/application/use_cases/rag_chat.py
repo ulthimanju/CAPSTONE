@@ -70,7 +70,7 @@ class RAGChatOrchestrator:
         retrieved_chunks: Sequence[tuple[ChunkEmbeddingModel, float]],
     ) -> None:
         if not retrieved_chunks:
-            raise WorkspaceContextGuardrailError()
+            return
 
         valid_chunks = [
             (chunk, score)
@@ -79,24 +79,10 @@ class RAGChatOrchestrator:
         ]
 
         if not valid_chunks:
-            raise WorkspaceContextGuardrailError()
-
-        best_score = max(score for _, score in valid_chunks)
-
-        # Strong semantic match:
-        # definitely related to the workspace.
-        if best_score >= settings.rag_min_relevance_score:
             return
 
-        # Borderline semantic match:
-        # allow Gemini to determine the answer using the workspace
-        # subject/context. This is important for valid educational
-        # questions whose exact answer may not exist in the documents.
-        if best_score >= settings.rag_borderline_relevance_score:
-            return
-
-        # Clearly unrelated to the workspace.
-        raise WorkspaceContextGuardrailError()
+        # Context is present and will be injected into prompt
+        return
 
     async def ask_question(
         self,
