@@ -51,7 +51,8 @@ class GoogleOAuthClient(OAuthClientInterface):
             "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
             "state": state,
             "access_type": "offline",
-            "prompt": "consent",
+            "prompt": "consent select_account",
+            "include_granted_scopes": "true",
         }
         auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
         return RedirectResponse(url=auth_url, status_code=302)
