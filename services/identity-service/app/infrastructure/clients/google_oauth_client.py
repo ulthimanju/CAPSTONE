@@ -28,7 +28,7 @@ oauth.register(
     client_secret=settings.google_client_secret,
     server_metadata=GOOGLE_SERVER_METADATA,
     client_kwargs={
-        "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
+        "scope": "openid email profile",
         "access_type": "offline",
         "prompt": "consent",
         "timeout": get_default_httpx_timeout(connect=10.0, read=30.0, write=30.0, pool=10.0),
@@ -48,7 +48,7 @@ class GoogleOAuthClient(OAuthClientInterface):
             "response_type": "code",
             "client_id": settings.google_client_id,
             "redirect_uri": redirect_uri,
-            "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
+            "scope": "openid email profile",
             "state": state,
             "access_type": "offline",
             "prompt": "consent",
@@ -102,7 +102,7 @@ class GoogleOAuthClient(OAuthClientInterface):
             sub=user_info["sub"],
             email=user_info["email"],
             name=user_info.get("name", user_info["email"].split("@")[0]),
-            picture=None,
+            picture=user_info.get("picture"),
         )
 
         token_dto = GoogleTokenDTO(
