@@ -13,14 +13,12 @@ import {
   useUpdateMemberRoleMutation,
   useCancelInvitationMutation,
 } from '../../hooks/useMembers';
-import { InviteCollaboratorModal } from '../InviteCollaboratorModal';
 import { useAuthStore } from '@/store/authStore';
 
 export function CollaboratorsTab({ workspace: propWorkspace }) {
   const context = useOutletContext() || {};
   const workspace = propWorkspace || context.workspace;
 
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState(null);
   const currentUser = useAuthStore((state) => state.user);
 
@@ -67,25 +65,13 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
     <div className="space-y-8">
       {/* Active Members Section */}
       <div className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-display text-lg font-bold text-text">
-              Active Collaborators ({members.length})
-            </h2>
-            <p className="font-body text-xs text-text/70">
-              Users who have joined and have active study access to this workspace.
-            </p>
-          </div>
-
-          {isEditor && (
-            <Button
-              onClick={() => setIsInviteModalOpen(true)}
-              leftIcon={<UserPlus className="h-4 w-4" />}
-              className="text-xs"
-            >
-              Invite Collaborator
-            </Button>
-          )}
+        <div>
+          <h2 className="font-display text-lg font-bold text-text">
+            Active Collaborators ({members.length})
+          </h2>
+          <p className="font-body text-xs text-text/70">
+            Users who have joined and have active study access to this workspace.
+          </p>
         </div>
 
         {isLoadingMembers && (
@@ -219,13 +205,6 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
           </Card>
         )}
       </div>
-
-      {/* Modal Dialog for Inviting */}
-      <InviteCollaboratorModal
-        workspaceId={workspace.id}
-        open={isInviteModalOpen}
-        onOpenChange={setIsInviteModalOpen}
-      />
 
       {/* Modal Dialog for Removing Member */}
       <ConfirmDialog

@@ -14,6 +14,7 @@ import { SummaryTab } from '@/features/summary/pages/SummaryTab';
 import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
 import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
 import { SidebarNav } from '@/components/layout/SidebarNav';
+import { Header } from '@/components/layout/Header';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { workspaceApi } from '@/features/workspaces/api/workspaceApi';
@@ -105,18 +106,21 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
         <aside>
           <SidebarNav />
         </aside>
-        <main>
-          <Routes>
-            <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />}>
-              <Route index element={<DocumentsTab />} />
-              <Route path="documents" element={<DocumentsTab />} />
-              <Route path="summary" element={<SummaryTab />} />
-              <Route path="chat" element={<div>AI Tutor View</div>} />
-              <Route path="collaborators" element={<CollaboratorsTab />} />
-              <Route path="settings" element={<SettingsTab />} />
-            </Route>
-          </Routes>
-        </main>
+        <div className="flex-1 flex flex-col">
+          <Header />
+          <main>
+            <Routes>
+              <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />}>
+                <Route index element={<DocumentsTab />} />
+                <Route path="documents" element={<DocumentsTab />} />
+                <Route path="summary" element={<SummaryTab />} />
+                <Route path="chat" element={<div>AI Tutor View</div>} />
+                <Route path="collaborators" element={<CollaboratorsTab />} />
+                <Route path="settings" element={<SettingsTab />} />
+              </Route>
+            </Routes>
+          </main>
+        </div>
       </div>,
       { route: initialRoute }
     );

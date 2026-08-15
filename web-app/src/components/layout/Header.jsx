@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Upload, Sparkles, RotateCcw } from 'lucide-react';
+import { Menu, Upload, Sparkles, RotateCcw, UserPlus } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
@@ -12,6 +12,7 @@ import {
   useWorkspaceChatQuery,
   useSaveWorkspaceChatMutation,
 } from '@/features/chat/hooks/useChat';
+import { InviteCollaboratorModal } from '@/features/workspaces/components/InviteCollaboratorModal';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
@@ -21,6 +22,7 @@ export function Header({ title, children, className }) {
   const toggleMobileSidebar = useUIStore((state) => state.toggleMobileSidebar);
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const fileInputRef = useRef(null);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const { data: workspace } = useWorkspaceQuery(activeWorkspaceId);
   const generateSummaryMutation = useGenerateSummaryMutation(activeWorkspaceId);
@@ -39,6 +41,9 @@ export function Header({ title, children, className }) {
 
   const isChatTab =
     location.pathname.endsWith('/chat') || location.pathname.includes('/chat');
+
+  const isCollaboratorsTab =
+    location.pathname.endsWith('/collaborators') || location.pathname.includes('/collaborators');
 
   const isSummaryGenerated = Boolean(
     workspace?.is_summary_generated || workspace?.summary_json
@@ -136,6 +141,27 @@ export function Header({ title, children, className }) {
               >
                 Clear History
               </Button>
+            )}
+
+            {/* Invite Collaborators Button (Secondary Outline) - Visible ONLY on Collaborators Tab */}
+            {isCollaboratorsTab && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsInviteModalOpen(true)}
+                  leftIcon={<UserPlus className="h-4 w-4 text-text/70" />}
+                  className="text-xs py-1.5 px-3 border-sep-line hover:border-accent hover:text-accent"
+                  title="Invite collaborators to this workspace"
+                >
+                  Invite Collaborators
+                </Button>
+
+                <InviteCollaboratorModal
+                  workspaceId={activeWorkspaceId}
+                  open={isInviteModalOpen}
+                  onOpenChange={setIsInviteModalOpen}
+                />
+              </>
             )}
 
             {/* Hidden Multi-File Picker Input */}
