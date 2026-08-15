@@ -18,7 +18,6 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             id=workspace.id,
             owner_id=workspace.owner_id,
             name=workspace.name,
-            description=workspace.description,
             visibility=workspace.visibility.value if hasattr(workspace.visibility, "value") else str(workspace.visibility),
             status=workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status),
             cover_image_url=workspace.cover_image_url,
@@ -49,7 +48,6 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             id=model.id,
             owner_id=model.owner_id,
             name=model.name,
-            description=model.description,
             visibility=WorkspaceVisibility(model.visibility),
             status=WorkspaceStatus(model.status),
             cover_image_url=model.cover_image_url,
@@ -84,7 +82,6 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 id=m.id,
                 owner_id=m.owner_id,
                 name=m.name,
-                description=m.description,
                 visibility=WorkspaceVisibility(m.visibility),
                 status=WorkspaceStatus(m.status),
                 cover_image_url=m.cover_image_url,
@@ -115,7 +112,6 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 id=m.id,
                 owner_id=m.owner_id,
                 name=m.name,
-                description=m.description,
                 visibility=WorkspaceVisibility(m.visibility),
                 status=WorkspaceStatus(m.status),
                 cover_image_url=m.cover_image_url,
@@ -133,7 +129,6 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         model = result.scalar_one_or_none()
         if model:
             model.name = workspace.name
-            model.description = workspace.description
             model.visibility = workspace.visibility.value if hasattr(workspace.visibility, "value") else str(workspace.visibility)
             model.status = workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status)
             model.cover_image_url = workspace.cover_image_url
@@ -153,7 +148,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         if model:
-            await self.session.delete(model)
+            model.status = WorkspaceStatus.DELETED.value
             await self.session.flush()
             if "post_commit_invalidations" in self.session.info:
                 self.session.info["post_commit_invalidations"].add(workspace_id)

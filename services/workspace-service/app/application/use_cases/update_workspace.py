@@ -40,8 +40,6 @@ class UpdateWorkspaceUseCase:
 
         if req.name is not None:
             workspace.name = req.name
-        if req.description is not None:
-            workspace.description = req.description
         if req.visibility is not None:
             workspace.visibility = req.visibility
         if req.cover_image_url is not None:

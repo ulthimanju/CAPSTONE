@@ -6,14 +6,12 @@ from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceR
 
 class CreateWorkspaceRequest(BaseModel):
     name: str
-    description: str | None = None
     visibility: WorkspaceVisibility = WorkspaceVisibility.PRIVATE
     cover_image_url: str | None = None
 
 
 class UpdateWorkspaceRequest(BaseModel):
     name: str | None = None
-    description: str | None = None
     visibility: WorkspaceVisibility | None = None
     cover_image_url: str | None = None
 
@@ -51,7 +49,6 @@ class WorkspaceResponse(BaseModel):
     id: UUID
     owner_id: UUID
     name: str
-    description: str | None
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     cover_image_url: str | None

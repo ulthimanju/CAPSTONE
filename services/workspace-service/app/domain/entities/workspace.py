@@ -9,7 +9,6 @@ class Workspace:
     id: UUID
     owner_id: UUID
     name: str
-    description: str | None
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     cover_image_url: str | None

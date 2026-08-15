@@ -45,7 +45,6 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
         id=ws_id,
         owner_id=owner_id,
         name="Cache Test Workspace",
-        description="Testing Redis cache",
         visibility=WorkspaceVisibility.PRIVATE,
         status=WorkspaceStatus.ACTIVE,
         cover_image_url=None,
@@ -61,7 +60,6 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     db_model_mock.id = ws_id
     db_model_mock.owner_id = owner_id
     db_model_mock.name = "Cache Test Workspace"
-    db_model_mock.description = "Testing Redis cache"
     db_model_mock.visibility = "PRIVATE"
     db_model_mock.status = "ACTIVE"
     db_model_mock.cover_image_url = None

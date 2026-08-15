@@ -35,7 +35,6 @@ class CreateWorkspaceUseCase:
             id=ws_id,
             owner_id=user_id,
             name=req.name,
-            description=req.description,
             visibility=req.visibility,
             status=WorkspaceStatus.ACTIVE,
             cover_image_url=req.cover_image_url,
