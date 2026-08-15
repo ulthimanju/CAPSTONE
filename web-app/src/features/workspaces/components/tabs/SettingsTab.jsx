@@ -6,6 +6,7 @@ import { Save, Trash2, Terminal, BookOpen, Lock, Users, Globe, Check } from 'luc
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { createWorkspaceRequestSchema } from '../../schemas/workspaceSchemas';
 import { useUpdateWorkspaceMutation, useDeleteWorkspaceMutation } from '../../hooks/useWorkspaces';
 import { ROUTES } from '@/config/constants';
@@ -17,6 +18,7 @@ export function SettingsTab({ workspace: propWorkspace }) {
 
   const navigate = useNavigate();
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const {
     register,
@@ -41,6 +43,7 @@ export function SettingsTab({ workspace: propWorkspace }) {
 
   const deleteMutation = useDeleteWorkspaceMutation({
     onSuccess: () => {
+      setIsDeleteDialogOpen(false);
       navigate(ROUTES.WORKSPACES, { replace: true });
     },
   });
@@ -51,14 +54,8 @@ export function SettingsTab({ workspace: propWorkspace }) {
     updateMutation.mutate(formData);
   };
 
-  const handleDelete = () => {
-    if (
-      window.confirm(
-        `Are you sure you want to permanently delete workspace "${workspace.name}"? This action cannot be undone.`
-      )
-    ) {
-      deleteMutation.mutate(workspace.id);
-    }
+  const handleConfirmDelete = () => {
+    deleteMutation.mutate(workspace.id);
   };
 
   return (
@@ -205,7 +202,7 @@ export function SettingsTab({ workspace: propWorkspace }) {
             <Button
               type="button"
               variant="danger"
-              onClick={handleDelete}
+              onClick={() => setIsDeleteDialogOpen(true)}
               isLoading={deleteMutation.isPending}
               leftIcon={<Trash2 className="h-4 w-4" />}
             >
@@ -214,6 +211,19 @@ export function SettingsTab({ workspace: propWorkspace }) {
           </div>
         </form>
       </Card>
+
+      {/* App Modal for Delete Confirmation */}
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Workspace"
+        description={`Are you sure you want to permanently delete "${workspace.name}"? All connected documents, AI summaries, and study units will be removed.`}
+        confirmText="Delete Workspace"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

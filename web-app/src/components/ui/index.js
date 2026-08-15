@@ -15,6 +15,7 @@ export {
   DialogDescription,
   DialogClose,
 } from './Dialog';
+export { ConfirmDialog } from './ConfirmDialog';
 export {
   DropdownMenu,
   DropdownMenuTrigger,

@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   useMembersQuery,
   useInvitationsQuery,
@@ -20,6 +21,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
   const workspace = propWorkspace || context.workspace;
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
   const currentUser = useAuthStore((state) => state.user);
 
   const {
@@ -33,7 +35,12 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
     isLoading: isLoadingInvites,
   } = useInvitationsQuery(workspace?.id);
 
-  const removeMutation = useRemoveMemberMutation(workspace?.id);
+  const removeMutation = useRemoveMemberMutation(workspace?.id, {
+    onSuccess: () => {
+      setMemberToRemove(null);
+    },
+  });
+
   const updateRoleMutation = useUpdateMemberRoleMutation(workspace?.id);
   const cancelInviteMutation = useCancelInvitationMutation(workspace?.id);
 
@@ -46,9 +53,9 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
     updateRoleMutation.mutate({ userId, role: newRole });
   };
 
-  const handleRemove = (userId) => {
-    if (window.confirm('Are you sure you want to remove this collaborator from the workspace?')) {
-      removeMutation.mutate(userId);
+  const handleConfirmRemove = () => {
+    if (memberToRemove) {
+      removeMutation.mutate(memberToRemove.user_id);
     }
   };
 
@@ -136,7 +143,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
                     {isOwner && !isMemberOwner && !isSelf && (
                       <button
                         type="button"
-                        onClick={() => handleRemove(member.user_id)}
+                        onClick={() => setMemberToRemove(member)}
                         disabled={removeMutation.isPending}
                         className="rounded-ui p-1.5 text-text/50 hover:bg-danger-tint hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
                         title="Remove member"
@@ -218,6 +225,23 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
         workspaceId={workspace.id}
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
+      />
+
+      {/* Modal Dialog for Removing Member */}
+      <ConfirmDialog
+        open={!!memberToRemove}
+        onOpenChange={(open) => {
+          if (!open) setMemberToRemove(null);
+        }}
+        title="Remove Collaborator"
+        description={`Are you sure you want to remove ${
+          memberToRemove?.user_name || memberToRemove?.user_email || 'this member'
+        } from the workspace? They will lose access to course study documents.`}
+        confirmText="Remove Collaborator"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={removeMutation.isPending}
+        onConfirm={handleConfirmRemove}
       />
     </div>
   );
