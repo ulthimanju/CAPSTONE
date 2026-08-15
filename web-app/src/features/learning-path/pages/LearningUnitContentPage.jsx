@@ -48,6 +48,8 @@ export function LearningUnitContentPage() {
     content && (content.summary || (content.flashcards && content.flashcards.length > 0))
   );
 
+  const hasAutoTriggeredRef = React.useRef(false);
+
   const handleGenerate = () => {
     if (!workspaceId || !decodedUnitTitle || generateMutation.isPending || isGeneratingUnit) return;
 
@@ -63,6 +65,20 @@ export function LearningUnitContentPage() {
       }
     );
   };
+
+  React.useEffect(() => {
+    if (
+      !isLoading &&
+      unitData &&
+      !hasContent &&
+      !isGeneratingUnit &&
+      !generateMutation.isPending &&
+      !hasAutoTriggeredRef.current
+    ) {
+      hasAutoTriggeredRef.current = true;
+      handleGenerate();
+    }
+  }, [isLoading, unitData, hasContent, isGeneratingUnit, generateMutation.isPending]);
 
   const handleTabChange = (tabId) => {
     setSearchParams({ tab: tabId });
