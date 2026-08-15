@@ -13,15 +13,24 @@ from sqlalchemy import text
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        await conn.execute(
-            text(
-                "ALTER TABLE documents DROP CONSTRAINT IF EXISTS uq_documents_workspace_user_checksum; "
-                "DROP INDEX IF EXISTS uq_documents_workspace_user_checksum; "
-                "CREATE UNIQUE INDEX IF NOT EXISTS uq_documents_workspace_user_checksum "
-                "ON documents (workspace_id, uploaded_by, checksum) "
-                "WHERE is_deleted = false;"
+        try:
+            await conn.execute(text("ALTER TABLE documents DROP CONSTRAINT IF EXISTS uq_documents_workspace_user_checksum"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("DROP INDEX IF EXISTS uq_documents_workspace_user_checksum"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_documents_workspace_user_checksum "
+                    "ON documents (workspace_id, uploaded_by, checksum) "
+                    "WHERE is_deleted = false"
+                )
             )
-        )
+        except Exception:
+            pass
     yield
     await engine.dispose()
 

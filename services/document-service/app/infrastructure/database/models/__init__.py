@@ -25,6 +25,7 @@ class DocumentModel(Base):
             "idx_documents_active_status",
             "status",
             postgresql_where=text("is_deleted = false"),
+        ),
         Index(
             "uq_documents_workspace_user_checksum",
             "workspace_id",
