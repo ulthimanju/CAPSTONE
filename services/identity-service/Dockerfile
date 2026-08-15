@@ -3,7 +3,6 @@ FROM cpa-python-base:latest
 WORKDIR /app
 
 COPY services/identity-service/app/ /app/app/
-COPY services/identity-service/alembic.ini /app/
 
 USER appuser
 

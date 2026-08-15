@@ -1,9 +1,15 @@
+# ─────────────────────────────────────────────────────────────
+# CPA-V2 Microservices Infrastructure
+# ─────────────────────────────────────────────────────────────
 
-# ─────────────────────────────────────────────────────────────
-# Infrastructure
-# ─────────────────────────────────────────────────────────────
+networks:
+  cpa-network:
+    name: cpa_network
+    driver: bridge
 
 services:
+
+  # ── Databases & Message Brokers ────────────────────────────
 
   postgres:
     image: postgres:16-alpine
@@ -17,11 +23,18 @@ services:
       - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
     ports:
       - "5432:5432"
+    networks:
+      - cpa-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   redis:
@@ -29,11 +42,18 @@ services:
     container_name: cpa_redis
     ports:
       - "6379:6379"
+    networks:
+      - cpa-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   rabbitmq:
@@ -45,11 +65,18 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    networks:
+      - cpa-network
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   mongodb:
@@ -62,11 +89,18 @@ services:
       - mongo_data:/data/db
     ports:
       - "27017:27017"
+    networks:
+      - cpa-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   pgvector:
@@ -80,17 +114,21 @@ services:
       - pgvector_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    networks:
+      - cpa-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
-# ─────────────────────────────────────────────────────────────
-# Microservices
-# Each service loads: .env.common (shared) + service .env (specific)
-# ─────────────────────────────────────────────────────────────
+  # ── Microservices ──────────────────────────────────────────
 
   identity-service:
     build:
@@ -102,9 +140,18 @@ services:
       - services/identity-service/.env
     ports:
       - "8001:8000"
+    networks:
+      - cpa-network
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   workspace-service:
@@ -117,9 +164,16 @@ services:
       - services/workspace-service/.env
     ports:
       - "8002:8000"
+    networks:
+      - cpa-network
     depends_on:
       postgres:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   document-service:
@@ -132,6 +186,8 @@ services:
       - services/document-service/.env
     ports:
       - "8003:8000"
+    networks:
+      - cpa-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,6 +195,11 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   rag-service:
@@ -151,11 +212,18 @@ services:
       - services/rag-service/.env
     ports:
       - "8004:8000"
+    networks:
+      - cpa-network
     depends_on:
       pgvector:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   ai-service:
@@ -168,6 +236,13 @@ services:
       - services/ai-service/.env
     ports:
       - "8005:8000"
+    networks:
+      - cpa-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   notification-service:
@@ -180,11 +255,18 @@ services:
       - services/notification-service/.env
     ports:
       - "8006:8000"
+    networks:
+      - cpa-network
     depends_on:
       rabbitmq:
         condition: service_healthy
       redis:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   api-gateway:
@@ -197,6 +279,8 @@ services:
       - services/api-gateway/.env
     ports:
       - "8000:8000"
+    networks:
+      - cpa-network
     depends_on:
       - identity-service
       - workspace-service
@@ -204,6 +288,11 @@ services:
       - rag-service
       - ai-service
       - notification-service
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
 # ─────────────────────────────────────────────────────────────
