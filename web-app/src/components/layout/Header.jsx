@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Menu, Upload, Sparkles } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 
 export function Header({ title, children, className }) {
+  const location = useLocation();
   const toggleMobileSidebar = useUIStore((state) => state.toggleMobileSidebar);
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const fileInputRef = useRef(null);
@@ -23,6 +25,9 @@ export function Header({ title, children, className }) {
   const isUploading = queueItems.some(
     (i) => i.status === 'UPLOADING' || i.status === 'QUEUED' || i.status === 'PROCESSING'
   );
+
+  const isSummaryTab =
+    location.pathname.endsWith('/summary') || location.pathname.includes('/summary');
 
   const isSummaryGenerated = Boolean(
     workspace?.is_summary_generated || workspace?.summary_json
@@ -72,25 +77,27 @@ export function Header({ title, children, className }) {
       <div className="flex items-center gap-2 sm:gap-3">
         {activeWorkspaceId && (
           <>
-            {/* Generate / Regenerate Summary Button */}
-            <Button
-              variant="outline"
-              onClick={handleGenerateSummary}
-              isLoading={generateSummaryMutation.isPending}
-              leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
-              className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
-              title={
-                isSummaryGenerated
-                  ? 'Regenerate complete workspace summary with Gemini 2.5 Flash'
-                  : 'Generate complete workspace summary with Gemini 2.5 Flash'
-              }
-            >
-              {generateSummaryMutation.isPending
-                ? 'Synthesizing...'
-                : isSummaryGenerated
-                ? 'Regenerate Summary'
-                : 'Generate Summary'}
-            </Button>
+            {/* Generate / Regenerate Summary Button - Visible ONLY on Summary Tab */}
+            {isSummaryTab && (
+              <Button
+                variant="outline"
+                onClick={handleGenerateSummary}
+                isLoading={generateSummaryMutation.isPending}
+                leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+                className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
+                title={
+                  isSummaryGenerated
+                    ? 'Regenerate complete workspace summary with Gemini 2.5 Flash'
+                    : 'Generate complete workspace summary with Gemini 2.5 Flash'
+                }
+              >
+                {generateSummaryMutation.isPending
+                  ? 'Synthesizing...'
+                  : isSummaryGenerated
+                  ? 'Regenerate Summary'
+                  : 'Generate Summary'}
+              </Button>
+            )}
 
             {/* Hidden Multi-File Picker Input */}
             <input
