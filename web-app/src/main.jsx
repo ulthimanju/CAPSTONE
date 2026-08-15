@@ -30,12 +30,12 @@ const queryClient = new QueryClient({
 
 function ErrorFallback({ error, resetErrorBoundary }) {
   return (
-    <div role="alert" className="p-4 m-4 border border-destructive rounded-md bg-destructive/10 text-destructive">
+    <div role="alert" className="p-4 m-4 border border-red-200 rounded-md bg-red-50 text-red-700">
       <p className="font-semibold">Something went wrong:</p>
       <pre className="text-sm mt-1">{error?.message}</pre>
       <button
         onClick={resetErrorBoundary}
-        className="mt-3 px-4 py-1.5 bg-primary text-primary-foreground text-sm rounded-md"
+        className="mt-3 px-4 py-1.5 bg-black text-white text-sm rounded-md hover:bg-gray-800"
       >
         Try again
       </button>
