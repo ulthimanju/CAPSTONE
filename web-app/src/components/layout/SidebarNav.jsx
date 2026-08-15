@@ -44,16 +44,13 @@ export function SidebarNav() {
       isActive: location.pathname.startsWith(`${basePath}/learning-path`),
     },
     {
-      label: 'Collaborators',
-      to: `${basePath}/collaborators`,
-      icon: Users,
-      isActive: location.pathname.startsWith(`${basePath}/collaborators`),
-    },
-    {
-      label: 'Settings',
-      to: `${basePath}/settings`,
+      label: 'Manage Workspace',
+      to: `${basePath}/manage`,
       icon: Settings,
-      isActive: location.pathname.startsWith(`${basePath}/settings`),
+      isActive:
+        location.pathname.startsWith(`${basePath}/manage`) ||
+        location.pathname.startsWith(`${basePath}/collaborators`) ||
+        location.pathname.startsWith(`${basePath}/settings`),
     },
   ];
 

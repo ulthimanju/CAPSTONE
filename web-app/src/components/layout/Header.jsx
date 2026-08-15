@@ -78,8 +78,13 @@ export function Header({ title, children, className }) {
     !isLearningUnitDetailPage &&
     (location.pathname.endsWith('/learning-path') || location.pathname.includes('/learning-path'));
 
-  const isCollaboratorsTab =
-    location.pathname.endsWith('/collaborators') || location.pathname.includes('/collaborators');
+  const isManageWorkspaceTab =
+    location.pathname.endsWith('/manage') ||
+    location.pathname.includes('/manage') ||
+    location.pathname.endsWith('/collaborators') ||
+    location.pathname.includes('/collaborators') ||
+    location.pathname.endsWith('/settings') ||
+    location.pathname.includes('/settings');
 
   const isSummaryGenerated = Boolean(
     workspace?.is_summary_generated || workspace?.summary_json
@@ -270,8 +275,8 @@ export function Header({ title, children, className }) {
               </Button>
             )}
 
-            {/* Invite Collaborators Button (Secondary Outline) - Visible ONLY on Collaborators Tab */}
-            {isCollaboratorsTab && (
+            {/* Invite Collaborators Button (Secondary Outline) - Visible ONLY on Manage Workspace Tab */}
+            {isManageWorkspaceTab && (
               <>
                 <Button
                   variant="outline"

@@ -11,8 +11,7 @@ import {
 import { WorkspaceDetailPage } from '@/features/workspaces/pages/WorkspaceDetailPage';
 import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab';
 import { SummaryTab } from '@/features/summary/pages/SummaryTab';
-import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
-import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
+import { ManageWorkspaceTab } from '@/features/workspaces/components/tabs/ManageWorkspaceTab';
 import { SidebarNav } from '@/components/layout/SidebarNav';
 import { Header } from '@/components/layout/Header';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -116,8 +115,9 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
                 <Route path="summary" element={<SummaryTab />} />
                 <Route path="chat" element={<div>AI Tutor View</div>} />
                 <Route path="learning-path" element={<div>Learning Path View</div>} />
-                <Route path="collaborators" element={<CollaboratorsTab />} />
-                <Route path="settings" element={<SettingsTab />} />
+                <Route path="manage" element={<ManageWorkspaceTab />} />
+                <Route path="collaborators" element={<ManageWorkspaceTab />} />
+                <Route path="settings" element={<ManageWorkspaceTab />} />
               </Route>
             </Routes>
           </main>
@@ -127,7 +127,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     );
   };
 
-  it('renders sidebar navigation links (Documents, Summary, AI Tutor, Learning Path, Collaborators, Settings) and default Documents view', async () => {
+  it('renders sidebar navigation links (Documents, Summary, AI Tutor, Learning Path, Manage Workspace) and default Documents view', async () => {
     renderAppWithSidebarAndDetail();
 
     // Verify Sidebar navigation items
@@ -135,8 +135,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     expect(screen.getByRole('link', { name: /summary/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ai tutor/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /learning path/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /collaborators/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /manage workspace/i })).toBeInTheDocument();
 
     // Overview should no longer exist
     expect(screen.queryByRole('link', { name: /overview/i })).not.toBeInTheDocument();
@@ -159,21 +158,22 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     expect(screen.getByRole('button', { name: /generate summary with gemini/i })).toBeInTheDocument();
   });
 
-  it('navigates to Collaborators view via sidebar and shows members', async () => {
+  it('navigates to Manage Workspace view via sidebar and shows settings and members', async () => {
     const user = userEvent.setup();
 
     renderAppWithSidebarAndDetail();
 
     await screen.findByText(/Workspace Documents/);
 
-    const collabLink = screen.getByRole('link', { name: /collaborators/i });
-    await user.click(collabLink);
+    const manageLink = screen.getByRole('link', { name: /manage workspace/i });
+    await user.click(manageLink);
 
+    expect(await screen.findByText(/Workspace Settings/i)).toBeInTheDocument();
     expect(await screen.findByText('Alex Rivera')).toBeInTheDocument();
     expect(screen.getByText('alex@example.com')).toBeInTheDocument();
   });
 
-  it('submits collaborator invite form from collaborators view', async () => {
+  it('submits collaborator invite form from manage workspace view', async () => {
     const user = userEvent.setup();
     const inviteSpy = vi.spyOn(memberApi, 'inviteMember').mockResolvedValue({
       id: 'inv-123',
@@ -183,14 +183,14 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
       status: 'PENDING',
     });
 
-    renderAppWithSidebarAndDetail('/workspaces/e4b3c2a1-0000-4000-8000-000000000001/collaborators');
+    renderAppWithSidebarAndDetail('/workspaces/e4b3c2a1-0000-4000-8000-000000000001/manage');
 
     const inviteBtn = await screen.findByRole('button', { name: /invite collaborator/i });
     await user.click(inviteBtn);
 
     expect(await screen.findByRole('heading', { name: /invite collaborator/i })).toBeInTheDocument();
 
-    const emailInput = screen.getByLabelText(/email address/i);
+    const emailInput = screen.getByLabelText(/user email address/i);
     await user.type(emailInput, 'newpeer@university.edu');
 
     const viewerBtn = screen.getByRole('button', { name: /viewer/i });

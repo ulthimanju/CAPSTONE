@@ -11,6 +11,7 @@ import { SummaryTab } from '@/features/summary/pages/SummaryTab';
 import { ChatPage } from '@/features/chat/pages/ChatPage';
 import { LearningPathTab } from '@/features/workspaces/components/tabs/LearningPathTab';
 import { LearningUnitContentPage } from '@/features/learning-path/pages/LearningUnitContentPage';
+import { ManageWorkspaceTab } from '@/features/workspaces/components/tabs/ManageWorkspaceTab';
 import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
 import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
 import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPage';
@@ -35,8 +36,9 @@ export function AppRoutes() {
             <Route path="chat" element={<ChatPage />} />
             <Route path="learning-path" element={<LearningPathTab />} />
             <Route path="learning-path/:unitTitle" element={<LearningUnitContentPage />} />
-            <Route path="collaborators" element={<CollaboratorsTab />} />
-            <Route path="settings" element={<SettingsTab />} />
+            <Route path="manage" element={<ManageWorkspaceTab />} />
+            <Route path="collaborators" element={<ManageWorkspaceTab />} />
+            <Route path="settings" element={<ManageWorkspaceTab />} />
           </Route>
         </Route>
       </Route>
