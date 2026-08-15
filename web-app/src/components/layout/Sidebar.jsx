@@ -16,12 +16,8 @@ export function Sidebar({ header, footer, children, className }) {
   const { data: pendingInvitations = [] } = useUserPendingInvitationsQuery();
   const pendingInvitesCount = Array.isArray(pendingInvitations) ? pendingInvitations.length : 0;
 
-  const invitationsPath = activeWorkspaceId
-    ? `/workspaces/${activeWorkspaceId}/invitations`
-    : '/invitations';
-  const notificationsPath = activeWorkspaceId
-    ? `/workspaces/${activeWorkspaceId}/notifications`
-    : '/notifications';
+  const invitationsPath = '/invitations';
+  const notificationsPath = '/notifications';
   const archivedWorkspacesPath = '/archived-workspaces';
 
   // Close drawer on Escape key
