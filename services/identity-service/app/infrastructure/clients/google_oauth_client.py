@@ -6,17 +6,32 @@ from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
 from app.domain.exceptions.oauth import GoogleOAuthError
 from shared.config import get_default_httpx_timeout
 
+from fastapi.responses import RedirectResponse
+import secrets
+from urllib.parse import urlencode
+
+GOOGLE_SERVER_METADATA = {
+    "issuer": "https://accounts.google.com",
+    "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_endpoint": "https://oauth2.googleapis.com/token",
+    "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
+    "jwks_uri": "https://www.googleapis.com/oauth2/v3/certs",
+    "response_types_supported": ["code", "token", "id_token"],
+    "subject_types_supported": ["public"],
+    "id_token_signing_alg_values_supported": ["RS256"],
+}
+
 oauth = OAuth()
 oauth.register(
     name="google",
     client_id=settings.google_client_id,
     client_secret=settings.google_client_secret,
-    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    server_metadata=GOOGLE_SERVER_METADATA,
     client_kwargs={
         "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
         "access_type": "offline",
         "prompt": "consent",
-        "timeout": get_default_httpx_timeout(connect=5.0, read=30.0, write=30.0, pool=5.0),
+        "timeout": get_default_httpx_timeout(connect=10.0, read=30.0, write=30.0, pool=10.0),
     },
 )
 
@@ -26,7 +41,20 @@ class GoogleOAuthClient(OAuthClientInterface):
         self._client = oauth.google
 
     async def login_redirect(self, request, redirect_uri: str):
-        return await self._client.authorize_redirect(request, redirect_uri)
+        state = secrets.token_urlsafe(32)
+        if hasattr(request, "session"):
+            request.session["_state_google_" + state] = {"data": {"state": state}}
+        params = {
+            "response_type": "code",
+            "client_id": settings.google_client_id,
+            "redirect_uri": redirect_uri,
+            "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
+            "state": state,
+            "access_type": "offline",
+            "prompt": "consent",
+        }
+        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+        return RedirectResponse(url=auth_url, status_code=302)
 
     async def fetch_user_info_and_tokens(self, request) -> tuple[GoogleUserDTO, GoogleTokenDTO]:
         tokens = None
