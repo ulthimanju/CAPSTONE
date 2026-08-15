@@ -29,10 +29,42 @@ class GoogleOAuthClient(OAuthClientInterface):
         return await self._client.authorize_redirect(request, redirect_uri)
 
     async def fetch_user_info_and_tokens(self, request) -> tuple[GoogleUserDTO, GoogleTokenDTO]:
+        tokens = None
         try:
             tokens = await self._client.authorize_access_token(request)
         except Exception as exc:
-            raise GoogleOAuthError(f"OAuth token authorization failed: {exc}") from exc
+            # Fallback: Directly exchange the authorization code with Google token endpoint
+            code = request.query_params.get("code")
+            if code:
+                try:
+                    async with httpx.AsyncClient(timeout=get_default_httpx_timeout(connect=5.0, read=30.0, write=30.0, pool=5.0)) as http_client:
+                        token_resp = await http_client.post(
+                            "https://oauth2.googleapis.com/token",
+                            data={
+                                "client_id": settings.google_client_id,
+                                "client_secret": settings.google_client_secret,
+                                "code": code,
+                                "grant_type": "authorization_code",
+                                "redirect_uri": settings.google_redirect_uri,
+                            },
+                            headers={"Accept": "application/json"},
+                        )
+                        if token_resp.status_code == 200:
+                            tokens = token_resp.json()
+                            access_token = tokens.get("access_token")
+                            if access_token:
+                                uinfo_resp = await http_client.get(
+                                    "https://openidconnect.googleapis.com/v1/userinfo",
+                                    headers={"Authorization": f"Bearer {access_token}"},
+                                )
+                                if uinfo_resp.status_code == 200:
+                                    tokens["userinfo"] = uinfo_resp.json()
+                except Exception:
+                    pass
+
+            if not tokens:
+                err_detail = getattr(exc, "description", None) or getattr(exc, "error", None) or str(exc)
+                raise GoogleOAuthError(f"OAuth token authorization failed: {err_detail}") from exc
 
         user_info = tokens.get("userinfo")
         if not user_info:
