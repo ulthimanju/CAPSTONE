@@ -87,9 +87,6 @@ export function ArchivedWorkspacesPage() {
                   <span className="rounded bg-sand px-1.5 py-0.5 font-mono text-[10px] font-bold text-accent border border-sep-line/60 uppercase">
                     {workspace.domain_type || 'GENERAL'}
                   </span>
-                  <span className="rounded bg-sep-line/50 px-1.5 py-0.5 font-mono text-[10px] text-text/60">
-                    ARCHIVED
-                  </span>
                 </div>
 
                 <h3 className="mt-3 font-display text-sm font-bold text-text line-clamp-1">
@@ -103,10 +100,10 @@ export function ArchivedWorkspacesPage() {
               </div>
 
               <div className="mt-5 pt-3 border-t border-sep-line flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1 font-mono text-[10px] text-text/50">
+                <div className="flex items-center gap-1.5 font-mono text-[10px] text-text/50">
                   <Clock className="h-3 w-3" />
                   <span>
-                    {workspace.archived_at
+                    ARCHIVED at {workspace.archived_at
                       ? new Date(workspace.archived_at).toLocaleDateString()
                       : new Date(workspace.updated_at).toLocaleDateString()}
                   </span>
