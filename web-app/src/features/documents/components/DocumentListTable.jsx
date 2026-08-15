@@ -13,8 +13,6 @@ import {
   Clock,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useDeleteDocumentMutation } from '../hooks/useDocuments';
 
@@ -54,7 +52,12 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
     const status = (doc.status || '').toUpperCase();
     const parseStatus = (doc.parse_status || '').toUpperCase();
 
-    if (status === 'INDEXED' || status === 'PARSED' || parseStatus === 'COMPLETED') {
+    if (
+      status === 'INDEXED' ||
+      status === 'READY_FOR_RAG' ||
+      status === 'PARSED' ||
+      parseStatus === 'COMPLETED'
+    ) {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-ui bg-success/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-success border border-success/30">
           <CheckCircle2 className="h-3 w-3" />
@@ -94,15 +97,18 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
       <Card className="p-0 overflow-hidden divide-y divide-sep-line">
         {/* Table Header (Desktop) */}
         <div className="hidden grid-cols-12 gap-4 bg-sand/40 px-4 py-3 font-mono text-[11px] font-semibold uppercase text-text/60 sm:grid">
-          <div className="col-span-6">Document Name</div>
+          <div className="col-span-7">Document Name</div>
           <div className="col-span-2 text-center">Status</div>
           <div className="col-span-2 text-right">Size</div>
-          <div className="col-span-2 text-right">Actions</div>
+          <div className="col-span-1 text-right">Action</div>
         </div>
 
         {/* Rows */}
         {documents.map((doc) => {
           const FileIcon = getFileIcon(doc.file_extension);
+          const webViewLink =
+            doc.storage_metadata_json?.web_view_link || doc.web_view_link;
+
           const formattedDate = new Date(doc.created_at).toLocaleDateString(undefined, {
             month: 'short',
             day: 'numeric',
@@ -114,19 +120,32 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
               key={doc.id}
               className="flex flex-col gap-3 p-4 hover:bg-surface-hover/50 transition-colors sm:grid sm:grid-cols-12 sm:items-center sm:gap-4"
             >
-              {/* Document Info */}
-              <div className="col-span-6 flex items-center gap-3 min-w-0">
+              {/* Document Info & Direct Web View Link */}
+              <div className="col-span-7 flex items-center gap-3 min-w-0">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border border-sep-line bg-sand text-accent">
                   <FileIcon className="h-4 w-4" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                  <Link
-                    to={`/workspaces/${workspaceId}/documents/${doc.id}`}
-                    className="font-display text-sm font-bold text-text hover:text-accent truncate block"
-                    title={doc.original_filename}
-                  >
-                    {doc.original_filename}
-                  </Link>
+                  {webViewLink ? (
+                    <a
+                      href={webViewLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-display text-sm font-bold text-text hover:text-accent truncate flex items-center gap-1.5 group"
+                      title={doc.original_filename}
+                    >
+                      <span className="truncate">{doc.original_filename}</span>
+                      <ExternalLink className="h-3 w-3 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                  ) : (
+                    <Link
+                      to={`/workspaces/${workspaceId}/documents/${doc.id}`}
+                      className="font-display text-sm font-bold text-text hover:text-accent truncate block"
+                      title={doc.original_filename}
+                    >
+                      {doc.original_filename}
+                    </Link>
+                  )}
                   <p className="font-mono text-[11px] text-text/50">
                     Uploaded {formattedDate}
                     {doc.is_split ? ` • Sliced (${doc.part_count} parts)` : ''}
@@ -144,19 +163,8 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
                 {formatBytes(doc.file_size_bytes)}
               </div>
 
-              {/* Actions */}
-              <div className="col-span-2 flex items-center justify-end gap-2">
-                <Link to={`/workspaces/${workspaceId}/documents/${doc.id}`}>
-                  <Button
-                    variant="outline"
-                    className="py-1 px-2 text-xs"
-                    aria-label={`Open reader for ${doc.original_filename}`}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    <span className="hidden lg:inline ml-1">Open</span>
-                  </Button>
-                </Link>
-
+              {/* Actions: Delete only */}
+              <div className="col-span-1 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => setDocToDelete(doc)}

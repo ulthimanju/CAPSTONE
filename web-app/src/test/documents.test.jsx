@@ -86,15 +86,35 @@ describe('DocumentListTable Component', () => {
     },
   ];
 
-  it('renders document items, parsed badges, and sliced parts', () => {
-    renderWithProviders(<DocumentListTable workspaceId="ws-123" documents={mockDocs} />);
+  it('renders document items, links filename to web_view_link, and does not render open button', () => {
+    const docsWithLinks = [
+      ...mockDocs,
+      {
+        id: 'doc-3',
+        workspace_id: 'ws-123',
+        original_filename: 'DriveDoc.pdf',
+        file_extension: 'PDF',
+        file_size_bytes: 1024,
+        storage_metadata_json: { web_view_link: 'https://drive.google.com/file/d/test123/preview' },
+        status: 'INDEXED',
+        parse_status: 'COMPLETED',
+        created_at: '2026-08-15T09:40:00Z',
+      },
+    ];
+
+    renderWithProviders(<DocumentListTable workspaceId="ws-123" documents={docsWithLinks} />);
 
     expect(screen.getByText('Lecture_1_Introduction.pdf')).toBeInTheDocument();
     expect(screen.getByText('Course_Architecture.pptx')).toBeInTheDocument();
+    expect(screen.getByText('DriveDoc.pdf')).toBeInTheDocument();
 
-    expect(screen.getByText('INDEXED')).toBeInTheDocument();
-    expect(screen.getByText('PARSING')).toBeInTheDocument();
-    expect(screen.getByText(/Sliced \(2 parts\)/)).toBeInTheDocument();
+    // Verify DriveDoc.pdf has href pointing to web_view_link
+    const driveLink = screen.getByRole('link', { name: /drivedoc\.pdf/i });
+    expect(driveLink).toHaveAttribute('href', 'https://drive.google.com/file/d/test123/preview');
+    expect(driveLink).toHaveAttribute('target', '_blank');
+
+    // Verify Open button is removed
+    expect(screen.queryByRole('button', { name: /open/i })).not.toBeInTheDocument();
   });
 
   it('opens ConfirmDialog when delete button is clicked and triggers deletion', async () => {
