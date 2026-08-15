@@ -85,6 +85,34 @@ from fastapi import UploadFile, File, Form
 import os, tempfile, json
 
 
+async def _background_parse_document(document_id: UUID):
+    """Executes asynchronous parsing, normalization, chunking, and SSE notification."""
+    try:
+        from app.infrastructure.database.session import AsyncSessionLocal
+        from app.api.dependencies.database import (
+            get_document_repository,
+            get_document_parse_result_repository,
+            get_document_part_repository,
+            get_processing_job_repository,
+            get_llama_parse_client,
+        )
+        from app.application.use_cases.parse_document import ParseDocumentUseCase
+
+        async with AsyncSessionLocal() as bg_session:
+            doc_repo = get_document_repository(bg_session)
+            parse_repo = get_document_parse_result_repository(bg_session)
+            part_repo = get_document_part_repository(bg_session)
+            job_repo = get_processing_job_repository(bg_session)
+            llama_client = get_llama_parse_client()
+
+            use_case = ParseDocumentUseCase(doc_repo, parse_repo, part_repo, job_repo, llama_client)
+            await use_case.execute(document_id)
+            await bg_session.commit()
+            logger.info(f"Background parsing successfully completed for document {document_id}")
+    except Exception as bg_err:
+        logger.error(f"Background parsing error for document {document_id}: {bg_err}")
+
+
 @router.post("/raw", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document_raw(
     workspace_id: UUID = Form(...),
@@ -304,6 +332,9 @@ async def upload_document_raw(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to finalize document upload storage",
         )
+
+    # Trigger background parsing, normalization, chunking, and SSE notification asynchronously
+    asyncio.create_task(_background_parse_document(created_doc.id))
 
     return created_doc
 

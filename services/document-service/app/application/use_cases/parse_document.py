@@ -289,6 +289,29 @@ class ParseDocumentUseCase:
             if hasattr(self.doc_repo, "session") and self.doc_repo.session:
                 await self.doc_repo.session.commit()
 
+            # Broadcast Real-Time Platform Event over SSE via notification-service
+            try:
+                import httpx
+                notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    await client.post(
+                        f"{notification_url}/api/v1/notifications/events",
+                        json={
+                            "event_name": "DocumentParsed",
+                            "service": "document-service",
+                            "resource_type": "DOCUMENT",
+                            "resource_id": str(doc.id),
+                            "workspace_id": str(doc.workspace_id),
+                            "user_id": str(doc.uploaded_by) if doc.uploaded_by else None,
+                            "status": "COMPLETED",
+                            "progress": 100,
+                            "message": f"Document '{doc.original_filename}' parsed and ready for study",
+                            "payload": {"document_id": str(doc.id), "status": "READY_FOR_RAG", "chunk_count": doc.chunk_count or 0}
+                        }
+                    )
+            except Exception as notify_err:
+                logger.info(f"SSE notification broadcast warning: {notify_err}")
+
             return ParseResultResponse.model_validate(parse_result)
 
         except Exception as e:
