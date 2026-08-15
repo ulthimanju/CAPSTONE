@@ -7,7 +7,7 @@ class IdentitySettings(PlatformSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
     google_redirect_uri: str = ""
-    frontend_origin: str = "http://localhost"
+    frontend_origin: str = "http://localhost:5173"
     user_cache_ttl: int = 300
 
     @property
