@@ -40,9 +40,6 @@ export function UnitProblemsView({ problems = [] }) {
             Recommended Practice Problems ({problems.length})
           </h3>
         </div>
-        <Badge variant="outline" className="font-mono text-[10px]">
-          Curated Exercises
-        </Badge>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
