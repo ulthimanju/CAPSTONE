@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
 import React from 'react';
 import App from '../App';
+import { renderWithProviders } from './utils';
 
-describe('App', () => {
-  it('renders without crashing', () => {
-    const { container } = render(<App />);
+describe('App Root', () => {
+  it('renders app routes without crashing', () => {
+    const { container } = renderWithProviders(<App />);
     expect(container).toBeDefined();
   });
 });

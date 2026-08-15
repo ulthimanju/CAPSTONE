@@ -13,10 +13,32 @@ export const useAuthStore = create((set) => ({
   token: localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null,
   isAuthenticated: !!localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN),
 
+  setToken: (token) => {
+    if (token) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+      set({ token, isAuthenticated: true });
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      set({ token: null, isAuthenticated: false });
+    }
+  },
+
+  setUser: (user) => {
+    if (user) {
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      set({ user });
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      set({ user: null });
+    }
+  },
+
   setAuth: (token, user) => {
     localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-    set({ token, user, isAuthenticated: true });
+    if (user) {
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    }
+    set({ token, user: user || null, isAuthenticated: true });
   },
 
   clearAuth: () => {
@@ -25,3 +47,5 @@ export const useAuthStore = create((set) => ({
     set({ token: null, user: null, isAuthenticated: false });
   },
 }));
+
+export default useAuthStore;

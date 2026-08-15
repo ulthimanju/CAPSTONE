@@ -1,16 +1,19 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useUIStore } from '@/store/uiStore';
+import { useAuthStore } from '@/store/authStore';
+import { renderWithProviders } from './utils';
 
 describe('AppLayout & Responsive Wireframe Behavior', () => {
   beforeEach(() => {
     useUIStore.setState({ isMobileSidebarOpen: false });
+    useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
   });
 
   it('renders skip link, sidebar, header, and main content area', () => {
-    render(
+    renderWithProviders(
       <AppLayout
         headerTitle="Dashboard"
         sidebarHeader={<span>Brand Logo</span>}
@@ -32,7 +35,7 @@ describe('AppLayout & Responsive Wireframe Behavior', () => {
   });
 
   it('toggles off-canvas mobile/tablet drawer when hamburger button is clicked', () => {
-    render(
+    renderWithProviders(
       <AppLayout headerTitle="Workspace">
         <div>Content</div>
       </AppLayout>
@@ -51,7 +54,7 @@ describe('AppLayout & Responsive Wireframe Behavior', () => {
   it('closes off-canvas drawer when Escape key is pressed', () => {
     useUIStore.setState({ isMobileSidebarOpen: true });
 
-    render(
+    renderWithProviders(
       <AppLayout>
         <div>Content</div>
       </AppLayout>
