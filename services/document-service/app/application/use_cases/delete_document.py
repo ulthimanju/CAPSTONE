@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import HTTPException
 from app.domain.repositories.document_repository import DocumentRepository
-from app.constants.enums import DocumentStatus
+from app.constants.enums import DocumentStatus, LifecycleStatus
 
 
 from app.infrastructure.cache.document_cache import DocumentCacheManager
@@ -19,8 +19,11 @@ class DeleteDocumentUseCase:
             raise HTTPException(status_code=404, detail="Document not found")
 
         doc.status = DocumentStatus.DELETED
+        doc.is_deleted = True
+        doc.lifecycle_status = LifecycleStatus.DELETED
         doc.deleted_at = datetime.now(timezone.utc)
         doc.updated_at = datetime.now(timezone.utc)
         await self.doc_repo.update(doc)
         await self.cache.invalidate_workspace_documents(doc.workspace_id)
         return True
+
