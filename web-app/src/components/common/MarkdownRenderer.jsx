@@ -177,13 +177,9 @@ export function preprocessMarkdownForMath(text) {
     return `__PROTECTED_MATH_BLOCK_${protectedBlocks.length - 1}__`;
   });
 
-  // Escape currency dollar signs (e.g., "$50", "**$50**", "$60.00", "$10k") that are not LaTeX math
-  processed = processed.replace(
-    /(^|[\s(>_*~])\$(\d+(?:,\d{3})*(?:\.\d+)?(?:k|m|b|bn|tn)?)(?=$|[\s),.;:!?_*~<>\/\\-]|\b)/gi,
-    (match, prefix, amount) => {
-      return `${prefix}\\$${amount}`;
-    }
-  );
+  // Escape currency dollar signs (e.g., "$50", "**$50**", "$60.00", "$10k", "$1,000")
+  // Replace $ followed by digits directly without consuming surrounding characters like ** or spaces
+  processed = processed.replace(/\$(\d+(?:,\d{3})*(?:\.\d+)?(?:k|m|b|bn|tn)?)/gi, '\\$$$1');
 
   // Fix multi-word false positive inline math spans (e.g. "$50 to $60" or "$50 and $60")
   processed = processed.replace(/\$([^\$\n]+)\$/g, (match, inner) => {
