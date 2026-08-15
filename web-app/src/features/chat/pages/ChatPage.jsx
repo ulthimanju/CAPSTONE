@@ -137,7 +137,7 @@ export function ChatPage() {
   return (
     <div className="flex flex-col h-full w-full bg-[#f5efe3] min-h-0 flex-1">
       {/* Messages Viewport */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 space-y-5 min-h-0">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-8 lg:px-12 py-6 space-y-5 min-h-0">
         {/* Date Divider */}
         <div className="flex items-center my-4">
           <div className="flex-1 border-t border-[#cfc5ae]" />

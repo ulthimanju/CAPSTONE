@@ -57,7 +57,7 @@ export function Sidebar({ header, footer, children, className }) {
       </nav>
 
       {/* Sidebar Footer / User Profile Menu */}
-      <div className="shrink-0 border-t border-sep-line p-3">
+      <div className="shrink-0 p-3 pt-1">
         {footer !== undefined ? footer : <UserProfileMenu />}
       </div>
     </div>
