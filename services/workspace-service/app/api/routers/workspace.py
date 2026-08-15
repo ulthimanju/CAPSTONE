@@ -399,7 +399,7 @@ async def save_learning_unit_content(
             if parsed.scheme not in ("http", "https"):
                 return False
             hostname = (parsed.hostname or "").lower()
-            allowed = ("leetcode.com", "hackerrank.com", "codeforces.com", "geeksforgeeks.org")
+            allowed = ("leetcode.com", "hackerrank.com", "codeforces.com")
             return any(hostname == d or hostname.endswith("." + d) for d in allowed)
         except Exception:
             return False

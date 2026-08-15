@@ -48,10 +48,10 @@ Your task is to analyze the provided Learning Unit Metadata (Title, Description,
 
 ### 4. Problems
 - Recommend **exactly 3** existing online coding/practice problems related to this unit.
-- Prefer real, existing online problems from platforms such as: **LeetCode**, **HackerRank**, **Codeforces**, **GeeksforGeeks**.
-- Do NOT invent new problem statements or fake URLs. Return the problem's actual platform URL belonging to `leetcode.com`, `hackerrank.com`, `codeforces.com`, or `geeksforgeeks.org`.
+- Prefer real, existing online problems from platforms such as: **LeetCode**, **HackerRank**, **Codeforces**.
+- Do NOT invent new problem statements or fake URLs. Return the problem's actual platform URL belonging to `leetcode.com`, `hackerrank.com`, or `codeforces.com`.
 - `title`: Name of the problem (e.g., "Two Sum", "Binary Tree Inorder Traversal").
-- `platform`: Name of the platform ("LeetCode", "HackerRank", "Codeforces", or "GeeksforGeeks").
+- `platform`: Name of the platform ("LeetCode", "HackerRank", or "Codeforces").
 - `difficulty`: Difficulty rating ("Easy", "Medium", "Hard").
 - `description`: A short 1-2 sentence description of the problem statement.
 - `url`: Direct valid link URL to the problem on the platform.
