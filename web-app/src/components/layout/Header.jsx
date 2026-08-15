@@ -146,7 +146,7 @@ export function Header({ title, children, className }) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-sep-line bg-bg/95 px-4 backdrop-blur transition-colors sm:px-6',
+        'sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-sep-line bg-bg px-4 transition-colors sm:px-6',
         className
       )}
     >

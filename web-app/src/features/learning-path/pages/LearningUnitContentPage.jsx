@@ -125,7 +125,7 @@ export function LearningUnitContentPage() {
   return (
     <div className="w-full flex flex-col min-h-0 flex-1">
       {/* Attached Sub-Nav Tab Bar right below Main Header */}
-      <div className="sticky top-0 z-20 w-full border-b border-sep-line bg-bg/95 px-4 sm:px-6 backdrop-blur transition-colors">
+      <div className="sticky top-0 z-20 w-full border-b border-sep-line bg-bg px-4 sm:px-6 transition-colors">
         <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
