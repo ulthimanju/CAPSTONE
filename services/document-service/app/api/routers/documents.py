@@ -63,12 +63,17 @@ async def upload_document(
     session: AsyncSession = Depends(get_db_session),
 ):
     await verify_workspace_access(req.workspace_id, user_id, required_write=True, authorization=authorization)
-    from app.config.settings import settings
-    max_bytes = settings.max_upload_size_mb * 1024 * 1024
+    ext = req.filename.split(".")[-1].lower() if "." in req.filename else ""
+    IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "tif", "tiff"}
+    is_image = ext in IMAGE_EXTENSIONS
+    max_mb = 10 if is_image else settings.max_upload_size_mb
+    max_bytes = max_mb * 1024 * 1024
+
     if req.file_size_bytes > max_bytes:
+        msg = f"Image file size exceeds maximum allowed limit of 10 MB" if is_image else f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB"
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB",
+            detail=msg,
         )
 
     repo = get_document_repository(session)
@@ -98,7 +103,10 @@ async def upload_document_raw(
             detail="Unsupported file extension. Allowed formats: Documents (PDF, DOCX, WPS), Slides (PPTX, Keynote), Spreadsheets (XLSX, CSV), Images (PNG, JPG, TIFF)."
         )
 
-    max_bytes = settings.max_upload_size_mb * 1024 * 1024
+    IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "tif", "tiff"}
+    is_image = ext in IMAGE_EXTENSIONS
+    max_mb = 10 if is_image else settings.max_upload_size_mb
+    max_bytes = max_mb * 1024 * 1024
     current_size = 0
 
     # Stream file contents incrementally in 1MB chunks directly to disk while updating SHA-256 hash
@@ -110,9 +118,10 @@ async def upload_document_raw(
                 temp_upload.close()
                 if os.path.exists(temp_upload.name):
                     os.remove(temp_upload.name)
+                msg = f"Image file size exceeds maximum allowed limit of 10 MB" if is_image else f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB"
                 raise HTTPException(
                     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                    detail=f"File size exceeds maximum allowed limit of {settings.max_upload_size_mb} MB",
+                    detail=msg,
                 )
             sha256.update(chunk)
             temp_upload.write(chunk)

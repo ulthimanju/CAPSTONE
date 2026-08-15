@@ -22,6 +22,7 @@ from app.constants.enums import DocumentStatus, ParseStatus, ParserType, Process
 from app.infrastructure.services.parser_services import (
     LlamaParseClient,
     PdfSplitService,
+    DocumentToPdfConverter,
     MarkdownMergeService,
     MarkdownNormalizer,
 )
@@ -101,10 +102,23 @@ class ParseDocumentUseCase:
 
 
             # Parallel Task 2: Parsing Pipeline
-            if doc.file_extension.value.upper() == "PDF" and PdfSplitService.is_oversized(doc.file_size_bytes, limit_mb=10):
+            is_oversized = PdfSplitService.is_oversized(doc.file_size_bytes, limit_mb=10)
+            is_pdf = doc.file_extension.value.upper() == "PDF"
+
+            if is_oversized:
+                # Use converted PDF if non-PDF, else original PDF
+                pdf_source_path = temp_path
+                temp_pdf_converted = False
+
+                if not is_pdf:
+                    pdf_source_path = await DocumentToPdfConverter.convert_to_pdf(
+                        temp_path, doc.file_extension.value.lower()
+                    )
+                    temp_pdf_converted = True
+
                 # Split PDF into <=10MB parts using PyMuPDF
                 doc.is_split = True
-                split_parts_meta = PdfSplitService.split_pdf(temp_path, max_size_bytes=10 * 1024 * 1024)
+                split_parts_meta = PdfSplitService.split_pdf(pdf_source_path, max_size_bytes=10 * 1024 * 1024)
                 doc.part_count = len(split_parts_meta)
                 await self.doc_repo.update(doc)
 
@@ -132,6 +146,9 @@ class ParseDocumentUseCase:
                     await self.part_repo.update(part_entity)
                     if os.path.exists(p_meta["temporary_file_path"]):
                         os.remove(p_meta["temporary_file_path"])
+
+                if temp_pdf_converted and os.path.exists(pdf_source_path) and pdf_source_path != temp_path:
+                    os.remove(pdf_source_path)
 
                 raw_md = MarkdownMergeService.merge_markdown_parts(parsed_markdowns)
             else:
