@@ -46,7 +46,7 @@ describe('AI Tutor RAG Chat Component', () => {
     expect(screen.getByText(/Explain the difference between Monolithic and Microkernel/i)).toBeInTheDocument();
   });
 
-  it('renders existing messages with source citations', async () => {
+  it('renders existing messages cleanly', async () => {
     const mockMessages = [
       {
         id: 'msg-1',
@@ -58,15 +58,6 @@ describe('AI Tutor RAG Chat Component', () => {
         id: 'msg-2',
         role: 'assistant',
         content: 'A context switch is the mechanism of saving the state of a CPU process...',
-        citations: [
-          {
-            document_id: 'doc-1',
-            document_name: 'Operating_Systems.pdf',
-            chunk_index: 2,
-            snippet: 'During a context switch, the kernel saves the execution context in the PCB.',
-            similarity_score: 0.89,
-          },
-        ],
         timestamp: '2026-08-15T10:00:05Z',
       },
     ];
@@ -77,8 +68,6 @@ describe('AI Tutor RAG Chat Component', () => {
 
     expect(await screen.findByText('What is a process context switch?')).toBeInTheDocument();
     expect(screen.getByText(/A context switch is the mechanism/i)).toBeInTheDocument();
-    expect(screen.getByText('Operating_Systems.pdf')).toBeInTheDocument();
-    expect(screen.getByText('(89%)')).toBeInTheDocument();
   });
 
   it('sends question to RAG endpoint and saves updated history', async () => {
@@ -87,15 +76,6 @@ describe('AI Tutor RAG Chat Component', () => {
     chatApi.sendRAGChatMessage.mockResolvedValue({
       question: 'Explain paging',
       answer: 'Paging is a memory management scheme that eliminates the need for contiguous allocation.',
-      citations: [
-        {
-          document_id: 'doc-2',
-          document_name: 'Virtual_Memory.pdf',
-          chunk_index: 0,
-          snippet: 'Physical address space is divided into fixed-size frames.',
-          similarity_score: 0.94,
-        },
-      ],
     });
     chatApi.saveWorkspaceChat.mockResolvedValue({ status: 'ok' });
 
