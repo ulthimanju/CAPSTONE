@@ -9,7 +9,6 @@ import {
   inviteMemberRequestSchema,
 } from '@/features/workspaces/schemas/memberSchemas';
 import { WorkspaceDetailPage } from '@/features/workspaces/pages/WorkspaceDetailPage';
-import { OverviewTab } from '@/features/workspaces/components/tabs/OverviewTab';
 import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab';
 import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
 import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
@@ -18,6 +17,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { workspaceApi } from '@/features/workspaces/api/workspaceApi';
 import { memberApi } from '@/features/workspaces/api/memberApi';
+import { documentApi } from '@/features/documents/api/documentApi';
 
 describe('Member Schemas', () => {
   it('validates a member response object', () => {
@@ -92,6 +92,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     vi.spyOn(workspaceApi, 'getWorkspaceById').mockResolvedValue(mockWorkspace);
     vi.spyOn(memberApi, 'getMembers').mockResolvedValue(mockMembers);
     vi.spyOn(memberApi, 'getInvitations').mockResolvedValue([]);
+    vi.spyOn(documentApi, 'getWorkspaceDocuments').mockResolvedValue({ documents: [], total: 0 });
   });
 
   const renderAppWithSidebarAndDetail = (initialRoute = '/workspaces/e4b3c2a1-0000-4000-8000-000000000001') => {
@@ -103,8 +104,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
         <main>
           <Routes>
             <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />}>
-              <Route index element={<OverviewTab />} />
-              <Route path="overview" element={<OverviewTab />} />
+              <Route index element={<DocumentsTab />} />
               <Route path="documents" element={<DocumentsTab />} />
               <Route path="collaborators" element={<CollaboratorsTab />} />
               <Route path="settings" element={<SettingsTab />} />
@@ -116,18 +116,19 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     );
   };
 
-  it('renders sidebar navigation links and overview content in main view', async () => {
+  it('renders sidebar navigation links (Documents, Collaborators, Settings) and default Documents view', async () => {
     renderAppWithSidebarAndDetail();
 
     // Verify Sidebar navigation items
-    expect(screen.getByRole('link', { name: /overview/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /documents/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /collaborators/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
 
-    // Verify Overview content
-    expect(await screen.findByText('Technical Engineering')).toBeInTheDocument();
-    expect(screen.getByText('Study Path & AI Syllabus Overview')).toBeInTheDocument();
+    // Overview should no longer exist
+    expect(screen.queryByRole('link', { name: /overview/i })).not.toBeInTheDocument();
+
+    // Verify default landing view is Documents
+    expect(await screen.findByText(/Workspace Documents/)).toBeInTheDocument();
   });
 
   it('navigates to Collaborators view via sidebar and shows members', async () => {
@@ -135,7 +136,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
 
     renderAppWithSidebarAndDetail();
 
-    await screen.findByText('Technical Engineering');
+    await screen.findByText(/Workspace Documents/);
 
     const collabLink = screen.getByRole('link', { name: /collaborators/i });
     await user.click(collabLink);

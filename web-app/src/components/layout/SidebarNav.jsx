@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BookOpen, FileText, Users, Settings } from 'lucide-react';
+import { FileText, Users, Settings } from 'lucide-react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
@@ -18,28 +18,24 @@ export function SidebarNav() {
 
   const navItems = [
     {
-      label: 'Overview',
-      to: basePath,
-      icon: BookOpen,
-      isActive: location.pathname === basePath || location.pathname === `${basePath}/overview`,
-    },
-    {
       label: 'Documents',
       to: `${basePath}/documents`,
       icon: FileText,
-      isActive: location.pathname === `${basePath}/documents`,
+      isActive:
+        location.pathname === basePath ||
+        location.pathname.startsWith(`${basePath}/documents`),
     },
     {
       label: 'Collaborators',
       to: `${basePath}/collaborators`,
       icon: Users,
-      isActive: location.pathname === `${basePath}/collaborators`,
+      isActive: location.pathname.startsWith(`${basePath}/collaborators`),
     },
     {
       label: 'Settings',
       to: `${basePath}/settings`,
       icon: Settings,
-      isActive: location.pathname === `${basePath}/settings`,
+      isActive: location.pathname.startsWith(`${basePath}/settings`),
     },
   ];
 
