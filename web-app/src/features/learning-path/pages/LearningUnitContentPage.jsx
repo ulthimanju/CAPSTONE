@@ -125,9 +125,9 @@ export function LearningUnitContentPage() {
   return (
     <div className="w-full flex flex-col min-h-0 flex-1">
       {/* Attached Sub-Nav Tab Bar right below Main Header */}
-      <div className="sticky top-16 z-20 w-full border-b border-sep-line bg-bg/95 backdrop-blur shadow-2xs">
+      <div className="sticky top-0 z-20 w-full border-b border-sep-line bg-bg/95 backdrop-blur shadow-2xs">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-2.5">
+          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -140,7 +140,7 @@ export function LearningUnitContentPage() {
                   className={cn(
                     'flex items-center gap-2 px-3.5 py-1.5 rounded-ui font-mono text-xs font-medium transition-all shrink-0 border',
                     isActive
-                      ? 'bg-surface-raised border-sep-line text-accent font-bold shadow-2xs'
+                      ? 'bg-surface-raised border-sep-line text-accent font-semibold shadow-2xs'
                       : 'bg-transparent border-transparent text-text/70 hover:text-text hover:bg-surface-hover'
                   )}
                 >
