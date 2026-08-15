@@ -606,7 +606,12 @@ async def _process_learning_path_generation(workspace_id: str, authorization: st
         lp_validated = LearningPathResponse.model_validate_json(gemini_res["text"])
 
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
-            headers = {"Authorization": authorization} if authorization else {}
+            headers = {}
+            if authorization:
+                headers["Authorization"] = authorization
+            if user_id_str:
+                headers["X-User-Id"] = user_id_str
+
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/learning-path",
                 json={"learning_path_json": lp_validated.model_dump()},

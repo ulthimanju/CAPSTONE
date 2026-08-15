@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/Badge';
 import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
+  useLearningPathStore,
 } from '@/features/learning-path/hooks/useLearningPath';
 import { toast } from 'sonner';
 
@@ -23,6 +24,10 @@ export function LearningPathTab({ workspace: propWorkspace }) {
   const context = useOutletContext() || {};
   const workspace = propWorkspace || context.workspace;
   const workspaceId = workspace?.id;
+
+  const isGenerating = useLearningPathStore((state) =>
+    Boolean(state.generatingWorkspaces[workspaceId])
+  );
 
   const {
     data: learningPath,
@@ -33,11 +38,11 @@ export function LearningPathTab({ workspace: propWorkspace }) {
   const generateMutation = useGenerateLearningPathMutation(workspaceId);
 
   const handleGenerate = () => {
-    if (!workspaceId || generateMutation.isPending) return;
+    if (!workspaceId || generateMutation.isPending || isGenerating) return;
 
     generateMutation.mutate(undefined, {
       onSuccess: () => {
-        toast.success('Learning path generation started with Gemini 2.5 Flash.');
+        toast.success('Learning path synthesis started with Gemini 2.5 Flash.');
       },
       onError: (err) => {
         toast.error(err?.message || 'Failed to start learning path generation.');
@@ -45,7 +50,11 @@ export function LearningPathTab({ workspace: propWorkspace }) {
     });
   };
 
-  if (isLoading) {
+  const hasPath = Boolean(
+    learningPath?.units && Array.isArray(learningPath.units) && learningPath.units.length > 0
+  );
+
+  if (isLoading && !hasPath && !isGenerating) {
     return (
       <div className="flex min-h-[360px] flex-col items-center justify-center p-8 text-center">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
@@ -55,10 +64,6 @@ export function LearningPathTab({ workspace: propWorkspace }) {
       </div>
     );
   }
-
-  const hasPath = Boolean(
-    learningPath?.units && Array.isArray(learningPath.units) && learningPath.units.length > 0
-  );
 
   return (
     <div className="space-y-6">
@@ -83,18 +88,45 @@ export function LearningPathTab({ workspace: propWorkspace }) {
             variant="outline"
             size="sm"
             onClick={handleGenerate}
-            isLoading={generateMutation.isPending}
+            isLoading={generateMutation.isPending || isGenerating}
             leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
             className="text-xs border-sep-line hover:border-accent"
             title="Regenerate learning path curriculum with Gemini 2.5 Flash"
           >
-            {generateMutation.isPending ? 'Synthesizing...' : 'Regenerate Path'}
+            {isGenerating || generateMutation.isPending ? 'Synthesizing...' : 'Regenerate Path'}
           </Button>
         )}
       </div>
 
-      {/* Empty State */}
-      {!hasPath ? (
+      {/* Generating Active State */}
+      {isGenerating ? (
+        <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border border-accent/40 bg-surface-raised/80 shadow-sm animate-pulse-subtle">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-sand text-accent mb-4 shadow-sm border border-sep-line">
+            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            <Compass className="absolute h-4 w-4 text-accent/80" />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-lg font-bold text-text">
+              Synthesizing Adaptive Learning Path
+            </h3>
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+            </span>
+          </div>
+
+          <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/75 leading-relaxed">
+            Gemini 2.5 Flash is analyzing your document hierarchy, outline structure, and topic prerequisites. The sequenced milestones will automatically appear below.
+          </p>
+
+          <div className="mt-6 flex items-center gap-2 rounded-ui bg-sand/80 px-3.5 py-1.5 font-mono text-[11px] text-text/70 border border-sep-line">
+            <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
+            <span>Listening to real-time platform event stream...</span>
+          </div>
+        </Card>
+      ) : !hasPath ? (
+        /* Empty State */
         <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border-dashed border-sep-line bg-surface-raised/40">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sand text-accent mb-4 shadow-sm border border-sep-line">
             <Compass className="h-8 w-8" />
@@ -110,11 +142,11 @@ export function LearningPathTab({ workspace: propWorkspace }) {
 
           <Button
             onClick={handleGenerate}
-            isLoading={generateMutation.isPending}
+            isLoading={generateMutation.isPending || isGenerating}
             leftIcon={<RouteIcon className="h-4 w-4" />}
             className="mt-6 text-xs sm:text-sm"
           >
-            {generateMutation.isPending ? 'Synthesizing Path...' : 'Generate Path'}
+            {isGenerating || generateMutation.isPending ? 'Synthesizing Path...' : 'Generate Path'}
           </Button>
         </Card>
       ) : (

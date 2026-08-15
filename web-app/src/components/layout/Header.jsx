@@ -15,6 +15,7 @@ import {
 import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
+  useLearningPathStore,
 } from '@/features/learning-path/hooks/useLearningPath';
 import { InviteCollaboratorModal } from '@/features/workspaces/components/InviteCollaboratorModal';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +37,9 @@ export function Header({ title, children, className }) {
 
   const { data: learningPath } = useWorkspaceLearningPathQuery(activeWorkspaceId);
   const generateLearningPathMutation = useGenerateLearningPathMutation(activeWorkspaceId);
+  const isGeneratingPath = useLearningPathStore((state) =>
+    Boolean(state.generatingWorkspaces[activeWorkspaceId])
+  );
 
   const { uploadFiles } = useMultiFileUpload(activeWorkspaceId);
   const queueItems = useUploadQueueStore((state) => state.items);
@@ -162,7 +166,7 @@ export function Header({ title, children, className }) {
               <Button
                 variant="outline"
                 onClick={handleGenerateLearningPath}
-                isLoading={generateLearningPathMutation.isPending}
+                isLoading={generateLearningPathMutation.isPending || isGeneratingPath}
                 leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
                 className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
                 title={
@@ -171,7 +175,7 @@ export function Header({ title, children, className }) {
                     : 'Generate complete learning path curriculum with Gemini 2.5 Flash'
                 }
               >
-                {generateLearningPathMutation.isPending
+                {generateLearningPathMutation.isPending || isGeneratingPath
                   ? 'Synthesizing...'
                   : hasLearningPath
                   ? 'Regenerate Path'

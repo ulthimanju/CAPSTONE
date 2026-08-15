@@ -47,10 +47,26 @@ export function useWorkspaceDocumentSSE(workspaceId) {
               queryKey: DOCUMENT_QUERY_KEYS.parseResult(docId),
             });
           }
+          // Invalidate learning path and summary if related events arrive
+          queryClient.invalidateQueries({
+            queryKey: ['workspace-learning-path', workspaceId],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ['workspace-summary', workspaceId],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ['workspaces', workspaceId],
+          });
         } catch {
           // Fallback invalidation on generic message
           queryClient.invalidateQueries({
             queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: ['workspace-learning-path', workspaceId],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ['workspace-summary', workspaceId],
           });
         }
       };
@@ -60,6 +76,11 @@ export function useWorkspaceDocumentSSE(workspaceId) {
       eventSource.addEventListener('DocumentParsed', handleEvent);
       eventSource.addEventListener('document.status_changed', handleEvent);
       eventSource.addEventListener('workspace.event', handleEvent);
+      eventSource.addEventListener('workspace.learning_path.updated', handleEvent);
+      eventSource.addEventListener('workspace.summary.updated', handleEvent);
+      eventSource.addEventListener('LearningPathGeneration', handleEvent);
+      eventSource.addEventListener('SummaryGeneration', handleEvent);
+      eventSource.addEventListener('LearningUnitGeneration', handleEvent);
 
       eventSource.onerror = () => {
         // SSE handles reconnection automatically
