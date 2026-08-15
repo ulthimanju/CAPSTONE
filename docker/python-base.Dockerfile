@@ -27,7 +27,7 @@ COPY services/api-gateway/pyproject.toml ./services/api-gateway/
 
 # Build full workspace venv with BuildKit cache mount for uv
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    uv sync --no-dev --all-packages
 
 # --- Stage 2: Base Runtime ---
 FROM python:3.11-slim AS runner
@@ -36,7 +36,8 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app/shared:$PYTHONPATH"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
