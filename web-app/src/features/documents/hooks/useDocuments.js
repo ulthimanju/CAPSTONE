@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { documentApi } from '../api/documentApi';
+import { STORAGE_KEYS } from '@/config/constants';
 
 export const DOCUMENT_QUERY_KEYS = {
   all: ['documents'],
@@ -9,22 +11,83 @@ export const DOCUMENT_QUERY_KEYS = {
 };
 
 /**
- * Hook to query all documents for a workspace with auto-polling when files are processing.
+ * Hook to subscribe to workspace Server-Sent Events (SSE) for live document indexing and status updates.
+ */
+export function useWorkspaceDocumentSSE(workspaceId) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!workspaceId || typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
+      return;
+    }
+
+    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    const sseUrl = `${baseURL}/api/v1/workspaces/${workspaceId}/events${tokenParam}`;
+
+    let eventSource;
+    try {
+      eventSource = new EventSource(sseUrl, { withCredentials: true });
+
+      const handleEvent = (event) => {
+        try {
+          const payload = event.data ? JSON.parse(event.data) : null;
+          // Invalidate workspace document queries to refresh status live
+          queryClient.invalidateQueries({
+            queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
+          });
+
+          if (payload?.resource_id || payload?.document_id) {
+            const docId = payload.resource_id || payload.document_id;
+            queryClient.invalidateQueries({
+              queryKey: DOCUMENT_QUERY_KEYS.detail(docId),
+            });
+            queryClient.invalidateQueries({
+              queryKey: DOCUMENT_QUERY_KEYS.parseResult(docId),
+            });
+          }
+        } catch {
+          // Fallback invalidation on generic message
+          queryClient.invalidateQueries({
+            queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
+          });
+        }
+      };
+
+      eventSource.onmessage = handleEvent;
+      eventSource.addEventListener('VectorIndexing', handleEvent);
+      eventSource.addEventListener('DocumentParsed', handleEvent);
+      eventSource.addEventListener('document.status_changed', handleEvent);
+      eventSource.addEventListener('workspace.event', handleEvent);
+
+      eventSource.onerror = () => {
+        // SSE handles reconnection automatically
+      };
+    } catch (e) {
+      console.warn('SSE connection error:', e);
+    }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [workspaceId, queryClient]);
+}
+
+/**
+ * Hook to query all documents for a workspace with real-time SSE updates.
  */
 export function useWorkspaceDocumentsQuery(workspaceId) {
+  // Subscribe to real-time Server-Sent Events (SSE)
+  useWorkspaceDocumentSSE(workspaceId);
+
   return useQuery({
     queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
     queryFn: () => documentApi.getWorkspaceDocuments(workspaceId),
     enabled: !!workspaceId,
-    staleTime: 1000 * 15,
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data?.documents) return false;
-      const hasProcessing = data.documents.some(
-        (doc) => doc.status === 'PENDING' || doc.status === 'PROCESSING' || doc.parse_status === 'PARSING'
-      );
-      return hasProcessing ? 3000 : false;
-    },
+    staleTime: 1000 * 30,
   });
 }
 
