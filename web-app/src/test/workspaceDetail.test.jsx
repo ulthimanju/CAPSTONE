@@ -10,6 +10,7 @@ import {
 } from '@/features/workspaces/schemas/memberSchemas';
 import { WorkspaceDetailPage } from '@/features/workspaces/pages/WorkspaceDetailPage';
 import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab';
+import { SummaryTab } from '@/features/summary/pages/SummaryTab';
 import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
 import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
 import { SidebarNav } from '@/components/layout/SidebarNav';
@@ -18,6 +19,7 @@ import { useAuthStore } from '@/store/authStore';
 import { workspaceApi } from '@/features/workspaces/api/workspaceApi';
 import { memberApi } from '@/features/workspaces/api/memberApi';
 import { documentApi } from '@/features/documents/api/documentApi';
+import { summaryApi } from '@/features/summary/api/summaryApi';
 
 describe('Member Schemas', () => {
   it('validates a member response object', () => {
@@ -56,6 +58,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     domain_type: 'TECHNICAL',
     visibility: 'INTERNAL',
     status: 'ACTIVE',
+    is_summary_generated: false,
     created_at: '2026-08-15T09:30:00Z',
     updated_at: '2026-08-15T10:15:00Z',
     user_role: 'OWNER',
@@ -93,6 +96,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     vi.spyOn(memberApi, 'getMembers').mockResolvedValue(mockMembers);
     vi.spyOn(memberApi, 'getInvitations').mockResolvedValue([]);
     vi.spyOn(documentApi, 'getWorkspaceDocuments').mockResolvedValue({ documents: [], total: 0 });
+    vi.spyOn(summaryApi, 'getWorkspaceSummary').mockResolvedValue({ summary: null });
   });
 
   const renderAppWithSidebarAndDetail = (initialRoute = '/workspaces/e4b3c2a1-0000-4000-8000-000000000001') => {
@@ -106,6 +110,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
             <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />}>
               <Route index element={<DocumentsTab />} />
               <Route path="documents" element={<DocumentsTab />} />
+              <Route path="summary" element={<SummaryTab />} />
               <Route path="collaborators" element={<CollaboratorsTab />} />
               <Route path="settings" element={<SettingsTab />} />
             </Route>
@@ -116,11 +121,12 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     );
   };
 
-  it('renders sidebar navigation links (Documents, Collaborators, Settings) and default Documents view', async () => {
+  it('renders sidebar navigation links (Documents, Summary, Collaborators, Settings) and default Documents view', async () => {
     renderAppWithSidebarAndDetail();
 
     // Verify Sidebar navigation items
     expect(screen.getByRole('link', { name: /documents/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /summary/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /collaborators/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
 
@@ -129,6 +135,20 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
 
     // Verify default landing view is Documents
     expect(await screen.findByText(/Workspace Documents/)).toBeInTheDocument();
+  });
+
+  it('navigates to Summary view via sidebar and shows empty state when no summary generated', async () => {
+    const user = userEvent.setup();
+
+    renderAppWithSidebarAndDetail();
+
+    await screen.findByText(/Workspace Documents/);
+
+    const summaryLink = screen.getByRole('link', { name: /summary/i });
+    await user.click(summaryLink);
+
+    expect(await screen.findByText(/No Workspace Summary Generated/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /generate summary with gemini/i })).toBeInTheDocument();
   });
 
   it('navigates to Collaborators view via sidebar and shows members', async () => {

@@ -22,6 +22,7 @@ export const workspaceResponseSchema = z.object({
   domain_type: workspaceDomainTypeSchema.default('TECHNICAL'),
   visibility: workspaceVisibilitySchema.default('PRIVATE'),
   status: workspaceStatusSchema.default('ACTIVE'),
+  is_summary_generated: z.boolean().optional().default(false),
   created_at: z.string(),
   updated_at: z.string(),
   archived_at: z.string().nullable().optional(),

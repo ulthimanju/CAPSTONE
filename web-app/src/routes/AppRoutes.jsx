@@ -7,6 +7,7 @@ import { AuthCallbackPage } from '@/features/auth/pages/AuthCallbackPage';
 import { WorkspacesPage } from '@/features/workspaces/pages/WorkspacesPage';
 import { WorkspaceDetailPage } from '@/features/workspaces/pages/WorkspaceDetailPage';
 import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab';
+import { SummaryTab } from '@/features/summary/pages/SummaryTab';
 import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
 import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
 import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPage';
@@ -27,6 +28,7 @@ export function AppRoutes() {
             <Route index element={<DocumentsTab />} />
             <Route path="documents" element={<DocumentsTab />} />
             <Route path="documents/:documentId" element={<DocumentReaderPage />} />
+            <Route path="summary" element={<SummaryTab />} />
             <Route path="collaborators" element={<CollaboratorsTab />} />
             <Route path="settings" element={<SettingsTab />} />
           </Route>

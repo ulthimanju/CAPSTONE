@@ -52,6 +52,7 @@ class WorkspaceResponse(BaseModel):
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
+    is_summary_generated: bool = False
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None
@@ -66,6 +67,7 @@ class WorkspaceSummaryResponse(BaseModel):
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
+    is_summary_generated: bool = False
     member_count: int = 1
 
 

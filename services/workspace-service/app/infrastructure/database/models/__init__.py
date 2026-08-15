@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Any
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint, Index, Integer, func
+from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint, Index, Integer, Boolean, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.database.base import Base
@@ -16,6 +16,7 @@ class WorkspaceModel(Base):
     visibility: Mapped[str] = mapped_column(String(50), nullable=False, default="PRIVATE", index=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="ACTIVE", index=True)
     domain_type: Mapped[str] = mapped_column(String(50), nullable=False, default="TECHNICAL")
+    is_summary_generated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     summary_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     learning_path_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

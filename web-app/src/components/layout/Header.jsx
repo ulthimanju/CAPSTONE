@@ -1,10 +1,12 @@
 import React, { useRef } from 'react';
-import { Menu, Upload } from 'lucide-react';
+import { Menu, Upload, Sparkles } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
 import { useMultiFileUpload } from '@/features/documents/hooks/useMultiFileUpload';
 import { useUploadQueueStore } from '@/store/uploadQueueStore';
+import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
+import { useGenerateSummaryMutation } from '@/features/summary/hooks/useSummary';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 
@@ -13,16 +15,29 @@ export function Header({ title, children, className }) {
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const fileInputRef = useRef(null);
 
+  const { data: workspace } = useWorkspaceQuery(activeWorkspaceId);
+  const generateSummaryMutation = useGenerateSummaryMutation(activeWorkspaceId);
+
   const { uploadFiles } = useMultiFileUpload(activeWorkspaceId);
   const queueItems = useUploadQueueStore((state) => state.items);
   const isUploading = queueItems.some(
     (i) => i.status === 'UPLOADING' || i.status === 'QUEUED' || i.status === 'PROCESSING'
   );
 
+  const isSummaryGenerated = Boolean(
+    workspace?.is_summary_generated || workspace?.summary_json
+  );
+
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       uploadFiles(e.target.files);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleGenerateSummary = () => {
+    if (activeWorkspaceId) {
+      generateSummaryMutation.mutate();
     }
   };
 
@@ -54,9 +69,29 @@ export function Header({ title, children, className }) {
       </div>
 
       {/* Main Header Right Actions */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
         {activeWorkspaceId && (
           <>
+            {/* Generate / Regenerate Summary Button */}
+            <Button
+              variant="outline"
+              onClick={handleGenerateSummary}
+              isLoading={generateSummaryMutation.isPending}
+              leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+              className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
+              title={
+                isSummaryGenerated
+                  ? 'Regenerate complete workspace summary with Gemini 2.5 Flash'
+                  : 'Generate complete workspace summary with Gemini 2.5 Flash'
+              }
+            >
+              {generateSummaryMutation.isPending
+                ? 'Synthesizing...'
+                : isSummaryGenerated
+                ? 'Regenerate Summary'
+                : 'Generate Summary'}
+            </Button>
+
             {/* Hidden Multi-File Picker Input */}
             <input
               ref={fileInputRef}

@@ -181,6 +181,7 @@ async def save_workspace_summary(
 ):
     ws = await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
     ws.summary_json = req.summary_json
+    ws.is_summary_generated = True
     await ws_repo.update(ws)
     await cache.invalidate_workspace_summary(workspace_id)
     try:

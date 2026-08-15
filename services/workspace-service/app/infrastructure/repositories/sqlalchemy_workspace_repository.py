@@ -21,6 +21,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             visibility=workspace.visibility.value if hasattr(workspace.visibility, "value") else str(workspace.visibility),
             status=workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status),
             domain_type=workspace.domain_type.value if hasattr(workspace.domain_type, "value") else str(workspace.domain_type),
+            is_summary_generated=workspace.is_summary_generated,
             summary_json=workspace.summary_json,
             learning_path_json=workspace.learning_path_json,
             created_at=workspace.created_at,
@@ -51,6 +52,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             visibility=WorkspaceVisibility(model.visibility),
             status=WorkspaceStatus(model.status),
             domain_type=WorkspaceDomainType(model.domain_type) if hasattr(model, "domain_type") and isinstance(getattr(model, "domain_type", None), (str, WorkspaceDomainType)) else WorkspaceDomainType.TECHNICAL,
+            is_summary_generated=getattr(model, "is_summary_generated", False) or bool(model.summary_json),
             created_at=model.created_at,
             updated_at=model.updated_at,
             archived_at=model.archived_at,
@@ -85,6 +87,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 visibility=WorkspaceVisibility(m.visibility),
                 status=WorkspaceStatus(m.status),
                 domain_type=WorkspaceDomainType(m.domain_type) if hasattr(m, "domain_type") and isinstance(getattr(m, "domain_type", None), (str, WorkspaceDomainType)) else WorkspaceDomainType.TECHNICAL,
+                is_summary_generated=getattr(m, "is_summary_generated", False) or bool(m.summary_json),
                 created_at=m.created_at,
                 updated_at=m.updated_at,
                 archived_at=m.archived_at,
@@ -115,6 +118,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 visibility=WorkspaceVisibility(m.visibility),
                 status=WorkspaceStatus(m.status),
                 domain_type=WorkspaceDomainType(m.domain_type) if hasattr(m, "domain_type") and isinstance(getattr(m, "domain_type", None), (str, WorkspaceDomainType)) else WorkspaceDomainType.TECHNICAL,
+                is_summary_generated=getattr(m, "is_summary_generated", False) or bool(m.summary_json),
                 created_at=m.created_at,
                 updated_at=m.updated_at,
                 archived_at=m.archived_at,
@@ -132,6 +136,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             model.visibility = workspace.visibility.value if hasattr(workspace.visibility, "value") else str(workspace.visibility)
             model.status = workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status)
             model.domain_type = workspace.domain_type.value if hasattr(workspace.domain_type, "value") else str(workspace.domain_type)
+            model.is_summary_generated = workspace.is_summary_generated or bool(workspace.summary_json)
             model.summary_json = workspace.summary_json
             model.learning_path_json = workspace.learning_path_json
             model.archived_at = workspace.archived_at
