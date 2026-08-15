@@ -125,3 +125,27 @@ class GoogleOAuthClient(OAuthClientInterface):
             token_type=tokens.get("token_type", "Bearer"),
         )
         return user_dto, token_dto
+
+    async def refresh_access_token(self, refresh_token: str) -> dict:
+        async with httpx.AsyncClient(timeout=get_default_httpx_timeout(connect=10.0, read=30.0, write=30.0, pool=10.0)) as http_client:
+            token_resp = await http_client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": settings.google_client_id,
+                    "client_secret": settings.google_client_secret,
+                    "refresh_token": refresh_token,
+                    "grant_type": "refresh_token",
+                },
+                headers={"Accept": "application/json"},
+            )
+            if token_resp.status_code != 200:
+                error_body = token_resp.text
+                try:
+                    error_json = token_resp.json()
+                    error_body = error_json.get("error_description") or error_json.get("error") or error_body
+                except Exception:
+                    pass
+                raise GoogleOAuthError(f"OAuth token refresh failed: {error_body}")
+
+            return token_resp.json()
+

@@ -194,6 +194,12 @@ services:
     dns:
       - 8.8.8.8
       - 1.1.1.1
+    extra_hosts:
+      - "www.googleapis.com:172.217.118.4"
+      - "oauth2.googleapis.com:192.178.211.95"
+      - "openidconnect.googleapis.com:172.217.118.4"
+      - "accounts.google.com:192.178.211.84"
+      - "api.cloud.llamaindex.ai:54.87.249.245"
     env_file:
       - .env.common
       - services/document-service/.env
