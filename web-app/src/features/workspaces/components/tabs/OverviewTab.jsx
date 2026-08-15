@@ -1,9 +1,15 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { BookOpen, Sparkles, Clock, Calendar, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 
-export function OverviewTab({ workspace }) {
+export function OverviewTab({ workspace: propWorkspace }) {
+  const context = useOutletContext() || {};
+  const workspace = propWorkspace || context.workspace;
+
+  if (!workspace) return null;
+
   const formattedCreated = new Date(workspace.created_at).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',

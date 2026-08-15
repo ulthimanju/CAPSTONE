@@ -1,10 +1,16 @@
 import React from 'react';
-import { FileText, Upload, FolderArchive } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import { FileText, Upload } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { GoogleDriveIcon } from '@/components/ui/GoogleDriveIcon';
 
-export function DocumentsTab({ workspace }) {
+export function DocumentsTab({ workspace: propWorkspace }) {
+  const context = useOutletContext() || {};
+  const workspace = propWorkspace || context.workspace;
+
+  if (!workspace) return null;
+
   return (
     <div className="space-y-6">
       {/* Header row */}

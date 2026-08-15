@@ -1,21 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Loader2, AlertCircle, BookOpen, FileText, Users, Settings, ArrowLeft } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { useParams, Link, Outlet } from 'react-router-dom';
+import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-import { OverviewTab } from '../components/tabs/OverviewTab';
-import { DocumentsTab } from '../components/tabs/DocumentsTab';
-import { CollaboratorsTab } from '../components/tabs/CollaboratorsTab';
-import { SettingsTab } from '../components/tabs/SettingsTab';
 import { useWorkspaceQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { ROUTES } from '@/config/constants';
 
 export function WorkspaceDetailPage() {
   const { workspaceId } = useParams();
-  const [activeTab, setActiveTab] = useState('overview');
-
   const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
 
   const {
@@ -65,46 +58,8 @@ export function WorkspaceDetailPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      {/* Tabs Container */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview">
-            <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Overview</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="documents">
-            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Documents</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="collaborators">
-            <Users className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Collaborators</span>
-          </TabsTrigger>
-
-          <TabsTrigger value="settings">
-            <Settings className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Settings</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <OverviewTab workspace={workspace} />
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <DocumentsTab workspace={workspace} />
-        </TabsContent>
-
-        <TabsContent value="collaborators">
-          <CollaboratorsTab workspace={workspace} />
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <SettingsTab workspace={workspace} />
-        </TabsContent>
-      </Tabs>
+      {/* Workspace Outlet Content (Overview, Documents, Collaborators, Settings) */}
+      <Outlet context={{ workspace }} />
     </div>
   );
 }

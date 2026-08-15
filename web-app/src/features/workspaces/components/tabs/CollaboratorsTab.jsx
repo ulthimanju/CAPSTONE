@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { UserPlus, Users, Trash2, Mail, ShieldAlert, Loader2, Shield } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import { UserPlus, Trash2, Mail, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -14,7 +15,10 @@ import {
 import { InviteCollaboratorModal } from '../InviteCollaboratorModal';
 import { useAuthStore } from '@/store/authStore';
 
-export function CollaboratorsTab({ workspace }) {
+export function CollaboratorsTab({ workspace: propWorkspace }) {
+  const context = useOutletContext() || {};
+  const workspace = propWorkspace || context.workspace;
+
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const currentUser = useAuthStore((state) => state.user);
 
@@ -22,16 +26,18 @@ export function CollaboratorsTab({ workspace }) {
     data: members = [],
     isLoading: isLoadingMembers,
     isError: isErrorMembers,
-  } = useMembersQuery(workspace.id);
+  } = useMembersQuery(workspace?.id);
 
   const {
     data: invitations = [],
     isLoading: isLoadingInvites,
-  } = useInvitationsQuery(workspace.id);
+  } = useInvitationsQuery(workspace?.id);
 
-  const removeMutation = useRemoveMemberMutation(workspace.id);
-  const updateRoleMutation = useUpdateMemberRoleMutation(workspace.id);
-  const cancelInviteMutation = useCancelInvitationMutation(workspace.id);
+  const removeMutation = useRemoveMemberMutation(workspace?.id);
+  const updateRoleMutation = useUpdateMemberRoleMutation(workspace?.id);
+  const cancelInviteMutation = useCancelInvitationMutation(workspace?.id);
+
+  if (!workspace) return null;
 
   const isOwner = workspace.user_role === 'OWNER' || workspace.owner_id === currentUser?.id;
   const isEditor = isOwner || workspace.user_role === 'EDITOR';

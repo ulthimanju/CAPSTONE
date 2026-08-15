@@ -6,18 +6,11 @@ import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { AuthCallbackPage } from '@/features/auth/pages/AuthCallbackPage';
 import { WorkspacesPage } from '@/features/workspaces/pages/WorkspacesPage';
 import { WorkspaceDetailPage } from '@/features/workspaces/pages/WorkspaceDetailPage';
+import { OverviewTab } from '@/features/workspaces/components/tabs/OverviewTab';
+import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab';
+import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
+import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
 import { ROUTES } from '@/config/constants';
-
-function DocumentsPlaceholder() {
-  return (
-    <div className="p-6">
-      <h2 className="font-display text-xl font-bold text-text">Document Hub</h2>
-      <p className="mt-1 font-body text-sm text-text/70">
-        Synced Google Drive documents and syllabus files.
-      </p>
-    </div>
-  );
-}
 
 export function AppRoutes() {
   return (
@@ -30,8 +23,13 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path={ROUTES.WORKSPACES} element={<WorkspacesPage />} />
-          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />} />
-          <Route path={ROUTES.DOCUMENTS} element={<DocumentsPlaceholder />} />
+          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />}>
+            <Route index element={<OverviewTab />} />
+            <Route path="overview" element={<OverviewTab />} />
+            <Route path="documents" element={<DocumentsTab />} />
+            <Route path="collaborators" element={<CollaboratorsTab />} />
+            <Route path="settings" element={<SettingsTab />} />
+          </Route>
         </Route>
       </Route>
 

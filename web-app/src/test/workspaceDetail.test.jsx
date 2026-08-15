@@ -9,6 +9,11 @@ import {
   inviteMemberRequestSchema,
 } from '@/features/workspaces/schemas/memberSchemas';
 import { WorkspaceDetailPage } from '@/features/workspaces/pages/WorkspaceDetailPage';
+import { OverviewTab } from '@/features/workspaces/components/tabs/OverviewTab';
+import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab';
+import { CollaboratorsTab } from '@/features/workspaces/components/tabs/CollaboratorsTab';
+import { SettingsTab } from '@/features/workspaces/components/tabs/SettingsTab';
+import { SidebarNav } from '@/components/layout/SidebarNav';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { workspaceApi } from '@/features/workspaces/api/workspaceApi';
@@ -43,7 +48,7 @@ describe('Member Schemas', () => {
   });
 });
 
-describe('WorkspaceDetailPage Component', () => {
+describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
   const mockWorkspace = {
     id: 'e4b3c2a1-0000-4000-8000-000000000001',
     owner_id: '00f3d58e-ce22-4d1f-a665-bbf8266aa2a8',
@@ -83,50 +88,63 @@ describe('WorkspaceDetailPage Component', () => {
       user: { id: '00f3d58e-ce22-4d1f-a665-bbf8266aa2a8', email: 'umanjunath2003@gmail.com', name: 'Manjunatha U' },
       isAuthenticated: true,
     });
+    useWorkspaceStore.setState({ activeWorkspaceId: 'e4b3c2a1-0000-4000-8000-000000000001' });
     vi.spyOn(workspaceApi, 'getWorkspaceById').mockResolvedValue(mockWorkspace);
     vi.spyOn(memberApi, 'getMembers').mockResolvedValue(mockMembers);
     vi.spyOn(memberApi, 'getInvitations').mockResolvedValue([]);
   });
 
-  const renderDetailPage = () => {
+  const renderAppWithSidebarAndDetail = (initialRoute = '/workspaces/e4b3c2a1-0000-4000-8000-000000000001') => {
     return renderWithProviders(
-      <Routes>
-        <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />} />
-      </Routes>,
-      {
-        route: '/workspaces/e4b3c2a1-0000-4000-8000-000000000001',
-      }
+      <div className="flex">
+        <aside>
+          <SidebarNav />
+        </aside>
+        <main>
+          <Routes>
+            <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />}>
+              <Route index element={<OverviewTab />} />
+              <Route path="overview" element={<OverviewTab />} />
+              <Route path="documents" element={<DocumentsTab />} />
+              <Route path="collaborators" element={<CollaboratorsTab />} />
+              <Route path="settings" element={<SettingsTab />} />
+            </Route>
+          </Routes>
+        </main>
+      </div>,
+      { route: initialRoute }
     );
   };
 
-  it('renders workspace detail tabs and overview content', async () => {
-    renderDetailPage();
+  it('renders sidebar navigation links and overview content in main view', async () => {
+    renderAppWithSidebarAndDetail();
 
+    // Verify Sidebar navigation items
+    expect(screen.getByRole('link', { name: /overview/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /documents/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /collaborators/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
+
+    // Verify Overview content
     expect(await screen.findByText('Technical Engineering')).toBeInTheDocument();
     expect(screen.getByText('Study Path & AI Syllabus Overview')).toBeInTheDocument();
-
-    // Check tabs exist
-    expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /documents/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /collaborators/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
   });
 
-  it('switches to Collaborators tab and shows members', async () => {
+  it('navigates to Collaborators view via sidebar and shows members', async () => {
     const user = userEvent.setup();
 
-    renderDetailPage();
+    renderAppWithSidebarAndDetail();
 
     await screen.findByText('Technical Engineering');
 
-    const collabTab = screen.getByRole('tab', { name: /collaborators/i });
-    await user.click(collabTab);
+    const collabLink = screen.getByRole('link', { name: /collaborators/i });
+    await user.click(collabLink);
 
     expect(await screen.findByText('Alex Rivera')).toBeInTheDocument();
     expect(screen.getByText('alex@example.com')).toBeInTheDocument();
   });
 
-  it('submits collaborator invite form from collaborators tab', async () => {
+  it('submits collaborator invite form from collaborators view', async () => {
     const user = userEvent.setup();
     const inviteSpy = vi.spyOn(memberApi, 'inviteMember').mockResolvedValue({
       id: 'inv-123',
@@ -136,12 +154,7 @@ describe('WorkspaceDetailPage Component', () => {
       status: 'PENDING',
     });
 
-    renderDetailPage();
-
-    await screen.findByText('Technical Engineering');
-
-    const collabTab = screen.getByRole('tab', { name: /collaborators/i });
-    await user.click(collabTab);
+    renderAppWithSidebarAndDetail('/workspaces/e4b3c2a1-0000-4000-8000-000000000001/collaborators');
 
     const inviteBtn = await screen.findByRole('button', { name: /invite collaborator/i });
     await user.click(inviteBtn);

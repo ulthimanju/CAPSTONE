@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, Trash2, AlertTriangle, Terminal, BookOpen, Lock, Users, Globe, Check } from 'lucide-react';
@@ -11,7 +11,10 @@ import { useUpdateWorkspaceMutation, useDeleteWorkspaceMutation } from '../../ho
 import { ROUTES } from '@/config/constants';
 import { cn } from '@/lib/cn';
 
-export function SettingsTab({ workspace }) {
+export function SettingsTab({ workspace: propWorkspace }) {
+  const context = useOutletContext() || {};
+  const workspace = propWorkspace || context.workspace;
+
   const navigate = useNavigate();
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -23,13 +26,13 @@ export function SettingsTab({ workspace }) {
   } = useForm({
     resolver: zodResolver(createWorkspaceRequestSchema),
     defaultValues: {
-      name: workspace.name || '',
-      domain_type: workspace.domain_type || 'TECHNICAL',
-      visibility: workspace.visibility || 'PRIVATE',
+      name: workspace?.name || '',
+      domain_type: workspace?.domain_type || 'TECHNICAL',
+      visibility: workspace?.visibility || 'PRIVATE',
     },
   });
 
-  const updateMutation = useUpdateWorkspaceMutation(workspace.id, {
+  const updateMutation = useUpdateWorkspaceMutation(workspace?.id, {
     onSuccess: () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -41,6 +44,8 @@ export function SettingsTab({ workspace }) {
       navigate(ROUTES.WORKSPACES, { replace: true });
     },
   });
+
+  if (!workspace) return null;
 
   const onSubmit = (formData) => {
     updateMutation.mutate(formData);
