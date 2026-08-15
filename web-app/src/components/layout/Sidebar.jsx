@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import { UserProfileMenu } from './UserProfileMenu';
 import { cn } from '@/lib/cn';
 
 export function Sidebar({ header, footer, children, className }) {
@@ -54,12 +55,10 @@ export function Sidebar({ header, footer, children, className }) {
         {children}
       </nav>
 
-      {/* Sidebar Footer */}
-      {footer && (
-        <div className="shrink-0 border-t border-sep-line p-4">
-          {footer}
-        </div>
-      )}
+      {/* Sidebar Footer / User Profile Menu */}
+      <div className="shrink-0 border-t border-sep-line p-3">
+        {footer !== undefined ? footer : <UserProfileMenu />}
+      </div>
     </div>
   );
 

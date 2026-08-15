@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, Cloud, Shield } from 'lucide-react';
+import { LogOut, Cloud, Shield, ChevronsUpDown } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import {
   DropdownMenu,
@@ -11,8 +11,9 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { useAuthStore } from '@/store/authStore';
 import { useLogout, useGoogleDriveStatusQuery } from '@/features/auth/hooks/useAuth';
+import { cn } from '@/lib/cn';
 
-export function UserProfileMenu() {
+export function UserProfileMenu({ className }) {
   const user = useAuthStore((state) => state.user);
   const logout = useLogout();
   const { data: driveStatus } = useGoogleDriveStatusQuery();
@@ -24,17 +25,28 @@ export function UserProfileMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-ui border border-sep-line bg-surface-raised p-1 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className={cn(
+            'flex w-full items-center justify-between gap-2.5 rounded-ui border border-sep-line bg-surface-raised p-2 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+            className
+          )}
           aria-label="Open user profile menu"
         >
-          <Avatar src={user.picture_url} name={user.name} size="sm" />
-          <span className="hidden text-xs font-medium text-text sm:inline-block max-w-[120px] truncate">
-            {user.name}
-          </span>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar src={user.picture_url} name={user.name} size="sm" />
+            <div className="flex flex-col min-w-0">
+              <span className="font-display text-xs font-semibold text-text truncate">
+                {user.name}
+              </span>
+              <span className="font-mono text-[11px] text-text/70 truncate">
+                {user.email}
+              </span>
+            </div>
+          </div>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 text-text/50" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-60">
+      <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-[248px]">
         {/* User Identity Details */}
         <div className="px-3 py-2">
           <p className="font-display text-sm font-semibold text-text truncate">

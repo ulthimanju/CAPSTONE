@@ -1,7 +1,6 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
-import { UserProfileMenu } from './UserProfileMenu';
 import { cn } from '@/lib/cn';
 
 export function Header({ title, children, className }) {
@@ -33,7 +32,6 @@ export function Header({ title, children, className }) {
 
       <div className="flex items-center gap-2 sm:gap-4">
         {children}
-        <UserProfileMenu />
       </div>
     </header>
   );
