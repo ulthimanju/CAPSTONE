@@ -8,8 +8,12 @@ from shared.config import PlatformSettings
 from shared.security import verify_user_identity
 
 
+from fastapi.middleware.cors import CORSMiddleware
+
+
 class GatewaySettings(PlatformSettings):
     app_name: str = "api-gateway"
+    cors_origins: str = "*"
     service_identity_url: str = "http://identity-service:8000"
     service_workspace_url: str = "http://workspace-service:8000"
     service_document_url: str = "http://document-service:8000"
@@ -22,16 +26,35 @@ from contextlib import asynccontextmanager
 
 settings = GatewaySettings()
 
+client = httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global client
+    if client.is_closed:
+        client = httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0))
+    app.state.client = client
     yield
     try:
-        await client.aclose()
-    except Exception as exc:
+        if not client.is_closed:
+            await client.aclose()
+    except Exception:
         pass
 
+
 app = FastAPI(title="API Gateway", version="1.0.0", lifespan=lifespan)
-client = httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0))
+
+# CORS Configuration
+origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins if origins else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Request-ID", "X-Correlation-ID", "X-Response-Time-MS"],
+)
 
 
 def get_current_user_id(

@@ -14,6 +14,19 @@ def test_gateway_middleware_security_and_correlation_headers():
     assert res.headers.get("X-Frame-Options") == "DENY"
 
 
+def test_gateway_cors_headers():
+    client = TestClient(app)
+    res = client.options(
+        "/health/live",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert res.status_code == 200
+    assert res.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+
 @respx.mock
 def test_gateway_service_status_endpoint(respx_mock):
     respx_mock.get(f"{settings.service_identity_url}/health").respond(200, json={"status": "live"})
