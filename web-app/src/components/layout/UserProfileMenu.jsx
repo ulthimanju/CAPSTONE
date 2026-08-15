@@ -1,6 +1,7 @@
 import React from 'react';
-import { LogOut, Cloud, Shield, ChevronsUpDown } from 'lucide-react';
+import { LogOut, Shield, ChevronsUpDown } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
+import { GoogleDriveIcon } from '@/components/ui/GoogleDriveIcon';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -66,7 +67,7 @@ export function UserProfileMenu({ className }) {
         {/* Google Drive Status Indicator */}
         <DropdownMenuLabel className="flex items-center justify-between font-mono text-xs">
           <span className="flex items-center gap-1.5 text-text/80">
-            <Cloud className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+            <GoogleDriveIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             Google Drive:
           </span>
           <span className={driveStatus?.isLinked ? 'text-success font-semibold' : 'text-text/60'}>

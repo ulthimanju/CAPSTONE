@@ -8,6 +8,5 @@ export {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
-  DropdownMenuGroup,
-  DropdownMenuPortal,
 } from './DropdownMenu';
+export { GoogleDriveIcon } from './GoogleDriveIcon';
