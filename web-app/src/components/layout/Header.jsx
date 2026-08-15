@@ -12,6 +12,10 @@ import {
   useWorkspaceChatQuery,
   useSaveWorkspaceChatMutation,
 } from '@/features/chat/hooks/useChat';
+import {
+  useWorkspaceLearningPathQuery,
+  useGenerateLearningPathMutation,
+} from '@/features/learning-path/hooks/useLearningPath';
 import { InviteCollaboratorModal } from '@/features/workspaces/components/InviteCollaboratorModal';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
@@ -30,6 +34,9 @@ export function Header({ title, children, className }) {
   const { data: chatData } = useWorkspaceChatQuery(activeWorkspaceId);
   const saveChatMutation = useSaveWorkspaceChatMutation(activeWorkspaceId);
 
+  const { data: learningPath } = useWorkspaceLearningPathQuery(activeWorkspaceId);
+  const generateLearningPathMutation = useGenerateLearningPathMutation(activeWorkspaceId);
+
   const { uploadFiles } = useMultiFileUpload(activeWorkspaceId);
   const queueItems = useUploadQueueStore((state) => state.items);
   const isUploading = queueItems.some(
@@ -42,6 +49,9 @@ export function Header({ title, children, className }) {
   const isChatTab =
     location.pathname.endsWith('/chat') || location.pathname.includes('/chat');
 
+  const isLearningPathTab =
+    location.pathname.endsWith('/learning-path') || location.pathname.includes('/learning-path');
+
   const isCollaboratorsTab =
     location.pathname.endsWith('/collaborators') || location.pathname.includes('/collaborators');
 
@@ -53,6 +63,10 @@ export function Header({ title, children, className }) {
     chatData?.messages && chatData.messages.length > 0
   );
 
+  const hasLearningPath = Boolean(
+    learningPath?.units && Array.isArray(learningPath.units) && learningPath.units.length > 0
+  );
+
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       uploadFiles(e.target.files);
@@ -62,7 +76,21 @@ export function Header({ title, children, className }) {
 
   const handleGenerateSummary = () => {
     if (activeWorkspaceId) {
-      generateSummaryMutation.mutate();
+      generateSummaryMutation.mutate(undefined, {
+        onSuccess: () => {
+          toast.success('Workspace summary generation started with Gemini 2.5 Flash.');
+        },
+      });
+    }
+  };
+
+  const handleGenerateLearningPath = () => {
+    if (activeWorkspaceId) {
+      generateLearningPathMutation.mutate(undefined, {
+        onSuccess: () => {
+          toast.success('Learning path generation started with Gemini 2.5 Flash.');
+        },
+      });
     }
   };
 
@@ -126,6 +154,28 @@ export function Header({ title, children, className }) {
                   : isSummaryGenerated
                   ? 'Regenerate Summary'
                   : 'Generate Summary'}
+              </Button>
+            )}
+
+            {/* Generate / Regenerate Learning Path Button - Visible ONLY on Learning Path Tab */}
+            {isLearningPathTab && (
+              <Button
+                variant="outline"
+                onClick={handleGenerateLearningPath}
+                isLoading={generateLearningPathMutation.isPending}
+                leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+                className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
+                title={
+                  hasLearningPath
+                    ? 'Regenerate complete learning path curriculum with Gemini 2.5 Flash'
+                    : 'Generate complete learning path curriculum with Gemini 2.5 Flash'
+                }
+              >
+                {generateLearningPathMutation.isPending
+                  ? 'Synthesizing...'
+                  : hasLearningPath
+                  ? 'Regenerate Path'
+                  : 'Generate Path'}
               </Button>
             )}
 
