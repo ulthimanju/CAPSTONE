@@ -25,12 +25,13 @@ class DocumentModel(Base):
             "idx_documents_active_status",
             "status",
             postgresql_where=text("is_deleted = false"),
-        ),
-        UniqueConstraint(
+        Index(
+            "uq_documents_workspace_user_checksum",
             "workspace_id",
             "uploaded_by",
             "checksum",
-            name="uq_documents_workspace_user_checksum",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
         ),
     )
 
