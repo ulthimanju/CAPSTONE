@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Menu, Upload, Sparkles, RotateCcw, UserPlus } from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
+import { Menu, Upload, Sparkles, RotateCcw, UserPlus, ArrowLeft } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
@@ -15,6 +15,7 @@ import {
 import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
+  useGenerateUnitContentMutation,
   useLearningPathStore,
 } from '@/features/learning-path/hooks/useLearningPath';
 import { InviteCollaboratorModal } from '@/features/workspaces/components/InviteCollaboratorModal';
@@ -41,6 +42,23 @@ export function Header({ title, children, className }) {
     Boolean(state.generatingWorkspaces[activeWorkspaceId])
   );
 
+  const isLearningUnitDetailPage =
+    location.pathname.includes('/learning-path/') &&
+    location.pathname.split('/learning-path/')[1]?.length > 0;
+
+  const unitTitleParam = isLearningUnitDetailPage
+    ? decodeURIComponent(location.pathname.split('/learning-path/')[1].split('?')[0])
+    : null;
+
+  const generateUnitMutation = useGenerateUnitContentMutation(
+    activeWorkspaceId,
+    unitTitleParam
+  );
+
+  const isGeneratingUnit = useLearningPathStore((state) =>
+    unitTitleParam ? Boolean(state.generatingUnits[`${activeWorkspaceId}:${unitTitleParam}`]) : false
+  );
+
   const { uploadFiles } = useMultiFileUpload(activeWorkspaceId);
   const queueItems = useUploadQueueStore((state) => state.items);
   const isUploading = queueItems.some(
@@ -54,7 +72,8 @@ export function Header({ title, children, className }) {
     location.pathname.endsWith('/chat') || location.pathname.includes('/chat');
 
   const isLearningPathTab =
-    location.pathname.endsWith('/learning-path') || location.pathname.includes('/learning-path');
+    !isLearningUnitDetailPage &&
+    (location.pathname.endsWith('/learning-path') || location.pathname.includes('/learning-path'));
 
   const isCollaboratorsTab =
     location.pathname.endsWith('/collaborators') || location.pathname.includes('/collaborators');
@@ -98,6 +117,22 @@ export function Header({ title, children, className }) {
     }
   };
 
+  const handleRegenerateUnitContent = () => {
+    if (activeWorkspaceId && unitTitleParam) {
+      generateUnitMutation.mutate(
+        { unit_title: unitTitleParam },
+        {
+          onSuccess: () => {
+            toast.success('Unit content synthesis started with Gemini 2.5 Flash.');
+          },
+          onError: (err) => {
+            toast.error(err?.message || 'Failed to regenerate unit content.');
+          },
+        }
+      );
+    }
+  };
+
   const handleClearChat = () => {
     if (activeWorkspaceId) {
       saveChatMutation.mutate([], {
@@ -125,10 +160,29 @@ export function Header({ title, children, className }) {
           <Menu className="h-5 w-5" aria-hidden="true" />
         </button>
 
-        {/* Workspace Selector Dropdown in Main Header */}
-        <WorkspaceSelector />
+        {/* On Learning Unit Content Page: Hide Workspace Dropdown, Show "Back to Learning Path" button */}
+        {isLearningUnitDetailPage ? (
+          <div className="flex items-center gap-3">
+            <Link
+              to={`/workspaces/${activeWorkspaceId}/learning-path`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-ui border border-sep-line bg-surface-raised font-mono text-xs font-medium text-text hover:text-accent hover:border-accent transition-colors shadow-2xs"
+              title="Back to Learning Path"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Learning Path</span>
+            </Link>
+            {unitTitleParam && (
+              <h2 className="font-display text-sm font-bold text-text hidden sm:block max-w-xs truncate" title={unitTitleParam}>
+                {unitTitleParam}
+              </h2>
+            )}
+          </div>
+        ) : (
+          /* Workspace Selector Dropdown in Main Header */
+          <WorkspaceSelector />
+        )}
 
-        {title && (
+        {title && !isLearningUnitDetailPage && (
           <h1 className="font-display text-lg font-semibold tracking-tight text-text sm:text-xl hidden md:block">
             {title}
           </h1>
@@ -180,6 +234,22 @@ export function Header({ title, children, className }) {
                   : hasLearningPath
                   ? 'Regenerate Path'
                   : 'Generate Path'}
+              </Button>
+            )}
+
+            {/* Regenerate Unit Content Button - Visible ONLY on Learning Unit Detail Page */}
+            {isLearningUnitDetailPage && (
+              <Button
+                variant="outline"
+                onClick={handleRegenerateUnitContent}
+                isLoading={generateUnitMutation.isPending || isGeneratingUnit}
+                leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+                className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
+                title="Regenerate this unit's complete study bundle with Gemini 2.5 Flash"
+              >
+                {generateUnitMutation.isPending || isGeneratingUnit
+                  ? 'Synthesizing...'
+                  : 'Regenerate Content'}
               </Button>
             )}
 

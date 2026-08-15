@@ -1,5 +1,5 @@
 import React from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   Route as RouteIcon,
   Compass,
@@ -13,11 +13,13 @@ import { Button } from '@/components/ui/Button';
 import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
+  useGenerateUnitContentMutation,
   useLearningPathStore,
 } from '@/features/learning-path/hooks/useLearningPath';
 import { toast } from 'sonner';
 
 export function LearningPathTab({ workspace: propWorkspace }) {
+  const navigate = useNavigate();
   const context = useOutletContext() || {};
   const workspace = propWorkspace || context.workspace;
   const workspaceId = workspace?.id;
@@ -141,7 +143,18 @@ export function LearningPathTab({ workspace: propWorkspace }) {
             {learningPath.units.map((unit, index) => (
               <Card
                 key={unit.title || index}
-                className="p-5 flex flex-col justify-between hover:border-accent/60 transition-all shadow-xs group"
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  navigate(`/workspaces/${workspaceId}/learning-path/${encodeURIComponent(unit.title)}`)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(`/workspaces/${workspaceId}/learning-path/${encodeURIComponent(unit.title)}`);
+                  }
+                }}
+                className="p-5 flex flex-col justify-between hover:border-accent/60 transition-all shadow-xs group cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 <div>
                   <div className="border-b border-sep-line/60 pb-2.5">
