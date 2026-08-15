@@ -6,6 +6,7 @@ export const workspaceKeys = {
   all: ['workspaces'],
   lists: () => [...workspaceKeys.all, 'list'],
   list: (filters) => [...workspaceKeys.lists(), filters],
+  archived: (filters) => [...workspaceKeys.all, 'archived', filters],
   details: () => [...workspaceKeys.all, 'detail'],
   detail: (id) => [...workspaceKeys.details(), id],
 };
@@ -18,6 +19,18 @@ export function useWorkspacesQuery({ limit = 50, offset = 0 } = {}, options = {}
     queryKey: workspaceKeys.list({ limit, offset }),
     queryFn: () => workspaceApi.getWorkspaces({ limit, offset }),
     staleTime: 1000 * 60 * 2, // 2 minutes
+    ...options,
+  });
+}
+
+/**
+ * Hook to fetch archived workspaces for the current user.
+ */
+export function useArchivedWorkspacesQuery({ limit = 50, offset = 0 } = {}, options = {}) {
+  return useQuery({
+    queryKey: workspaceKeys.archived({ limit, offset }),
+    queryFn: () => workspaceApi.getArchivedWorkspaces({ limit, offset }),
+    staleTime: 1000 * 60 * 2,
     ...options,
   });
 }
@@ -45,7 +58,7 @@ export function useCreateWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (newWorkspace) => workspaceApi.createWorkspace(newWorkspace),
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
       if (data?.id) {
         setActiveWorkspaceId(data.id);
       }
@@ -68,7 +81,7 @@ export function useUpdateWorkspaceMutation(workspaceId, options = {}) {
     mutationFn: (data) => workspaceApi.updateWorkspace(workspaceId, data),
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -88,9 +101,27 @@ export function useArchiveWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (workspaceId) => workspaceApi.archiveWorkspace(workspaceId),
     onSuccess: (data, workspaceId, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
       clearActiveWorkspace();
+      options.onSuccess?.(data, workspaceId, context);
+    },
+    onError: (error, variables, context) => {
+      options.onError?.(error, variables, context);
+    },
+    ...options,
+  });
+}
+
+/**
+ * Mutation hook to restore an archived workspace.
+ */
+export function useRestoreWorkspaceMutation(options = {}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (workspaceId) => workspaceApi.restoreWorkspace(workspaceId),
+    onSuccess: (data, workspaceId, context) => {
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
       options.onSuccess?.(data, workspaceId, context);
     },
     onError: (error, variables, context) => {
@@ -110,7 +141,7 @@ export function useDeleteWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (workspaceId) => workspaceApi.deleteWorkspace(workspaceId),
     onSuccess: (data, workspaceId, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
       queryClient.removeQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       clearActiveWorkspace();
       options.onSuccess?.(data, workspaceId, context);

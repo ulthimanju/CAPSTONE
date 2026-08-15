@@ -1,47 +1,42 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Archive, RotateCcw, FolderOpen, ArrowRight, Clock, ShieldAlert } from 'lucide-react';
-import { workspaceApi } from '../api/workspaceApi';
+import { Archive, RotateCcw, ArrowRight, Clock, ShieldAlert } from 'lucide-react';
+import { useArchivedWorkspacesQuery, useRestoreWorkspaceMutation } from '../hooks/useWorkspaces';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/errorUtils';
 
 export function ArchivedWorkspacesPage() {
-  const queryClient = useQueryClient();
+  const { data, isLoading, error } = useArchivedWorkspacesQuery({ limit: 100 });
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['workspaces', 'archived'],
-    queryFn: () => workspaceApi.getWorkspaces({ limit: 100 }),
+  const restoreMutation = useRestoreWorkspaceMutation({
+    onSuccess: (_, workspaceId) => {
+      toast.success('Workspace restored to active list');
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, 'Failed to restore workspace'));
+    },
   });
 
-  const allWorkspaces = data?.workspaces || [];
-  const archivedWorkspaces = allWorkspaces.filter(
-    (w) => w.status === 'ARCHIVED' || Boolean(w.archived_at)
-  );
+  const rawList = data?.workspaces || (Array.isArray(data) ? data : []);
+  const archivedWorkspaces = rawList;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-sep-line pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-xl font-bold text-text">Archived Workspaces</h1>
-            {archivedWorkspaces.length > 0 && (
-              <span className="rounded-full bg-sand px-2 py-0.5 font-mono text-[11px] font-bold text-accent border border-sep-line">
-                {archivedWorkspaces.length} archived
-              </span>
-            )}
-          </div>
-          <p className="mt-1 font-body text-xs text-text/70">
-            Workspaces that have been archived. Their documents and past data are preserved in read-only state.
-          </p>
+      <div className="border-b border-sep-line pb-5">
+        <div className="flex items-center gap-2">
+          <h1 className="font-display text-xl font-bold text-text">Archived Workspaces</h1>
+          {archivedWorkspaces.length > 0 && (
+            <span className="rounded-full bg-sand px-2 py-0.5 font-mono text-[11px] font-bold text-accent border border-sep-line">
+              {archivedWorkspaces.length} archived
+            </span>
+          )}
         </div>
-
-        <Link to="/workspaces">
-          <Button variant="outline" size="sm" leftIcon={<FolderOpen className="h-3.5 w-3.5" />} className="text-xs">
-            Back to Active Workspaces
-          </Button>
-        </Link>
+        <p className="mt-1 font-body text-xs text-text/70">
+          Workspaces that have been archived. Their documents and past data are preserved in read-only state.
+        </p>
       </div>
 
       {/* Loading state */}
@@ -117,11 +112,24 @@ export function ArchivedWorkspacesPage() {
                   </span>
                 </div>
 
-                <Link to={`/workspaces/${workspace.id}`}>
-                  <Button variant="ghost" size="sm" className="text-xs">
-                    View
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => restoreMutation.mutate(workspace.id)}
+                    isLoading={restoreMutation.isPending}
+                    leftIcon={<RotateCcw className="h-3 w-3" />}
+                    className="text-xs px-2.5 py-1"
+                  >
+                    Restore
                   </Button>
-                </Link>
+
+                  <Link to={`/workspaces/${workspace.id}`}>
+                    <Button variant="ghost" size="sm" className="text-xs px-2.5 py-1">
+                      View
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </Card>
           ))}

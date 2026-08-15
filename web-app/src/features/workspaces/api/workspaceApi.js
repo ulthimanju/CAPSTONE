@@ -85,6 +85,14 @@ export const workspaceApi = {
   },
 
   /**
+   * Restores an archived workspace.
+   */
+  restoreWorkspace: async (workspaceId) => {
+    const response = await apiClient.post(`/api/v1/workspaces/${workspaceId}/restore`);
+    return response.data;
+  },
+
+  /**
    * Deletes a workspace.
    */
   deleteWorkspace: async (workspaceId) => {
