@@ -123,110 +123,116 @@ export function LearningUnitContentPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full flex flex-col min-h-0 flex-1">
       {/* Attached Sub-Nav Tab Bar right below Main Header */}
-      <div className="-mx-4 -mt-4 sm:-mx-6 sm:-mt-6 border-b border-sep-line bg-surface/90 backdrop-blur px-4 sm:px-6 sticky top-16 z-20 shadow-2xs">
-        <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar py-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+      <div className="sticky top-16 z-20 w-full border-b border-sep-line bg-bg/95 backdrop-blur shadow-2xs">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-2.5">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
 
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className={cn(
-                  'flex items-center gap-2 px-3.5 py-2 rounded-ui font-mono text-xs font-medium transition-all shrink-0',
-                  isActive
-                    ? 'bg-accent text-white shadow-xs'
-                    : 'text-text/70 hover:text-text hover:bg-sand/60'
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{tab.label}</span>
-                {tab.count !== null && (
-                  <span
-                    className={cn(
-                      'px-1.5 py-0.2 rounded-full text-[10px] font-mono',
-                      isActive ? 'bg-white/20 text-white' : 'bg-sand text-text/60 border border-sep-line'
-                    )}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => handleTabChange(tab.id)}
+                  className={cn(
+                    'flex items-center gap-2 px-3.5 py-1.5 rounded-ui font-mono text-xs font-medium transition-all shrink-0 border',
+                    isActive
+                      ? 'bg-surface-raised border-sep-line text-accent font-bold shadow-2xs'
+                      : 'bg-transparent border-transparent text-text/70 hover:text-text hover:bg-surface-hover'
+                  )}
+                >
+                  <Icon className={cn('h-3.5 w-3.5', isActive ? 'text-accent' : 'text-text/60')} />
+                  <span>{tab.label}</span>
+                  {tab.count !== null && (
+                    <span
+                      className={cn(
+                        'font-mono text-[10px] px-1.5 py-0.5 rounded transition-colors',
+                        isActive
+                          ? 'bg-accent/10 text-accent font-bold'
+                          : 'bg-sep-line/40 text-text/70'
+                      )}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Generating In-Progress State */}
-      {isGeneratingUnit || generateMutation.isPending ? (
-        <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border border-accent/40 bg-surface-raised/80 shadow-sm animate-pulse-subtle">
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-sand text-accent mb-4 shadow-sm border border-sep-line">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
-            <Compass className="absolute h-4 w-4 text-accent/80" />
-          </div>
+      {/* Main Content Area */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 w-full flex-1">
+        {isGeneratingUnit || generateMutation.isPending ? (
+          <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border border-accent/40 bg-surface-raised/80 shadow-sm animate-pulse-subtle">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-surface text-accent mb-4 shadow-sm border border-sep-line">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <Compass className="absolute h-4 w-4 text-accent/80" />
+            </div>
 
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <h3 className="font-display text-lg font-bold text-text">
+                Synthesizing Unit Study Bundle
+              </h3>
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+              </span>
+            </div>
+
+            <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/75 leading-relaxed">
+              Gemini 2.5 Flash is extracting relevant document context, drafting conceptual summaries, generating architecture diagrams, flashcards, quiz questions, and curated practice problems.
+            </p>
+
+            <div className="mt-6 flex items-center gap-2 rounded-ui bg-surface-raised px-3.5 py-1.5 font-mono text-[11px] text-text/70 border border-sep-line">
+              <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
+              <span>Streaming live generation events...</span>
+            </div>
+          </Card>
+        ) : !hasContent ? (
+          /* Empty / Not Yet Generated State */
+          <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border-dashed border-sep-line bg-surface-raised/40">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface text-accent mb-4 shadow-sm border border-sep-line">
+              <FileText className="h-8 w-8" />
+            </div>
+
             <h3 className="font-display text-lg font-bold text-text">
-              Synthesizing Unit Study Bundle
+              Unit Content Not Generated Yet
             </h3>
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
-            </span>
+
+            <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/70 leading-relaxed">
+              Synthesize this unit into a complete study bundle featuring deep notes with Mermaid diagrams, interactive flashcards, self-assessment quizzes, and verified practice problems.
+            </p>
+
+            <Button
+              onClick={handleGenerate}
+              isLoading={generateMutation.isPending || isGeneratingUnit}
+              leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+              className="mt-6 text-xs sm:text-sm"
+            >
+              {isGeneratingUnit || generateMutation.isPending ? 'Synthesizing Content...' : 'Generate Unit Content'}
+            </Button>
+          </Card>
+        ) : (
+          /* Active Tab Content */
+          <div>
+            {activeTab === 'summary' && <UnitSummaryView summary={content.summary} />}
+            {activeTab === 'flashcards' && <UnitFlashcardsView flashcards={content.flashcards} />}
+            {activeTab === 'quiz' && (
+              <UnitQuizView
+                workspaceId={workspaceId}
+                unitTitle={decodedUnitTitle}
+                quiz={content.quiz}
+              />
+            )}
+            {activeTab === 'problems' && <UnitProblemsView problems={content.problems} />}
           </div>
-
-          <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/75 leading-relaxed">
-            Gemini 2.5 Flash is extracting relevant document context, drafting conceptual summaries, generating architecture diagrams, flashcards, quiz questions, and curated practice problems.
-          </p>
-
-          <div className="mt-6 flex items-center gap-2 rounded-ui bg-sand/80 px-3.5 py-1.5 font-mono text-[11px] text-text/70 border border-sep-line">
-            <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
-            <span>Streaming live generation events...</span>
-          </div>
-        </Card>
-      ) : !hasContent ? (
-        /* Empty / Not Yet Generated State */
-        <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border-dashed border-sep-line bg-surface-raised/40">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sand text-accent mb-4 shadow-sm border border-sep-line">
-            <FileText className="h-8 w-8" />
-          </div>
-
-          <h3 className="font-display text-lg font-bold text-text">
-            Unit Content Not Generated Yet
-          </h3>
-
-          <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/70 leading-relaxed">
-            Synthesize this unit into a complete study bundle featuring deep notes with Mermaid diagrams, interactive flashcards, self-assessment quizzes, and verified practice problems.
-          </p>
-
-          <Button
-            onClick={handleGenerate}
-            isLoading={generateMutation.isPending || isGeneratingUnit}
-            leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
-            className="mt-6 text-xs sm:text-sm"
-          >
-            {isGeneratingUnit || generateMutation.isPending ? 'Synthesizing Content...' : 'Generate Unit Content'}
-          </Button>
-        </Card>
-      ) : (
-        /* Active Tab Content */
-        <div>
-          {activeTab === 'summary' && <UnitSummaryView summary={content.summary} />}
-          {activeTab === 'flashcards' && <UnitFlashcardsView flashcards={content.flashcards} />}
-          {activeTab === 'quiz' && (
-            <UnitQuizView
-              workspaceId={workspaceId}
-              unitTitle={decodedUnitTitle}
-              quiz={content.quiz}
-            />
-          )}
-          {activeTab === 'problems' && <UnitProblemsView problems={content.problems} />}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

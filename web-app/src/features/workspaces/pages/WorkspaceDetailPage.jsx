@@ -58,10 +58,21 @@ export function WorkspaceDetailPage() {
   }
 
   const isChatTab = location.pathname.endsWith('/chat') || location.pathname.includes('/chat');
+  const isLearningUnitDetailPage =
+    location.pathname.includes('/learning-path/') &&
+    location.pathname.split('/learning-path/')[1]?.length > 0;
 
   if (isChatTab) {
     return (
       <div className="h-[calc(100vh-4rem)] w-full flex flex-col min-h-0">
+        <Outlet context={{ workspace }} />
+      </div>
+    );
+  }
+
+  if (isLearningUnitDetailPage) {
+    return (
+      <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col">
         <Outlet context={{ workspace }} />
       </div>
     );
