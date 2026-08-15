@@ -1,13 +1,12 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Sparkles,
   BookOpen,
   Loader2,
   Lightbulb,
-  FileText,
-  RefreshCw,
   CheckCircle2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -16,9 +15,48 @@ import { Badge } from '@/components/ui/Badge';
 import { useWorkspaceSummaryQuery, useGenerateSummaryMutation } from '../hooks/useSummary';
 import { MermaidDiagram } from '../components/MermaidDiagram';
 
+const markdownComponents = {
+  table: ({ node, ...props }) => (
+    <div className="my-4 overflow-x-auto rounded-ui border border-sep-line bg-surface shadow-sm">
+      <table className="min-w-full divide-y divide-sep-line text-left font-sans text-xs sm:text-sm" {...props} />
+    </div>
+  ),
+  thead: ({ node, ...props }) => (
+    <thead className="bg-sand/60 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-text/80" {...props} />
+  ),
+  tbody: ({ node, ...props }) => (
+    <tbody className="divide-y divide-sep-line bg-surface" {...props} />
+  ),
+  tr: ({ node, ...props }) => (
+    <tr className="hover:bg-surface-hover/50 transition-colors" {...props} />
+  ),
+  th: ({ node, ...props }) => (
+    <th className="px-4 py-3 font-bold text-text border-r border-sep-line last:border-r-0" {...props} />
+  ),
+  td: ({ node, ...props }) => (
+    <td className="px-4 py-3 text-text/80 border-r border-sep-line last:border-r-0 leading-normal" {...props} />
+  ),
+  code: ({ node, inline, className, children, ...props }) => {
+    if (inline) {
+      return (
+        <code className="rounded bg-sand px-1.5 py-0.5 font-mono text-xs font-semibold text-accent" {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <div className="my-3 overflow-x-auto rounded-ui border border-sep-line bg-sand/30 p-3.5 font-mono text-xs text-text">
+        <code className="block leading-relaxed" {...props}>
+          {children}
+        </code>
+      </div>
+    );
+  },
+};
+
 export function SummaryTab() {
   const { workspaceId } = useParams();
-  const { data: summaryData, isLoading, isError } = useWorkspaceSummaryQuery(workspaceId);
+  const { data: summaryData, isLoading } = useWorkspaceSummaryQuery(workspaceId);
   const generateMutation = useGenerateSummaryMutation(workspaceId);
 
   const summary = summaryData?.summary;
@@ -97,7 +135,9 @@ export function SummaryTab() {
             </Badge>
           </div>
           <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans">
-            <ReactMarkdown>{summary.overview}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {summary.overview}
+            </ReactMarkdown>
           </div>
         </Card>
       )}
@@ -114,10 +154,12 @@ export function SummaryTab() {
                 <h3 className="font-display text-base font-bold text-text">{section.title}</h3>
               </div>
 
-              {/* Section Prose / Markdown */}
+              {/* Section Prose / Markdown with Table Support */}
               {section.content && (
                 <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans overflow-x-auto">
-                  <ReactMarkdown>{section.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                    {section.content}
+                  </ReactMarkdown>
                 </div>
               )}
 
