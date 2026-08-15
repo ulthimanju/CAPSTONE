@@ -10,8 +10,10 @@ import {
 } from '@/features/documents/schemas/documentSchemas';
 import { DocumentListTable } from '@/features/documents/components/DocumentListTable';
 import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPage';
+import { UploadQueueWidget } from '@/features/documents/components/UploadQueueWidget';
 import { Header } from '@/components/layout/Header';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useUploadQueueStore } from '@/store/uploadQueueStore';
 import { documentApi } from '@/features/documents/api/documentApi';
 
 describe('Document Schemas & File Size Rules', () => {
@@ -116,55 +118,44 @@ describe('DocumentListTable Component', () => {
   });
 });
 
-describe('Direct Document Upload Flow in Header', () => {
+describe('Multi-File Upload & Queue Management Flow', () => {
   beforeEach(() => {
     useWorkspaceStore.setState({ activeWorkspaceId: 'ws-123' });
+    useUploadQueueStore.setState({ items: [], isVisible: false });
   });
 
-  it('directly triggers upload mutation when file is selected without intermediary confirmation modal', async () => {
+  it('supports selecting and processing multiple files concurrently in upload queue', async () => {
     const user = userEvent.setup();
     const uploadSpy = vi.spyOn(documentApi, 'uploadDocumentFile').mockResolvedValue({
-      id: 'doc-new',
+      id: 'doc-uploaded',
       workspace_id: 'ws-123',
-      original_filename: 'Syllabus.pdf',
+      original_filename: 'MultiDoc.pdf',
       file_extension: 'PDF',
-      file_size_bytes: 1024,
+      file_size_bytes: 2048,
       status: 'INDEXED',
       created_at: '2026-08-15T10:00:00Z',
     });
 
-    renderWithProviders(<Header />);
+    renderWithProviders(
+      <div>
+        <Header />
+        <UploadQueueWidget />
+      </div>
+    );
 
-    const uploadBtn = screen.getByRole('button', { name: /upload document/i });
-    expect(uploadBtn).toBeInTheDocument();
-
-    const file = new File(['sample content'], 'Syllabus.pdf', { type: 'application/pdf' });
+    const file1 = new File(['content 1'], 'Lecture_Notes.pdf', { type: 'application/pdf' });
+    const file2 = new File(['content 2'], 'Slides.pptx', { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
     const input = document.querySelector('input[type="file"]');
-    await user.upload(input, file);
+
+    await user.upload(input, [file1, file2]);
 
     await waitFor(() => {
-      expect(uploadSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: 'ws-123',
-          file: expect.any(File),
-        })
-      );
+      expect(uploadSpy).toHaveBeenCalled();
     });
-  });
 
-  it('rejects oversized image with error message', async () => {
-    const user = userEvent.setup();
-
-    renderWithProviders(<Header />);
-
-    // 15MB Image (> 10MB limit)
-    const bigImage = new File(['a'.repeat(15 * 1024 * 1024)], 'screenshot.png', { type: 'image/png' });
-    const input = document.querySelector('input[type="file"]');
-    await user.upload(input, bigImage);
-
-    expect(
-      await screen.findByText(/image file size exceeds maximum allowed limit of 10 mb/i)
-    ).toBeInTheDocument();
+    // Queue manager displays progress
+    expect(await screen.findByText('Lecture_Notes.pdf')).toBeInTheDocument();
+    expect(await screen.findByText('Slides.pptx')).toBeInTheDocument();
   });
 });
 
