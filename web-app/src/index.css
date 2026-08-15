@@ -2,69 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --surface: 0 0% 100%;
-    --surface-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 11%;
-    --primary: 222 47% 11%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --danger: 0 84% 60%;
-    --danger-foreground: 210 40% 98%;
-    --success: 142 76% 36%;
-    --success-foreground: 355 100% 97%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 48 96% 89%;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-accent: 240 5% 94%;
-    --sidebar-accent-foreground: 240 6% 10%;
-    --radius: 0.5rem;
-  }
+/* ==========================================================================
+   Field Journal — Design Tokens
+   Warm editorial theme (Fraunces + Work Sans + IBM Plex Mono)
+   Extracted from the Synapse app for reuse in other projects.
 
-  .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-    --surface: 224 71% 7%;
-    --surface-foreground: 213 31% 91%;
-    --muted: 223 47% 11%;
-    --muted-foreground: 215 20% 65%;
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring: 216 34% 17%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 223 47% 11%;
-    --secondary-foreground: 210 40% 98%;
-    --danger: 0 63% 31%;
-    --danger-foreground: 210 40% 98%;
-    --success: 142 71% 45%;
-    --success-foreground: 144 61% 20%;
-    --warning: 48 96% 53%;
-    --warning-foreground: 26 83% 14%;
-    --sidebar-background: 240 6% 10%;
-    --sidebar-foreground: 240 5% 90%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-accent: 240 4% 16%;
-    --sidebar-accent-foreground: 0 0% 100%;
-  }
+   Usage:
+     1. Import this file, then set <html data-theme="dark"> to switch themes
+        (omit the attribute, or set it to anything else, for light mode).
+     2. Reference tokens as var(--token-name) in your own CSS.
+   ========================================================================== */
+
+:root {
+    /* ---- Base palette --------------------------------------------------
+       The raw hues the rest of the system is built from. Prefer the
+       semantic tokens below in components; reach for these only when
+       defining new semantic tokens. */
+    --color-paper: #F2EBDC;   /* light background */
+    --color-ink: #2A2318;     /* light text */
+    --color-rust: #A8551E;    /* primary accent */
+    --color-sage: #66774A;    /* secondary accent (raw) */
+    --color-sage-text: #4E5C38; /* sage, darkened for AA text contrast on light */
+    --color-sand: #E1D4B8;    /* light surface / card background */
+    --color-sep-line: #B5A482; /* light border / separator */
+    --color-danger: #8C3D12;  /* danger/error, darkened for AA on light */
+    --color-success: #3F5A2A; /* success, darkened for AA on light */
+    --color-on-accent: #FFFFFF; /* text/icon color placed on top of accent fills */
+
+    /* ---- Semantic tokens -------------------------------------------------
+       What components should actually consume. */
+    --bg: var(--color-paper);
+    --text: var(--color-ink);
+    --border: var(--color-sand);
+    --accent: var(--color-rust);
+    --sage: var(--color-sage);
+    --sage-text: var(--color-sage-text);
+    --sand: var(--color-sand);
+    --sep-line: var(--color-sep-line);
+    --danger: var(--color-danger);
+    --success: var(--color-success);
+    --on-accent: var(--color-on-accent);
+
+    /* ---- Elevated surfaces & interaction states --------------------------
+       Used for cards, panels, and sidebar backgrounds that sit "above"
+       the base --bg, plus their hover/pressed states. */
+    --surface-raised: var(--sand);        /* card / sidebar / panel background */
+    --surface-hover: var(--sand);         /* hover background on --bg surfaces */
+    --surface-hover-strong: #D9C9A6;      /* stronger hover, e.g. dropdown items (derived) */
+    --shadow-color: rgba(42, 35, 24, 0.1);/* dropdown / card drop shadows */
+    --danger-tint: rgba(168, 85, 30, 0.1);/* subtle danger hover background */
+
+    /* ---- Radius & focus ---------------------------------------------- */
+    --radius-ui: 4px;
+    --focus-ring-width: 3px;
+    --focus-ring: var(--focus-ring-width) solid var(--accent);
+    --focus-ring-offset: 2px;
+
+    /* ---- Typography ---------------------------------------------------- */
+    --font-display: 'Fraunces', serif;      /* headings */
+    --font-body: 'Work Sans', sans-serif;   /* body copy, UI labels */
+    --font-mono: 'IBM Plex Mono', monospace;/* eyebrows, tags, badges, timestamps */
+}
+
+/* ---- Dark theme overrides ----------------------------------------------
+   Apply by setting data-theme="dark" on <html> (or another ancestor). */
+[data-theme="dark"] {
+    --bg: #1B1710;
+    --text: #EDE4D0;
+    --border: #3A3225;
+    --sand: #3A3225;          /* re-purposed in dark mode as a border/tint tone */
+    --sep-line: #5A4C39;
+    --sage-text: #9CB37E;     /* lightened for AA on dark backgrounds */
+    --danger: #D97A4C;
+    --success: #8FB36B;
+    --accent: var(--color-rust); /* accent stays constant across themes */
+
+    /* Elevated surfaces in dark mode use a dedicated near-black brown
+       rather than the repurposed --sand token above. */
+    --surface-raised: #231E16;      /* card / sidebar / panel background */
+    --surface-hover: #31291F;       /* hover background on --bg surfaces */
+    --surface-hover-strong: #3A3225;/* dropdown item hover */
+    --shadow-color: rgba(0, 0, 0, 0.35);
+    --danger-tint: rgba(217, 122, 76, 0.15);
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
   }
 }

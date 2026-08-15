@@ -31,18 +31,18 @@ export function Sidebar({ header, footer, children, className }) {
   }, [isMobileSidebarOpen]);
 
   const sidebarContent = (
-    <div className="flex h-full w-full flex-col justify-between overflow-hidden bg-sidebar text-sidebar-foreground">
+    <div className="flex h-full w-full flex-col justify-between overflow-hidden bg-surface-raised text-text">
       {/* Sidebar Header / Brand */}
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4 sm:px-6">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-sep-line px-4 sm:px-6">
         {header || (
-          <span className="text-base font-bold tracking-tight text-sidebar-foreground">
+          <span className="font-display text-lg font-bold tracking-tight text-text">
             SYNAPSE
           </span>
         )}
         <button
           type="button"
           onClick={closeMobileSidebar}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-ui text-text/70 hover:bg-surface-hover hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:hidden"
           aria-label="Close sidebar"
         >
           <X className="h-5 w-5" aria-hidden="true" />
@@ -56,7 +56,7 @@ export function Sidebar({ header, footer, children, className }) {
 
       {/* Sidebar Footer */}
       {footer && (
-        <div className="shrink-0 border-t border-sidebar-border p-4">
+        <div className="shrink-0 border-t border-sep-line p-4">
           {footer}
         </div>
       )}
@@ -68,7 +68,7 @@ export function Sidebar({ header, footer, children, className }) {
       {/* Desktop Fixed Sidebar (280px) */}
       <aside
         className={cn(
-          'hidden lg:flex lg:w-[280px] lg:shrink-0 lg:flex-col lg:border-r lg:border-sidebar-border',
+          'hidden lg:flex lg:w-[280px] lg:shrink-0 lg:flex-col lg:border-r lg:border-sep-line',
           className
         )}
       >
@@ -87,7 +87,7 @@ export function Sidebar({ header, footer, children, className }) {
         <div
           onClick={closeMobileSidebar}
           className={cn(
-            'fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300 ease-in-out',
+            'fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300 ease-in-out',
             isMobileSidebarOpen ? 'opacity-100' : 'opacity-0'
           )}
           aria-hidden="true"
@@ -99,7 +99,7 @@ export function Sidebar({ header, footer, children, className }) {
           aria-modal="true"
           aria-label="Navigation Drawer"
           className={cn(
-            'fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col shadow-2xl transition-transform duration-300 ease-in-out',
+            'fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col shadow-theme transition-transform duration-300 ease-in-out',
             isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           )}
         >

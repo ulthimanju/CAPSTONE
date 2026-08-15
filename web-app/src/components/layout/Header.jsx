@@ -9,7 +9,7 @@ export function Header({ title, children, className }) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur transition-colors sm:px-6',
+        'sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-bg/95 px-4 backdrop-blur transition-colors sm:px-6',
         className
       )}
     >
@@ -17,14 +17,14 @@ export function Header({ title, children, className }) {
         <button
           type="button"
           onClick={toggleMobileSidebar}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-ui border border-border bg-surface-raised text-text transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:hidden"
           aria-label="Toggle navigation menu"
         >
           <Menu className="h-5 w-5" aria-hidden="true" />
         </button>
 
         {title && (
-          <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+          <h1 className="font-display text-lg font-semibold tracking-tight text-text sm:text-xl">
             {title}
           </h1>
         )}

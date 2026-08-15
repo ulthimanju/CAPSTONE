@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ['class'],
+  darkMode: ['selector', '[data-theme="dark"]'],
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
@@ -8,51 +8,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        surface: {
-          DEFAULT: 'hsl(var(--surface))',
-          foreground: 'hsl(var(--surface-foreground))',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
-        },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
-        },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
-        danger: {
-          DEFAULT: 'hsl(var(--danger))',
-          foreground: 'hsl(var(--danger-foreground))',
-        },
-        success: {
-          DEFAULT: 'hsl(var(--success))',
-          foreground: 'hsl(var(--success-foreground))',
-        },
-        warning: {
-          DEFAULT: 'hsl(var(--warning))',
-          foreground: 'hsl(var(--warning-foreground))',
-        },
-        sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-        },
+        bg: 'var(--bg)',
+        text: 'var(--text)',
+        border: 'var(--border)',
+        accent: 'var(--accent)',
+        sage: 'var(--sage)',
+        'sage-text': 'var(--sage-text)',
+        sand: 'var(--sand)',
+        'sep-line': 'var(--sep-line)',
+        danger: 'var(--danger)',
+        success: 'var(--success)',
+        'on-accent': 'var(--on-accent)',
+        'surface-raised': 'var(--surface-raised)',
+        'surface-hover': 'var(--surface-hover)',
+        'surface-hover-strong': 'var(--surface-hover-strong)',
+        'danger-tint': 'var(--danger-tint)',
+      },
+      boxShadow: {
+        theme: '0 4px 12px var(--shadow-color)',
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        ui: 'var(--radius-ui)',
+      },
+      fontFamily: {
+        display: ['var(--font-display)', 'serif'],
+        body: ['var(--font-body)', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
       },
       width: {
         sidebar: '280px',
