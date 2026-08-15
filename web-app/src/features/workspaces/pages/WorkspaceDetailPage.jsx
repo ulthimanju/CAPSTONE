@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams, Link, Outlet } from 'react-router-dom';
+import { useParams, useLocation, Link, Outlet } from 'react-router-dom';
 import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +9,7 @@ import { ROUTES } from '@/config/constants';
 
 export function WorkspaceDetailPage() {
   const { workspaceId } = useParams();
+  const location = useLocation();
   const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
 
   const {
@@ -52,6 +53,16 @@ export function WorkspaceDetailPage() {
             </Button>
           </Link>
         </Card>
+      </div>
+    );
+  }
+
+  const isChatTab = location.pathname.endsWith('/chat') || location.pathname.includes('/chat');
+
+  if (isChatTab) {
+    return (
+      <div className="h-[calc(100vh-4rem)] w-full flex flex-col min-h-0">
+        <Outlet context={{ workspace }} />
       </div>
     );
   }

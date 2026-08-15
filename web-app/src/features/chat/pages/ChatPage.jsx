@@ -135,9 +135,9 @@ export function ChatPage() {
   const todayFormatted = formatMessageDate(new Date().toISOString());
 
   return (
-    <div className="flex flex-col h-[calc(100vh-9.5rem)] rounded-ui border border-[#cfc5ae] bg-[#f5efe3] shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-[#f5efe3] min-h-0 flex-1">
       {/* Messages Viewport */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 space-y-5 min-h-0">
         {/* Date Divider */}
         <div className="flex items-center my-4">
           <div className="flex-1 border-t border-[#cfc5ae]" />
@@ -241,13 +241,13 @@ export function ChatPage() {
       </div>
 
       {/* Docked Bottom Input Bar */}
-      <div className="border-t border-[#cfc5ae] bg-[#e6ddc8] p-3">
+      <div className="border-t border-[#cfc5ae] bg-[#e6ddc8] px-4 sm:px-8 lg:px-12 py-3.5 w-full">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-2.5 max-w-5xl mx-auto"
+          className="flex items-center gap-3 w-full"
         >
           <input
             type="text"
