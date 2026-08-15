@@ -120,8 +120,12 @@ class NotificationStore:
                     {"user_id": str(SYSTEM_USER_ID)},
                 ]
             }
-            cursor = notifications_col.find(query).sort("created_at", -1).skip(offset).limit(limit)
-            docs = await cursor.to_list(length=limit)
+            docs = await notifications_col.find(
+                query,
+                sort={"created_at": -1},
+                skip=offset,
+                limit=limit,
+            )
 
             results: List[NotificationItem] = []
             for d in docs:

@@ -409,5 +409,6 @@ async def proxy_ai(request: Request, path: str = ""):
 
 
 @app.api_route("/api/v1/notifications/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+@app.api_route("/api/v1/notifications", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_notification(request: Request, path: str = ""):
     return await proxy_request(settings.service_notification_url, request)
