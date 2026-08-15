@@ -2,6 +2,8 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import {
   Sparkles,
   BookOpen,
@@ -135,7 +137,11 @@ export function SummaryTab() {
             </Badge>
           </div>
           <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+              components={markdownComponents}
+            >
               {summary.overview}
             </ReactMarkdown>
           </div>
@@ -154,10 +160,14 @@ export function SummaryTab() {
                 <h3 className="font-display text-base font-bold text-text">{section.title}</h3>
               </div>
 
-              {/* Section Prose / Markdown with Table Support */}
+              {/* Section Prose / Markdown with Table & KaTeX Support */}
               {section.content && (
                 <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans overflow-x-auto">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={markdownComponents}
+                  >
                     {section.content}
                   </ReactMarkdown>
                 </div>

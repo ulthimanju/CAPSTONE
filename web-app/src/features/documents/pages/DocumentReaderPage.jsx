@@ -1,5 +1,9 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import {
   ArrowLeft,
   FileText,
@@ -7,8 +11,6 @@ import {
   Sparkles,
   BookOpen,
   HelpCircle,
-  Clock,
-  Layers,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -25,6 +27,45 @@ function formatBytes(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
+
+const markdownComponents = {
+  table: ({ node, ...props }) => (
+    <div className="my-4 overflow-x-auto rounded-ui border border-sep-line bg-surface shadow-sm">
+      <table className="min-w-full divide-y divide-sep-line text-left font-sans text-xs sm:text-sm" {...props} />
+    </div>
+  ),
+  thead: ({ node, ...props }) => (
+    <thead className="bg-sand/60 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-text/80" {...props} />
+  ),
+  tbody: ({ node, ...props }) => (
+    <tbody className="divide-y divide-sep-line bg-surface" {...props} />
+  ),
+  tr: ({ node, ...props }) => (
+    <tr className="hover:bg-surface-hover/50 transition-colors" {...props} />
+  ),
+  th: ({ node, ...props }) => (
+    <th className="px-4 py-3 font-bold text-text border-r border-sep-line last:border-r-0" {...props} />
+  ),
+  td: ({ node, ...props }) => (
+    <td className="px-4 py-3 text-text/80 border-r border-sep-line last:border-r-0 leading-normal" {...props} />
+  ),
+  code: ({ node, inline, className, children, ...props }) => {
+    if (inline) {
+      return (
+        <code className="rounded bg-sand px-1.5 py-0.5 font-mono text-xs font-semibold text-accent" {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <div className="my-3 overflow-x-auto rounded-ui border border-sep-line bg-sand/30 p-3.5 font-mono text-xs text-text">
+        <code className="block leading-relaxed" {...props}>
+          {children}
+        </code>
+      </div>
+    );
+  },
+};
 
 export function DocumentReaderPage() {
   const { workspaceId, documentId } = useParams();
@@ -148,8 +189,14 @@ export function DocumentReaderPage() {
             )}
 
             {markdownContent && (
-              <div className="prose prose-stone max-w-none font-body text-sm text-text/90 leading-relaxed whitespace-pre-wrap">
-                {markdownContent}
+              <div className="prose prose-stone max-w-none font-body text-sm text-text/90 leading-relaxed">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={markdownComponents}
+                >
+                  {markdownContent}
+                </ReactMarkdown>
               </div>
             )}
           </Card>

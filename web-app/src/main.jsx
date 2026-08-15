@@ -9,6 +9,7 @@ import * as Sentry from '@sentry/react';
 import App from './App';
 import { ErrorBoundaryFallback } from '@/components/common/ErrorBoundaryFallback';
 import './index.css';
+import 'katex/dist/katex.min.css';
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 if (sentryDsn) {
