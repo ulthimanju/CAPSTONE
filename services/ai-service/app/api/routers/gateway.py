@@ -425,8 +425,21 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
     try:
         await _publish_summary_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
 
+        if not authorization:
+            from shared.security.jwt import JWTManager, JWTSettings
+            jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
+            internal_token = jwt_mgr.create_access_token(
+                user_id=user_id_str,
+                email="internal@synapse.edu",
+                role="ADMIN",
+                session_id=str(uuid.uuid4()),
+                expire_minutes=60,
+            )
+            authorization = f"Bearer {internal_token}"
+
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
-            headers = {"Authorization": authorization} if authorization else {}
+            headers = {"Authorization": authorization}
+
             ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
             if ws_res.status_code != 200:
                 raise HTTPException(status_code=404, detail="Workspace metadata not found")
@@ -438,13 +451,20 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
             doc_summaries = []
             for doc in docs_list:
                 doc_id = doc["id"]
-                sum_res = await client.get(f"{document_url}/api/v1/documents/{doc_id}/summary", headers=headers)
-                if sum_res.status_code == 200 and sum_res.json().get("summary"):
-                    doc_summaries.append(f"--- Document: {doc.get('filename')} ---\n{sum_res.json()['summary']}")
+                doc_name = doc.get("original_filename") or doc.get("filename") or f"Document {doc_id}"
+                md_res = await client.get(f"{document_url}/api/v1/documents/{doc_id}/markdown", headers=headers)
+                if md_res.status_code == 200 and md_res.json().get("markdown"):
+                    doc_text = md_res.json()["markdown"]
+                    # Sample or include full text up to 25k characters per doc
+                    if len(doc_text) > 25000:
+                        doc_text = doc_text[:25000] + "\n... [Document Content Truncated]"
+                    doc_summaries.append(f"--- Document: {doc_name} ---\n{doc_text}")
                 else:
-                    kw_res = await client.get(f"{document_url}/api/v1/documents/{doc_id}/keywords", headers=headers)
-                    kws = ", ".join(kw_res.json().get("keywords", [])) if kw_res.status_code == 200 else "None"
-                    doc_summaries.append(f"--- Document: {doc.get('filename')} ---\nKeywords: {kws}")
+                    sum_res = await client.get(f"{document_url}/api/v1/documents/{doc_id}/summary", headers=headers)
+                    if sum_res.status_code == 200 and sum_res.json().get("summary"):
+                        doc_summaries.append(f"--- Document: {doc_name} ---\n{sum_res.json()['summary']}")
+                    else:
+                        doc_summaries.append(f"--- Document: {doc_name} ---\nStatus: {doc.get('status', 'PARSED')}")
 
         context_parts = [
             f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
@@ -465,7 +485,7 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
             model=settings.gemini_default_model,
             temperature=0.3,
             top_p=0.95,
-            max_output_tokens=4096,
+            max_output_tokens=16384,
             response_mime_type="application/json",
             response_schema=WorkspaceSummaryResponse,
         )
@@ -473,7 +493,12 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
         ws_summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
 
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
-            headers = {"Authorization": authorization} if authorization else {}
+            headers = {}
+            if authorization:
+                headers["Authorization"] = authorization
+            if user_id_str:
+                headers["X-User-Id"] = user_id_str
+
             await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/summary",
                 json={"summary_json": ws_summary_validated.model_dump()},
