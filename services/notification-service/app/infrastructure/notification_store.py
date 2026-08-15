@@ -108,7 +108,7 @@ class NotificationStore:
         self, user_id: uuid.UUID, limit: int = 50, offset: int = 0
     ) -> List[NotificationItem]:
         """
-        Fetches user's notifications from MongoDB sorted by created_at descending.
+        Fetches user's notifications from MongoDB strictly scoped to user_id or recipient_id.
         """
         try:
             db = get_mongo_db()
@@ -117,7 +117,6 @@ class NotificationStore:
                 "$or": [
                     {"user_id": str(user_id)},
                     {"recipient_id": str(user_id)},
-                    {"user_id": str(SYSTEM_USER_ID)},
                 ]
             }
             docs = await notifications_col.find(
@@ -159,7 +158,7 @@ class NotificationStore:
 
     async def get_unread_count_async(self, user_id: uuid.UUID) -> int:
         """
-        Counts unread notifications for the given user in MongoDB.
+        Counts unread notifications strictly for the given user in MongoDB.
         """
         try:
             db = get_mongo_db()
@@ -170,7 +169,6 @@ class NotificationStore:
                         "$or": [
                             {"user_id": str(user_id)},
                             {"recipient_id": str(user_id)},
-                            {"user_id": str(SYSTEM_USER_ID)},
                         ]
                     },
                     {"status": NotificationStatus.UNREAD.value},
@@ -189,6 +187,8 @@ class NotificationStore:
             db = get_mongo_db()
             notifications_col = db["notifications"]
             query = {"id": str(notification_id)}
+            if user_id:
+                query["$or"] = [{"user_id": str(user_id)}, {"recipient_id": str(user_id)}]
             update_data = {
                 "$set": {
                     "status": NotificationStatus.READ.value,
@@ -203,7 +203,7 @@ class NotificationStore:
 
     async def mark_all_as_read_async(self, user_id: uuid.UUID) -> int:
         """
-        Marks all unread notifications for a user as READ in MongoDB.
+        Marks all unread notifications strictly for a user as READ in MongoDB.
         """
         try:
             db = get_mongo_db()
@@ -214,7 +214,6 @@ class NotificationStore:
                         "$or": [
                             {"user_id": str(user_id)},
                             {"recipient_id": str(user_id)},
-                            {"user_id": str(SYSTEM_USER_ID)},
                         ]
                     },
                     {"status": NotificationStatus.UNREAD.value},
@@ -231,7 +230,7 @@ class NotificationStore:
         except Exception as exc:
             logger.warning(f"MongoDB mark_all_as_read failed ({exc}).")
             for item in self._memory_items.values():
-                if item.user_id == user_id or item.user_id == SYSTEM_USER_ID:
+                if item.user_id == user_id or item.recipient_id == user_id:
                     item.status = NotificationStatus.READ
             return len(self._memory_items)
 
@@ -269,9 +268,7 @@ class NotificationStore:
         return True, item
 
     def get_user_notifications(self, user_id: uuid.UUID) -> List[NotificationItem]:
-        if user_id == SYSTEM_USER_ID:
-            return list(self._memory_items.values())
-        return [n for n in self._memory_items.values() if n.user_id == user_id or n.user_id == SYSTEM_USER_ID]
+        return [n for n in self._memory_items.values() if n.user_id == user_id or n.recipient_id == user_id]
 
     def get_unread_count(self, user_id: uuid.UUID) -> int:
         return len([n for n in self.get_user_notifications(user_id) if n.status == NotificationStatus.UNREAD])
