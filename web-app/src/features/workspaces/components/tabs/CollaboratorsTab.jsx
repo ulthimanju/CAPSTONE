@@ -183,6 +183,43 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
     }
   };
 
+  const formatActivityDescription = (act) => {
+    const meta = act.metadata_json || {};
+    const type = act.activity_type;
+
+    if (type === 'MEMBER_INVITED') {
+      const email = meta.invited_email;
+      return email ? `${email} INVITED` : 'MEMBER INVITED';
+    }
+
+    if (type === 'MEMBER_JOINED') {
+      const email = meta.user_email || meta.email || meta.invited_email;
+      return email ? `${email} JOINED` : 'MEMBER JOINED';
+    }
+
+    if (type === 'MEMBER_ROLE_UPDATED') {
+      const email = meta.member_email || meta.user_email;
+      const roleInfo = meta.new_role ? ` to ${meta.new_role}` : '';
+      return email ? `${email} ROLE UPDATED${roleInfo}` : `MEMBER ROLE UPDATED${roleInfo}`;
+    }
+
+    if (type === 'MEMBER_REMOVED') {
+      const email = meta.member_email || meta.user_email;
+      return email ? `${email} REMOVED` : 'MEMBER REMOVED';
+    }
+
+    if (type === 'MEMBER_LEFT') {
+      const email = meta.member_email || meta.user_email;
+      return email ? `${email} LEFT` : 'MEMBER LEFT';
+    }
+
+    if (type === 'OWNERSHIP_TRANSFERRED') {
+      return 'OWNERSHIP TRANSFERRED';
+    }
+
+    return (type || '').replace(/_/g, ' ');
+  };
+
   return (
     <div className="space-y-8 pb-12">
       {/* Active Members Section */}
@@ -460,17 +497,14 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
               </div>
             ) : (
               <Card className="divide-y divide-sep-line p-0 overflow-hidden shadow-xs">
-                {activities.slice(0, 15).map((act) => (
-                  <div key={act.id} className="p-3 text-xs font-mono flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-text">{act.activity_type.replace(/_/g, ' ')}</span>
-                      {act.metadata_json?.member_user_id && (
-                        <span className="text-text/60 ml-2">
-                          (Role: {act.metadata_json?.new_role || act.metadata_json?.old_role || 'N/A'})
-                        </span>
-                      )}
+                {activities.slice(0, 25).map((act) => (
+                  <div key={act.id} className="p-3 text-xs font-mono flex items-center justify-between hover:bg-surface-hover/30 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-text">
+                        {formatActivityDescription(act)}
+                      </span>
                     </div>
-                    <span className="text-text/50 text-[10px]">
+                    <span className="text-text/50 text-[10px] shrink-0">
                       {formatActivityDate(act.created_at)}
                     </span>
                   </div>
