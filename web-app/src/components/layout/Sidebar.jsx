@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { X, Bell, Archive } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 import { UserProfileMenu } from './UserProfileMenu';
 import { SidebarNav } from './SidebarNav';
 import { cn } from '@/lib/cn';
@@ -8,6 +10,14 @@ import { cn } from '@/lib/cn';
 export function Sidebar({ header, footer, children, className }) {
   const isMobileSidebarOpen = useUIStore((state) => state.isMobileSidebarOpen);
   const closeMobileSidebar = useUIStore((state) => state.closeMobileSidebar);
+  const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+
+  const notificationsPath = activeWorkspaceId
+    ? `/workspaces/${activeWorkspaceId}/notifications`
+    : '/notifications';
+  const archivedChatsPath = activeWorkspaceId
+    ? `/workspaces/${activeWorkspaceId}/archived-chats`
+    : '/archived-chats';
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -56,8 +66,42 @@ export function Sidebar({ header, footer, children, className }) {
         {children !== undefined ? children : <SidebarNav />}
       </nav>
 
+      {/* Bottom Nav Items: Notifications & Archived Chats */}
+      <div className="shrink-0 px-3 py-1.5 border-t border-sep-line/60 space-y-1">
+        <NavLink
+          to={notificationsPath}
+          onClick={closeMobileSidebar}
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-colors',
+              isActive
+                ? 'bg-sand font-bold text-accent shadow-theme'
+                : 'text-text/70 hover:bg-surface-hover hover:text-text'
+            )
+          }
+        >
+          <Bell className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>Notifications</span>
+        </NavLink>
+        <NavLink
+          to={archivedChatsPath}
+          onClick={closeMobileSidebar}
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-colors',
+              isActive
+                ? 'bg-sand font-bold text-accent shadow-theme'
+                : 'text-text/70 hover:bg-surface-hover hover:text-text'
+            )
+          }
+        >
+          <Archive className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>Archived Chats</span>
+        </NavLink>
+      </div>
+
       {/* Sidebar Footer / User Profile Menu */}
-      <div className="shrink-0 p-3 pt-1">
+      <div className="shrink-0 p-3 pt-1 border-t border-sep-line/40">
         {footer !== undefined ? footer : <UserProfileMenu />}
       </div>
     </div>

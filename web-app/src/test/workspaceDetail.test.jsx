@@ -13,6 +13,7 @@ import { DocumentsTab } from '@/features/workspaces/components/tabs/DocumentsTab
 import { SummaryTab } from '@/features/summary/pages/SummaryTab';
 import { ManageWorkspaceTab } from '@/features/workspaces/components/tabs/ManageWorkspaceTab';
 import { SidebarNav } from '@/components/layout/SidebarNav';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
@@ -208,5 +209,25 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
         }
       );
     });
+  });
+
+  it('renders Notifications and Archived Chats items at the bottom of the sidebar right above profile dropdown', async () => {
+    renderWithProviders(
+      <Sidebar />,
+      { route: '/workspaces/e4b3c2a1-0000-4000-8000-000000000001' }
+    );
+
+    // Verify Notifications link
+    const notifLink = screen.getByRole('link', { name: /notifications/i });
+    expect(notifLink).toBeInTheDocument();
+    expect(notifLink).toHaveAttribute('href', '/workspaces/e4b3c2a1-0000-4000-8000-000000000001/notifications');
+
+    // Verify Archived Chats link
+    const archivedLink = screen.getByRole('link', { name: /archived chats/i });
+    expect(archivedLink).toBeInTheDocument();
+    expect(archivedLink).toHaveAttribute('href', '/workspaces/e4b3c2a1-0000-4000-8000-000000000001/archived-chats');
+
+    // Verify User Profile Menu / Dropdown button exists right below
+    expect(screen.getByRole('button', { name: /user profile menu/i })).toBeInTheDocument();
   });
 });
