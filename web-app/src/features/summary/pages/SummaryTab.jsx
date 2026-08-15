@@ -134,7 +134,7 @@ export function SummaryTab() {
                     <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-accent mb-0.5">
                       Key Takeaway
                     </p>
-                    <p className="text-xs text-text/80 font-sans">{section.key_takeaways}</p>
+                    <MarkdownRenderer content={section.key_takeaways} className="text-xs text-text/80 font-sans" />
                   </div>
                 </div>
               )}
@@ -153,8 +153,10 @@ export function SummaryTab() {
           <ul className="space-y-2 text-sm text-text/80">
             {summary.key_takeaways.map((item, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span className="text-success font-bold mt-0.5">•</span>
-                <span>{item}</span>
+                <span className="text-success font-bold mt-0.5 shrink-0">•</span>
+                <div className="min-w-0 flex-1">
+                  <MarkdownRenderer content={item} />
+                </div>
               </li>
             ))}
           </ul>
