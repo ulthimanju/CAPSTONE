@@ -11,25 +11,6 @@ import rehypeHighlight from 'rehype-highlight';
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.css';
 
-/**
- * MarkdownRenderer — Reusable Markdown component
- *
- * Supports:
- *  - GitHub Flavored Markdown (tables, strikethrough, task lists, autolinks) via remark-gfm
- *  - LaTeX math ($inline$ and $$block$$) via remark-math + rehype-katex
- *  - Syntax-highlighted fenced code blocks via rehype-highlight (highlight.js)
- *  - Raw HTML embedded in markdown, sanitized for safety, via rehype-raw + rehype-sanitize
- *  - Heading anchors via rehype-slug
- *  - Soft line breaks (single \n -> <br>) via remark-breaks (toggleable)
- *  - Copy-to-clipboard button on code blocks
- *  - Clean typography and table styling out of the box
- *
- * Install:
- *   npm install react-markdown remark-gfm remark-math remark-breaks
- *   npm install rehype-katex rehype-raw rehype-sanitize rehype-slug rehype-highlight
- *   npm install katex highlight.js
- */
-
 // Extend the default sanitize schema so KaTeX output (spans/math classes),
 // highlight.js classes, and a few common safe HTML elements survive sanitization.
 const sanitizeSchema = {
@@ -69,23 +50,18 @@ const sanitizeSchema = {
   ],
 };
 
-function CodeBlock({ inline, className = '', children, ...props }) {
+function CodeBlock({ node, inline, className = '', children, ...props }) {
   const [copied, setCopied] = React.useState(false);
-  const match = /language-(\w+)/.exec(className);
+  const match = /language-(\w+)/.exec(className || '');
   const codeText = String(children).replace(/\n$/, '');
+  const isMultiLine = typeof children === 'string' && children.includes('\n');
+  const isBlock = Boolean(match || isMultiLine);
 
-  if (inline) {
+  // If single-line inline code snippet (e.g. `CreateProcess()`), render as compact inline badge
+  if (!isBlock || inline) {
     return (
       <code
-        className={className}
-        style={{
-          background: 'var(--code-bg, rgba(127,127,127,0.15))',
-          padding: '0.15em 0.4em',
-          borderRadius: '4px',
-          fontSize: '0.9em',
-          fontFamily:
-            'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-        }}
+        className={`rounded bg-sand/80 px-1.5 py-0.5 font-mono text-[11px] sm:text-xs font-semibold text-accent border border-sep-line/40 inline align-baseline ${className}`}
         {...props}
       >
         {children}
@@ -104,54 +80,22 @@ function CodeBlock({ inline, className = '', children, ...props }) {
   };
 
   return (
-    <div style={{ position: 'relative', margin: '0.75em 0' }}>
-      <button
-        type="button"
-        onClick={handleCopy}
-        style={{
-          position: 'absolute',
-          top: '6px',
-          right: '6px',
-          fontSize: '11px',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          border: '1px solid rgba(127,127,127,0.35)',
-          background: 'var(--code-copy-bg, rgba(0,0,0,0.35))',
-          color: 'var(--code-copy-fg, #eee)',
-          cursor: 'pointer',
-          zIndex: 1,
-        }}
-      >
-        {copied ? 'Copied!' : 'Copy'}
-      </button>
-      <pre
-        style={{
-          overflowX: 'auto',
-          borderRadius: '8px',
-          padding: '1em',
-          fontSize: '13px',
-          lineHeight: 1.5,
-        }}
-      >
+    <div className="relative my-3 overflow-hidden rounded-ui border border-sep-line bg-sand/20 shadow-sm">
+      <div className="flex items-center justify-between bg-sand/40 px-3 py-1 text-[11px] font-mono text-text/70 border-b border-sep-line/40">
+        <span className="font-semibold uppercase tracking-wider">{match ? match[1] : 'CODE'}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="rounded border border-sep-line/40 bg-surface px-2 py-0.5 text-[10px] font-mono text-text/80 transition-colors hover:bg-sand hover:text-accent"
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      <pre className="overflow-x-auto p-3 font-mono text-xs leading-relaxed text-text">
         <code className={className} {...props}>
           {children}
         </code>
       </pre>
-      {match ? (
-        <span
-          style={{
-            position: 'absolute',
-            top: '6px',
-            left: '10px',
-            fontSize: '11px',
-            opacity: 0.55,
-            textTransform: 'uppercase',
-            letterSpacing: '0.03em',
-          }}
-        >
-          {match[1]}
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -159,88 +103,66 @@ function CodeBlock({ inline, className = '', children, ...props }) {
 const defaultComponents = {
   code: CodeBlock,
   table: ({ children, ...props }) => (
-    <div style={{ overflowX: 'auto', margin: '0.75em 0' }}>
-      <table
-        style={{
-          borderCollapse: 'collapse',
-          width: '100%',
-          fontSize: '0.95em',
-        }}
-        {...props}
-      >
+    <div className="my-4 overflow-x-auto rounded-ui border border-sep-line bg-surface shadow-sm">
+      <table className="min-w-full divide-y divide-sep-line text-left font-sans text-xs sm:text-sm" {...props}>
         {children}
       </table>
     </div>
   ),
+  thead: ({ children, ...props }) => (
+    <thead className="bg-sand/60 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-text/80" {...props}>
+      {children}
+    </thead>
+  ),
+  tbody: ({ children, ...props }) => (
+    <tbody className="divide-y divide-sep-line bg-surface" {...props}>
+      {children}
+    </tbody>
+  ),
+  tr: ({ children, ...props }) => (
+    <tr className="hover:bg-surface-hover/50 transition-colors" {...props}>
+      {children}
+    </tr>
+  ),
   th: ({ children, ...props }) => (
-    <th
-      style={{
-        border: '1px solid var(--border, rgba(127,127,127,0.3))',
-        padding: '6px 10px',
-        textAlign: 'left',
-        background: 'var(--table-header-bg, rgba(127,127,127,0.08))',
-      }}
-      {...props}
-    >
+    <th className="px-4 py-2.5 align-top font-bold text-text border-r border-sep-line last:border-r-0 tracking-wider" {...props}>
       {children}
     </th>
   ),
   td: ({ children, ...props }) => (
-    <td
-      style={{
-        border: '1px solid var(--border, rgba(127,127,127,0.3))',
-        padding: '6px 10px',
-      }}
-      {...props}
-    >
+    <td className="px-4 py-2.5 align-top text-text/80 border-r border-sep-line last:border-r-0 leading-relaxed" {...props}>
       {children}
     </td>
   ),
+  p: ({ children, ...props }) => (
+    <p className="mb-2 last:mb-0 leading-relaxed" {...props}>
+      {children}
+    </p>
+  ),
   a: ({ children, ...props }) => (
-    <a target="_blank" rel="noopener noreferrer" {...props}>
+    <a target="_blank" rel="noopener noreferrer" className="text-accent underline hover:opacity-80" {...props}>
       {children}
     </a>
   ),
   blockquote: ({ children, ...props }) => (
     <blockquote
-      style={{
-        borderLeft: '3px solid var(--border, rgba(127,127,127,0.4))',
-        margin: '0.75em 0',
-        padding: '0.25em 1em',
-        opacity: 0.85,
-      }}
+      className="my-3 border-l-4 border-accent/40 bg-sand/20 py-2 px-3.5 italic text-text/80 rounded-r-ui"
       {...props}
     >
       {children}
     </blockquote>
   ),
   hr: (props) => (
-    <hr
-      style={{
-        border: 'none',
-        borderTop: '1px solid var(--border, rgba(127,127,127,0.3))',
-        margin: '1.25em 0',
-      }}
-      {...props}
-    />
+    <hr className="my-4 border-t border-sep-line" {...props} />
   ),
   input: ({ type, ...props }) =>
     type === 'checkbox' ? (
-      <input type="checkbox" disabled style={{ marginRight: '0.4em' }} {...props} />
+      <input type="checkbox" disabled className="mr-1.5 align-middle" {...props} />
     ) : (
       <input type={type} {...props} />
     ),
 };
 
-/**
- * @param {string} content            Markdown source (required)
- * @param {string} className          Extra class(es) on the wrapper div
- * @param {object} style               Extra inline styles on the wrapper div
- * @param {boolean} allowHtml          Enable raw HTML passthrough (sanitized). Default: true
- * @param {boolean} softBreaks         Treat single newlines as <br>. Default: false (standard MD behavior)
- * @param {object} components          Override/extend the default renderer components
- * @param {object} htmlAttrs           Extra props spread onto the wrapper div (e.g. id, data-*)
- */
 export function MarkdownRenderer({
   content,
   className = '',
