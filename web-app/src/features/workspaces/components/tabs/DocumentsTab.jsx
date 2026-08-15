@@ -26,25 +26,13 @@ export function DocumentsTab({ workspace: propWorkspace }) {
   return (
     <div className="space-y-6">
       {/* Header row */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-display text-lg font-bold text-text">
-            Workspace Documents ({documents.length})
-          </h2>
-          <p className="font-body text-xs text-text/70">
-            Source documents parsed into vector embeddings for contextual AI tutoring.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setIsUploadModalOpen(true)}
-            leftIcon={<Upload className="h-4 w-4" />}
-            className="text-xs"
-          >
-            Upload Document
-          </Button>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h2 className="font-display text-lg font-bold text-text">
+          Workspace Documents ({documents.length})
+        </h2>
+        <p className="font-body text-xs text-text/70">
+          Source documents parsed into vector embeddings for contextual AI tutoring.
+        </p>
       </div>
 
       {/* Loading state */}

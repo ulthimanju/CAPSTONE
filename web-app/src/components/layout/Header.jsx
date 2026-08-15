@@ -1,11 +1,16 @@
-import React from 'react';
-import { Menu } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, Upload } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
+import { UploadDocumentModal } from '@/features/documents/components/UploadDocumentModal';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 
 export function Header({ title, children, className }) {
   const toggleMobileSidebar = useUIStore((state) => state.toggleMobileSidebar);
+  const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   return (
     <header
@@ -34,7 +39,25 @@ export function Header({ title, children, className }) {
         )}
       </div>
 
+      {/* Main Header Right Actions */}
       <div className="flex items-center gap-2 sm:gap-4">
+        {activeWorkspaceId && (
+          <>
+            <Button
+              onClick={() => setIsUploadModalOpen(true)}
+              leftIcon={<Upload className="h-4 w-4" />}
+              className="text-xs py-1.5 px-3"
+            >
+              Upload Document
+            </Button>
+
+            <UploadDocumentModal
+              workspaceId={activeWorkspaceId}
+              open={isUploadModalOpen}
+              onOpenChange={setIsUploadModalOpen}
+            />
+          </>
+        )}
         {children}
       </div>
     </header>
