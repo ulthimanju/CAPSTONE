@@ -192,18 +192,8 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            {canManageMembers && (
-              <Button
-                onClick={() => setIsInviteModalOpen(true)}
-                leftIcon={<UserPlus className="h-4 w-4" />}
-                className="text-xs shadow-xs"
-              >
-                Invite Collaborator
-              </Button>
-            )}
-
-            {!isOwner && (
+          {!isOwner && (
+            <div className="flex items-center gap-2.5">
               <Button
                 variant="outline"
                 onClick={() => setIsLeaveDialogOpen(true)}
@@ -212,8 +202,8 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
               >
                 Leave Workspace
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Search Filter Bar */}
