@@ -12,7 +12,6 @@ class Workspace:
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
-    cover_image_url: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     archived_at: datetime | None = None

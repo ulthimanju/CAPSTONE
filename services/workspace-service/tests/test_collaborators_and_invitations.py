@@ -70,7 +70,7 @@ async def test_invite_member_success():
     owner_id = uuid4()
     target_user_id = uuid4()
 
-    ws = Workspace(id=ws_id, owner_id=owner_id, name="Test WS", visibility="PRIVATE", status="ACTIVE", cover_image_url=None, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
+    ws = Workspace(id=ws_id, owner_id=owner_id, name="Test WS", visibility="PRIVATE", status="ACTIVE", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
     ws_repo = FakeWorkspaceRepository([ws])
     mem_repo = FakeMemberRepository()
     inv_repo = FakeInvitationRepository()
@@ -90,7 +90,7 @@ async def test_prevent_self_invitation():
     ws_id = uuid4()
     owner_id = uuid4()
 
-    ws = Workspace(id=ws_id, owner_id=owner_id, name="Test WS", visibility="PRIVATE", status="ACTIVE", cover_image_url=None, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
+    ws = Workspace(id=ws_id, owner_id=owner_id, name="Test WS", visibility="PRIVATE", status="ACTIVE", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
     ws_repo = FakeWorkspaceRepository([ws])
     mem_repo = FakeMemberRepository()
     inv_repo = FakeInvitationRepository()
@@ -112,7 +112,7 @@ async def test_prevent_inviting_existing_member():
     owner_id = uuid4()
     member_id = uuid4()
 
-    ws = Workspace(id=ws_id, owner_id=owner_id, name="Test WS", visibility="PRIVATE", status="ACTIVE", cover_image_url=None, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
+    ws = Workspace(id=ws_id, owner_id=owner_id, name="Test WS", visibility="PRIVATE", status="ACTIVE", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
     member = WorkspaceMember(id=uuid4(), workspace_id=ws_id, user_id=member_id, role=WorkspaceRole.VIEWER, joined_at=datetime.now(timezone.utc))
 
     ws_repo = FakeWorkspaceRepository([ws])
@@ -136,7 +136,7 @@ async def test_prevent_duplicate_active_invitation():
     owner_id = uuid4()
     target_email = "colleague@test.com"
 
-    ws = Workspace(id=ws_id, owner_id=owner_id, name="Test WS", visibility="PRIVATE", status="ACTIVE", cover_image_url=None, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
+    ws = Workspace(id=ws_id, owner_id=owner_id, name="Test WS", visibility="PRIVATE", status="ACTIVE", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
     existing_inv = WorkspaceInvitation(
         id=uuid4(),
         workspace_id=ws_id,

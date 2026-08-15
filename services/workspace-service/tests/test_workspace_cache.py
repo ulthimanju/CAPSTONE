@@ -47,7 +47,6 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
         name="Cache Test Workspace",
         visibility=WorkspaceVisibility.PRIVATE,
         status=WorkspaceStatus.ACTIVE,
-        cover_image_url=None,
         created_at=now,
         updated_at=now,
         archived_at=None,
@@ -63,7 +62,6 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     db_model_mock.visibility = "PRIVATE"
     db_model_mock.status = "ACTIVE"
     db_model_mock.domain_type = "TECHNICAL"
-    db_model_mock.cover_image_url = None
     db_model_mock.created_at = now
     db_model_mock.updated_at = now
     db_model_mock.archived_at = None

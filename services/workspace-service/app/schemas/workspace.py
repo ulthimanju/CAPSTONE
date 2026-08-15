@@ -8,14 +8,12 @@ class CreateWorkspaceRequest(BaseModel):
     name: str
     visibility: WorkspaceVisibility = WorkspaceVisibility.PRIVATE
     domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
-    cover_image_url: str | None = None
 
 
 class UpdateWorkspaceRequest(BaseModel):
     name: str | None = None
     visibility: WorkspaceVisibility | None = None
     domain_type: WorkspaceDomainType | None = None
-    cover_image_url: str | None = None
 
 
 class SaveSummaryRequest(BaseModel):
@@ -54,7 +52,6 @@ class WorkspaceResponse(BaseModel):
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
-    cover_image_url: str | None = None
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None

@@ -44,8 +44,6 @@ class UpdateWorkspaceUseCase:
             workspace.visibility = req.visibility
         if req.domain_type is not None:
             workspace.domain_type = req.domain_type
-        if req.cover_image_url is not None:
-            workspace.cover_image_url = req.cover_image_url
 
         workspace.updated_at = datetime.now(timezone.utc)
         updated = await self.workspace_repo.update(workspace)
