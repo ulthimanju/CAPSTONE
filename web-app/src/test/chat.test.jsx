@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ChatPage } from '@/features/chat/pages/ChatPage';
 import * as chatApi from '@/features/chat/api/chatApi';
+import { preprocessMarkdownForMath } from '@/components/common/MarkdownRenderer';
 
 vi.mock('@/features/chat/api/chatApi', () => ({
   fetchWorkspaceChat: vi.fn(),
@@ -91,5 +92,13 @@ describe('AI Tutor RAG Chat Component', () => {
     });
 
     expect(await screen.findByText(/Paging is a memory management scheme/i)).toBeInTheDocument();
+  });
+
+  it('renders currency dollar amounts cleanly without KaTeX math corruption', () => {
+    const input = "If a product's price increases from **$50** to **$60**:\n\n$$\\text{Difference} = 60 - 50 = 10$$";
+    const processed = preprocessMarkdownForMath(input);
+    expect(processed).toContain('**\\$50**');
+    expect(processed).toContain('**\\$60**');
+    expect(processed).toContain('$$\\text{Difference} = 60 - 50 = 10$$');
   });
 });

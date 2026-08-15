@@ -163,6 +163,44 @@ const defaultComponents = {
     ),
 };
 
+/**
+ * Preprocesses markdown text to prevent currency expressions (e.g. "$50 to $60", "**$50**", "$100/mo")
+ * from being misparsed by remark-math as inline LaTeX math equations.
+ */
+export function preprocessMarkdownForMath(text) {
+  if (!text || typeof text !== 'string') return text;
+
+  // Protect code blocks (```...``` and `...`) and display math ($$...$$) from being modified
+  const protectedBlocks = [];
+  let processed = text.replace(/(```[\s\S]*?```|`[^`\n]+`|\$\$[\s\S]*?\$\$)/g, (match) => {
+    protectedBlocks.push(match);
+    return `__PROTECTED_MATH_BLOCK_${protectedBlocks.length - 1}__`;
+  });
+
+  // Escape currency dollar signs (e.g., "$50", "**$50**", "$60.00", "$10k") that are not LaTeX math
+  processed = processed.replace(
+    /(^|[\s(>_*~])\$(\d+(?:,\d{3})*(?:\.\d+)?(?:k|m|b|bn|tn)?)(?=$|[\s),.;:!?_*~<>\/\\-]|\b)/gi,
+    (match, prefix, amount) => {
+      return `${prefix}\\$${amount}`;
+    }
+  );
+
+  // Fix multi-word false positive inline math spans (e.g. "$50 to $60" or "$50 and $60")
+  processed = processed.replace(/\$([^\$\n]+)\$/g, (match, inner) => {
+    const hasMathSymbols = /[\\_^{}=+<>]/.test(inner);
+    const hasEnglishConnectors = /\b(to|from|and|or|in|with|for|the|is|are|was|were|increases|decreases|than)\b/i.test(inner);
+    if (!hasMathSymbols && hasEnglishConnectors) {
+      return `\\$${inner}\\$`;
+    }
+    return match;
+  });
+
+  // Restore protected blocks
+  processed = processed.replace(/__PROTECTED_MATH_BLOCK_(\d+)__/g, (_, idx) => protectedBlocks[Number(idx)] || '');
+
+  return processed;
+}
+
 export function MarkdownRenderer({
   content,
   className = '',
@@ -173,6 +211,8 @@ export function MarkdownRenderer({
   ...htmlAttrs
 }) {
   if (!content) return null;
+
+  const sanitizedContent = preprocessMarkdownForMath(content);
 
   const remarkPlugins = [remarkGfm, remarkMath];
   if (softBreaks) remarkPlugins.push(remarkBreaks);
@@ -200,7 +240,7 @@ export function MarkdownRenderer({
         rehypePlugins={rehypePlugins}
         components={{ ...defaultComponents, ...components }}
       >
-        {content}
+        {sanitizedContent}
       </ReactMarkdown>
     </div>
   );
