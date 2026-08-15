@@ -3,18 +3,13 @@ import { useParams } from 'react-router-dom';
 import {
   Send,
   Sparkles,
-  Bot,
-  User,
-  Trash2,
+  RotateCcw,
   Loader2,
   HelpCircle,
   Copy,
   Check,
-  RotateCcw,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import {
   useWorkspaceChatQuery,
   useSaveWorkspaceChatMutation,
@@ -29,6 +24,24 @@ const SUGGESTED_PROMPTS = [
   'How does Demand Paging with virtual memory work?',
   'Compare Preemptive and Non-Preemptive CPU Scheduling algorithms.',
 ];
+
+function formatMessageDate(timestamp) {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).toUpperCase();
+}
+
+function formatMessageTime(timestamp) {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
 
 export function ChatPage() {
   const { workspaceId } = useParams();
@@ -103,7 +116,7 @@ export function ChatPage() {
   const handleCopy = (text, idx) => {
     navigator.clipboard.writeText(text);
     setCopiedIndex(idx);
-    toast.success('Answer copied to clipboard');
+    toast.success('Copied to clipboard');
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
@@ -118,59 +131,39 @@ export function ChatPage() {
     );
   }
 
+  // Group messages by date for date dividers
+  const todayFormatted = formatMessageDate(new Date().toISOString());
+
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] max-w-5xl mx-auto space-y-4">
-      {/* Header Bar */}
-      <div className="flex items-center justify-between border-b border-sep-line pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-ui bg-sand text-accent">
-            <Bot className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-display text-base font-bold text-text">AI Study Tutor</h2>
-              <Badge variant="outline" className="font-mono text-[10px] text-accent border-accent/30 bg-accent/5">
-                RAG Grounded
-              </Badge>
-            </div>
-            <p className="text-xs text-text/60 font-sans">
-              Ask questions and get answers synthesized directly from your workspace documents.
-            </p>
-          </div>
+    <div className="flex flex-col h-[calc(100vh-9.5rem)] rounded-ui border border-[#cfc5ae] bg-[#f5efe3] shadow-sm overflow-hidden">
+      {/* Messages Viewport */}
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        {/* Date Divider */}
+        <div className="flex items-center my-4">
+          <div className="flex-1 border-t border-[#cfc5ae]" />
+          <span className="px-4 font-mono text-[11px] font-medium tracking-widest text-[#7a715d] uppercase">
+            {messages.length > 0 ? formatMessageDate(messages[0].timestamp) : todayFormatted}
+          </span>
+          <div className="flex-1 border-t border-[#cfc5ae]" />
         </div>
 
-        {messages.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClearHistory}
-            className="flex items-center gap-1.5 text-xs text-text/60 hover:text-danger hover:border-danger/30"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset Chat</span>
-          </Button>
-        )}
-      </div>
-
-      {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto pr-2 space-y-4">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sand text-accent mb-4 shadow-sm">
-              <Sparkles className="h-8 w-8" />
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#dfd7c2] text-accent mb-3 shadow-sm border border-[#cfc5ae]">
+              <Sparkles className="h-6 w-6" />
             </div>
-            <h3 className="font-display text-lg font-bold text-text">Ask Your AI Study Tutor</h3>
-            <p className="mt-1.5 max-w-md text-xs sm:text-sm text-text/60 font-sans">
+            <h3 className="font-display text-base font-bold text-[#2c271e]">Ask Your AI Study Tutor</h3>
+            <p className="mt-1 max-w-md text-xs text-[#7a715d] font-sans">
               Interactive tutoring anchored to your uploaded notes, slides, and textbooks. Choose a topic below or type your own question.
             </p>
 
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-2xl text-left">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-xl text-left">
               {SUGGESTED_PROMPTS.map((prompt, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => handleSend(prompt)}
-                  className="rounded-ui border border-sep-line bg-surface p-3 text-xs text-text/80 transition-all hover:border-accent hover:bg-sand/40 hover:text-text shadow-sm flex items-start gap-2"
+                  className="rounded-md border border-[#cfc5ae] bg-[#dfd7c2]/60 p-3 text-xs text-[#2c271e] transition-all hover:bg-[#dfd7c2] hover:border-accent shadow-xs flex items-start gap-2"
                 >
                   <HelpCircle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
                   <span className="leading-snug">{prompt}</span>
@@ -181,37 +174,31 @@ export function ChatPage() {
         ) : (
           messages.map((msg, index) => {
             const isUser = msg.role === 'user';
+            const timeStr = formatMessageTime(msg.timestamp);
+
             return (
               <div
                 key={msg.id || index}
-                className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
+                className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}
               >
-                {!isUser && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent mt-0.5">
-                    <Bot className="h-4 w-4" />
+                {isUser ? (
+                  /* User Bubble (Right - Rust/Terracotta) */
+                  <div className="relative group max-w-[80%] sm:max-w-[70%] rounded-md bg-[#9E5123] border border-[#88431b] p-3.5 text-white shadow-xs">
+                    <p className="text-sm font-sans leading-relaxed text-white whitespace-pre-wrap">
+                      {msg.content}
+                    </p>
+                    <div className="mt-1 text-right font-mono text-[10px] text-white/70">
+                      {timeStr}
+                    </div>
                   </div>
-                )}
-
-                <div
-                  className={`max-w-[85%] sm:max-w-[80%] rounded-ui p-4 shadow-sm ${
-                    isUser
-                      ? 'bg-accent text-white rounded-tr-none'
-                      : 'bg-surface border border-sep-line text-text rounded-tl-none'
-                  }`}
-                >
-                  {/* Message Content */}
-                  {isUser ? (
-                    <p className="text-sm font-sans leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                  ) : (
-                    <div className="prose prose-sm max-w-none font-sans leading-relaxed text-text/85">
+                ) : (
+                  /* Assistant Bubble (Left - Sand/Parchment) */
+                  <div className="relative group max-w-[85%] sm:max-w-[75%] rounded-md bg-[#dfd7c2] border border-[#c4ba9f] p-3.5 text-[#2c271e] shadow-xs">
+                    <div className="text-sm font-sans leading-relaxed text-[#2c271e]">
                       <MarkdownRenderer content={msg.content} />
                     </div>
-                  )}
 
-                  {/* Actions & Timestamp */}
-                  {!isUser && (
-                    <div className="mt-2.5 flex items-center justify-between font-mono text-[10px] text-text/40 pt-1">
-                      <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-[#7a715d] border-t border-[#cfc5ae]/40 pt-1.5">
                       <button
                         type="button"
                         onClick={() => handleCopy(msg.content, index)}
@@ -230,13 +217,8 @@ export function ChatPage() {
                           </>
                         )}
                       </button>
+                      <span>{timeStr}</span>
                     </div>
-                  )}
-                </div>
-
-                {isUser && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sand text-text mt-0.5">
-                    <User className="h-4 w-4" />
                   </div>
                 )}
               </div>
@@ -245,13 +227,12 @@ export function ChatPage() {
         )}
 
         {sendMutation.isPending && (
-          <div className="flex gap-3 justify-start">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-              <Bot className="h-4 w-4 animate-pulse" />
-            </div>
-            <div className="rounded-ui rounded-tl-none border border-sep-line bg-surface p-4 shadow-sm flex items-center gap-3">
+          <div className="flex justify-start">
+            <div className="max-w-[75%] rounded-md bg-[#dfd7c2] border border-[#c4ba9f] p-3.5 shadow-xs flex items-center gap-3">
               <Loader2 className="h-4 w-4 animate-spin text-accent" />
-              <span className="font-mono text-xs text-text/60">Searching workspace documents & synthesizing response...</span>
+              <span className="font-mono text-xs text-[#7a715d]">
+                Analyzing documents & synthesizing response...
+              </span>
             </div>
           </div>
         )}
@@ -259,37 +240,35 @@ export function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Composer */}
-      <div className="border-t border-sep-line pt-3">
+      {/* Docked Bottom Input Bar */}
+      <div className="border-t border-[#cfc5ae] bg-[#e6ddc8] p-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="relative flex items-end gap-2 rounded-ui border border-sep-line bg-surface p-2 shadow-sm focus-within:border-accent"
+          className="flex items-center gap-2.5 max-w-5xl mx-auto"
         >
-          <textarea
+          <input
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask a question about this workspace (Shift+Enter for new line)..."
-            rows={2}
+            placeholder="Type a message..."
             disabled={sendMutation.isPending}
-            className="w-full resize-none bg-transparent p-1.5 font-sans text-xs sm:text-sm text-text placeholder:text-text/40 focus:outline-none disabled:opacity-50"
+            className="flex-1 rounded-md border border-[#cfc5ae] bg-[#f7f5ed] px-4 py-2.5 font-sans text-xs sm:text-sm text-[#2c271e] placeholder:text-[#8a8069] focus:outline-none focus:border-[#9E5123] disabled:opacity-50 shadow-inner-xs transition-colors"
           />
-          <Button
+          <button
             type="submit"
-            size="sm"
             disabled={!input.trim() || sendMutation.isPending}
-            className="flex items-center gap-1.5 shrink-0"
+            className="flex items-center justify-center rounded-md bg-[#9E5123] px-6 py-2.5 font-sans text-xs sm:text-sm font-medium text-white shadow-xs transition-all hover:bg-[#88431b] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
           >
             {sendMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Send className="h-4 w-4" />
+              'Send'
             )}
-            <span className="hidden sm:inline">Send</span>
-          </Button>
+          </button>
         </form>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Upload, Sparkles } from 'lucide-react';
+import { Menu, Upload, Sparkles, RotateCcw } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
@@ -8,8 +8,13 @@ import { useMultiFileUpload } from '@/features/documents/hooks/useMultiFileUploa
 import { useUploadQueueStore } from '@/store/uploadQueueStore';
 import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
 import { useGenerateSummaryMutation } from '@/features/summary/hooks/useSummary';
+import {
+  useWorkspaceChatQuery,
+  useSaveWorkspaceChatMutation,
+} from '@/features/chat/hooks/useChat';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
+import { toast } from 'sonner';
 
 export function Header({ title, children, className }) {
   const location = useLocation();
@@ -20,6 +25,9 @@ export function Header({ title, children, className }) {
   const { data: workspace } = useWorkspaceQuery(activeWorkspaceId);
   const generateSummaryMutation = useGenerateSummaryMutation(activeWorkspaceId);
 
+  const { data: chatData } = useWorkspaceChatQuery(activeWorkspaceId);
+  const saveChatMutation = useSaveWorkspaceChatMutation(activeWorkspaceId);
+
   const { uploadFiles } = useMultiFileUpload(activeWorkspaceId);
   const queueItems = useUploadQueueStore((state) => state.items);
   const isUploading = queueItems.some(
@@ -29,8 +37,15 @@ export function Header({ title, children, className }) {
   const isSummaryTab =
     location.pathname.endsWith('/summary') || location.pathname.includes('/summary');
 
+  const isChatTab =
+    location.pathname.endsWith('/chat') || location.pathname.includes('/chat');
+
   const isSummaryGenerated = Boolean(
     workspace?.is_summary_generated || workspace?.summary_json
+  );
+
+  const hasChatMessages = Boolean(
+    chatData?.messages && chatData.messages.length > 0
   );
 
   const handleFileChange = (e) => {
@@ -43,6 +58,16 @@ export function Header({ title, children, className }) {
   const handleGenerateSummary = () => {
     if (activeWorkspaceId) {
       generateSummaryMutation.mutate();
+    }
+  };
+
+  const handleClearChat = () => {
+    if (activeWorkspaceId) {
+      saveChatMutation.mutate([], {
+        onSuccess: () => {
+          toast.success('Chat history cleared');
+        },
+      });
     }
   };
 
@@ -96,6 +121,20 @@ export function Header({ title, children, className }) {
                   : isSummaryGenerated
                   ? 'Regenerate Summary'
                   : 'Generate Summary'}
+              </Button>
+            )}
+
+            {/* Clear Chat History Button - Visible ONLY on Chat / AI Tutor Tab */}
+            {isChatTab && hasChatMessages && (
+              <Button
+                variant="outline"
+                onClick={handleClearChat}
+                isLoading={saveChatMutation.isPending}
+                leftIcon={<RotateCcw className="h-4 w-4 text-text/70" />}
+                className="text-xs py-1.5 px-3 border-sep-line hover:border-danger/40 hover:text-danger"
+                title="Clear workspace AI Tutor chat history"
+              >
+                Clear History
               </Button>
             )}
 

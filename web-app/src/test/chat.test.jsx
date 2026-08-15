@@ -81,8 +81,8 @@ describe('AI Tutor RAG Chat Component', () => {
 
     renderWithClient(<ChatPage />);
 
-    const textarea = await screen.findByPlaceholderText(/Ask a question about this workspace/i);
-    await user.type(textarea, 'Explain paging');
+    const inputElem = await screen.findByPlaceholderText(/Type a message/i);
+    await user.type(inputElem, 'Explain paging');
 
     const sendBtn = screen.getByRole('button', { name: /Send/i });
     await user.click(sendBtn);
