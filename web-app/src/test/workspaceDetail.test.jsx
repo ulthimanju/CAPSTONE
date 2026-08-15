@@ -99,12 +99,11 @@ describe('WorkspaceDetailPage Component', () => {
     );
   };
 
-  it('renders workspace title, technical badge, and tabs', async () => {
+  it('renders workspace detail tabs and overview content', async () => {
     renderDetailPage();
 
-    expect(await screen.findByText('Operating Systems (CS301)')).toBeInTheDocument();
-    expect(screen.getByText('Technical')).toBeInTheDocument();
-    expect(screen.getByText('OWNER')).toBeInTheDocument();
+    expect(await screen.findByText('Technical Engineering')).toBeInTheDocument();
+    expect(screen.getByText('Study Path & AI Syllabus Overview')).toBeInTheDocument();
 
     // Check tabs exist
     expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
@@ -118,7 +117,7 @@ describe('WorkspaceDetailPage Component', () => {
 
     renderDetailPage();
 
-    await screen.findByText('Operating Systems (CS301)');
+    await screen.findByText('Technical Engineering');
 
     const collabTab = screen.getByRole('tab', { name: /collaborators/i });
     await user.click(collabTab);
@@ -127,7 +126,7 @@ describe('WorkspaceDetailPage Component', () => {
     expect(screen.getByText('alex@example.com')).toBeInTheDocument();
   });
 
-  it('submits collaborator invite form', async () => {
+  it('submits collaborator invite form from collaborators tab', async () => {
     const user = userEvent.setup();
     const inviteSpy = vi.spyOn(memberApi, 'inviteMember').mockResolvedValue({
       id: 'inv-123',
@@ -139,9 +138,12 @@ describe('WorkspaceDetailPage Component', () => {
 
     renderDetailPage();
 
-    await screen.findByText('Operating Systems (CS301)');
+    await screen.findByText('Technical Engineering');
 
-    const inviteBtn = screen.getByRole('button', { name: /invite collaborator/i });
+    const collabTab = screen.getByRole('tab', { name: /collaborators/i });
+    await user.click(collabTab);
+
+    const inviteBtn = await screen.findByRole('button', { name: /invite collaborator/i });
     await user.click(inviteBtn);
 
     expect(await screen.findByRole('heading', { name: /invite collaborator/i })).toBeInTheDocument();

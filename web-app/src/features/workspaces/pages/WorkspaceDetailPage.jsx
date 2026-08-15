@@ -4,12 +4,10 @@ import { Loader2, AlertCircle, BookOpen, FileText, Users, Settings, ArrowLeft } 
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-import { WorkspaceHeader } from '../components/WorkspaceHeader';
 import { OverviewTab } from '../components/tabs/OverviewTab';
 import { DocumentsTab } from '../components/tabs/DocumentsTab';
 import { CollaboratorsTab } from '../components/tabs/CollaboratorsTab';
 import { SettingsTab } from '../components/tabs/SettingsTab';
-import { InviteCollaboratorModal } from '../components/InviteCollaboratorModal';
 import { useWorkspaceQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { ROUTES } from '@/config/constants';
@@ -17,7 +15,6 @@ import { ROUTES } from '@/config/constants';
 export function WorkspaceDetailPage() {
   const { workspaceId } = useParams();
   const [activeTab, setActiveTab] = useState('overview');
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
 
@@ -67,62 +64,47 @@ export function WorkspaceDetailPage() {
   }
 
   return (
-    <div>
-      {/* Workspace Header */}
-      <WorkspaceHeader
-        workspace={workspace}
-        onInviteClick={() => setIsInviteModalOpen(true)}
-      />
-
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       {/* Tabs Container */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="overview">
-              <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Overview</span>
-            </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="overview">
+            <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Overview</span>
+          </TabsTrigger>
 
-            <TabsTrigger value="documents">
-              <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Documents</span>
-            </TabsTrigger>
+          <TabsTrigger value="documents">
+            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Documents</span>
+          </TabsTrigger>
 
-            <TabsTrigger value="collaborators">
-              <Users className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Collaborators</span>
-            </TabsTrigger>
+          <TabsTrigger value="collaborators">
+            <Users className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Collaborators</span>
+          </TabsTrigger>
 
-            <TabsTrigger value="settings">
-              <Settings className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Settings</span>
-            </TabsTrigger>
-          </TabsList>
+          <TabsTrigger value="settings">
+            <Settings className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Settings</span>
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="overview">
-            <OverviewTab workspace={workspace} />
-          </TabsContent>
+        <TabsContent value="overview">
+          <OverviewTab workspace={workspace} />
+        </TabsContent>
 
-          <TabsContent value="documents">
-            <DocumentsTab workspace={workspace} />
-          </TabsContent>
+        <TabsContent value="documents">
+          <DocumentsTab workspace={workspace} />
+        </TabsContent>
 
-          <TabsContent value="collaborators">
-            <CollaboratorsTab workspace={workspace} />
-          </TabsContent>
+        <TabsContent value="collaborators">
+          <CollaboratorsTab workspace={workspace} />
+        </TabsContent>
 
-          <TabsContent value="settings">
-            <SettingsTab workspace={workspace} />
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Invite Collaborator Dialog */}
-      <InviteCollaboratorModal
-        workspaceId={workspace.id}
-        open={isInviteModalOpen}
-        onOpenChange={setIsInviteModalOpen}
-      />
+        <TabsContent value="settings">
+          <SettingsTab workspace={workspace} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
