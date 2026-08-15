@@ -35,6 +35,7 @@ import {
   useLeaveWorkspaceMutation,
   useTransferOwnershipMutation,
   useWorkspaceActivitiesQuery,
+  useWorkspaceMemberSSE,
 } from '../../hooks/useMembers';
 import { useAuthStore } from '@/store/authStore';
 import { ROUTES } from '@/config/constants';
@@ -45,6 +46,9 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
   const context = useOutletContext() || {};
   const workspace = propWorkspace || context.workspace;
   const navigate = useNavigate();
+
+  // Real-time live update subscription for workspace member changes
+  useWorkspaceMemberSSE(workspace?.id);
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

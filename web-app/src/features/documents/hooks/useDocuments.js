@@ -57,6 +57,9 @@ export function useWorkspaceDocumentSSE(workspaceId) {
           queryClient.invalidateQueries({
             queryKey: ['workspaces', workspaceId],
           });
+          queryClient.invalidateQueries({
+            queryKey: ['workspace-members'],
+          });
         } catch {
           // Fallback invalidation on generic message
           queryClient.invalidateQueries({
