@@ -103,7 +103,7 @@ export function ArchivedWorkspacesPage() {
                 <div className="flex items-center gap-1.5 font-mono text-[10px] text-text/50">
                   <Clock className="h-3 w-3" />
                   <span>
-                    ARCHIVED at {workspace.archived_at
+                    ARCHIVED ON {workspace.archived_at
                       ? new Date(workspace.archived_at).toLocaleDateString()
                       : new Date(workspace.updated_at).toLocaleDateString()}
                   </span>
