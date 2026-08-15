@@ -135,14 +135,16 @@ async def rag_chat(
     orchestrator = RAGChatOrchestrator(vector_repo=vector_repo, ai_client=ai_client)
 
     try:
-        answer = await orchestrator.ask_question(
+        answer, citations = await orchestrator.ask_question(
             workspace_id=req.workspace_id,
             question=req.question,
             top_k=req.top_k,
+            return_sources=True,
         )
         return RAGChatResponse(
             question=req.question,
             answer=answer,
+            citations=citations,
         )
     except WorkspaceContextGuardrailError as e:
         raise HTTPException(

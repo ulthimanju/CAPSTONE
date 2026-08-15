@@ -45,7 +45,16 @@ class RAGChatRequest(BaseModel):
 
 
 
+class RAGCitation(BaseModel):
+    document_id: uuid.UUID
+    document_name: str | None = None
+    chunk_index: int | None = None
+    snippet: str
+    similarity_score: float
+
+
 class RAGChatResponse(BaseModel):
     question: str
     answer: str
+    citations: list[RAGCitation] = []
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FileText, Sparkles, Users, Settings } from 'lucide-react';
+import { FileText, Sparkles, Bot, Users, Settings } from 'lucide-react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
@@ -30,6 +30,12 @@ export function SidebarNav() {
       to: `${basePath}/summary`,
       icon: Sparkles,
       isActive: location.pathname.startsWith(`${basePath}/summary`),
+    },
+    {
+      label: 'AI Tutor',
+      to: `${basePath}/chat`,
+      icon: Bot,
+      isActive: location.pathname.startsWith(`${basePath}/chat`),
     },
     {
       label: 'Collaborators',
