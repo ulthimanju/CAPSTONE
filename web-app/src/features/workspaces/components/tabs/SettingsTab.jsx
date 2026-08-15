@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, Trash2, AlertTriangle, Terminal, BookOpen, Lock, Users, Globe, Check } from 'lucide-react';
+import { Save, Trash2, Terminal, BookOpen, Lock, Users, Globe, Check } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -62,8 +62,8 @@ export function SettingsTab({ workspace: propWorkspace }) {
   };
 
   return (
-    <div className="max-w-2xl space-y-8">
-      {/* General Settings Card */}
+    <div className="max-w-2xl space-y-6">
+      {/* Workspace Settings Card */}
       <Card className="p-6">
         <h2 className="font-display text-lg font-bold text-text">
           Workspace Settings
@@ -192,7 +192,8 @@ export function SettingsTab({ workspace: propWorkspace }) {
             />
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          {/* Action Buttons: Save Changes on Left, Delete Workspace on Right */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-sep-line">
             <Button
               type="submit"
               isLoading={updateMutation.isPending}
@@ -200,34 +201,19 @@ export function SettingsTab({ workspace: propWorkspace }) {
             >
               {saveSuccess ? 'Saved Changes' : 'Save Changes'}
             </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDelete}
+              isLoading={deleteMutation.isPending}
+              leftIcon={<Trash2 className="h-4 w-4 text-danger" />}
+              className="border-danger/40 text-danger hover:bg-danger hover:text-white"
+            >
+              Delete Workspace
+            </Button>
           </div>
         </form>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card className="border-danger/40 bg-danger-tint p-6">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h3 className="font-display text-base font-bold text-danger">
-              Danger Zone
-            </h3>
-            <p className="font-body text-xs text-text/80 leading-relaxed">
-              Deleting a workspace permanently removes all connected documents, vector embeddings, chat logs, and learning paths.
-            </p>
-            <div className="pt-3">
-              <Button
-                variant="outline"
-                onClick={handleDelete}
-                isLoading={deleteMutation.isPending}
-                leftIcon={<Trash2 className="h-4 w-4 text-danger" />}
-                className="border-danger/40 text-danger hover:bg-danger hover:text-white"
-              >
-                Delete Workspace
-              </Button>
-            </div>
-          </div>
-        </div>
       </Card>
     </div>
   );
