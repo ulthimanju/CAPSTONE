@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Layers } from 'lucide-react';
+import { FileText, Layers } from 'lucide-react';
 import { ROUTES } from '@/config/constants';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
@@ -12,11 +12,6 @@ export function SidebarNav() {
   const { data: activeWorkspace } = useWorkspaceQuery(activeWorkspaceId);
 
   const navItems = [
-    {
-      label: 'Dashboard',
-      to: ROUTES.DASHBOARD,
-      icon: LayoutDashboard,
-    },
     {
       label: 'Workspaces',
       to: ROUTES.WORKSPACES,

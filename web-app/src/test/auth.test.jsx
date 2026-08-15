@@ -117,7 +117,7 @@ describe('AuthCallbackPage Component', () => {
     renderWithProviders(
       <Routes>
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/dashboard" element={<div>Dashboard Screen</div>} />
+        <Route path="/workspaces" element={<div>Workspaces Screen</div>} />
       </Routes>,
       { route: '/auth/callback?token=valid-test-jwt-token' }
     );
@@ -125,7 +125,7 @@ describe('AuthCallbackPage Component', () => {
     expect(useAuthStore.getState().token).toBe('valid-test-jwt-token');
 
     await waitFor(() => {
-      expect(screen.getByText('Dashboard Screen')).toBeInTheDocument();
+      expect(screen.getByText('Workspaces Screen')).toBeInTheDocument();
     });
 
     expect(useAuthStore.getState().user?.name).toBe('Test Student');

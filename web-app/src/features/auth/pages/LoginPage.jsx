@@ -37,7 +37,7 @@ export function LoginPage() {
 
   // If already authenticated, redirect to destination
   if (isAuthenticated) {
-    const destination = location.state?.from?.pathname || ROUTES.DASHBOARD;
+    const destination = location.state?.from?.pathname || ROUTES.WORKSPACES;
     return <Navigate to={destination} replace />;
   }
 

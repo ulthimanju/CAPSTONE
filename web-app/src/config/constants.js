@@ -12,7 +12,6 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
-  DASHBOARD: '/dashboard',
   WORKSPACES: '/workspaces',
   WORKSPACE_DETAIL: (id = ':workspaceId') => `/workspaces/${id}`,
   DOCUMENTS: '/documents',

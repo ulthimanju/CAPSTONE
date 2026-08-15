@@ -7,7 +7,7 @@ import {
   workspaceListResponseSchema,
 } from '@/features/workspaces/schemas/workspaceSchemas';
 import { WorkspaceCard } from '@/features/workspaces/components/WorkspaceCard';
-import { DashboardPage } from '@/features/workspaces/pages/DashboardPage';
+import { WorkspacesPage } from '@/features/workspaces/pages/WorkspacesPage';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { workspaceApi } from '@/features/workspaces/api/workspaceApi';
@@ -136,7 +136,7 @@ describe('WorkspaceCard Component', () => {
   });
 });
 
-describe('DashboardPage Component', () => {
+describe('WorkspacesPage Component', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     useAuthStore.setState({
@@ -151,7 +151,7 @@ describe('DashboardPage Component', () => {
       workspaces: [],
     });
 
-    renderWithProviders(<DashboardPage />);
+    renderWithProviders(<WorkspacesPage />);
 
     expect(await screen.findByText('No workspaces found')).toBeInTheDocument();
     expect(
@@ -188,7 +188,7 @@ describe('DashboardPage Component', () => {
       ],
     });
 
-    renderWithProviders(<DashboardPage />);
+    renderWithProviders(<WorkspacesPage />);
 
     expect(await screen.findByText('Distributed Systems')).toBeInTheDocument();
     expect(screen.getByText('Microeconomics')).toBeInTheDocument();

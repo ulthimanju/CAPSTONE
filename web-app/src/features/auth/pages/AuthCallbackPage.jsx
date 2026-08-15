@@ -38,10 +38,10 @@ export function AuthCallbackPage() {
     enabled: !!rawToken && !validationError,
   });
 
-  // Once profile is hydrated, navigate to dashboard
+  // Once profile is hydrated, navigate to workspaces
   useEffect(() => {
     if (profile) {
-      navigate(ROUTES.DASHBOARD, { replace: true });
+      navigate(ROUTES.WORKSPACES, { replace: true });
     }
   }, [profile, navigate]);
 

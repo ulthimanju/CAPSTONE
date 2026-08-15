@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { WorkspaceCard } from '../components/WorkspaceCard';
 import { useWorkspacesQuery } from '../hooks/useWorkspaces';
-import { useAuthStore } from '@/store/authStore';
 
-export function DashboardPage() {
-  const user = useAuthStore((state) => state.user);
+export function WorkspacesPage() {
   const { data, isLoading, isError, error, refetch } = useWorkspacesQuery();
 
   const workspaces = data?.workspaces || [];
@@ -19,10 +17,10 @@ export function DashboardPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-text sm:text-3xl">
-            {user?.name ? `Welcome back, ${user.name.split(' ')[0]}` : 'Workspaces'}
+            Workspaces
           </h1>
           <p className="mt-1 font-body text-sm text-text/70">
-            Access your technical engineering and study workspaces.
+            Access and manage your engineering and collaborative study workspaces.
           </p>
         </div>
 
@@ -40,7 +38,7 @@ export function DashboardPage() {
           <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
             <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
             <p className="mt-3 font-mono text-xs text-text/70">
-              Loading your workspaces...
+              Loading workspaces...
             </p>
           </div>
         )}
@@ -89,4 +87,4 @@ export function DashboardPage() {
   );
 }
 
-export default DashboardPage;
+export default WorkspacesPage;

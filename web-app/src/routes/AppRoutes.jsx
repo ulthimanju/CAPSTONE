@@ -4,7 +4,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { AuthCallbackPage } from '@/features/auth/pages/AuthCallbackPage';
-import { DashboardPage } from '@/features/workspaces/pages/DashboardPage';
+import { WorkspacesPage } from '@/features/workspaces/pages/WorkspacesPage';
 import { ROUTES } from '@/config/constants';
 
 function WorkspaceDetailPlaceholder() {
@@ -39,16 +39,15 @@ export function AppRoutes() {
       {/* Protected Application Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
-          <Route path={ROUTES.WORKSPACES} element={<DashboardPage />} />
+          <Route path={ROUTES.WORKSPACES} element={<WorkspacesPage />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPlaceholder />} />
           <Route path={ROUTES.DOCUMENTS} element={<DocumentsPlaceholder />} />
         </Route>
       </Route>
 
       {/* Default Root & 404 Fallbacks */}
-      <Route path="/" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-      <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+      <Route path="/" element={<Navigate to={ROUTES.WORKSPACES} replace />} />
+      <Route path="*" element={<Navigate to={ROUTES.WORKSPACES} replace />} />
     </Routes>
   );
 }
