@@ -142,7 +142,7 @@ export function InviteCollaboratorModal({
                 className="inline-flex items-center gap-1 font-mono text-[11px] text-accent hover:underline focus-visible:outline-none"
               >
                 <Table className="h-3 w-3" />
-                {showMatrix ? 'Hide matrix' : 'View permissions matrix'}
+                {showMatrix ? 'Hide Role Permissions' : 'Compare Role Permissions'}
                 {showMatrix ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
             </div>
@@ -220,7 +220,7 @@ export function InviteCollaboratorModal({
             <div className="rounded-ui border border-sep-line bg-surface-raised/50 p-2.5 text-xs">
               <div className="font-mono text-[11px] font-bold text-text mb-2 flex items-center gap-1.5">
                 <Info className="h-3.5 w-3.5 text-accent" />
-                Role Capability Matrix
+                Role Permissions Breakdown
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left font-mono text-[10px] border-collapse">
