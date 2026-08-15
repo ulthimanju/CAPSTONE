@@ -20,6 +20,11 @@ class WorkspaceRole(str, Enum):
     VIEWER = "VIEWER"
 
 
+class WorkspaceDomainType(str, Enum):
+    TECHNICAL = "TECHNICAL"
+    NON_TECHNICAL = "NON_TECHNICAL"
+
+
 class InvitationStatus(str, Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"

@@ -42,6 +42,8 @@ class UpdateWorkspaceUseCase:
             workspace.name = req.name
         if req.visibility is not None:
             workspace.visibility = req.visibility
+        if req.domain_type is not None:
+            workspace.domain_type = req.domain_type
         if req.cover_image_url is not None:
             workspace.cover_image_url = req.cover_image_url
 

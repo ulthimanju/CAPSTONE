@@ -15,6 +15,7 @@ class WorkspaceModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     visibility: Mapped[str] = mapped_column(String(50), nullable=False, default="PRIVATE", index=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="ACTIVE", index=True)
+    domain_type: Mapped[str] = mapped_column(String(50), nullable=False, default="TECHNICAL")
     cover_image_url: Mapped[str | None] = mapped_column(String(500))
     summary_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     learning_path_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)

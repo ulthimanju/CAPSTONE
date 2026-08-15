@@ -37,6 +37,7 @@ class CreateWorkspaceUseCase:
             name=req.name,
             visibility=req.visibility,
             status=WorkspaceStatus.ACTIVE,
+            domain_type=req.domain_type,
             cover_image_url=req.cover_image_url,
             created_at=now,
             updated_at=now,

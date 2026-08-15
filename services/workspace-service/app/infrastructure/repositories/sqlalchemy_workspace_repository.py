@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.entities.workspace import Workspace
 from app.domain.repositories.workspace_repository import WorkspaceRepository
 from app.infrastructure.database.models import WorkspaceModel, WorkspaceMemberModel
-from app.constants.enums import WorkspaceStatus, WorkspaceVisibility
+from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceDomainType
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 
 
@@ -20,6 +20,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             name=workspace.name,
             visibility=workspace.visibility.value if hasattr(workspace.visibility, "value") else str(workspace.visibility),
             status=workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status),
+            domain_type=workspace.domain_type.value if hasattr(workspace.domain_type, "value") else str(workspace.domain_type),
             cover_image_url=workspace.cover_image_url,
             summary_json=workspace.summary_json,
             learning_path_json=workspace.learning_path_json,
@@ -50,6 +51,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             name=model.name,
             visibility=WorkspaceVisibility(model.visibility),
             status=WorkspaceStatus(model.status),
+            domain_type=WorkspaceDomainType(model.domain_type) if hasattr(model, "domain_type") and isinstance(getattr(model, "domain_type", None), (str, WorkspaceDomainType)) else WorkspaceDomainType.TECHNICAL,
             cover_image_url=model.cover_image_url,
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -84,6 +86,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 name=m.name,
                 visibility=WorkspaceVisibility(m.visibility),
                 status=WorkspaceStatus(m.status),
+                domain_type=WorkspaceDomainType(m.domain_type) if hasattr(m, "domain_type") and isinstance(getattr(m, "domain_type", None), (str, WorkspaceDomainType)) else WorkspaceDomainType.TECHNICAL,
                 cover_image_url=m.cover_image_url,
                 created_at=m.created_at,
                 updated_at=m.updated_at,
@@ -114,6 +117,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 name=m.name,
                 visibility=WorkspaceVisibility(m.visibility),
                 status=WorkspaceStatus(m.status),
+                domain_type=WorkspaceDomainType(m.domain_type) if hasattr(m, "domain_type") and isinstance(getattr(m, "domain_type", None), (str, WorkspaceDomainType)) else WorkspaceDomainType.TECHNICAL,
                 cover_image_url=m.cover_image_url,
                 created_at=m.created_at,
                 updated_at=m.updated_at,
@@ -131,6 +135,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             model.name = workspace.name
             model.visibility = workspace.visibility.value if hasattr(workspace.visibility, "value") else str(workspace.visibility)
             model.status = workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status)
+            model.domain_type = workspace.domain_type.value if hasattr(workspace.domain_type, "value") else str(workspace.domain_type)
             model.cover_image_url = workspace.cover_image_url
             model.summary_json = workspace.summary_json
             model.learning_path_json = workspace.learning_path_json

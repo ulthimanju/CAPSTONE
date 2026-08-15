@@ -62,6 +62,7 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     db_model_mock.name = "Cache Test Workspace"
     db_model_mock.visibility = "PRIVATE"
     db_model_mock.status = "ACTIVE"
+    db_model_mock.domain_type = "TECHNICAL"
     db_model_mock.cover_image_url = None
     db_model_mock.created_at = now
     db_model_mock.updated_at = now

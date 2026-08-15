@@ -1,18 +1,20 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
-from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceRole
+from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceRole, WorkspaceDomainType
 
 
 class CreateWorkspaceRequest(BaseModel):
     name: str
     visibility: WorkspaceVisibility = WorkspaceVisibility.PRIVATE
+    domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
     cover_image_url: str | None = None
 
 
 class UpdateWorkspaceRequest(BaseModel):
     name: str | None = None
     visibility: WorkspaceVisibility | None = None
+    domain_type: WorkspaceDomainType | None = None
     cover_image_url: str | None = None
 
 
@@ -51,10 +53,11 @@ class WorkspaceResponse(BaseModel):
     name: str
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
-    cover_image_url: str | None
+    domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
+    cover_image_url: str | None = None
     created_at: datetime
     updated_at: datetime
-    archived_at: datetime | None
+    archived_at: datetime | None = None
     user_role: WorkspaceRole | None = None
 
 
@@ -65,6 +68,7 @@ class WorkspaceSummaryResponse(BaseModel):
     name: str
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
+    domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
     member_count: int = 1
 
 

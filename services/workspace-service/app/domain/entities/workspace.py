@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
-from app.constants.enums import WorkspaceStatus, WorkspaceVisibility
+from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceDomainType
 
 
 @dataclass
@@ -11,9 +11,10 @@ class Workspace:
     name: str
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
-    cover_image_url: str | None
-    created_at: datetime
-    updated_at: datetime
+    domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
+    cover_image_url: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     archived_at: datetime | None = None
     summary_json: dict | None = None
     learning_path_json: dict | None = None
