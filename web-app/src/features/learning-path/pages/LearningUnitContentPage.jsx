@@ -89,7 +89,7 @@ export function LearningUnitContentPage() {
       id: 'summary',
       label: 'Summary',
       icon: BookOpen,
-      count: content?.summary?.sections?.length ? `${content.summary.sections.length} sections` : null,
+      count: null,
     },
     {
       id: 'flashcards',
