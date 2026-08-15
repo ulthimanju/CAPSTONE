@@ -180,68 +180,55 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Top Banner / Actions Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-sep-line pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-display text-lg font-bold text-text">
-              Collaborators & Permissions
-            </h2>
-            <Badge variant="outline" className="font-mono text-xs text-accent border-accent/30 bg-accent/5">
-              {members.length} {members.length === 1 ? 'Member' : 'Members'}
-            </Badge>
-          </div>
-          <p className="font-body text-xs text-text/70 mt-0.5">
-            Manage student & educator study access, assign roles, and review membership activity.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          {canManageMembers && (
-            <Button
-              onClick={() => setIsInviteModalOpen(true)}
-              leftIcon={<UserPlus className="h-4 w-4" />}
-              className="text-xs shadow-xs"
-            >
-              Invite Collaborator
-            </Button>
-          )}
-
-          {!isOwner && (
-            <Button
-              variant="outline"
-              onClick={() => setIsLeaveDialogOpen(true)}
-              leftIcon={<LogOut className="h-4 w-4 text-danger" />}
-              className="text-xs text-danger hover:bg-danger-tint hover:border-danger/40"
-            >
-              Leave Workspace
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Search Filter Bar */}
-      {(members.length > 2 || invitations.length > 0) && (
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text/40 pointer-events-none" />
-          <Input
-            type="text"
-            placeholder="Search collaborators by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-xs font-mono bg-surface"
-          />
-        </div>
-      )}
-
       {/* Active Members Section */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-            <UserCheck className="h-4 w-4 text-accent" />
-            Active Collaborators ({filteredMembers.length})
-          </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-bold text-text">
+              Active Collaborators ({members.length})
+            </h2>
+            <p className="font-body text-xs text-text/70">
+              Users who have joined and have active study access to this workspace.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            {canManageMembers && (
+              <Button
+                onClick={() => setIsInviteModalOpen(true)}
+                leftIcon={<UserPlus className="h-4 w-4" />}
+                className="text-xs shadow-xs"
+              >
+                Invite Collaborator
+              </Button>
+            )}
+
+            {!isOwner && (
+              <Button
+                variant="outline"
+                onClick={() => setIsLeaveDialogOpen(true)}
+                leftIcon={<LogOut className="h-4 w-4 text-danger" />}
+                className="text-xs text-danger hover:bg-danger-tint hover:border-danger/40"
+              >
+                Leave Workspace
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Search Filter Bar */}
+        {(members.length > 2 || invitations.length > 0) && (
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text/40 pointer-events-none" />
+            <Input
+              type="text"
+              placeholder="Search collaborators by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 text-xs font-mono bg-surface"
+            />
+          </div>
+        )}
 
         {isLoadingMembers && (
           <div className="flex justify-center py-8">
