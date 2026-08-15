@@ -19,6 +19,7 @@ import {
   useLearningPathStore,
 } from '@/features/learning-path/hooks/useLearningPath';
 import { InviteCollaboratorModal } from '@/features/workspaces/components/InviteCollaboratorModal';
+import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
@@ -27,10 +28,12 @@ export function Header({ title, children, className }) {
   const location = useLocation();
   const toggleMobileSidebar = useUIStore((state) => state.toggleMobileSidebar);
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+  const currentUser = useAuthStore((state) => state.user);
   const fileInputRef = useRef(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const { data: workspace } = useWorkspaceQuery(activeWorkspaceId);
+  const isOwner = workspace?.user_role === 'OWNER' || workspace?.owner_id === currentUser?.id;
   const generateSummaryMutation = useGenerateSummaryMutation(activeWorkspaceId);
 
   const { data: chatData } = useWorkspaceChatQuery(activeWorkspaceId);
@@ -284,6 +287,7 @@ export function Header({ title, children, className }) {
                   workspaceId={activeWorkspaceId}
                   open={isInviteModalOpen}
                   onOpenChange={setIsInviteModalOpen}
+                  isOwner={isOwner}
                 />
               </>
             )}

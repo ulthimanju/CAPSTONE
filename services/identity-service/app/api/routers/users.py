@@ -17,6 +17,18 @@ async def get_users_batch(
     return {str(u.id): UserResponse.model_validate(asdict(u)) for u in users}
 
 
+@router.get("/lookup/email", response_model=UserResponse)
+async def lookup_user_by_email(
+    email: str,
+    user_repo: UserRepository = Depends(get_user_repository),
+):
+    clean_email = email.lower().strip()
+    user = await user_repo.get_by_email(clean_email)
+    if not user:
+        raise HTTPException(status_code=404, detail=f"No user found with email '{clean_email}'")
+    return UserResponse.model_validate(asdict(user))
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user_by_id(
     user_id: UUID,

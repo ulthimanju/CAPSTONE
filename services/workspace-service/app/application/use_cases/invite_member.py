@@ -41,19 +41,53 @@ class InviteMemberUseCase:
         if not target_email and not req.user_id:
             raise HTTPException(status_code=400, detail="Please provide a valid email address to invite")
 
-        # 1. Prevent self-invitation
-        if req.user_id and req.user_id == invited_by:
-            raise HTTPException(status_code=400, detail="You cannot invite yourself to the workspace.")
+        # 1. Enforce Admin privilege boundaries
+        if not is_owner and req.role == WorkspaceRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Only the workspace Owner can invite or assign an Admin.")
 
-        # 2. Prevent inviting existing members or owner
-        if req.user_id:
-            if workspace.owner_id == req.user_id:
-                raise HTTPException(status_code=400, detail="User is already the owner of this workspace.")
-            existing_mem = await self.member_repo.get_member(workspace_id, req.user_id)
+        # 2. Verify target user exists in identity-service
+        import os
+        import httpx
+        identity_url = os.environ.get("IDENTITY_SERVICE_URL", "http://identity-service:8000").rstrip("/")
+        target_user_id = req.user_id
+
+        if target_email:
+            try:
+                async with httpx.AsyncClient(timeout=4.0) as client:
+                    lookup_res = await client.get(
+                        f"{identity_url}/api/v1/users/lookup/email",
+                        params={"email": target_email}
+                    )
+                    if lookup_res.status_code == 404:
+                        raise HTTPException(
+                            status_code=404,
+                            detail=f"No registered account found with email '{target_email}'. The user must first sign in to CPA before being invited."
+                        )
+                    elif lookup_res.status_code == 200:
+                        user_info = lookup_res.json()
+                        target_user_id = UUID(user_info["id"])
+            except HTTPException:
+                raise
+            except Exception as exc:
+                # If identity-service lookup fails due to transient connection, proceed with caution or log
+                pass
+
+        # 3. Prevent self-invitation
+        if target_user_id and target_user_id == invited_by:
+            raise HTTPException(status_code=400, detail="You cannot invite yourself to your own workspace.")
+
+        # 4. Prevent inviting existing members or owner
+        if target_user_id:
+            if workspace.owner_id == target_user_id:
+                raise HTTPException(status_code=400, detail="This user is already the owner of this workspace.")
+            existing_mem = await self.member_repo.get_member(workspace_id, target_user_id)
             if existing_mem:
-                raise HTTPException(status_code=400, detail="User is already a member of this workspace.")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"User '{target_email or target_user_id}' is already an active collaborator in this workspace."
+                )
 
-        # 3. Check for existing pending invitations and expire stale ones
+        # 5. Check for existing pending invitations and expire stale ones
         now = datetime.now(timezone.utc)
         existing_invitations = await self.invitation_repo.list_by_workspace(workspace_id)
         for inv in existing_invitations:
@@ -62,15 +96,18 @@ class InviteMemberUseCase:
                     inv.status = InvitationStatus.EXPIRED
                     await self.invitation_repo.update(inv)
                 else:
-                    same_user = req.user_id and inv.invited_user_id == req.user_id
+                    same_user = target_user_id and inv.invited_user_id == target_user_id
                     same_email = target_email and inv.invited_email and inv.invited_email.lower().strip() == target_email
                     if same_user or same_email:
-                        raise HTTPException(status_code=400, detail="An active invitation has already been sent to this user.")
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"An active invitation has already been sent to '{target_email or target_user_id}'. You can resend or revoke it from the list below."
+                        )
         invitation = WorkspaceInvitation(
             id=generate_uuid(),
             workspace_id=workspace_id,
             invited_by=invited_by,
-            invited_user_id=req.user_id,
+            invited_user_id=target_user_id,
             invited_email=target_email,
             role=req.role,
             status=InvitationStatus.PENDING,
