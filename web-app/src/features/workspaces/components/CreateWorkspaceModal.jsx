@@ -98,8 +98,8 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
                     className={cn(
                       'flex items-center gap-2.5 rounded-ui border p-3 text-left transition-all',
                       field.value === 'TECHNICAL'
-                        ? 'border-accent bg-sand/80 ring-1 ring-accent text-accent'
-                        : 'border-sep-line bg-surface-raised text-text/80 hover:bg-surface-hover hover:border-sep-line/80'
+                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                        : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover hover:border-sep-line/80'
                     )}
                   >
                     <Terminal className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -115,8 +115,8 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
                     className={cn(
                       'flex items-center gap-2.5 rounded-ui border p-3 text-left transition-all',
                       field.value === 'NON_TECHNICAL'
-                        ? 'border-accent bg-sand/80 ring-1 ring-accent text-accent'
-                        : 'border-sep-line bg-surface-raised text-text/80 hover:bg-surface-hover hover:border-sep-line/80'
+                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                        : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover hover:border-sep-line/80'
                     )}
                   >
                     <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -146,8 +146,8 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
                     className={cn(
                       'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
                       field.value === 'PRIVATE'
-                        ? 'border-accent bg-sand/80 ring-1 ring-accent text-accent font-semibold'
-                        : 'border-sep-line bg-surface-raised text-text/70 hover:bg-surface-hover'
+                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover'
                     )}
                   >
                     <Lock className="h-3.5 w-3.5" aria-hidden="true" />
@@ -160,8 +160,8 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
                     className={cn(
                       'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
                       field.value === 'INTERNAL'
-                        ? 'border-accent bg-sand/80 ring-1 ring-accent text-accent font-semibold'
-                        : 'border-sep-line bg-surface-raised text-text/70 hover:bg-surface-hover'
+                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover'
                     )}
                   >
                     <Users className="h-3.5 w-3.5" aria-hidden="true" />
@@ -174,8 +174,8 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
                     className={cn(
                       'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
                       field.value === 'PUBLIC'
-                        ? 'border-accent bg-sand/80 ring-1 ring-accent text-accent font-semibold'
-                        : 'border-sep-line bg-surface-raised text-text/70 hover:bg-surface-hover'
+                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover'
                     )}
                   >
                     <Globe className="h-3.5 w-3.5" aria-hidden="true" />
