@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FileText, Sparkles, Bot, Route, Users, Settings } from 'lucide-react';
+import { FileText, ScrollText, Sparkles, Bot, Route, Users, Settings } from 'lucide-react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
@@ -29,7 +29,7 @@ export function SidebarNav() {
     {
       label: 'Summary',
       to: `${basePath}/summary`,
-      icon: Sparkles,
+      icon: ScrollText,
       isActive: location.pathname.startsWith(`${basePath}/summary`),
     },
     {
