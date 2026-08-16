@@ -28,12 +28,16 @@ class ListWorkspacesUseCase:
         responses = []
         for ws in workspaces:
             res = WorkspaceResponse.model_validate(ws)
-            member = await self.member_repo.get_member(ws.id, user_id)
-            if member:
-                res.user_role = member.role
-            elif ws.owner_id == user_id:
+            if ws.owner_id == user_id:
                 from app.constants.enums import WorkspaceRole
                 res.user_role = WorkspaceRole.OWNER
+            else:
+                member = await self.member_repo.get_member(ws.id, user_id)
+                if member:
+                    res.user_role = member.role
+                else:
+                    from app.constants.enums import WorkspaceRole
+                    res.user_role = WorkspaceRole.VIEWER
             responses.append(res)
 
         paginated = responses[offset : offset + limit]

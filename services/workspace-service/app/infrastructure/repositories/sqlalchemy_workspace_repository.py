@@ -102,15 +102,19 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         )
 
     async def list_by_user_id(self, user_id: UUID) -> list[Workspace]:
+        from sqlalchemy import or_
         cached_list = await self.cache.get_user_workspaces(user_id)
         if cached_list is not None:
             return cached_list
 
         stmt = (
             select(WorkspaceModel)
-            .join(WorkspaceMemberModel, WorkspaceModel.id == WorkspaceMemberModel.workspace_id)
+            .outerjoin(WorkspaceMemberModel, WorkspaceModel.id == WorkspaceMemberModel.workspace_id)
             .where(
-                WorkspaceMemberModel.user_id == user_id,
+                or_(
+                    WorkspaceModel.owner_id == user_id,
+                    WorkspaceMemberModel.user_id == user_id,
+                ),
                 WorkspaceModel.status != WorkspaceStatus.DELETED.value,
                 WorkspaceModel.status != WorkspaceStatus.ARCHIVED.value,
             )
@@ -141,11 +145,15 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         return workspaces
 
     async def list_archived_by_user_id(self, user_id: UUID) -> list[Workspace]:
+        from sqlalchemy import or_
         stmt = (
             select(WorkspaceModel)
-            .join(WorkspaceMemberModel, WorkspaceModel.id == WorkspaceMemberModel.workspace_id)
+            .outerjoin(WorkspaceMemberModel, WorkspaceModel.id == WorkspaceMemberModel.workspace_id)
             .where(
-                WorkspaceMemberModel.user_id == user_id,
+                or_(
+                    WorkspaceModel.owner_id == user_id,
+                    WorkspaceMemberModel.user_id == user_id,
+                ),
                 WorkspaceModel.status == WorkspaceStatus.ARCHIVED.value,
             )
             .order_by(WorkspaceModel.updated_at.desc())
