@@ -404,54 +404,59 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
         <div className="grid grid-cols-1 gap-5">
           {/* Card 1: Workspace Name */}
-          <Card className="p-5 flex flex-col justify-between space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="manage-workspace-name" className="block text-xs font-mono font-medium text-text">
-                  Workspace Name
-                </label>
-              </div>
+          <Card className="p-5 space-y-3">
+            <div className="space-y-1">
+              <label htmlFor="manage-workspace-name" className="block text-xs font-mono font-medium text-text">
+                Workspace Name
+              </label>
               <p className="text-[11px] text-text/60 font-body">
                 The public identifier and title representing this course or collaborative environment.
               </p>
-              <Input
-                id="manage-workspace-name"
-                value={nameValue}
-                onChange={(e) => setNameValue(e.target.value)}
-                disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'name'}
-                placeholder="e.g. Operating Systems (CS301)"
-              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex-1">
+                  <Input
+                    id="manage-workspace-name"
+                    value={nameValue}
+                    onChange={(e) => setNameValue(e.target.value)}
+                    disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'name'}
+                    placeholder="e.g. Operating Systems (CS301)"
+                  />
+                </div>
+
+                {(isOwner || callerRole === 'ADMIN') && (
+                  <Button
+                    size="sm"
+                    type="button"
+                    className="h-10 shrink-0 px-4"
+                    onClick={handleSaveName}
+                    disabled={
+                      !nameValue.trim() ||
+                      nameValue.trim() === (workspace?.name || '').trim() ||
+                      savingField !== null
+                    }
+                    isLoading={savingField === 'name'}
+                    leftIcon={
+                      savedField === 'name' ? (
+                        <Check className="h-3.5 w-3.5 text-success" />
+                      ) : (
+                        <Save className="h-3.5 w-3.5" />
+                      )
+                    }
+                  >
+                    {savedField === 'name' ? 'Name Saved' : 'Save Name'}
+                  </Button>
+                )}
+              </div>
+
               <WorkspaceNameAvailabilityFeedback
                 name={nameValue}
                 excludeWorkspaceId={workspace?.id}
                 initialName={workspace?.name}
               />
             </div>
-
-            {(isOwner || callerRole === 'ADMIN') && (
-              <div className="flex justify-end pt-2 border-t border-sep-line/60">
-                <Button
-                  size="sm"
-                  type="button"
-                  onClick={handleSaveName}
-                  disabled={
-                    !nameValue.trim() ||
-                    nameValue.trim() === (workspace?.name || '').trim() ||
-                    savingField !== null
-                  }
-                  isLoading={savingField === 'name'}
-                  leftIcon={
-                    savedField === 'name' ? (
-                      <Check className="h-3.5 w-3.5 text-success" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )
-                  }
-                >
-                  {savedField === 'name' ? 'Name Saved' : 'Save Name'}
-                </Button>
-              </div>
-            )}
           </Card>
 
           {/* Card 2: Domain Specialization */}
@@ -532,48 +537,49 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
           {/* Card 3: Primary Code Language (Visible when Technical) */}
           {domainValue === 'TECHNICAL' && (
-            <Card className="p-5 flex flex-col justify-between space-y-4 animate-fadeIn">
-              <div className="space-y-2">
-                <div>
-                  <label
-                    htmlFor="manage-workspace-code-language-select"
-                    className="block text-xs font-mono font-medium text-text"
-                  >
-                    Primary Code Language
-                  </label>
-                  <p className="text-[11px] text-text/60 font-body">
-                    Specifies the default code syntax and implementation language for AI summaries, code blocks, and tutoring.
-                  </p>
-                </div>
-
-                <Select
-                  disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'language'}
-                  value={languageValue}
-                  onValueChange={setLanguageValue}
+            <Card className="p-5 space-y-3 animate-fadeIn">
+              <div className="space-y-1">
+                <label
+                  htmlFor="manage-workspace-code-language-select"
+                  className="block text-xs font-mono font-medium text-text"
                 >
-                  <SelectTrigger
-                    id="manage-workspace-code-language-select"
-                    className={cn(
-                      (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                    )}
-                  >
-                    <SelectValue placeholder="Select primary language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PREDEFINED_CODE_LANGUAGES.map((lang) => (
-                      <SelectItem key={lang} value={lang}>
-                        {lang}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  Primary Code Language
+                </label>
+                <p className="text-[11px] text-text/60 font-body">
+                  Specifies the default code syntax and implementation language for AI summaries, code blocks, and tutoring.
+                </p>
               </div>
 
-              {(isOwner || callerRole === 'ADMIN') && (
-                <div className="flex justify-end pt-2 border-t border-sep-line/60">
+              <div className="flex items-center gap-2.5">
+                <div className="flex-1">
+                  <Select
+                    disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'language'}
+                    value={languageValue}
+                    onValueChange={setLanguageValue}
+                  >
+                    <SelectTrigger
+                      id="manage-workspace-code-language-select"
+                      className={cn(
+                        (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                      )}
+                    >
+                      <SelectValue placeholder="Select primary language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PREDEFINED_CODE_LANGUAGES.map((lang) => (
+                        <SelectItem key={lang} value={lang}>
+                          {lang}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(isOwner || callerRole === 'ADMIN') && (
                   <Button
                     size="sm"
                     type="button"
+                    className="h-10 shrink-0 px-4"
                     onClick={handleSaveLanguage}
                     disabled={
                       languageValue === (workspace?.workspace_code_language || 'Python') ||
@@ -590,8 +596,8 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                   >
                     {savedField === 'language' ? 'Language Saved' : 'Save Language'}
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </Card>
           )}
 
