@@ -35,6 +35,12 @@ import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { Input } from '@/components/ui/Input';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/DropdownMenu';
 import { InviteCollaboratorModal } from '../InviteCollaboratorModal';
 import { createWorkspaceRequestSchema } from '../../schemas/workspaceSchemas';
 import {
@@ -587,17 +593,58 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                   <div className="flex items-center gap-3">
                     {/* Dynamic Role Selector / Badge */}
                     {canEditThisRole ? (
-                      <select
-                        value={member.role}
-                        onChange={(e) => handleRoleChange(member.user_id, e.target.value, member.version)}
-                        disabled={updateRoleMutation.isPending}
-                        className="rounded-ui border border-sep-line bg-bg px-2.5 py-1 font-mono text-xs text-text focus-visible:outline-none focus-visible:border-accent shadow-2xs"
-                        aria-label={`Change role for ${member.user_name || member.user_email}`}
-                      >
-                        {isOwner && <option value="ADMIN">ADMIN</option>}
-                        <option value="EDITOR">EDITOR</option>
-                        <option value="VIEWER">VIEWER</option>
-                      </select>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={updateRoleMutation.isPending}
+                            className="inline-flex items-center gap-1.5 rounded-ui border border-sep-line bg-surface px-2.5 py-1 font-mono text-xs font-medium text-text transition-colors hover:bg-surface-hover hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 shadow-2xs"
+                            aria-label={`Change role for ${member.user_name || member.user_email}`}
+                          >
+                            <span className="flex items-center gap-1">
+                              {member.role === 'ADMIN' && <Shield className="h-3 w-3 text-amber-500" />}
+                              {member.role === 'EDITOR' && <Edit3 className="h-3 w-3 text-accent" />}
+                              {member.role === 'VIEWER' && <Eye className="h-3 w-3 text-text/60" />}
+                              <span>{member.role}</span>
+                            </span>
+                            <ChevronDown className="h-3 w-3 text-text/40" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36 p-1">
+                          {isOwner && (
+                            <DropdownMenuItem
+                              onClick={() => handleRoleChange(member.user_id, 'ADMIN', member.version)}
+                              className="flex items-center justify-between text-xs font-mono py-1.5"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Shield className="h-3.5 w-3.5 text-amber-500" />
+                                <span>ADMIN</span>
+                              </div>
+                              {member.role === 'ADMIN' && <Check className="h-3.5 w-3.5 text-accent" />}
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(member.user_id, 'EDITOR', member.version)}
+                            className="flex items-center justify-between text-xs font-mono py-1.5"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Edit3 className="h-3.5 w-3.5 text-accent" />
+                              <span>EDITOR</span>
+                            </div>
+                            {member.role === 'EDITOR' && <Check className="h-3.5 w-3.5 text-accent" />}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(member.user_id, 'VIEWER', member.version)}
+                            className="flex items-center justify-between text-xs font-mono py-1.5"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Eye className="h-3.5 w-3.5 text-text/60" />
+                              <span>VIEWER</span>
+                            </div>
+                            {member.role === 'VIEWER' && <Check className="h-3.5 w-3.5 text-accent" />}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     ) : (
                       <Badge variant="role">{member.role}</Badge>
                     )}
