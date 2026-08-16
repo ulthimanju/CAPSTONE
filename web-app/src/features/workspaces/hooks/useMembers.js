@@ -32,6 +32,8 @@ export function useWorkspaceMemberSSE(workspaceId) {
 
       const handleEvent = () => {
         try {
+          queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+          queryClient.refetchQueries({ queryKey: ['workspaces'] });
           queryClient.invalidateQueries({ queryKey: memberKeys.all });
           queryClient.refetchQueries({ queryKey: memberKeys.all });
         } catch {}
@@ -223,11 +225,13 @@ export function useTransferOwnershipMutation(workspaceId, options = {}) {
 
   return useMutation({
     mutationFn: (newOwnerId) => memberApi.transferOwnership(workspaceId, newOwnerId),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      queryClient.refetchQueries({ queryKey: ['workspaces'] });
-      queryClient.invalidateQueries({ queryKey: memberKeys.all });
-      queryClient.refetchQueries({ queryKey: memberKeys.all });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['workspaces'] }),
+        queryClient.refetchQueries({ queryKey: ['workspaces'] }),
+        queryClient.invalidateQueries({ queryKey: memberKeys.all }),
+        queryClient.refetchQueries({ queryKey: memberKeys.all }),
+      ]);
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
