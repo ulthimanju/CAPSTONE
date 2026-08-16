@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Laptop,
   Smartphone,
   Tablet,
   Globe,
@@ -12,12 +11,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  RefreshCw,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Card, Button, Badge, ConfirmDialog, DevicesIcon, RegenerateIcon } from '@/components/ui';
 import {
   useSessionsQuery,
   useRevokeSessionMutation,
@@ -51,7 +46,7 @@ function parseDeviceInfo(session) {
   const ua = (session.user_agent || session.device || '').toLowerCase();
   const rawDevice = session.device || '';
 
-  let icon = Laptop;
+  let icon = DevicesIcon;
   let type = 'Desktop / Laptop';
   let os = 'Windows';
   let browser = 'Chrome';
@@ -60,11 +55,11 @@ function parseDeviceInfo(session) {
   if (ua.includes('windows') || rawDevice.toLowerCase().includes('windows')) {
     os = 'Windows';
     type = 'Windows PC';
-    icon = Laptop;
+    icon = DevicesIcon;
   } else if (ua.includes('macintosh') || ua.includes('mac os') || rawDevice.toLowerCase().includes('mac')) {
     os = 'macOS';
     type = 'Mac';
-    icon = Laptop;
+    icon = DevicesIcon;
   } else if (ua.includes('android')) {
     os = 'Android';
     type = 'Android Device';
@@ -80,7 +75,7 @@ function parseDeviceInfo(session) {
   } else if (ua.includes('linux')) {
     os = 'Linux';
     type = 'Linux PC';
-    icon = Laptop;
+    icon = DevicesIcon;
   }
 
   // Detect Browser
@@ -189,7 +184,7 @@ export function ActiveSessionsPage() {
             size="sm"
             onClick={() => refetch()}
             disabled={isFetching}
-            leftIcon={<RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />}
+            leftIcon={<RegenerateIcon className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />}
             className="text-xs"
           >
             Refresh

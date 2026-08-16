@@ -6,7 +6,7 @@ import {
   Lightbulb,
   CheckCircle2,
 } from 'lucide-react';
-import { Card, Button, Badge, BookLinearIcon } from '@/components/ui';
+import { Card, Button, Badge, BookLinearIcon, RegenerateIcon } from '@/components/ui';
 import { useWorkspaceSummaryQuery, useGenerateSummaryMutation } from '../hooks/useSummary';
 import { MermaidDiagram } from '../components/MermaidDiagram';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
@@ -69,7 +69,7 @@ export function SummaryTab() {
             disabled={generateMutation.isPending}
             className="flex items-center gap-2"
           >
-            <Sparkles className="h-4 w-4" />
+            <RegenerateIcon className="h-4 w-4" />
             <span>Generate Summary with Gemini</span>
           </Button>
         </div>

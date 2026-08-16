@@ -1,8 +1,7 @@
 import React, { useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileText, Upload, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { FileText, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { Card, Button, RegenerateIcon } from '@/components/ui';
 import { useWorkspaceDocumentsQuery } from '@/features/documents/hooks/useDocuments';
 import { useMultiFileUpload } from '@/features/documents/hooks/useMultiFileUpload';
 import { DocumentListTable } from '@/features/documents/components/DocumentListTable';
@@ -80,7 +79,7 @@ export function DocumentsTab({ workspace: propWorkspace }) {
           <Button
             onClick={() => refetch()}
             variant="outline"
-            leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+            leftIcon={<RegenerateIcon className="h-3.5 w-3.5" />}
             className="mt-4 text-xs"
           >
             Try Again

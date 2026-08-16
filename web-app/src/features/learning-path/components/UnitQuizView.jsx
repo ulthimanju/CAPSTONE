@@ -2,15 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   CheckCircle2,
   XCircle,
-  HelpCircle,
-  RotateCcw,
   Sparkles,
   Trophy,
   ArrowRight,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+import { Card, Button, Badge, RegenerateIcon } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useUpdateQuizProgressMutation } from '../hooks/useLearningPath';
 import { toast } from 'sonner';
@@ -124,7 +120,7 @@ export function UnitQuizView({ workspaceId, unitTitle, quiz = [] }) {
             variant="outline"
             size="sm"
             onClick={handleRetake}
-            leftIcon={<RotateCcw className="h-4 w-4" />}
+            leftIcon={<RegenerateIcon className="h-4 w-4" />}
             className="text-xs shrink-0"
           >
             Retake Quiz

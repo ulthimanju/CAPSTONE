@@ -9,9 +9,8 @@ import {
   FileText,
   Loader2,
   Sparkles,
-  HelpCircle,
 } from 'lucide-react';
-import { Card, Button, Badge, BookLinearIcon } from '@/components/ui';
+import { Card, Button, Badge, BookLinearIcon, FlashcardsIcon, QuizIcon } from '@/components/ui';
 import {
   useDocumentQuery,
   useDocumentParseResultQuery,
@@ -153,13 +152,13 @@ export function DocumentReaderPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            leftIcon={<Sparkles className="h-3.5 w-3.5 text-accent" />}
+            leftIcon={<FlashcardsIcon className="h-3.5 w-3.5 text-accent" />}
             className="text-xs"
           >
             Study Flashcards
           </Button>
           <Button
-            leftIcon={<HelpCircle className="h-3.5 w-3.5" />}
+            leftIcon={<QuizIcon className="h-3.5 w-3.5" />}
             className="text-xs"
           >
             Generate Quiz

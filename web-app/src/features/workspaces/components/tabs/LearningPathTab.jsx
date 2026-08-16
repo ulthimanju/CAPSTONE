@@ -4,12 +4,10 @@ import {
   Route as RouteIcon,
   Compass,
   Sparkles,
-  Layers,
   Loader2,
   ChevronRight,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Card, Button, RegenerateIcon, FlashcardsIcon } from '@/components/ui';
 import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
@@ -111,7 +109,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
           <Button
             onClick={handleGenerate}
             isLoading={generateMutation.isPending || isGenerating}
-            leftIcon={<RouteIcon className="h-4 w-4" />}
+            leftIcon={<RegenerateIcon className="h-4 w-4" />}
             className="mt-6 text-xs sm:text-sm"
           >
             {isGenerating || generateMutation.isPending ? 'Synthesizing Path...' : 'Generate Path'}
@@ -132,7 +130,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <div className="flex items-center gap-1.5 rounded-ui bg-sand px-3 py-1.5 font-mono text-xs text-text border border-sep-line">
-                <Layers className="h-3.5 w-3.5 text-accent" />
+                <FlashcardsIcon className="h-3.5 w-3.5 text-accent" />
                 <span>{learningPath.units.length} Learning Units</span>
               </div>
             </div>

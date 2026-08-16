@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Loader2, FolderPlus, AlertCircle, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Loader2, FolderPlus, AlertCircle } from 'lucide-react';
+import { Button, Card, PlusIcon } from '@/components/ui';
 import { CreateWorkspaceModal } from '../components/CreateWorkspaceModal';
 import { useWorkspacesQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -65,7 +64,7 @@ export function WorkspacesPage() {
           </p>
           <Button
             onClick={() => setIsCreateModalOpen(true)}
-            leftIcon={<Plus className="h-4 w-4" />}
+            leftIcon={<PlusIcon className="h-4 w-4" />}
             className="mt-5"
           >
             Create Workspace

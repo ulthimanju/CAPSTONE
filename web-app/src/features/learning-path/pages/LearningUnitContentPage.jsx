@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
   Sparkles,
-  Layers,
-  HelpCircle,
   Code2,
   Loader2,
   Compass,
   FileText,
 } from 'lucide-react';
-import { Card, Button, Badge, BookLinearIcon } from '@/components/ui';
+import { Card, Button, Badge, BookLinearIcon, FlashcardsIcon, QuizIcon } from '@/components/ui';
 import {
   useUnitContentQuery,
   useGenerateUnitContentMutation,
@@ -91,13 +89,13 @@ export function LearningUnitContentPage() {
     {
       id: 'flashcards',
       label: 'Flashcards',
-      icon: Layers,
+      icon: FlashcardsIcon,
       count: content?.flashcards?.length || null,
     },
     {
       id: 'quiz',
       label: 'Quiz',
-      icon: HelpCircle,
+      icon: QuizIcon,
       count: content?.quiz?.length || null,
     },
     {

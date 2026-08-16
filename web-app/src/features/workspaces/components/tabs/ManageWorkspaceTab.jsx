@@ -20,14 +20,13 @@ import {
   LogOut,
   RefreshCw,
   Clock,
-  Activity,
   ChevronDown,
   ChevronUp,
   UserCheck,
   Settings,
   Archive,
 } from 'lucide-react';
-import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
+import { CodeBoldIcon, BookLinearIcon, LogsIcon } from '@/components/ui';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -776,7 +775,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-              <Activity className="h-4 w-4 text-accent" />
+              <LogsIcon className="h-4 w-4 text-accent" />
               Collaborator Activity Log
             </h3>
             <p className="font-body text-xs text-text/70">

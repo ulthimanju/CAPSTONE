@@ -5,12 +5,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Shuffle,
-  RotateCcw,
   CheckCircle,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+import { Card, Button, Badge, RegenerateIcon } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
 export function UnitFlashcardsView({ flashcards = [] }) {
@@ -82,7 +79,7 @@ export function UnitFlashcardsView({ flashcards = [] }) {
             size="sm"
             onClick={handleReset}
             className="text-xs text-text/70 hover:text-text"
-            leftIcon={<RotateCcw className="h-3.5 w-3.5" />}
+            leftIcon={<RegenerateIcon className="h-3.5 w-3.5" />}
           >
             Reset
           </Button>

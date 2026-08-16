@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Shield, ChevronsUpDown, Laptop } from 'lucide-react';
-import { Avatar } from '@/components/ui/Avatar';
-import { GoogleDriveIcon } from '@/components/ui/GoogleDriveIcon';
+import { LogOut, Shield, ChevronsUpDown } from 'lucide-react';
+import { Avatar, GoogleDriveIcon, DevicesIcon } from '@/components/ui';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -83,7 +82,7 @@ export function UserProfileMenu({ className }) {
           onClick={() => navigate('/sessions')}
           className="cursor-pointer font-mono text-xs"
         >
-          <Laptop className="mr-2 h-4 w-4 shrink-0 text-text/60" aria-hidden="true" />
+          <DevicesIcon className="mr-2 h-4 w-4 shrink-0 text-text/60" aria-hidden="true" />
           <span>Active Sessions</span>
         </DropdownMenuItem>
 

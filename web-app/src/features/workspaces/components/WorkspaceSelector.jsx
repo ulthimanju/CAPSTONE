@@ -4,7 +4,6 @@ import {
   Layers,
   ChevronsUpDown,
   Check,
-  Plus,
   Loader2,
   User,
   Users,
@@ -18,7 +17,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/DropdownMenu';
 import { Badge } from '@/components/ui/Badge';
-import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
+import { CodeBoldIcon, BookLinearIcon, PlusIcon } from '@/components/ui';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
 import { useWorkspacesQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -243,7 +242,7 @@ export function WorkspaceSelector({ className }) {
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 py-2 font-mono text-xs font-semibold text-accent hover:text-accent focus:text-accent"
           >
-            <Plus className="h-4 w-4" aria-hidden="true" />
+            <PlusIcon className="h-4 w-4" aria-hidden="true" />
             <span>New Workspace</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
