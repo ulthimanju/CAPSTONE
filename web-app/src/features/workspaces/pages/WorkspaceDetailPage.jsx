@@ -61,6 +61,11 @@ export function WorkspaceDetailPage() {
   const isLearningUnitDetailPage =
     location.pathname.includes('/learning-path/') &&
     location.pathname.split('/learning-path/')[1]?.length > 0;
+  const isManageTab =
+    location.pathname.endsWith('/manage') ||
+    location.pathname.includes('/manage') ||
+    location.pathname.includes('/collaborators') ||
+    location.pathname.includes('/settings');
 
   if (isChatTab) {
     return (
@@ -70,7 +75,7 @@ export function WorkspaceDetailPage() {
     );
   }
 
-  if (isLearningUnitDetailPage) {
+  if (isLearningUnitDetailPage || isManageTab) {
     return (
       <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col">
         <Outlet context={{ workspace }} />

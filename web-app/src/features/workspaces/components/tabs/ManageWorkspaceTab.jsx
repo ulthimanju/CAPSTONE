@@ -409,65 +409,78 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     return (type || '').replace(/_/g, ' ');
   };
 
-  return (
-    <div className="space-y-6 pb-16">
-      {/* Top Tab Navigation Bar directly below main header */}
-      <div className="flex items-center gap-2 border-b border-sep-line pb-3">
-        <button
-          type="button"
-          onClick={() => handleTabChange('collaborators')}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-ui text-xs font-mono font-medium transition-all',
-            activeTab === 'collaborators'
-              ? 'bg-accent text-on-accent font-bold shadow-xs'
-              : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
-          )}
-        >
-          <Users className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>Collaborators</span>
-          {members.length > 0 && (
-            <span
-              className={cn(
-                'ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded-full',
-                activeTab === 'collaborators'
-                  ? 'bg-on-accent/20 text-on-accent font-bold'
-                  : 'bg-sand text-text/70'
-              )}
-            >
-              {members.length}
-            </span>
-          )}
-        </button>
+  const tabs = [
+    {
+      id: 'collaborators',
+      label: 'Collaborators',
+      icon: Users,
+      count: members.length || null,
+    },
+    {
+      id: 'general',
+      label: 'General',
+      icon: Settings,
+      count: null,
+    },
+  ];
 
-        <button
-          type="button"
-          onClick={() => handleTabChange('general')}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-ui text-xs font-mono font-medium transition-all',
-            activeTab === 'general'
-              ? 'bg-accent text-on-accent font-bold shadow-xs'
-              : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
-          )}
-        >
-          <Settings className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>General</span>
-        </button>
+  return (
+    <div className="w-full flex flex-col min-h-0 flex-1">
+      {/* Attached Sub-Nav Tab Bar right below Main Header */}
+      <div className="sticky top-0 z-20 w-full border-b border-sep-line bg-bg px-4 sm:px-6 transition-colors">
+        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-2">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabChange(tab.id)}
+                className={cn(
+                  'flex items-center gap-2 px-3.5 py-1.5 rounded-ui font-mono text-xs font-medium transition-all shrink-0 border',
+                  isActive
+                    ? 'bg-surface-raised border-sep-line text-accent font-semibold shadow-2xs'
+                    : 'bg-transparent border-transparent text-text/70 hover:text-text hover:bg-surface-hover'
+                )}
+              >
+                <Icon className={cn('h-3.5 w-3.5', isActive ? 'text-accent' : 'text-text/60')} />
+                <span>{tab.label}</span>
+                {tab.count !== null && (
+                  <span
+                    className={cn(
+                      'font-mono text-[10px] px-1.5 py-0.5 rounded transition-colors',
+                      isActive
+                        ? 'bg-accent/10 text-accent font-bold'
+                        : 'bg-sep-line/40 text-text/70'
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* 1. General Settings Section */}
-      {activeTab === 'general' && (
-        <div className="space-y-5 animate-fadeIn">
-          <div>
-            <h2 className="font-display text-lg font-bold text-text flex items-center gap-2">
-              <Settings className="h-5 w-5 text-accent" />
-              Workspace Settings
-            </h2>
-            <p className="font-body text-xs text-text/70">
-              Configure workspace preferences, domain specialization, programming language, and access levels individually.
-            </p>
-          </div>
+      {/* Main Content Area */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 w-full flex-1 space-y-6 pb-16">
+        {/* 1. General Settings Section */}
+        {activeTab === 'general' && (
+          <div className="space-y-5 animate-fadeIn">
+            <div>
+              <h2 className="font-display text-lg font-bold text-text flex items-center gap-2">
+                <Settings className="h-5 w-5 text-accent" />
+                Workspace Settings
+              </h2>
+              <p className="font-body text-xs text-text/70">
+                Configure workspace preferences, domain specialization, programming language, and access levels individually.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 gap-5">
+            <div className="grid grid-cols-1 gap-5">
             {/* Card 1: Workspace Name */}
             <Card className="p-5 space-y-3">
               <div className="space-y-1">
@@ -1130,6 +1143,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
       </div>
       </div>
       )}
+      </div>
 
       {/* Invite Collaborator Modal */}
       <InviteCollaboratorModal
