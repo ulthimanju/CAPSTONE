@@ -12,6 +12,7 @@ class Workspace:
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
     domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
+    workspace_code_language: str | None = None
     is_summary_generated: bool = False
     created_at: datetime | None = None
     updated_at: datetime | None = None

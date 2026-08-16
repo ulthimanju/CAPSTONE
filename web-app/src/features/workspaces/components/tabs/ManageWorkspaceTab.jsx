@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { InviteCollaboratorModal } from '../InviteCollaboratorModal';
 import { WorkspaceNameAvailabilityFeedback } from '../WorkspaceNameAvailabilityFeedback';
+import { PREDEFINED_CODE_LANGUAGES } from '../CreateWorkspaceModal';
 import { createWorkspaceRequestSchema } from '../../schemas/workspaceSchemas';
 import {
   useUpdateWorkspaceMutation,
@@ -97,11 +98,13 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     defaultValues: {
       name: workspace?.name || '',
       domain_type: workspace?.domain_type || 'TECHNICAL',
+      workspace_code_language: workspace?.workspace_code_language || 'Python',
       visibility: workspace?.visibility || 'PRIVATE',
     },
   });
 
   const watchedName = watch('name');
+  const watchedDomainType = watch('domain_type');
 
   const updateWorkspaceMutation = useUpdateWorkspaceMutation(workspace?.id, {
     onSuccess: () => {
@@ -247,7 +250,12 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   };
 
   const handleSettingsSubmit = (formData) => {
-    updateWorkspaceMutation.mutate(formData);
+    const payload = {
+      ...formData,
+      workspace_code_language:
+        formData.domain_type === 'TECHNICAL' ? formData.workspace_code_language || 'Python' : null,
+    };
+    updateWorkspaceMutation.mutate(payload);
   };
 
   const formatActivityDate = (isoStr) => {
@@ -388,6 +396,44 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                 )}
               />
             </div>
+
+            {/* Primary Code Language Selection (Visible ONLY for Technical workspaces) */}
+            {watchedDomainType === 'TECHNICAL' && (
+              <div className="space-y-1.5 transition-all">
+                <label
+                  htmlFor="manage-workspace-code-language-select"
+                  className="block text-xs font-mono font-medium text-text"
+                >
+                  Primary Code Language
+                </label>
+                <Controller
+                  name="workspace_code_language"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      id="manage-workspace-code-language-select"
+                      disabled={!isOwner && callerRole !== 'ADMIN'}
+                      {...field}
+                      value={field.value || 'Python'}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      className={cn(
+                        'w-full rounded-ui border border-sep-line bg-bg px-3 py-2 text-xs font-mono text-text transition-colors hover:border-sep-line/80 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent',
+                        (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                      )}
+                    >
+                      {PREDEFINED_CODE_LANGUAGES.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {lang}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                <p className="text-[10px] text-text/60 font-body">
+                  Specifies the default code and syntax language for AI summaries, code blocks, and tutoring.
+                </p>
+              </div>
+            )}
 
             {/* Visibility Selection */}
             <div className="space-y-1.5">

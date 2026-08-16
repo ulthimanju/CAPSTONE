@@ -47,6 +47,7 @@ class CreateWorkspaceUseCase:
             visibility=req.visibility,
             status=WorkspaceStatus.ACTIVE,
             domain_type=req.domain_type,
+            workspace_code_language=req.workspace_code_language if req.domain_type == WorkspaceDomainType.TECHNICAL else None,
             created_at=now,
             updated_at=now,
         )

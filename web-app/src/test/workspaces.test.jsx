@@ -226,6 +226,7 @@ describe('CreateWorkspaceModal Component', () => {
       expect(createSpy).toHaveBeenCalledWith({
         name: 'Deep Learning',
         domain_type: 'TECHNICAL',
+        workspace_code_language: 'Python',
         visibility: 'INTERNAL',
       });
     });

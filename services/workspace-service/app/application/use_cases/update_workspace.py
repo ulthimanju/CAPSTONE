@@ -57,6 +57,8 @@ class UpdateWorkspaceUseCase:
             workspace.visibility = req.visibility
         if req.domain_type is not None:
             workspace.domain_type = req.domain_type
+        if req.workspace_code_language is not None:
+            workspace.workspace_code_language = req.workspace_code_language if workspace.domain_type == WorkspaceDomainType.TECHNICAL else None
 
         workspace.updated_at = datetime.now(timezone.utc)
         updated = await self.workspace_repo.update(workspace)

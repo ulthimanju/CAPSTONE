@@ -19,6 +19,27 @@ import { useCreateWorkspaceMutation } from '../hooks/useWorkspaces';
 import { getErrorMessage } from '@/lib/errorUtils';
 import { cn } from '@/lib/cn';
 
+export const PREDEFINED_CODE_LANGUAGES = [
+  'Python',
+  'JavaScript',
+  'TypeScript',
+  'Java',
+  'C',
+  'C++',
+  'C#',
+  'Go',
+  'Rust',
+  'SQL',
+  'PHP',
+  'Ruby',
+  'Kotlin',
+  'Swift',
+  'R',
+  'Shell / Bash',
+  'HTML / CSS',
+  'General / Multi-Language',
+];
+
 export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
   const {
     register,
@@ -32,11 +53,13 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
     defaultValues: {
       name: '',
       domain_type: 'TECHNICAL',
+      workspace_code_language: 'Python',
       visibility: 'PRIVATE',
     },
   });
 
   const watchedName = watch('name');
+  const watchedDomainType = watch('domain_type');
 
   const createMutation = useCreateWorkspaceMutation({
     onSuccess: (data) => {
@@ -47,7 +70,12 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
   });
 
   const onSubmit = (formData) => {
-    createMutation.mutate(formData);
+    const payload = {
+      ...formData,
+      workspace_code_language:
+        formData.domain_type === 'TECHNICAL' ? formData.workspace_code_language || 'Python' : null,
+    };
+    createMutation.mutate(payload);
   };
 
   const handleOpenChange = (isOpen) => {
@@ -134,6 +162,40 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
               )}
             />
           </div>
+
+          {/* Primary Code Language Selection (Visible ONLY for Technical workspaces) */}
+          {watchedDomainType === 'TECHNICAL' && (
+            <div className="space-y-1.5 transition-all">
+              <label
+                htmlFor="workspace-code-language-select"
+                className="block text-xs font-mono font-medium text-text"
+              >
+                Primary Code Language
+              </label>
+              <Controller
+                name="workspace_code_language"
+                control={control}
+                render={({ field }) => (
+                  <select
+                    id="workspace-code-language-select"
+                    {...field}
+                    value={field.value || 'Python'}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="w-full rounded-ui border border-sep-line bg-bg px-3 py-2 text-xs font-mono text-text transition-colors hover:border-sep-line/80 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    {PREDEFINED_CODE_LANGUAGES.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {lang}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+              <p className="text-[10px] text-text/60 font-body">
+                Specifies the default code and syntax language for AI summaries, code blocks, and tutoring.
+              </p>
+            </div>
+          )}
 
           {/* Visibility Selection */}
           <div className="space-y-1.5">

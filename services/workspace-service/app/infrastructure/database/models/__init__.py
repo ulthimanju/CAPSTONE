@@ -25,6 +25,7 @@ class WorkspaceModel(Base):
     visibility: Mapped[str] = mapped_column(String(50), nullable=False, default="PRIVATE", index=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="ACTIVE", index=True)
     domain_type: Mapped[str] = mapped_column(String(50), nullable=False, default="TECHNICAL")
+    workspace_code_language: Mapped[str | None] = mapped_column(String(50), nullable=True)
     is_summary_generated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     summary_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     learning_path_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
