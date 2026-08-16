@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useWorkspaceDocumentsQuery } from '@/features/documents/hooks/useDocuments';
 import { useMultiFileUpload } from '@/features/documents/hooks/useMultiFileUpload';
-import { useUploadQueueStore } from '@/store/uploadQueueStore';
 import { DocumentListTable } from '@/features/documents/components/DocumentListTable';
 import { getErrorMessage } from '@/lib/errorUtils';
 
@@ -22,11 +21,7 @@ export function DocumentsTab({ workspace: propWorkspace }) {
     refetch,
   } = useWorkspaceDocumentsQuery(workspace?.id);
 
-  const { uploadFiles } = useMultiFileUpload(workspace?.id);
-  const queueItems = useUploadQueueStore((state) => state.items);
-  const isUploading = queueItems.some(
-    (i) => i.status === 'UPLOADING' || i.status === 'QUEUED' || i.status === 'PROCESSING'
-  );
+  const { uploadFiles, isUploading } = useMultiFileUpload(workspace?.id);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {

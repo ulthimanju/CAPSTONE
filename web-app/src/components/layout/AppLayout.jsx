@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { UploadQueueWidget } from '@/features/documents/components/UploadQueueWidget';
 import { useNotificationSSE } from '@/features/notifications/hooks/useNotifications';
 import { cn } from '@/lib/cn';
 
@@ -52,9 +51,6 @@ export function AppLayout({
           {children || <Outlet />}
         </main>
       </div>
-
-      {/* Global Multi-File Upload Queue Progress Manager */}
-      <UploadQueueWidget />
     </div>
   );
 }

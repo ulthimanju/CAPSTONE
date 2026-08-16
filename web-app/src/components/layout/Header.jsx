@@ -5,7 +5,6 @@ import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
 import { useMultiFileUpload } from '@/features/documents/hooks/useMultiFileUpload';
-import { useUploadQueueStore } from '@/store/uploadQueueStore';
 import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
 import { useGenerateSummaryMutation } from '@/features/summary/hooks/useSummary';
 import {
@@ -62,11 +61,7 @@ export function Header({ title, children, className }) {
     unitTitleParam ? Boolean(state.generatingUnits[`${activeWorkspaceId}:${unitTitleParam}`]) : false
   );
 
-  const { uploadFiles } = useMultiFileUpload(activeWorkspaceId);
-  const queueItems = useUploadQueueStore((state) => state.items);
-  const isUploading = queueItems.some(
-    (i) => i.status === 'UPLOADING' || i.status === 'QUEUED' || i.status === 'PROCESSING'
-  );
+  const { uploadFiles, isUploading } = useMultiFileUpload(activeWorkspaceId);
 
   const isSummaryTab =
     location.pathname.endsWith('/summary') || location.pathname.includes('/summary');

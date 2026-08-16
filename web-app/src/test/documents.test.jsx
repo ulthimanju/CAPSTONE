@@ -10,10 +10,8 @@ import {
 } from '@/features/documents/schemas/documentSchemas';
 import { DocumentListTable } from '@/features/documents/components/DocumentListTable';
 import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPage';
-import { UploadQueueWidget } from '@/features/documents/components/UploadQueueWidget';
 import { Header } from '@/components/layout/Header';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useUploadQueueStore } from '@/store/uploadQueueStore';
 import { documentApi } from '@/features/documents/api/documentApi';
 
 describe('Document Schemas & File Size Rules', () => {
@@ -138,13 +136,12 @@ describe('DocumentListTable Component', () => {
   });
 });
 
-describe('Multi-File Upload & Queue Management Flow', () => {
+describe('Multi-File Upload & Document Processing Flow', () => {
   beforeEach(() => {
     useWorkspaceStore.setState({ activeWorkspaceId: 'ws-123' });
-    useUploadQueueStore.setState({ items: [], isVisible: false });
   });
 
-  it('supports selecting and processing multiple files concurrently in upload queue', async () => {
+  it('supports selecting and uploading multiple files directly to workspace', async () => {
     const user = userEvent.setup();
     const uploadSpy = vi.spyOn(documentApi, 'uploadDocumentFile').mockResolvedValue({
       id: 'doc-uploaded',
@@ -159,7 +156,6 @@ describe('Multi-File Upload & Queue Management Flow', () => {
     renderWithProviders(
       <div>
         <Header />
-        <UploadQueueWidget />
       </div>
     );
 
@@ -170,12 +166,8 @@ describe('Multi-File Upload & Queue Management Flow', () => {
     await user.upload(input, [file1, file2]);
 
     await waitFor(() => {
-      expect(uploadSpy).toHaveBeenCalled();
+      expect(uploadSpy).toHaveBeenCalledTimes(2);
     });
-
-    // Queue manager displays progress
-    expect(await screen.findByText('Lecture_Notes.pdf')).toBeInTheDocument();
-    expect(await screen.findByText('Slides.pptx')).toBeInTheDocument();
   });
 });
 
