@@ -17,6 +17,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         model = WorkspaceModel(
             id=workspace.id,
             owner_id=workspace.owner_id,
+            created_by=workspace.created_by or workspace.owner_id,
             name=workspace.name,
             visibility=workspace.visibility.value if hasattr(workspace.visibility, "value") else str(workspace.visibility),
             status=workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status),
@@ -50,6 +51,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         ws = Workspace(
             id=model.id,
             owner_id=model.owner_id,
+            created_by=getattr(model, "created_by", None) or model.owner_id,
             name=model.name,
             visibility=WorkspaceVisibility(model.visibility),
             status=WorkspaceStatus(model.status),
@@ -84,6 +86,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         return Workspace(
             id=model.id,
             owner_id=model.owner_id,
+            created_by=getattr(model, "created_by", None) or model.owner_id,
             name=model.name,
             visibility=WorkspaceVisibility(model.visibility),
             status=WorkspaceStatus(model.status),
@@ -119,6 +122,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             Workspace(
                 id=m.id,
                 owner_id=m.owner_id,
+                created_by=getattr(m, "created_by", None) or m.owner_id,
                 name=m.name,
                 visibility=WorkspaceVisibility(m.visibility),
                 status=WorkspaceStatus(m.status),
@@ -152,6 +156,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             Workspace(
                 id=m.id,
                 owner_id=m.owner_id,
+                created_by=getattr(m, "created_by", None) or m.owner_id,
                 name=m.name,
                 visibility=WorkspaceVisibility(m.visibility),
                 status=WorkspaceStatus(m.status),
@@ -183,6 +188,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             model.topics_covered = workspace.topics_covered
             model.archived_at = workspace.archived_at
             model.updated_at = workspace.updated_at
+            # created_by is preserved without mutation
             await self.session.flush()
             if "post_commit_invalidations" in self.session.info:
                 self.session.info["post_commit_invalidations"].add(workspace.id)

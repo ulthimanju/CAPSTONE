@@ -10,6 +10,20 @@ import app.infrastructure.database.models  # Register models
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Ensure created_by column exists on workspaces table and backfill from owner_id
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "ALTER TABLE workspaces "
+                "ADD COLUMN IF NOT EXISTS created_by UUID"
+            )
+        )
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "UPDATE workspaces "
+                "SET created_by = owner_id "
+                "WHERE created_by IS NULL"
+            )
+        )
         # Ensure the role column exists — create_all does not add new columns to existing tables
         await conn.execute(
             __import__("sqlalchemy", fromlist=["text"]).text(

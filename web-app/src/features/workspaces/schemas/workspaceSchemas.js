@@ -19,6 +19,7 @@ export const createWorkspaceRequestSchema = z.object({
 export const workspaceResponseSchema = z.object({
   id: z.string().uuid(),
   owner_id: z.string().uuid(),
+  created_by: z.string().uuid().optional(),
   name: z.string().min(1).max(255),
   domain_type: workspaceDomainTypeSchema.default('TECHNICAL'),
   workspace_code_language: z.string().nullable().optional(),

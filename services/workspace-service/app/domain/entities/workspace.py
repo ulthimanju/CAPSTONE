@@ -20,3 +20,4 @@ class Workspace:
     summary_json: dict | None = None
     learning_path_json: dict | None = None
     topics_covered: str | None = None
+    created_by: UUID | None = None

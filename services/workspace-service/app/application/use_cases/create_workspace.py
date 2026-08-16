@@ -43,6 +43,7 @@ class CreateWorkspaceUseCase:
         workspace = Workspace(
             id=ws_id,
             owner_id=user_id,
+            created_by=user_id,
             name=clean_name,
             visibility=WorkspaceVisibility.PRIVATE,
             status=WorkspaceStatus.ACTIVE,

@@ -53,6 +53,7 @@ class WorkspaceResponse(BaseModel):
 
     id: UUID
     owner_id: UUID
+    created_by: UUID | None = None
     name: str
     visibility: WorkspaceVisibility
     status: WorkspaceStatus
