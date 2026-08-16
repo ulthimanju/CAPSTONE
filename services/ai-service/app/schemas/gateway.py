@@ -50,6 +50,9 @@ class WorkspaceSummarySection(BaseModel):
     diagram: str | None = None
     diagram_type: Literal["flowchart", "sequence", "none"] = "none"
     diagram_caption: str | None = None
+    code_snippet: str | None = None
+    code_language: str | None = None
+    code_explanation: str | None = None
 
     @property
     def source_chunk_ids(self) -> list[str]:

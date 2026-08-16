@@ -123,6 +123,25 @@ export function SummaryTab() {
                 </div>
               )}
 
+              {/* Separate Code Block */}
+              {section.code_snippet && (
+                <div className="mt-4 rounded-ui bg-[#1E1E1E] border border-sep-line overflow-hidden shadow-xs">
+                  <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#252526] border-b border-[#333333] text-[11px] font-mono text-text/70">
+                    <span className="font-bold text-accent uppercase">
+                      {section.code_language || 'code'}
+                    </span>
+                    {section.code_explanation && (
+                      <span className="text-text/60 truncate max-w-md italic">
+                        {section.code_explanation}
+                      </span>
+                    )}
+                  </div>
+                  <pre className="p-3.5 text-xs font-mono text-[#D4D4D4] overflow-x-auto leading-relaxed">
+                    <code>{section.code_snippet}</code>
+                  </pre>
+                </div>
+              )}
+
               {/* Key Takeaways */}
               {section.key_takeaways && (
                 <div className="mt-4 rounded-ui bg-sand/60 border border-sep-line p-3.5 flex items-start gap-2.5">
