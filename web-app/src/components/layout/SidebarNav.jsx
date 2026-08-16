@@ -22,9 +22,9 @@ function SidebarNavItem({ item, closeMobileSidebar }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150',
+        'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
         item.isActive
-          ? 'bg-bg font-bold text-accent border border-accent/40 shadow-xs ring-1 ring-accent/15'
+          ? 'bg-accent text-on-accent font-bold border border-accent shadow-xs'
           : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
       )}
     >

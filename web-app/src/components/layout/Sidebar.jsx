@@ -78,9 +78,9 @@ export function Sidebar({ header, footer, children, className }) {
           onClick={closeMobileSidebar}
           className={({ isActive }) =>
             cn(
-              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150',
+              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
               isActive
-                ? 'bg-bg font-bold text-accent border border-accent/40 shadow-xs ring-1 ring-accent/15'
+                ? 'bg-accent text-on-accent font-bold border border-accent shadow-xs'
                 : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
             )
           }
@@ -90,7 +90,7 @@ export function Sidebar({ header, footer, children, className }) {
             <span>Invitations</span>
           </div>
           {pendingInvitesCount > 0 && (
-            <span className="rounded-full bg-accent px-1.5 py-0.2 font-mono text-[10px] font-bold text-on-accent">
+            <span className="rounded-full bg-sand px-1.5 py-0.2 font-mono text-[10px] font-bold text-accent">
               {pendingInvitesCount}
             </span>
           )}
@@ -100,9 +100,9 @@ export function Sidebar({ header, footer, children, className }) {
           onClick={closeMobileSidebar}
           className={({ isActive }) =>
             cn(
-              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150',
+              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
               isActive
-                ? 'bg-bg font-bold text-accent border border-accent/40 shadow-xs ring-1 ring-accent/15'
+                ? 'bg-accent text-on-accent font-bold border border-accent shadow-xs'
                 : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
             )
           }
@@ -112,7 +112,7 @@ export function Sidebar({ header, footer, children, className }) {
             <span>Notifications</span>
           </div>
           {unreadNotificationsCount > 0 && (
-            <span className="rounded-full bg-accent px-1.5 py-0.2 font-mono text-[10px] font-bold text-on-accent">
+            <span className="rounded-full bg-sand px-1.5 py-0.2 font-mono text-[10px] font-bold text-accent">
               {unreadNotificationsCount}
             </span>
           )}
@@ -122,9 +122,9 @@ export function Sidebar({ header, footer, children, className }) {
           onClick={closeMobileSidebar}
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150',
+              'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
               isActive
-                ? 'bg-bg font-bold text-accent border border-accent/40 shadow-xs ring-1 ring-accent/15'
+                ? 'bg-accent text-on-accent font-bold border border-accent shadow-xs'
                 : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
             )
           }
