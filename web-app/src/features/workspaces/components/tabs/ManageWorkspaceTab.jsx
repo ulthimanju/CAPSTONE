@@ -494,11 +494,11 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                         savedField === 'name' ? (
                           <Check className="h-3.5 w-3.5 text-success" />
                         ) : (
-                          <Save className="h-3.5 w-3.5" />
+                          <Edit3 className="h-3.5 w-3.5" />
                         )
                       }
                     >
-                      {savedField === 'name' ? 'Name Saved' : 'Save Name'}
+                      {savedField === 'name' ? 'Renamed' : 'Rename'}
                     </Button>
                   )}
                 </div>
