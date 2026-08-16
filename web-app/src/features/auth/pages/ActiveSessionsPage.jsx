@@ -159,6 +159,9 @@ export function ActiveSessionsPage() {
       others.shift();
     }
 
+    // Display other active devices in reverse order
+    others.reverse();
+
     return { currentSession: current, otherSessions: others };
   }, [sessions, currentSessionId]);
 
