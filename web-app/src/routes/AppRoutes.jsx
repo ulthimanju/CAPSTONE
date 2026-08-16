@@ -18,6 +18,7 @@ import { DocumentReaderPage } from '@/features/documents/pages/DocumentReaderPag
 import { NotificationsPage } from '@/features/notifications/pages/NotificationsPage';
 import { InvitationsPage } from '@/features/invitations/pages/InvitationsPage';
 import { ArchivedWorkspacesPage } from '@/features/workspaces/pages/ArchivedWorkspacesPage';
+import { ActiveSessionsPage } from '@/features/auth/pages/ActiveSessionsPage';
 import { ROUTES } from '@/config/constants';
 
 export function AppRoutes() {
@@ -34,6 +35,8 @@ export function AppRoutes() {
           <Route path="/invitations" element={<InvitationsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/archived-workspaces" element={<ArchivedWorkspacesPage />} />
+          <Route path="/sessions" element={<ActiveSessionsPage />} />
+          <Route path="/active-sessions" element={<Navigate to="/sessions" replace />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspaceDetailPage />}>
             <Route index element={<DocumentsTab />} />
             <Route path="documents" element={<DocumentsTab />} />

@@ -34,21 +34,52 @@ export function useProfileQuery(options = {}) {
 }
 
 /**
- * Mutation hook for updating user display name or avatar.
+ * Query hook for active user sessions and devices.
  */
-export function useUpdateProfileMutation() {
+export function useSessionsQuery(options = {}) {
+  const token = useAuthStore((state) => state.token);
+
+  return useQuery({
+    queryKey: AUTH_QUERY_KEYS.SESSIONS,
+    queryFn: () => authApi.getSessions(),
+    enabled: !!token,
+    staleTime: 30 * 1000, // 30 seconds
+    ...options,
+  });
+}
+
+/**
+ * Mutation hook for revoking a specific active session.
+ */
+export function useRevokeSessionMutation() {
   const queryClient = useQueryClient();
-  const setUser = useAuthStore((state) => state.setUser);
 
   return useMutation({
-    mutationFn: (data) => authApi.updateProfile(data),
-    onSuccess: (updatedUser) => {
-      setUser(updatedUser);
-      queryClient.setQueryData(AUTH_QUERY_KEYS.PROFILE, updatedUser);
-      toast.success('Profile updated successfully.');
+    mutationFn: (sessionId) => authApi.revokeSession(sessionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSIONS });
+      toast.success('Session revoked successfully.');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, 'Failed to update profile.'));
+      toast.error(getErrorMessage(error, 'Failed to revoke session.'));
+    },
+  });
+}
+
+/**
+ * Mutation hook for revoking all sessions.
+ */
+export function useRevokeAllSessionsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => authApi.revokeAllSessions(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSIONS });
+      toast.success('All other sessions signed out.');
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Failed to sign out other sessions.'));
     },
   });
 }

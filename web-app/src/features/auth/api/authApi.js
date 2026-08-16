@@ -23,14 +23,6 @@ export const authApi = {
   },
 
   /**
-   * Updates current user display name or avatar URL.
-   */
-  updateProfile: async (data) => {
-    const response = await apiClient.patch('/api/v1/profile', data);
-    return response.data;
-  },
-
-  /**
    * Checks if user has authorized Google Drive tokens.
    */
   checkGoogleDriveStatus: async () => {
@@ -54,16 +46,24 @@ export const authApi = {
   /**
    * Fetches active user sessions.
    */
-  getActiveSessions: async () => {
-    const response = await apiClient.get('/api/v1/sessions/active');
+  getSessions: async () => {
+    const response = await apiClient.get('/api/v1/sessions');
     return response.data;
   },
 
   /**
-   * Revokes an active session.
+   * Revokes a specific session.
    */
   revokeSession: async (sessionId) => {
     const response = await apiClient.delete(`/api/v1/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  /**
+   * Revokes all user sessions.
+   */
+  revokeAllSessions: async () => {
+    const response = await apiClient.post('/api/v1/sessions/logout-all');
     return response.data;
   },
 };

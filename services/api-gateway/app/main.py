@@ -352,6 +352,7 @@ async def get_document_overview_aggregation(document_id: uuid.UUID):
 @app.api_route("/api/v1/oauth/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/auth/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/sessions/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+@app.api_route("/api/v1/sessions", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/users/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/tokens/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/tokens", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])

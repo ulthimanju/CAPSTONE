@@ -1,5 +1,5 @@
-import React from 'react';
-import { LogOut, Shield, ChevronsUpDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { LogOut, Shield, ChevronsUpDown, Laptop } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { GoogleDriveIcon } from '@/components/ui/GoogleDriveIcon';
 import {
@@ -17,6 +17,7 @@ import { cn } from '@/lib/cn';
 export function UserProfileMenu({ className }) {
   const user = useAuthStore((state) => state.user);
   const logout = useLogout();
+  const navigate = useNavigate();
   const { data: driveStatus } = useGoogleDriveStatusQuery();
 
   if (!user) return null;
@@ -77,10 +78,21 @@ export function UserProfileMenu({ className }) {
 
         <DropdownMenuSeparator />
 
+        {/* Active Sessions Navigation */}
+        <DropdownMenuItem
+          onClick={() => navigate('/sessions')}
+          className="cursor-pointer font-mono text-xs"
+        >
+          <Laptop className="mr-2 h-4 w-4 shrink-0 text-text/60" aria-hidden="true" />
+          <span>Active Sessions</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
         {/* Sign Out Action */}
         <DropdownMenuItem
           onClick={logout}
-          className="text-danger hover:bg-danger-tint focus:bg-danger-tint focus:text-danger cursor-pointer"
+          className="text-danger hover:bg-danger-tint focus:bg-danger-tint focus:text-danger cursor-pointer font-mono text-xs"
         >
           <LogOut className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>Sign Out</span>
