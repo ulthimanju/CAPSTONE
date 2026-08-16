@@ -5,6 +5,26 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
 
+function SummaryIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M15 4H7m11 12l3 3l-3 3" />
+      <path d="M3 4v13a2 2 0 0 0 2 2h16M7 14h7M7 9h12" />
+    </svg>
+  );
+}
+
 export function SidebarNav() {
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const closeMobileSidebar = useUIStore((state) => state.closeMobileSidebar);
@@ -28,7 +48,7 @@ export function SidebarNav() {
     {
       label: 'Summary',
       to: `${basePath}/summary`,
-      icon: ScrollText,
+      icon: SummaryIcon,
       isActive: location.pathname.startsWith(`${basePath}/summary`),
     },
     {
