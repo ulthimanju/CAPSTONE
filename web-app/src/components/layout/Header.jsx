@@ -17,7 +17,6 @@ import {
   useGenerateUnitContentMutation,
   useLearningPathStore,
 } from '@/features/learning-path/hooks/useLearningPath';
-import { InviteCollaboratorModal } from '@/features/workspaces/components/InviteCollaboratorModal';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
@@ -29,7 +28,6 @@ export function Header({ title, children, className }) {
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const currentUser = useAuthStore((state) => state.user);
   const fileInputRef = useRef(null);
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const { data: workspace } = useWorkspaceQuery(activeWorkspaceId);
   const isOwner = workspace?.user_role === 'OWNER' || workspace?.owner_id === currentUser?.id;
@@ -72,14 +70,6 @@ export function Header({ title, children, className }) {
   const isLearningPathTab =
     !isLearningUnitDetailPage &&
     (location.pathname.endsWith('/learning-path') || location.pathname.includes('/learning-path'));
-
-  const isManageWorkspaceTab =
-    location.pathname.endsWith('/manage') ||
-    location.pathname.includes('/manage') ||
-    location.pathname.endsWith('/collaborators') ||
-    location.pathname.includes('/collaborators') ||
-    location.pathname.endsWith('/settings') ||
-    location.pathname.includes('/settings');
 
   const isSummaryGenerated = Boolean(
     workspace?.is_summary_generated || workspace?.summary_json
@@ -268,28 +258,6 @@ export function Header({ title, children, className }) {
               >
                 Clear History
               </Button>
-            )}
-
-            {/* Invite Collaborators Button (Secondary Outline) - Visible ONLY on Manage Workspace Tab */}
-            {isManageWorkspaceTab && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsInviteModalOpen(true)}
-                  leftIcon={<UserPlus className="h-4 w-4 text-text/70" />}
-                  className="text-xs py-1.5 px-3 border-sep-line hover:border-accent hover:text-accent"
-                  title="Invite collaborators to this workspace"
-                >
-                  Invite Collaborators
-                </Button>
-
-                <InviteCollaboratorModal
-                  workspaceId={activeWorkspaceId}
-                  open={isInviteModalOpen}
-                  onOpenChange={setIsInviteModalOpen}
-                  isOwner={isOwner}
-                />
-              </>
             )}
 
             {/* Hidden Multi-File Picker Input */}

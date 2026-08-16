@@ -21,6 +21,7 @@ import {
   UserCheck,
   Settings,
   Archive,
+  Lock,
 } from 'lucide-react';
 import {
   CodeBoldIcon,
@@ -709,283 +710,316 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
       {/* 2. Active Collaborators Section */}
       {activeTab === 'collaborators' && (
         <div className="space-y-8 animate-fadeIn">
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-bold text-text flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-accent" />
-              Active Collaborators ({members.length})
-            </h2>
-            <p className="font-body text-xs text-text/70">
-              Manage study permissions, assign roles, and view current workspace participants.
-            </p>
-          </div>
-
-          {!isOwner && (
-            <div className="flex items-center gap-2.5">
-              <Button
-                variant="outline"
-                onClick={() => setIsLeaveDialogOpen(true)}
-                leftIcon={<LogOut className="h-4 w-4 text-danger" />}
-                className="text-xs text-danger hover:bg-danger-tint hover:border-danger/40"
-              >
-                Leave Workspace
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Search Filter Bar */}
-        {(members.length > 2 || invitations.length > 0) && (
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text/40 pointer-events-none" />
-            <Input
-              type="text"
-              placeholder="Search collaborators by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 text-xs font-mono bg-surface"
-            />
-          </div>
-        )}
-
-        {isLoadingMembers && (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-accent" />
-          </div>
-        )}
-
-        {!isLoadingMembers && !isErrorMembers && filteredMembers.length === 0 && (
-          <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-8 text-center">
-            <p className="font-mono text-xs text-text/60">
-              {searchQuery ? 'No collaborators matched your search.' : 'No members found in this workspace.'}
-            </p>
-          </div>
-        )}
-
-        {!isLoadingMembers && !isErrorMembers && filteredMembers.length > 0 && (
-          <Card className="divide-y divide-sep-line p-0 overflow-hidden shadow-xs">
-            {filteredMembers.map((member) => {
-              const isSelf = member.user_id === currentUser?.id;
-              const isMemberOwner = member.role === 'OWNER' || member.user_id === workspace.owner_id;
-              const isMemberAdmin = member.role === 'ADMIN';
-
-              const canEditThisRole =
-                isOwner
-                  ? !isMemberOwner
-                  : callerRole === 'ADMIN'
-                  ? !isMemberOwner && !isMemberAdmin
-                  : false;
-
-              const canRemoveThisMember =
-                isOwner
-                  ? !isMemberOwner && !isSelf
-                  : callerRole === 'ADMIN'
-                  ? !isMemberOwner && !isMemberAdmin && !isSelf
-                  : false;
-
-              return (
-                <div
-                  key={member.id}
-                  className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar name={member.user_name || member.user_email || 'Collaborator'} size="md" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-display text-sm font-bold text-text">
-                          {member.user_name || 'Collaborator'}
-                        </span>
-                        {isMemberOwner && (
-                          <span className="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 border border-amber-500/30">
-                            <Crown className="h-2.5 w-2.5" />
-                            Owner
-                          </span>
-                        )}
-                        {isSelf && (
-                          <span className="font-mono text-[10px] text-text/50">(You)</span>
-                        )}
-                      </div>
-                      <div className="font-mono text-xs text-text/60">
-                        {member.user_email || 'Verified Student'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {/* Dynamic Role Selector / Badge */}
-                    {canEditThisRole ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            disabled={updateRoleMutation.isPending}
-                            className="inline-flex items-center gap-1.5 rounded-ui border border-sep-line bg-surface px-2.5 py-1 font-mono text-xs font-medium text-text transition-colors hover:bg-surface-hover hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 shadow-2xs"
-                            aria-label={`Change role for ${member.user_name || member.user_email}`}
-                          >
-                            <span className="flex items-center gap-1">
-                              {member.role === 'ADMIN' && <Shield className="h-3 w-3 text-amber-500" />}
-                              {member.role === 'EDITOR' && <Edit3 className="h-3 w-3 text-accent" />}
-                              {member.role === 'VIEWER' && <Eye className="h-3 w-3 text-text/60" />}
-                              <span>{member.role}</span>
-                            </span>
-                            <ChevronDown className="h-3 w-3 text-text/40" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36 p-1">
-                          {isOwner && (
-                            <DropdownMenuItem
-                              onClick={() => handleRoleChange(member.user_id, 'ADMIN', member.version)}
-                              className="flex items-center justify-between text-xs font-mono py-1.5"
-                            >
-                              <div className="flex items-center gap-2">
-                                <Shield className="h-3.5 w-3.5 text-amber-500" />
-                                <span>ADMIN</span>
-                              </div>
-                              {member.role === 'ADMIN' && <Check className="h-3.5 w-3.5 text-accent" />}
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem
-                            onClick={() => handleRoleChange(member.user_id, 'EDITOR', member.version)}
-                            className="flex items-center justify-between text-xs font-mono py-1.5"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Edit3 className="h-3.5 w-3.5 text-accent" />
-                              <span>EDITOR</span>
-                            </div>
-                            {member.role === 'EDITOR' && <Check className="h-3.5 w-3.5 text-accent" />}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleRoleChange(member.user_id, 'VIEWER', member.version)}
-                            className="flex items-center justify-between text-xs font-mono py-1.5"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Eye className="h-3.5 w-3.5 text-text/60" />
-                              <span>VIEWER</span>
-                            </div>
-                            {member.role === 'VIEWER' && <Check className="h-3.5 w-3.5 text-accent" />}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <Badge variant="role">{member.role}</Badge>
-                    )}
-
-                    {/* Transfer Ownership (Owner only) */}
-                    {isOwner && !isMemberOwner && !isSelf && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setMemberToTransfer(member)}
-                        className="text-xs py-1 px-2.5 font-mono"
-                        title="Transfer workspace ownership to this member"
-                      >
-                        Transfer Ownership
-                      </Button>
-                    )}
-
-                    {/* Remove Member Button */}
-                    {canRemoveThisMember && (
-                      <button
-                        type="button"
-                        onClick={() => setMemberToRemove(member)}
-                        disabled={removeMutation.isPending}
-                        className="rounded-ui p-1.5 text-text/50 hover:bg-danger-tint hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
-                        title="Remove member"
-                        aria-label={`Remove ${member.user_name || member.user_email}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
-        )}
-      </div>
-
-      {/* 3. Pending Invitations Section */}
-      <div className="space-y-4 pt-6 border-t border-sep-line">
-        <div>
-          <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-            <Mail className="h-4 w-4 text-accent" />
-            Pending Invitations ({filteredInvitations.length})
-          </h3>
-          <p className="font-body text-xs text-text/70">
-            Invitations sent and waiting for recipient email verification.
-          </p>
-        </div>
-
-        {isLoadingInvites && (
-          <div className="flex justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-accent" />
-          </div>
-        )}
-
-        {!isLoadingInvites && filteredInvitations.length === 0 && (
-          <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-6 text-center">
-            <p className="font-mono text-xs text-text/60">
-              No pending invitations for this workspace.
-            </p>
-          </div>
-        )}
-
-        {!isLoadingInvites && filteredInvitations.length > 0 && (
-          <Card className="divide-y divide-sep-line p-0 overflow-hidden shadow-xs">
-            {filteredInvitations.map((inv) => (
-              <div
-                key={inv.id}
-                className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/50 transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Mail className="h-4 w-4 text-text/50 shrink-0" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-medium text-text">
-                        {inv.invited_email}
-                      </span>
-                      <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-sand border border-sep-line text-text/70">
-                        {inv.role}
-                      </span>
-                    </div>
-                    {inv.expires_at && (
-                      <div className="font-mono text-[10px] text-text/50 flex items-center gap-1 mt-0.5">
-                        <Clock className="h-3 w-3" />
-                        Expires: {formatActivityDate(inv.expires_at)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {canManageMembers && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => resendInviteMutation.mutate(inv.id)}
-                      disabled={resendInviteMutation.isPending}
-                      leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
-                      className="text-xs py-1 px-2.5"
-                    >
-                      Resend
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => cancelInviteMutation.mutate(inv.id)}
-                      disabled={cancelInviteMutation.isPending}
-                      className="text-xs py-1 px-2.5 text-danger hover:bg-danger-tint hover:border-danger/30"
-                    >
-                      Revoke
-                    </Button>
-                  </div>
-                )}
+          {/* GitHub-style Manage Access Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-1">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="font-display text-lg font-bold text-text">Manage access</h2>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-sand border border-sep-line text-text/70">
+                  <Lock className="h-3 w-3 text-text/50" />
+                  Private workspace
+                </span>
               </div>
-            ))}
-          </Card>
-        )}
-      </div>
+              <p className="font-body text-xs text-text/70 mt-1">
+                Only collaborators have access to this workspace and its learning materials.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              {canManageMembers && (
+                <Button
+                  variant="primary"
+                  onClick={() => setIsInviteModalOpen(true)}
+                  leftIcon={<UserPlus className="h-4 w-4" />}
+                  className="text-xs py-2 px-3.5"
+                  aria-label="Invite Collaborator"
+                >
+                  Add people
+                </Button>
+              )}
+
+              {!isOwner && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsLeaveDialogOpen(true)}
+                  leftIcon={<LogOut className="h-4 w-4 text-danger" />}
+                  className="text-xs text-danger hover:bg-danger-tint hover:border-danger/40"
+                >
+                  Leave Workspace
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Search Filter Bar */}
+            {(members.length > 2 || invitations.length > 0) && (
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text/40 pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder="Search collaborators by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 text-xs font-mono bg-surface"
+                />
+              </div>
+            )}
+
+            {isLoadingMembers && (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-accent" />
+              </div>
+            )}
+
+            {!isLoadingMembers && !isErrorMembers && filteredMembers.length === 0 && (
+              <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-8 text-center">
+                <p className="font-mono text-xs text-text/60">
+                  {searchQuery ? 'No collaborators matched your search.' : 'No members found in this workspace.'}
+                </p>
+              </div>
+            )}
+
+            {!isLoadingMembers && !isErrorMembers && filteredMembers.length > 0 && (
+              <div className="rounded-card border border-sep-line/80 bg-surface overflow-hidden shadow-xs">
+                <div className="flex items-center justify-between border-b border-sep-line/60 bg-surface-hover/50 px-4 py-2.5">
+                  <span className="font-mono text-xs font-semibold text-text uppercase tracking-wider">
+                    Direct access ({filteredMembers.length})
+                  </span>
+                  {filteredMembers.length !== members.length && (
+                    <span className="font-mono text-[11px] text-text/50">
+                      Filtered from {members.length} total
+                    </span>
+                  )}
+                </div>
+
+                <div className="divide-y divide-sep-line/60">
+                  {filteredMembers.map((member) => {
+                    const isSelf = member.user_id === currentUser?.id;
+                    const isMemberOwner = member.role === 'OWNER' || member.user_id === workspace.owner_id;
+                    const isMemberAdmin = member.role === 'ADMIN';
+
+                    const canEditThisRole =
+                      isOwner
+                        ? !isMemberOwner
+                        : callerRole === 'ADMIN'
+                        ? !isMemberOwner && !isMemberAdmin
+                        : false;
+
+                    const canRemoveThisMember =
+                      isOwner
+                        ? !isMemberOwner && !isSelf
+                        : callerRole === 'ADMIN'
+                        ? !isMemberOwner && !isMemberAdmin && !isSelf
+                        : false;
+
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar name={member.user_name || member.user_email || 'Collaborator'} size="md" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-display text-sm font-bold text-text">
+                                {member.user_name || 'Collaborator'}
+                              </span>
+                              {isMemberOwner && (
+                                <span className="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                                  <Crown className="h-2.5 w-2.5" />
+                                  Owner
+                                </span>
+                              )}
+                              {isSelf && (
+                                <span className="font-mono text-[10px] text-text/50">(You)</span>
+                              )}
+                            </div>
+                            <div className="font-mono text-xs text-text/60">
+                              {member.user_email || 'Verified Student'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          {/* Instant Inline Role Selector */}
+                          {canEditThisRole ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  disabled={updateRoleMutation.isPending}
+                                  className="inline-flex items-center gap-1.5 rounded-ui border border-sep-line bg-surface px-2.5 py-1 font-mono text-xs font-medium text-text transition-colors hover:bg-surface-hover hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 shadow-2xs"
+                                  aria-label={`Change role for ${member.user_name || member.user_email}`}
+                                >
+                                  <span className="flex items-center gap-1">
+                                    {member.role === 'ADMIN' && <Shield className="h-3 w-3 text-amber-500" />}
+                                    {member.role === 'EDITOR' && <Edit3 className="h-3 w-3 text-accent" />}
+                                    {member.role === 'VIEWER' && <Eye className="h-3 w-3 text-text/60" />}
+                                    <span>{member.role}</span>
+                                  </span>
+                                  <ChevronDown className="h-3 w-3 text-text/40" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-36 p-1">
+                                {isOwner && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleRoleChange(member.user_id, 'ADMIN', member.version)}
+                                    className="flex items-center justify-between text-xs font-mono py-1.5 cursor-pointer"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Shield className="h-3.5 w-3.5 text-amber-500" />
+                                      <span>ADMIN</span>
+                                    </div>
+                                    {member.role === 'ADMIN' && <Check className="h-3.5 w-3.5 text-accent" />}
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleRoleChange(member.user_id, 'EDITOR', member.version)}
+                                  className="flex items-center justify-between text-xs font-mono py-1.5 cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Edit3 className="h-3.5 w-3.5 text-accent" />
+                                    <span>EDITOR</span>
+                                  </div>
+                                  {member.role === 'EDITOR' && <Check className="h-3.5 w-3.5 text-accent" />}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleRoleChange(member.user_id, 'VIEWER', member.version)}
+                                  className="flex items-center justify-between text-xs font-mono py-1.5 cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Eye className="h-3.5 w-3.5 text-text/60" />
+                                    <span>VIEWER</span>
+                                  </div>
+                                  {member.role === 'VIEWER' && <Check className="h-3.5 w-3.5 text-accent" />}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <Badge variant="role">{member.role}</Badge>
+                          )}
+
+                          {/* Transfer Ownership (Owner only) */}
+                          {isOwner && !isMemberOwner && !isSelf && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setMemberToTransfer(member)}
+                              className="text-xs py-1 px-2.5 font-mono"
+                              title="Transfer workspace ownership to this member"
+                            >
+                              Transfer Ownership
+                            </Button>
+                          )}
+
+                          {/* Remove Member Button */}
+                          {canRemoveThisMember && (
+                            <button
+                              type="button"
+                              onClick={() => setMemberToRemove(member)}
+                              disabled={removeMutation.isPending}
+                              className="rounded-ui p-1.5 text-text/50 hover:bg-danger-tint hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                              title="Remove member"
+                              aria-label={`Remove ${member.user_name || member.user_email}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3. Pending Invitations Section */}
+          <div className="space-y-4 pt-6 border-t border-sep-line">
+            <div>
+              <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
+                <Mail className="h-4 w-4 text-accent" />
+                Pending Invitations ({filteredInvitations.length})
+              </h3>
+              <p className="font-body text-xs text-text/70">
+                Invitations sent and waiting for recipient email verification.
+              </p>
+            </div>
+
+            {isLoadingInvites && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-accent" />
+              </div>
+            )}
+
+            {!isLoadingInvites && filteredInvitations.length === 0 && (
+              <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-6 text-center">
+                <p className="font-mono text-xs text-text/60">
+                  No pending invitations for this workspace.
+                </p>
+              </div>
+            )}
+
+            {!isLoadingInvites && filteredInvitations.length > 0 && (
+              <div className="rounded-card border border-sep-line/80 bg-surface overflow-hidden shadow-xs divide-y divide-sep-line/60">
+                {filteredInvitations.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Mail className="h-4 w-4 text-text/50 shrink-0" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-medium text-text">
+                            {inv.invited_email}
+                          </span>
+                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-sand border border-sep-line text-text/70">
+                            {inv.role}
+                          </span>
+                          <span className="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                            <Clock className="h-2.5 w-2.5" />
+                            Pending Invite
+                          </span>
+                        </div>
+                        {inv.expires_at && (
+                          <div className="font-mono text-[10px] text-text/50 flex items-center gap-1 mt-0.5">
+                            <Clock className="h-3 w-3" />
+                            Expires: {formatActivityDate(inv.expires_at)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {canManageMembers && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => resendInviteMutation.mutate(inv.id)}
+                          disabled={resendInviteMutation.isPending}
+                          leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+                          className="text-xs py-1 px-2.5"
+                        >
+                          Resend
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => cancelInviteMutation.mutate(inv.id)}
+                          disabled={cancelInviteMutation.isPending}
+                          className="text-xs py-1 px-2.5 text-danger hover:bg-danger-tint hover:border-danger/30"
+                        >
+                          Revoke
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
       {/* 4. Activity & Audit Trail Section */}
       <div className="space-y-4 pt-6 border-t border-sep-line">
