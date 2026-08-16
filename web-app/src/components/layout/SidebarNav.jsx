@@ -1,95 +1,15 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FolderOpenDot, ScrollText, Sparkles, Bot, Waypoints, Users, Settings } from 'lucide-react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
-
-function SummaryIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M15 4H7m11 12l3 3l-3 3" />
-      <path d="M3 4v13a2 2 0 0 0 2 2h16M7 14h7M7 9h12" />
-    </svg>
-  );
-}
-
-function DocumentsFilesFilledIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      className={className}
-      aria-hidden="true"
-      {...props}
-    >
-      <title>files-filled</title>
-      <path
-        fill="currentColor"
-        d="m11 2l3 .001V8a1 1 0 0 0 .883.993L15 9h6v6a3 3 0 0 1-3 3h-1v1a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h1V5a3 3 0 0 1 3-3M8 8H7a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-1h-4a3 3 0 0 1-3-3zm12.415-1H16V2.585z"
-      />
-    </svg>
-  );
-}
-
-function LearningPathIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      className={className}
-      aria-hidden="true"
-      {...props}
-    >
-      <title>path-arrow-solid</title>
-      <g
-        fill="currentColor"
-        fillRule="evenodd"
-        strokeWidth="1.5"
-        clipRule="evenodd"
-      >
-        <path d="M17.47 2.47a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 0 1-.53 1.28h-2.75v9.25a.75.75 0 0 1-1.5 0V7.25H14.5a.75.75 0 0 1-.53-1.28z" />
-        <path d="M3.25 7.5a4.25 4.25 0 0 1 8.5 0v9a2.75 2.75 0 1 0 5.5 0a.75.75 0 0 1 1.5 0a4.25 4.25 0 0 1-8.5 0v-9a2.75 2.75 0 1 0-5.5 0v12a.75.75 0 0 1-1.5 0z" />
-      </g>
-    </svg>
-  );
-}
-
-function AITutorIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      className={className}
-      aria-hidden="true"
-      {...props}
-    >
-      <title>question</title>
-      <g
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.5"
-      >
-        <path d="M15.4 7.5h-.05m3.35 0h-.05m-3.2 0a.1.1 0 1 1-.2 0a.1.1 0 0 1 .2 0m3.3 0a.1.1 0 1 1-.2 0a.1.1 0 0 1 .2 0" />
-        <path d="M17 12.567c2.761 0 5-2.142 5-4.784S19.761 3 17 3s-5 2.142-5 4.783c0 1.27.517 2.423 1.36 3.279c.185.188.309.445.259.71a2.66 2.66 0 0 1-.543 1.175a3.25 3.25 0 0 0 2.111-.329h.001c.227-.12.34-.181.42-.193s.195.01.425.052q.479.09.967.09M10 13a3 3 0 1 1-6 0a3 3 0 0 1 6 0" />
-        <path d="M12 21a5 5 0 0 0-10 0" />
-      </g>
-    </svg>
-  );
-}
+import {
+  DocumentsIcon,
+  SummaryIcon,
+  LearningPathIcon,
+  AITutorIcon,
+  Settings,
+} from '@/components/ui';
 
 function SidebarNavItem({ item, closeMobileSidebar }) {
   const [isHovered, setIsHovered] = React.useState(false);
@@ -137,7 +57,7 @@ export function SidebarNav() {
     {
       label: 'Documents',
       to: `${basePath}/documents`,
-      icon: DocumentsFilesFilledIcon,
+      icon: DocumentsIcon,
       isActive:
         location.pathname === basePath ||
         location.pathname.startsWith(`${basePath}/documents`),
