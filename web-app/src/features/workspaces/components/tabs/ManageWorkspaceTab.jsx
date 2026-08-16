@@ -3,9 +3,7 @@ import { useNavigate, useOutletContext, useLocation, useSearchParams } from 'rea
 import {
   Save,
   Trash2,
-  Lock,
   Users,
-  Globe,
   Check,
   UserPlus,
   Mail,
@@ -116,7 +114,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   const [nameValue, setNameValue] = useState(workspace?.name || '');
   const [domainValue, setDomainValue] = useState(workspace?.domain_type || 'TECHNICAL');
   const [languageValue, setLanguageValue] = useState(workspace?.workspace_code_language || 'Python');
-  const [visibilityValue, setVisibilityValue] = useState(workspace?.visibility || 'PRIVATE');
   const [savingField, setSavingField] = useState(null);
   const [savedField, setSavedField] = useState(null);
 
@@ -125,14 +122,12 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
       setNameValue(workspace.name || '');
       setDomainValue(workspace.domain_type || 'TECHNICAL');
       setLanguageValue(workspace.workspace_code_language || 'Python');
-      setVisibilityValue(workspace.visibility || 'PRIVATE');
     }
   }, [
     workspace?.id,
     workspace?.name,
     workspace?.domain_type,
     workspace?.workspace_code_language,
-    workspace?.visibility,
   ]);
 
   const updateWorkspaceMutation = useUpdateWorkspaceMutation(workspace?.id);
@@ -199,27 +194,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
         onError: (err) => {
           setSavingField(null);
           toast.error(getErrorMessage(err, 'Failed to update code language'));
-        },
-      }
-    );
-  };
-
-  const handleSaveVisibility = (e) => {
-    e?.preventDefault();
-    if (visibilityValue === workspace?.visibility) return;
-    setSavingField('visibility');
-    updateWorkspaceMutation.mutate(
-      { visibility: visibilityValue },
-      {
-        onSuccess: () => {
-          setSavingField(null);
-          setSavedField('visibility');
-          toast.success('Privacy & visibility updated');
-          setTimeout(() => setSavedField(null), 2500);
-        },
-        onError: (err) => {
-          setSavingField(null);
-          toast.error(getErrorMessage(err, 'Failed to update visibility'));
         },
       }
     );
@@ -679,93 +653,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
               </Card>
             )}
 
-            {/* Card 4: Visibility & Access */}
-            <Card className="p-5 flex flex-col justify-between space-y-4">
-              <div className="space-y-2">
-                <div>
-                  <h3 className="text-xs font-mono font-medium text-text">Privacy & Visibility</h3>
-                  <p className="text-[11px] text-text/60 font-body">
-                    Controls workspace discovery and collaboration permissions across your institution.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'visibility'}
-                    onClick={() => setVisibilityValue('PRIVATE')}
-                    className={cn(
-                      'flex flex-col items-center gap-1 rounded-ui border p-2.5 text-center transition-all',
-                      visibilityValue === 'PRIVATE'
-                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
-                      (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                    )}
-                  >
-                    <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="text-[11px] font-mono">Private</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'visibility'}
-                    onClick={() => setVisibilityValue('INTERNAL')}
-                    className={cn(
-                      'flex flex-col items-center gap-1 rounded-ui border p-2.5 text-center transition-all',
-                      visibilityValue === 'INTERNAL'
-                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
-                      (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                    )}
-                  >
-                    <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="text-[11px] font-mono">Internal</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'visibility'}
-                    onClick={() => setVisibilityValue('PUBLIC')}
-                    className={cn(
-                      'flex flex-col items-center gap-1 rounded-ui border p-2.5 text-center transition-all',
-                      visibilityValue === 'PUBLIC'
-                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
-                      (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                    )}
-                  >
-                    <Globe className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="text-[11px] font-mono">Public</span>
-                  </button>
-                </div>
-              </div>
-
-              {(isOwner || callerRole === 'ADMIN') && (
-                <div className="flex justify-end pt-2 border-t border-sep-line/60">
-                  <Button
-                    size="sm"
-                    type="button"
-                    onClick={handleSaveVisibility}
-                    disabled={
-                      visibilityValue === (workspace?.visibility || 'PRIVATE') ||
-                      savingField !== null
-                    }
-                    isLoading={savingField === 'visibility'}
-                    leftIcon={
-                      savedField === 'visibility' ? (
-                        <Check className="h-3.5 w-3.5 text-success" />
-                      ) : (
-                        <Save className="h-3.5 w-3.5" />
-                      )
-                    }
-                  >
-                    {savedField === 'visibility' ? 'Visibility Saved' : 'Save Visibility'}
-                  </Button>
-                </div>
-              )}
-            </Card>
-
-            {/* Card 5: Danger Zone & Actions (Owner Only) */}
+            {/* Card 4: Danger Zone & Actions (Owner Only) */}
             {isOwner && (
               <Card className="p-5 border-danger/30 bg-danger-tint/10 flex flex-col justify-between space-y-4">
                 <div>

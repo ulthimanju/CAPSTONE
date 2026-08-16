@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Lock, Globe, Users, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import {
   CodeBoldIcon,
   BookLinearIcon,
@@ -80,6 +80,7 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
   const onSubmit = (formData) => {
     const payload = {
       ...formData,
+      visibility: 'PRIVATE',
       workspace_code_language:
         formData.domain_type === 'TECHNICAL' ? formData.workspace_code_language || 'Python' : null,
     };
@@ -206,62 +207,6 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
               </p>
             </div>
           )}
-
-          {/* Visibility Selection */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-mono font-medium text-text">
-              Visibility
-            </label>
-            <Controller
-              name="visibility"
-              control={control}
-              render={({ field }) => (
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => field.onChange('PRIVATE')}
-                    className={cn(
-                      'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
-                      field.value === 'PRIVATE'
-                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover'
-                    )}
-                  >
-                    <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="text-[11px] font-mono">Private</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => field.onChange('INTERNAL')}
-                    className={cn(
-                      'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
-                      field.value === 'INTERNAL'
-                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover'
-                    )}
-                  >
-                    <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="text-[11px] font-mono">Internal</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => field.onChange('PUBLIC')}
-                    className={cn(
-                      'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
-                      field.value === 'PUBLIC'
-                        ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                        : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover'
-                    )}
-                  >
-                    <Globe className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="text-[11px] font-mono">Public</span>
-                  </button>
-                </div>
-              )}
-            />
-          </div>
 
           {/* Server Error Message */}
           {createMutation.isError && (

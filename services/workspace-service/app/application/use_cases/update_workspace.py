@@ -53,8 +53,6 @@ class UpdateWorkspaceUseCase:
             elif clean_name != workspace.name:
                 is_renamed = True
                 workspace.name = clean_name
-        if req.visibility is not None:
-            workspace.visibility = req.visibility
         if req.domain_type is not None:
             workspace.domain_type = req.domain_type
         if req.workspace_code_language is not None:

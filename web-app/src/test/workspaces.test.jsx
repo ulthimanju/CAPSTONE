@@ -187,14 +187,15 @@ describe('WorkspaceSelector Component in Header', () => {
 });
 
 describe('CreateWorkspaceModal Component', () => {
-  it('submits valid form with name, domain type, and visibility', async () => {
+  it('submits valid form with name and domain type (defaulting to PRIVATE visibility)', async () => {
     const user = userEvent.setup();
     const mockCreated = {
       id: 'e4b3c2a1-0000-4000-8000-000000000001',
       owner_id: '00f3d58e-ce22-4d1f-a665-bbf8266aa2a8',
       name: 'Deep Learning',
       domain_type: 'TECHNICAL',
-      visibility: 'INTERNAL',
+      workspace_code_language: 'Python',
+      visibility: 'PRIVATE',
       status: 'ACTIVE',
       created_at: '2026-08-15T09:30:00Z',
       updated_at: '2026-08-15T10:15:00Z',
@@ -216,9 +217,6 @@ describe('CreateWorkspaceModal Component', () => {
     const nameInput = screen.getByLabelText(/workspace name/i);
     await user.type(nameInput, 'Deep Learning');
 
-    const internalBtn = screen.getByRole('button', { name: /internal/i });
-    await user.click(internalBtn);
-
     const submitBtn = screen.getByRole('button', { name: /create workspace/i });
     await user.click(submitBtn);
 
@@ -227,7 +225,7 @@ describe('CreateWorkspaceModal Component', () => {
         name: 'Deep Learning',
         domain_type: 'TECHNICAL',
         workspace_code_language: 'Python',
-        visibility: 'INTERNAL',
+        visibility: 'PRIVATE',
       });
     });
 

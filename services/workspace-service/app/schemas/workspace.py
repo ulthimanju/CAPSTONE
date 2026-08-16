@@ -13,7 +13,6 @@ class CreateWorkspaceRequest(BaseModel):
 
 class UpdateWorkspaceRequest(BaseModel):
     name: str | None = None
-    visibility: WorkspaceVisibility | None = None
     domain_type: WorkspaceDomainType | None = None
     workspace_code_language: str | None = None
 

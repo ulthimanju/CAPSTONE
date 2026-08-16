@@ -44,7 +44,7 @@ class CreateWorkspaceUseCase:
             id=ws_id,
             owner_id=user_id,
             name=clean_name,
-            visibility=req.visibility,
+            visibility=WorkspaceVisibility.PRIVATE,
             status=WorkspaceStatus.ACTIVE,
             domain_type=req.domain_type,
             workspace_code_language=req.workspace_code_language if req.domain_type == WorkspaceDomainType.TECHNICAL else None,

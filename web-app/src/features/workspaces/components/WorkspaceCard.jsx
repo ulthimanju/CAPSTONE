@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, Globe, Users, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
@@ -23,8 +23,7 @@ export function WorkspaceCard({ workspace, className }) {
     <Link
       to={`/workspaces/${workspace.id}`}
       onClick={() => setActiveWorkspaceId(workspace.id)}
-      className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-ui"
-      aria-label={`Open workspace ${workspace.name}`}
+      className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-card"
     >
       <Card
         className={cn(
@@ -34,7 +33,7 @@ export function WorkspaceCard({ workspace, className }) {
         )}
       >
         <div>
-          {/* Header row: Badges and Visibility */}
+          {/* Header row: Badges */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
               {isTechnical ? (
@@ -54,12 +53,6 @@ export function WorkspaceCard({ workspace, className }) {
                   {workspace.user_role}
                 </Badge>
               )}
-            </div>
-
-            <div className="text-text/50" title={`Visibility: ${workspace.visibility}`}>
-              {workspace.visibility === 'PRIVATE' && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
-              {workspace.visibility === 'PUBLIC' && <Globe className="h-3.5 w-3.5" aria-hidden="true" />}
-              {workspace.visibility === 'INTERNAL' && <Users className="h-3.5 w-3.5" aria-hidden="true" />}
             </div>
           </div>
 
