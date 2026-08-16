@@ -257,9 +257,15 @@ function replaceLatexFractions(str) {
 export function preprocessMarkdownForMath(text) {
   if (!text || typeof text !== 'string') return text;
 
+  // Unescape literal escaped newlines and tabs if present (from double-encoded JSON)
+  let raw = text;
+  if (raw.includes('\\n')) {
+    raw = raw.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+  }
+
   // Protect code blocks (```...``` and `...`) from being modified
   const protectedBlocks = [];
-  let processed = text.replace(/(```[\s\S]*?```|`[^`\n]+`)/g, (match) => {
+  let processed = raw.replace(/(```[\s\S]*?```|`[^`\n]+`)/g, (match) => {
     protectedBlocks.push(match);
     return `__PROTECTED_CODE_BLOCK_${protectedBlocks.length - 1}__`;
   });
