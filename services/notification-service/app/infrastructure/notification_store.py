@@ -17,7 +17,9 @@ class NotificationStore:
 
     def _determine_notification_type(self, event_name: str) -> NotificationType:
         name_lower = event_name.lower()
-        if "workspace" in name_lower:
+        if "tutor" in name_lower or "unit" in name_lower or "summary" in name_lower or "learning" in name_lower:
+            return NotificationType.TUTOR
+        if "workspace" in name_lower or "invite" in name_lower or "member" in name_lower:
             return NotificationType.WORKSPACE
         if "document" in name_lower:
             return NotificationType.DOCUMENT
@@ -30,6 +32,11 @@ class NotificationStore:
         Saves a workspace or platform event as a rich JSON document in MongoDB collection 'notifications'.
         Enforces idempotency using event_id + user_id.
         """
+        # Transient in-progress generator events are broadcast via SSE, only final states persisted
+        if event.event_name in ("SummaryGeneration", "LearningPathGeneration", "LearningUnitGeneration"):
+            if (event.status or "").upper() in ("PENDING", "PROCESSING", "STARTED", "QUEUED", "IN_PROGRESS"):
+                return False, None
+
         user_id = event.recipient_id or event.user_id or SYSTEM_USER_ID
         notif_id = uuid.uuid4()
         notif_type = self._determine_notification_type(event.event_name)

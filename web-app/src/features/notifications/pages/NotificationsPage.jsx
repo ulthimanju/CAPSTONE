@@ -13,6 +13,8 @@ import {
   UserMinus,
   Trash2,
   Folder,
+  BookOpen,
+  Compass,
 } from 'lucide-react';
 import {
   useNotificationsQuery,
@@ -53,7 +55,9 @@ export function NotificationsPage() {
     if (evt.includes('invite') || evt.includes('join')) return <UserPlus className="h-4 w-4" />;
     if (evt.includes('remove') || evt.includes('leave')) return <UserMinus className="h-4 w-4" />;
     if (evt.includes('delete')) return <Trash2 className="h-4 w-4" />;
-    if (evt.includes('document')) return <FileText className="h-4 w-4" />;
+    if (evt.includes('learning_path') || evt.includes('learning path')) return <Compass className="h-4 w-4" />;
+    if (evt.includes('unit')) return <BookOpen className="h-4 w-4" />;
+    if (evt.includes('summary') || evt.includes('document')) return <FileText className="h-4 w-4" />;
     if (item.type === 'TUTOR') return <Sparkles className="h-4 w-4" />;
     if (item.type === 'INVITE') return <Mail className="h-4 w-4" />;
     return <Bell className="h-4 w-4" />;

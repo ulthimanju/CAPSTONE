@@ -122,12 +122,25 @@ async def _publish_summary_event(
     status: str,
     user_id: str | None = None,
     error: str | None = None,
+    workspace_name: str | None = None,
 ):
     _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
     _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
         mapped_status = _STATUS_MAP.get(status, "PROCESSING")
+
+        ws_label = f" for '{workspace_name}'" if workspace_name else ""
+        if mapped_status == "COMPLETED":
+            title = "Workspace Summary Generated"
+            message = f"Synthesized comprehensive AI summary{ws_label} with key concepts and exam takeaways."
+        elif mapped_status == "FAILED":
+            title = "Workspace Summary Failed"
+            message = error or f"Failed to synthesize workspace summary{ws_label}."
+        else:
+            title = f"Workspace Summary {status.capitalize()}"
+            message = f"Workspace summary generation{ws_label} is {status.lower()}."
+
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "SummaryGeneration",
@@ -135,11 +148,14 @@ async def _publish_summary_event(
             "resource_type": "workspace",
             "resource_id": workspace_id,
             "workspace_id": workspace_id,
+            "workspace_name": workspace_name,
             "user_id": user_id,
+            "recipient_id": user_id,
+            "title": title,
+            "message": message,
             "status": mapped_status,
             "progress": _PROGRESS_MAP.get(mapped_status, 0),
-            "message": error if error else f"Workspace summary generation {status.lower()}",
-            "payload": {},
+            "payload": {"workspace_id": workspace_id, "workspace_name": workspace_name},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
@@ -503,7 +519,7 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
                 headers=headers,
             )
 
-        await _publish_summary_event(ws_id, "COMPLETED", user_id=user_id_str)
+        await _publish_summary_event(ws_id, "COMPLETED", user_id=user_id_str, workspace_name=ws_meta.get("name"))
 
     except Exception as e:
         await _publish_summary_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
@@ -529,12 +545,30 @@ from app.domain.prompts.learning_path_prompt_builder import LearningPathPromptBu
 from app.schemas.gateway import LearningPathResponse
 
 
-async def _publish_learning_path_event(workspace_id: str, status: str, user_id: str | None = None, error: str | None = None):
+async def _publish_learning_path_event(
+    workspace_id: str,
+    status: str,
+    user_id: str | None = None,
+    error: str | None = None,
+    workspace_name: str | None = None,
+):
     _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
     _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
         mapped_status = _STATUS_MAP.get(status, "PROCESSING")
+
+        ws_label = f" for '{workspace_name}'" if workspace_name else ""
+        if mapped_status == "COMPLETED":
+            title = "Learning Path Generated"
+            message = f"Generated structured modular learning path and study units{ws_label}."
+        elif mapped_status == "FAILED":
+            title = "Learning Path Failed"
+            message = error or f"Failed to generate learning path{ws_label}."
+        else:
+            title = f"Learning Path {status.capitalize()}"
+            message = f"Learning path generation{ws_label} is {status.lower()}."
+
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "LearningPathGeneration",
@@ -542,11 +576,14 @@ async def _publish_learning_path_event(workspace_id: str, status: str, user_id: 
             "resource_type": "workspace",
             "resource_id": workspace_id,
             "workspace_id": workspace_id,
+            "workspace_name": workspace_name,
             "user_id": user_id,
+            "recipient_id": user_id,
+            "title": title,
+            "message": message,
             "status": mapped_status,
             "progress": _PROGRESS_MAP.get(mapped_status, 0),
-            "message": error if error else f"Learning path generation {status.lower()}",
-            "payload": {},
+            "payload": {"workspace_id": workspace_id, "workspace_name": workspace_name},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
@@ -571,6 +608,7 @@ async def _process_learning_path_generation(workspace_id: str, authorization: st
             if ws_res.status_code != 200:
                 raise HTTPException(status_code=404, detail="Workspace metadata not found")
             ws_meta = ws_res.json()
+            ws_name = ws_meta.get("name")
 
             outline_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/outline", headers=headers)
             if outline_res.status_code != 200:
@@ -616,7 +654,7 @@ async def _process_learning_path_generation(workspace_id: str, authorization: st
                 headers=headers,
             )
 
-        await _publish_learning_path_event(ws_id, "COMPLETED", user_id=user_id_str)
+        await _publish_learning_path_event(ws_id, "COMPLETED", user_id=user_id_str, workspace_name=ws_name)
 
     except Exception as e:
         await _publish_learning_path_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
@@ -644,12 +682,24 @@ async def _publish_unit_generation_event(
     status: str,
     user_id: str | None = None,
     error: str | None = None,
+    workspace_name: str | None = None,
 ):
     _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
     _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
     try:
         notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
         mapped_status = _STATUS_MAP.get(status, "PROCESSING")
+
+        if mapped_status == "COMPLETED":
+            title = f"Study Unit '{unit_title}' Synthesized"
+            message = f"Synthesized study materials, formulas, examples, and practice questions for '{unit_title}'."
+        elif mapped_status == "FAILED":
+            title = f"Study Unit '{unit_title}' Failed"
+            message = error or f"Failed to synthesize study materials for '{unit_title}'."
+        else:
+            title = f"Study Unit {status.capitalize()}"
+            message = f"Study unit synthesis for '{unit_title}' is {status.lower()}."
+
         payload = {
             "event_id": str(generate_uuid()),
             "event_name": "LearningUnitGeneration",
@@ -657,11 +707,14 @@ async def _publish_unit_generation_event(
             "resource_type": "workspace",
             "resource_id": workspace_id,
             "workspace_id": workspace_id,
+            "workspace_name": workspace_name,
             "user_id": user_id,
+            "recipient_id": user_id,
+            "title": title,
+            "message": message,
             "status": mapped_status,
             "progress": _PROGRESS_MAP.get(mapped_status, 0),
-            "message": error if error else f"Learning unit generation {status.lower()}",
-            "payload": {"unit_title": unit_title},
+            "payload": {"workspace_id": workspace_id, "unit_title": unit_title},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
