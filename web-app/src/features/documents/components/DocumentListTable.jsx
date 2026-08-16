@@ -115,6 +115,11 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
             filename.endsWith('.docx') ||
             filename.endsWith('.doc') ||
             filename.endsWith('.wps');
+          const isTxt =
+            ext === 'txt' ||
+            ext === 'text' ||
+            filename.endsWith('.txt') ||
+            filename.endsWith('.text');
           const FileIcon = getFileIcon(doc.file_extension);
           const webViewLink =
             doc.storage_metadata_json?.web_view_link || doc.web_view_link;
@@ -143,6 +148,12 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
                     <img
                       src="/icons/docx-icon.svg"
                       alt="Word Document"
+                      className="h-8 w-8 object-contain"
+                    />
+                  ) : isTxt ? (
+                    <img
+                      src="/icons/txt-icon.svg"
+                      alt="Text Document"
                       className="h-8 w-8 object-contain"
                     />
                   ) : (
