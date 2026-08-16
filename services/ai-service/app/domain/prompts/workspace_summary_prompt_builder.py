@@ -3,8 +3,8 @@ class WorkspaceSummaryPromptBuilder:
     Optimized according to Gemini Prompt Engineering standards:
     - Clear persona and objective block up front.
     - Explicit checkable negative constraints (no preambles, no embedded Mermaid in prose).
-    - Step-by-step reasoning protocol.
-    - Few-shot input/output example pairs for diagram isolation.
+    - Step-by-step reasoning protocol with mandatory code block inclusion for technical topics.
+    - Few-shot input/output example pairs for diagrams and code blocks.
     - Strict JSON output contract.
     """
 
@@ -30,11 +30,11 @@ Execute the following 4-step reasoning process before emitting the final JSON:
 
 1. **Scope Assessment**: Scan the entire WORKSPACE KNOWLEDGE MAP. Identify all major thematic pillars, technical workflows, mathematical theorems, algorithms, and code patterns across all documents.
 2. **Structural Decomposition**: Break down the material into logical, comprehensive sections matching source depth. Distribute coverage evenly across the entire workspace rather than focusing only on whichever document appears first.
-3. **Drafting Content**:
-   - Organise each section hierarchically (`## Major Concept`, `### Detailed Mechanics`, `### Example`).
-   - Use Markdown tables for comparative trade-offs, classifications, and property comparisons.
+3. **Drafting Content & Mandatory Code Blocks**:
+   - Organise each section hierarchically (`## Major Concept`, `### Detailed Mechanics`, `### Implementation & Example`).
+   - **Code Blocks**: For all technical, algorithmic, systems, database, or programming topics, you MUST provide complete, syntax-highlighted code blocks (e.g., ```python, ```java, ```c, ```cpp, ```sql, ```javascript, ```bash). Explain the code step-by-step.
+   - Use Markdown tables for comparative trade-offs, classifications, complexity analysis, and property comparisons.
    - Use standard KaTeX syntax (`$$ formula $$` for display blocks, `$ formula $` for inline math) for mathematical equations.
-   - Include complete, functional code examples with language-tagged fenced code blocks (e.g., ```python, ```sql).
 4. **Diagram Determination**:
    - If a section details an architectural flow, lifecycle, decision sequence, or component interaction: generate clean Mermaid syntax (`flowchart TD`, `flowchart LR`, or `sequenceDiagram` only).
    - If a concept is purely declarative or definitional: set `diagram: null`, `diagram_type: "none"`, and `diagram_caption: null`.
@@ -50,7 +50,7 @@ You must output a single JSON object strictly matching this schema:
     {
       "id": "string (e.g., sec-1, sec-2)",
       "title": "string (descriptive section title)",
-      "content": "string (rich markdown with headings, tables, code, math formulas - NO DIAGRAMS)",
+      "content": "string (rich markdown with headings, tables, code blocks, math formulas - NO DIAGRAMS)",
       "diagram": "string or null (Mermaid diagram code ONLY, or null)",
       "diagram_type": "string ('flowchart' | 'sequence' | 'none')",
       "diagram_caption": "string or null (1 sentence explaining diagram, or null)"
@@ -73,13 +73,25 @@ Output Section:
   "diagram_caption": "Message exchange during the Prepare and Commit phases of 2PC."
 }
 
-### Example 2: Definitional Section (No Process)
-Input Concept: ACID Properties Definition
+### Example 2: Technical Section with Code Implementation
+Input Concept: Semaphore Concurrency Control
 Output Section:
 {
   "id": "sec-2",
+  "title": "Semaphore Concurrency & Resource Pool Synchronization",
+  "content": "A Semaphore is a synchronization primitive that maintains an internal counter to regulate concurrent access to finite resource pools.\\n\\n```python\\nimport threading\\n\\nclass BoundedResourcePool:\\n    def __init__(self, max_slots=3):\\n        self.semaphore = threading.Semaphore(max_slots)\\n        self.active_tasks = []\\n        self.lock = threading.Lock()\\n\\n    def execute_task(self, task_id):\\n        with self.semaphore:\\n            with self.lock:\\n                self.active_tasks.append(task_id)\\n            try:\\n                print(f'Running task {task_id}')\\n            finally:\\n                with self.lock:\\n                    self.active_tasks.remove(task_id)\\n```\\n\\n### Key Properties\\n- **Counting Semaphore**: Initialized with integer $N$, allowing up to $N$ concurrent workers.\\n- **Binary Semaphore**: Functions as a mutex with capacity 1.",
+  "diagram": "flowchart TD\\n    A[Task Requests Resource] --> B{Available Slots > 0?}\\n    B -->|Yes| C[Decrement Counter & Acquire]\\n    B -->|No| D[Block Thread in Wait Queue]\\n    C --> E[Execute Critical Section]\\n    E --> F[Increment Counter & Release]",
+  "diagram_type": "flowchart",
+  "diagram_caption": "Thread acquisition and release lifecycle in counting semaphores."
+}
+
+### Example 3: Definitional Section (No Process)
+Input Concept: ACID Properties Definition
+Output Section:
+{
+  "id": "sec-3",
   "title": "ACID Transactional Guarantees",
-  "content": "ACID guarantees represent the core reliability criteria in relational database engines:\\n\\n| Property | Guarantee |\\n| :--- | :--- |\\n| Atomicity | All operations succeed or none persist |\\n| Consistency | Preserves database invariant integrity |",
+  "content": "ACID guarantees represent the core reliability criteria in relational database engines:\\n\\n| Property | Guarantee | Scope |\\n| :--- | :--- | :--- |\\n| Atomicity | All operations succeed or none persist | Transaction Unit |\\n| Consistency | Preserves database invariant integrity | Schema Rules |\\n| Isolation | Concurrent transactions do not interfere | Visibility Level |\\n| Durability | Committed data survives power/system failures | Disk Persistence |",
   "diagram": null,
   "diagram_type": "none",
   "diagram_caption": null
