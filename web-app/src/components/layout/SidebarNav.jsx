@@ -43,6 +43,29 @@ function DocumentsFilesFilledIcon({ className = 'h-4 w-4 shrink-0', ...props }) 
   );
 }
 
+function LearningPathIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <title>path-arrow-solid</title>
+      <g
+        fill="currentColor"
+        fillRule="evenodd"
+        strokeWidth="1.5"
+        clipRule="evenodd"
+      >
+        <path d="M17.47 2.47a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 0 1-.53 1.28h-2.75v9.25a.75.75 0 0 1-1.5 0V7.25H14.5a.75.75 0 0 1-.53-1.28z" />
+        <path d="M3.25 7.5a4.25 4.25 0 0 1 8.5 0v9a2.75 2.75 0 1 0 5.5 0a.75.75 0 0 1 1.5 0a4.25 4.25 0 0 1-8.5 0v-9a2.75 2.75 0 1 0-5.5 0v12a.75.75 0 0 1-1.5 0z" />
+      </g>
+    </svg>
+  );
+}
+
 function SidebarNavItem({ item, closeMobileSidebar }) {
   const [isHovered, setIsHovered] = React.useState(false);
   const Icon = item.icon;
@@ -109,7 +132,7 @@ export function SidebarNav() {
     {
       label: 'Learning Path',
       to: `${basePath}/learning-path`,
-      icon: Waypoints,
+      icon: LearningPathIcon,
       isActive: location.pathname.startsWith(`${basePath}/learning-path`),
     },
     {
