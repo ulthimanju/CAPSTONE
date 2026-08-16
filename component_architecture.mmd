@@ -30,6 +30,9 @@ flowchart TD
     GW -->|/api/v1/ai| AI
     GW -->|/api/v1/notifications| NOTIFY
 
+    %% Service-to-Service Interaction
+    RAG -->|1. Embedding & 2. LLM Synthesis| AI
+
     %% ── Message Broker & Cache ──
     subgraph MESSAGING["Event Bus & Cache"]
         RMQ[["RabbitMQ (Event Bus)"]]
@@ -51,7 +54,7 @@ flowchart TD
         GEMINI["Google Gemini API"]
     end
 
-    %% Service to Database connections
+    %% Service Connections
     ID --> PG_ID
     ID --> REDIS
     ID --> GOOGLE
