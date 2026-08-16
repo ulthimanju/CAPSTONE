@@ -85,8 +85,15 @@ export function useMultiFileUpload(workspaceId) {
           },
         });
         setItemCompleted(current.id);
+        // Force immediate invalidation and synchronous cache refetch
         queryClient.invalidateQueries({
+          queryKey: DOCUMENT_QUERY_KEYS.all,
+        });
+        queryClient.refetchQueries({
           queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['workspaces', workspaceId],
         });
       } catch (err) {
         const message = getErrorMessage(err, 'Upload failed. Please try again.');
