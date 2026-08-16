@@ -39,14 +39,14 @@ function SectionCodeCard({ snippet, language, explanation }) {
   };
 
   return (
-    <div className="mt-4 overflow-hidden rounded-ui border border-sep-line bg-[#1E1E1E] shadow-sm">
-      <div className="flex items-center justify-between border-b border-[#333333] bg-[#252526] px-3.5 py-2">
+    <div className="mt-4 overflow-hidden rounded-ui border border-sep-line bg-surface shadow-xs">
+      <div className="flex items-center justify-between border-b border-sep-line bg-sand/60 px-3.5 py-1.5 gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="rounded bg-accent/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent border border-accent/30">
+          <span className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent border border-accent/30">
             {language || 'Code'}
           </span>
           {explanation && (
-            <span className="truncate font-sans text-xs italic text-[#A0A0A0]">
+            <span className="truncate font-sans text-xs italic text-text/75">
               {explanation}
             </span>
           )}
@@ -54,12 +54,12 @@ function SectionCodeCard({ snippet, language, explanation }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="shrink-0 rounded border border-[#444444] bg-[#2D2D2D] px-2.5 py-0.5 font-mono text-[10px] text-[#D4D4D4] transition-colors hover:bg-[#3E3E3E] hover:text-white"
+          className="shrink-0 rounded border border-sep-line/80 bg-surface px-2.5 py-0.5 font-mono text-[10px] text-text/80 transition-colors hover:bg-surface-hover hover:text-accent shadow-2xs"
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto p-3.5 font-mono text-xs leading-relaxed text-[#D4D4D4]">
+      <pre className="overflow-x-auto p-3.5 font-mono text-xs leading-relaxed bg-[#201A13] text-[#EDE4D0] border-t border-sep-line/20 hljs">
         <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
       </pre>
     </div>

@@ -218,3 +218,49 @@
   display: none !important;
 }
 
+/* ==========================================================================
+   Syntax Highlighting — Field Journal Theme Token Mapping
+   ========================================================================== */
+
+pre code.hljs,
+code.hljs {
+  background: transparent !important;
+  color: var(--text);
+  font-family: var(--font-mono) !important;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in {
+  color: var(--accent) !important;
+  font-weight: 600;
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-section {
+  color: #6E884F !important;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--sep-line) !important;
+  font-style: italic;
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #C06B36 !important;
+}
+
+.hljs-function,
+.hljs-params,
+.hljs-attr {
+  color: #D4883B !important;
+}
+
+.hljs-variable,
+.hljs-template-variable {
+  color: var(--text) !important;
+}
+
