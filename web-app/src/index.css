@@ -47,8 +47,8 @@
        Used for cards, panels, and sidebar backgrounds that sit "above"
        the base --bg, plus their hover/pressed states. */
     --surface-raised: var(--sand);        /* card / sidebar / panel background */
-    --surface-hover: var(--sand);         /* hover background on --bg surfaces */
-    --surface-hover-strong: #D9C9A6;      /* stronger hover, e.g. dropdown items (derived) */
+    --surface-hover: #D7C7A3;             /* distinct hover background on sand surfaces */
+    --surface-hover-strong: #CFC09B;      /* stronger hover, e.g. dropdown items */
     --shadow-color: rgba(42, 35, 24, 0.1);/* dropdown / card drop shadows */
     --danger-tint: rgba(168, 85, 30, 0.1);/* subtle danger hover background */
 

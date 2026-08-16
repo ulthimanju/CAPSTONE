@@ -78,10 +78,10 @@ export function Sidebar({ header, footer, children, className }) {
           onClick={closeMobileSidebar}
           className={({ isActive }) =>
             cn(
-              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-colors',
+              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150',
               isActive
-                ? 'bg-sand font-bold text-accent shadow-theme'
-                : 'text-text/70 hover:bg-surface-hover hover:text-text'
+                ? 'bg-bg font-bold text-accent border border-accent/40 shadow-xs ring-1 ring-accent/15'
+                : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
             )
           }
         >
@@ -100,10 +100,10 @@ export function Sidebar({ header, footer, children, className }) {
           onClick={closeMobileSidebar}
           className={({ isActive }) =>
             cn(
-              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-colors',
+              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150',
               isActive
-                ? 'bg-sand font-bold text-accent shadow-theme'
-                : 'text-text/70 hover:bg-surface-hover hover:text-text'
+                ? 'bg-bg font-bold text-accent border border-accent/40 shadow-xs ring-1 ring-accent/15'
+                : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
             )
           }
         >
@@ -122,10 +122,10 @@ export function Sidebar({ header, footer, children, className }) {
           onClick={closeMobileSidebar}
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-colors',
+              'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150',
               isActive
-                ? 'bg-sand font-bold text-accent shadow-theme'
-                : 'text-text/70 hover:bg-surface-hover hover:text-text'
+                ? 'bg-bg font-bold text-accent border border-accent/40 shadow-xs ring-1 ring-accent/15'
+                : 'text-text/75 hover:bg-surface-hover hover:text-text border border-transparent'
             )
           }
         >
