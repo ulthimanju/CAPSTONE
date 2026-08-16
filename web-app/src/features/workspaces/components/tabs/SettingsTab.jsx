@@ -117,7 +117,11 @@ export function SettingsTab({ workspace: propWorkspace }) {
                         : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover'
                     )}
                   >
-                    <Terminal className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <img
+                      src="/icons/tech-icon.svg"
+                      alt="Technical"
+                      className="h-4 w-4 shrink-0 object-contain"
+                    />
                     <div>
                       <div className="text-xs font-bold font-mono">Technical</div>
                       <div className="text-[10px] text-text/60 font-body">CS, Code, Math</div>
