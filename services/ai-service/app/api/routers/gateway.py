@@ -459,32 +459,17 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
                 raise HTTPException(status_code=404, detail="Workspace metadata not found")
             ws_meta = ws_res.json()
 
-            docs_res = await client.get(f"{document_url}/api/v1/documents?workspace_id={ws_id}", headers=headers)
-            docs_list = docs_res.json().get("documents", []) if docs_res.status_code == 200 else []
-
-            doc_summaries = []
-            for doc in docs_list:
-                doc_id = doc["id"]
-                doc_name = doc.get("original_filename") or doc.get("filename") or f"Document {doc_id}"
-                md_res = await client.get(f"{document_url}/api/v1/documents/{doc_id}/markdown", headers=headers)
-                if md_res.status_code == 200 and md_res.json().get("markdown"):
-                    doc_text = md_res.json()["markdown"]
-                    # Sample or include full text up to 25k characters per doc
-                    if len(doc_text) > 25000:
-                        doc_text = doc_text[:25000] + "\n... [Document Content Truncated]"
-                    doc_summaries.append(f"--- Document: {doc_name} ---\n{doc_text}")
-                else:
-                    sum_res = await client.get(f"{document_url}/api/v1/documents/{doc_id}/summary", headers=headers)
-                    if sum_res.status_code == 200 and sum_res.json().get("summary"):
-                        doc_summaries.append(f"--- Document: {doc_name} ---\n{sum_res.json()['summary']}")
-                    else:
-                        doc_summaries.append(f"--- Document: {doc_name} ---\nStatus: {doc.get('status', 'PARSED')}")
+            topics_covered = ws_meta.get("topics_covered") or ""
+            if not topics_covered:
+                topics_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}/topics", headers=headers)
+                if topics_res.status_code == 200:
+                    topics_covered = topics_res.json().get("topics_covered", "")
 
         context_parts = [
             f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
-            f"Description: {ws_meta.get('description', 'N/A')}\n",
-            "--- INDIVIDUAL DOCUMENT SUMMARIES & KNOWLEDGE OUTLINE ---",
-            "\n\n".join(doc_summaries) if doc_summaries else "No processed documents available yet.",
+            f"Domain Type: {ws_meta.get('domain_type', 'TECHNICAL')}\n",
+            "--- WORKSPACE TOPICS COVERED & KNOWLEDGE OUTLINE ---",
+            topics_covered if topics_covered else "No processed topics covered outline available yet.",
         ]
 
         assembled_prompt = "\n".join(context_parts)
