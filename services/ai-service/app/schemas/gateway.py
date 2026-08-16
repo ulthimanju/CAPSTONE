@@ -79,7 +79,8 @@ class ChatRequest(BaseModel):
 
 
 class LearningUnit(BaseModel):
-    title: str = Field(..., description="Title of the learning milestone")
+    unit_number: int | None = Field(default=None, description="Sequence number of the learning unit")
+    title: str = Field(..., description="Clean descriptive title of the learning milestone without 'Unit X:' prefix")
     description: str | None = Field(default=None, description="Optional legacy description")
 
 
