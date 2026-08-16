@@ -99,6 +99,18 @@ export const workspaceApi = {
     const response = await apiClient.delete(`/api/v1/workspaces/${workspaceId}`);
     return response.data;
   },
+
+  /**
+   * Checks workspace name availability in real time.
+   */
+  checkNameAvailability: async (name, excludeWorkspaceId = null) => {
+    const params = { name };
+    if (excludeWorkspaceId) {
+      params.exclude_workspace_id = excludeWorkspaceId;
+    }
+    const response = await apiClient.get('/api/v1/workspaces/check-name', { params });
+    return response.data;
+  },
 };
 
 export default workspaceApi;

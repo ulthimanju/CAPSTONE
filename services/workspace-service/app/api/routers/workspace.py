@@ -68,6 +68,31 @@ async def list_archived_workspaces(
     return await use_case.execute(user_id, limit, offset, status="ARCHIVED")
 
 
+@router.get("/check-name")
+async def check_workspace_name_availability(
+    name: str = Query(..., min_length=1, max_length=100),
+    exclude_workspace_id: UUID | None = Query(default=None),
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+):
+    trimmed = name.strip()
+    if not trimmed:
+        return {"available": False, "name": trimmed, "reason": "Workspace name cannot be empty."}
+
+    existing = await ws_repo.get_by_owner_and_name(user_id, trimmed)
+    if existing and (not exclude_workspace_id or existing.id != exclude_workspace_id):
+        return {
+            "available": False,
+            "name": trimmed,
+            "reason": f"You already have an active workspace named '{trimmed}'."
+        }
+    return {
+        "available": True,
+        "name": trimmed,
+        "reason": "Name is available."
+    }
+
+
 @router.get("/{workspace_id}", response_model=WorkspaceResponse)
 async def get_workspace(
     workspace_id: UUID,

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { WorkspaceNameAvailabilityFeedback } from './WorkspaceNameAvailabilityFeedback';
 import { createWorkspaceRequestSchema } from '../schemas/workspaceSchemas';
 import { useCreateWorkspaceMutation } from '../hooks/useWorkspaces';
 import { getErrorMessage } from '@/lib/errorUtils';
@@ -23,6 +24,7 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
     handleSubmit,
     control,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(createWorkspaceRequestSchema),
@@ -32,6 +34,8 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
       visibility: 'PRIVATE',
     },
   });
+
+  const watchedName = watch('name');
 
   const createMutation = useCreateWorkspaceMutation({
     onSuccess: (data) => {
@@ -64,7 +68,7 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
-          {/* Workspace Name Input */}
+          {/* Workspace Name Input with Real-time Availability Validator */}
           <div className="space-y-1.5">
             <label htmlFor="workspace-name-input" className="block text-xs font-mono font-medium text-text">
               Workspace Name <span className="text-danger">*</span>
@@ -76,11 +80,10 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
               {...register('name')}
               autoFocus
             />
-            {errors.name && (
-              <p className="font-mono text-[11px] text-danger">
-                {errors.name.message}
-              </p>
-            )}
+            <WorkspaceNameAvailabilityFeedback
+              name={watchedName}
+              schemaError={errors.name?.message}
+            />
           </div>
 
           {/* Domain Type Selection */}

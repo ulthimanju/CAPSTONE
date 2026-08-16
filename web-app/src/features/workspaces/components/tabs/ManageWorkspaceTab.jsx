@@ -42,6 +42,7 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/DropdownMenu';
 import { InviteCollaboratorModal } from '../InviteCollaboratorModal';
+import { WorkspaceNameAvailabilityFeedback } from '../WorkspaceNameAvailabilityFeedback';
 import { createWorkspaceRequestSchema } from '../../schemas/workspaceSchemas';
 import {
   useUpdateWorkspaceMutation,
@@ -91,6 +92,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors: formErrors },
   } = useForm({
     resolver: zodResolver(createWorkspaceRequestSchema),
@@ -100,6 +102,8 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
       visibility: workspace?.visibility || 'PRIVATE',
     },
   });
+
+  const watchedName = watch('name');
 
   const updateWorkspaceMutation = useUpdateWorkspaceMutation(workspace?.id, {
     onSuccess: () => {
@@ -316,7 +320,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
         <Card className="p-6">
           <form onSubmit={handleSubmit(handleSettingsSubmit)} className="space-y-5">
-            {/* Name Input */}
+            {/* Name Input with Real-time Availability Validator */}
             <div className="space-y-1.5">
               <label htmlFor="manage-workspace-name" className="block text-xs font-mono font-medium text-text">
                 Workspace Name
@@ -327,9 +331,12 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                 disabled={!isOwner && callerRole !== 'ADMIN'}
                 {...register('name')}
               />
-              {formErrors.name && (
-                <p className="font-mono text-[11px] text-danger">{formErrors.name.message}</p>
-              )}
+              <WorkspaceNameAvailabilityFeedback
+                name={watchedName}
+                excludeWorkspaceId={workspace?.id}
+                initialName={workspace?.name}
+                schemaError={formErrors.name?.message}
+              />
             </div>
 
             {/* Domain Type Selection */}

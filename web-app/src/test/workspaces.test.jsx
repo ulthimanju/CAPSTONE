@@ -233,6 +233,28 @@ describe('CreateWorkspaceModal Component', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(onSuccess).toHaveBeenCalledWith(mockCreated);
   });
+
+  it('displays real-time name availability status below input', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(workspaceApi, 'checkNameAvailability').mockResolvedValue({
+      available: true,
+      name: 'Available Workspace',
+      reason: 'Name is available.',
+    });
+
+    renderWithProviders(
+      <CreateWorkspaceModal
+        open={true}
+        onOpenChange={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const nameInput = screen.getByLabelText(/workspace name/i);
+    await user.type(nameInput, 'Available Workspace');
+
+    expect(await screen.findByText('Name is available.')).toBeInTheDocument();
+  });
 });
 
 describe('WorkspacesPage Component', () => {

@@ -152,3 +152,18 @@ export function useDeleteWorkspaceMutation(options = {}) {
     ...options,
   });
 }
+
+/**
+ * Hook for real-time workspace name availability checking.
+ */
+export function useWorkspaceNameAvailability(name, excludeWorkspaceId = null) {
+  const trimmed = (name || '').trim();
+
+  return useQuery({
+    queryKey: ['workspaces', 'check-name', trimmed, excludeWorkspaceId],
+    queryFn: () => workspaceApi.checkNameAvailability(trimmed, excludeWorkspaceId),
+    enabled: trimmed.length > 0,
+    staleTime: 1000 * 5,
+    retry: false,
+  });
+}
