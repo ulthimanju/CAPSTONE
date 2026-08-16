@@ -219,13 +219,13 @@
 }
 
 /* ==========================================================================
-   Syntax Highlighting — Field Journal Theme Token Mapping
+   Syntax Highlighting — Field Journal Parchment & Ink Token Mapping
    ========================================================================== */
 
 pre code.hljs,
 code.hljs {
   background: transparent !important;
-  color: var(--text);
+  color: var(--text) !important;
   font-family: var(--font-mono) !important;
 }
 
@@ -239,28 +239,48 @@ code.hljs {
 .hljs-string,
 .hljs-title,
 .hljs-section {
-  color: #6E884F !important;
+  color: var(--sage-text) !important;
+  font-weight: 500;
 }
 
 .hljs-comment,
 .hljs-quote {
-  color: var(--sep-line) !important;
+  color: #8C7B5D !important;
   font-style: italic;
+  opacity: 0.85;
 }
 
 .hljs-number,
 .hljs-literal {
-  color: #C06B36 !important;
+  color: #8C3D12 !important;
+  font-weight: 600;
 }
 
 .hljs-function,
 .hljs-params,
 .hljs-attr {
-  color: #D4883B !important;
+  color: #7A4B1A !important;
+  font-weight: 500;
 }
 
 .hljs-variable,
 .hljs-template-variable {
   color: var(--text) !important;
+}
+
+[data-theme="dark"] .hljs-comment,
+[data-theme="dark"] .hljs-quote {
+  color: #A39378 !important;
+}
+
+[data-theme="dark"] .hljs-number,
+[data-theme="dark"] .hljs-literal {
+  color: #E28854 !important;
+}
+
+[data-theme="dark"] .hljs-function,
+[data-theme="dark"] .hljs-params,
+[data-theme="dark"] .hljs-attr {
+  color: #DE9B4E !important;
 }
 
