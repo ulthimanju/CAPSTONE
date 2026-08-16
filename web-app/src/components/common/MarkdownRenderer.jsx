@@ -80,18 +80,18 @@ function CodeBlock({ node, inline, className = '', children, ...props }) {
   };
 
   return (
-    <div className="relative my-3 overflow-hidden rounded-ui border border-sep-line bg-sand/20 shadow-sm">
-      <div className="flex items-center justify-between bg-sand/40 px-3 py-1 text-[11px] font-mono text-text/70 border-b border-sep-line/40">
-        <span className="font-semibold uppercase tracking-wider">{match ? match[1] : 'CODE'}</span>
+    <div className="relative my-3 overflow-hidden rounded-ui border border-sep-line bg-[#1E1E1E] shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#333333] bg-[#252526] px-3.5 py-1.5 text-[11px] font-mono text-[#A0A0A0]">
+        <span className="font-semibold uppercase tracking-wider text-accent">{match ? match[1] : 'CODE'}</span>
         <button
           type="button"
           onClick={handleCopy}
-          className="rounded border border-sep-line/40 bg-surface px-2 py-0.5 text-[10px] font-mono text-text/80 transition-colors hover:bg-sand hover:text-accent"
+          className="rounded border border-[#444444] bg-[#2D2D2D] px-2 py-0.5 text-[10px] font-mono text-[#D4D4D4] transition-colors hover:bg-[#3E3E3E] hover:text-white"
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto p-3 font-mono text-xs leading-relaxed text-text">
+      <pre className="overflow-x-auto p-3.5 font-mono text-xs leading-relaxed text-[#D4D4D4]">
         <code className={className} {...props}>
           {children}
         </code>

@@ -10,6 +10,61 @@ import { Card, Button, Badge, BookLinearIcon, RegenerateIcon } from '@/component
 import { useWorkspaceSummaryQuery, useGenerateSummaryMutation } from '../hooks/useSummary';
 import { MermaidDiagram } from '../components/MermaidDiagram';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
+import hljs from 'highlight.js';
+
+function SectionCodeCard({ snippet, language, explanation }) {
+  const [copied, setCopied] = React.useState(false);
+
+  const highlightedHtml = React.useMemo(() => {
+    if (!snippet) return '';
+    try {
+      const validLang = language && hljs.getLanguage(language.toLowerCase()) ? language.toLowerCase() : null;
+      if (validLang) {
+        return hljs.highlight(snippet, { language: validLang }).value;
+      }
+      return hljs.highlightAuto(snippet).value;
+    } catch {
+      return snippet;
+    }
+  }, [snippet, language]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-ui border border-sep-line bg-[#1E1E1E] shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#333333] bg-[#252526] px-3.5 py-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="rounded bg-accent/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent border border-accent/30">
+            {language || 'Code'}
+          </span>
+          {explanation && (
+            <span className="truncate font-sans text-xs italic text-[#A0A0A0]">
+              {explanation}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="shrink-0 rounded border border-[#444444] bg-[#2D2D2D] px-2.5 py-0.5 font-mono text-[10px] text-[#D4D4D4] transition-colors hover:bg-[#3E3E3E] hover:text-white"
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      <pre className="overflow-x-auto p-3.5 font-mono text-xs leading-relaxed text-[#D4D4D4]">
+        <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+      </pre>
+    </div>
+  );
+}
 
 export function SummaryTab() {
   const { workspaceId } = useParams();
@@ -123,27 +178,13 @@ export function SummaryTab() {
                 </div>
               )}
 
-              {/* Separate Code Block */}
+              {/* Code Snippet Card */}
               {section.code_snippet && (
-                <div className="mt-5 rounded-ui border border-sep-line bg-surface-raised overflow-hidden shadow-xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-2 bg-sand/30 border-b border-sep-line gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded bg-accent/10 px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-accent border border-accent/20">
-                        {section.code_language || 'Code'}
-                      </span>
-                    </div>
-                    {section.code_explanation && (
-                      <span className="text-xs font-sans text-text/75 italic">
-                        {section.code_explanation}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <MarkdownRenderer
-                      content={`\`\`\`${section.code_language || ''}\n${section.code_snippet}\n\`\`\``}
-                    />
-                  </div>
-                </div>
+                <SectionCodeCard
+                  snippet={section.code_snippet}
+                  language={section.code_language}
+                  explanation={section.code_explanation}
+                />
               )}
 
               {/* Key Takeaways */}
