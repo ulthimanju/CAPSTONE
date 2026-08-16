@@ -11,6 +11,7 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.schemas.workspace import CreateWorkspaceRequest, WorkspaceResponse
 
 
+from fastapi import HTTPException
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 
 
@@ -28,13 +29,21 @@ class CreateWorkspaceUseCase:
         self.cache = cache_manager or WorkspaceCacheManager()
 
     async def execute(self, user_id: UUID, req: CreateWorkspaceRequest) -> WorkspaceResponse:
+        clean_name = (req.name or "").strip()
+        if not clean_name:
+            raise HTTPException(status_code=400, detail="Workspace name cannot be empty")
+
+        existing = await self.workspace_repo.get_by_owner_and_name(user_id, clean_name, status=WorkspaceStatus.ACTIVE.value)
+        if existing:
+            raise HTTPException(status_code=409, detail=f"You already have an active workspace named '{clean_name}'.")
+
         now = datetime.now(timezone.utc)
         ws_id = generate_uuid()
 
         workspace = Workspace(
             id=ws_id,
             owner_id=user_id,
-            name=req.name,
+            name=clean_name,
             visibility=req.visibility,
             status=WorkspaceStatus.ACTIVE,
             domain_type=req.domain_type,

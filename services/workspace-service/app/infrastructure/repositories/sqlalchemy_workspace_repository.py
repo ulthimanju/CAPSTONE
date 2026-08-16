@@ -62,6 +62,36 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         await self.cache.set(ws)
         return ws
 
+    async def get_by_owner_and_name(self, owner_id: UUID, name: str, status: str = "ACTIVE") -> Workspace | None:
+        from sqlalchemy import func
+        clean_name = (name or "").strip()
+        if not clean_name:
+            return None
+
+        stmt = select(WorkspaceModel).where(
+            WorkspaceModel.owner_id == owner_id,
+            func.lower(WorkspaceModel.name) == func.lower(clean_name),
+            WorkspaceModel.status == status,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+        return Workspace(
+            id=model.id,
+            owner_id=model.owner_id,
+            name=model.name,
+            visibility=WorkspaceVisibility(model.visibility),
+            status=WorkspaceStatus(model.status),
+            domain_type=WorkspaceDomainType(model.domain_type) if hasattr(model, "domain_type") and isinstance(getattr(model, "domain_type", None), (str, WorkspaceDomainType)) else WorkspaceDomainType.TECHNICAL,
+            is_summary_generated=getattr(model, "is_summary_generated", False) or bool(model.summary_json),
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            archived_at=model.archived_at,
+            summary_json=model.summary_json,
+            learning_path_json=model.learning_path_json,
+        )
+
     async def list_by_user_id(self, user_id: UUID) -> list[Workspace]:
         cached_list = await self.cache.get_user_workspaces(user_id)
         if cached_list is not None:

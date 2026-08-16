@@ -5,7 +5,7 @@ from app.domain.repositories.workspace_repository import WorkspaceRepository
 from app.domain.repositories.member_repository import MemberRepository
 from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.entities.workspace_activity import WorkspaceActivity
-from app.constants.enums import WorkspaceRole, ActivityType
+from app.constants.enums import WorkspaceRole, WorkspaceStatus, ActivityType
 from app.schemas.workspace import UpdateWorkspaceRequest, WorkspaceResponse
 from app.utils.ids import generate_uuid
 
@@ -44,7 +44,13 @@ class UpdateWorkspaceUseCase:
             clean_name = req.name.strip()
             if not clean_name:
                 raise HTTPException(status_code=400, detail="Workspace name cannot be empty")
-            if clean_name != workspace.name:
+            if clean_name.lower() != workspace.name.lower():
+                existing = await self.workspace_repo.get_by_owner_and_name(workspace.owner_id, clean_name, status=WorkspaceStatus.ACTIVE.value)
+                if existing and existing.id != workspace_id:
+                    raise HTTPException(status_code=409, detail=f"You already have an active workspace named '{clean_name}'.")
+                is_renamed = True
+                workspace.name = clean_name
+            elif clean_name != workspace.name:
                 is_renamed = True
                 workspace.name = clean_name
         if req.visibility is not None:

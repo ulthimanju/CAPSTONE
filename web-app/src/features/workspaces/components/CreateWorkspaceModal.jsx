@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { createWorkspaceRequestSchema } from '../schemas/workspaceSchemas';
 import { useCreateWorkspaceMutation } from '../hooks/useWorkspaces';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { cn } from '@/lib/cn';
 
 export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
@@ -191,9 +192,7 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
             <div className="flex items-center gap-2 rounded-ui border border-danger/30 bg-danger-tint p-2.5 text-xs text-danger font-mono">
               <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>
-                {createMutation.error?.response?.data?.detail ||
-                  createMutation.error?.message ||
-                  'Failed to create workspace. Please try again.'}
+                {getErrorMessage(createMutation.error, 'Failed to create workspace. Please try again.')}
               </span>
             </div>
           )}

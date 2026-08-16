@@ -13,6 +13,10 @@ class WorkspaceRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_by_owner_and_name(self, owner_id: UUID, name: str, status: str = "ACTIVE") -> Workspace | None:
+        pass
+
+    @abstractmethod
     async def list_by_user_id(self, user_id: UUID) -> list[Workspace]:
         pass
 
