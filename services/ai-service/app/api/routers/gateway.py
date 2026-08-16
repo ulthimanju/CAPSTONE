@@ -582,7 +582,6 @@ from fastapi import BackgroundTasks
 async def _process_learning_path_generation(workspace_id: str, authorization: str | None, user_id_str: str):
     ws_id = workspace_id
     workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
-    document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
 
     try:
         await _publish_learning_path_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
@@ -595,16 +594,17 @@ async def _process_learning_path_generation(workspace_id: str, authorization: st
             ws_meta = ws_res.json()
             ws_name = ws_meta.get("name")
 
-            outline_res = await client.get(f"{document_url}/api/v1/documents/workspaces/{ws_id}/outline", headers=headers)
-            if outline_res.status_code != 200:
-                raise HTTPException(status_code=500, detail="Failed to retrieve workspace document outline")
-            outline_data = outline_res.json().get("outline", "")
+            topics_covered = ws_meta.get("topics_covered") or ""
+            if not topics_covered:
+                topics_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}/topics", headers=headers)
+                if topics_res.status_code == 200:
+                    topics_covered = topics_res.json().get("topics_covered", "")
 
         context_parts = [
             f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
-            f"Description: {ws_meta.get('description', 'N/A')}\n",
-            "--- WORKSPACE KNOWLEDGE OUTLINE ---",
-            outline_data,
+            f"Domain Type: {ws_meta.get('domain_type', 'TECHNICAL')}\n",
+            "--- WORKSPACE TOPICS COVERED & KNOWLEDGE OUTLINE ---",
+            topics_covered if topics_covered else "No processed topics covered outline available yet.",
         ]
 
         assembled_prompt = "\n".join(context_parts)

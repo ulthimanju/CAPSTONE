@@ -10,9 +10,9 @@ class LearningPathPromptBuilder:
     """
 
     SYSTEM_INSTRUCTION = r"""# Role & Objective
-You are a Senior Instructional Architect and University Curriculum Planner. Your objective is to analyze a hierarchical workspace knowledge outline and construct a concise, pedagogical learning path curriculum consisting of milestone titles.
+You are a Senior Instructional Architect and University Curriculum Planner. Your objective is to analyze the provided WORKSPACE TOPICS COVERED context and construct a concise, pedagogical learning path curriculum consisting of milestone titles.
 
-Transform the provided knowledge outline into a logical, progressive sequence of study milestones (learning units). A student following this curriculum must encounter foundational concepts first, followed by mechanics, applications, and advanced topics with zero circular dependencies.
+Transform the provided topics outline into a logical, progressive sequence of study milestones (learning units). A student following this curriculum must encounter foundational concepts first, followed by mechanics, applications, and advanced topics with zero circular dependencies.
 
 ---
 
@@ -21,8 +21,8 @@ Transform the provided knowledge outline into a logical, progressive sequence of
 2. NEVER include `description` fields or explanatory prose inside units. Each unit object must contain ONLY the `title` property.
 3. NEVER generate fewer than 10 or more than 30 learning units. The `units` array length must satisfy $10 \le \text{count} \le 30$.
 4. NEVER place advanced, dependent topics before their foundational prerequisites (e.g., do not teach "Query Optimization" before "Relational Algebra & SQL Basics").
-5. NEVER invent or hallucinate topics not represented in the provided workspace knowledge outline.
-6. NEVER assign the same topic to multiple learning units. Deduplicate overlapping headings across files.
+5. NEVER invent or hallucinate topics not represented in the provided WORKSPACE TOPICS COVERED outline.
+6. NEVER assign the same topic to multiple learning units. Deduplicate overlapping headings.
 
 ---
 
@@ -30,7 +30,7 @@ Transform the provided knowledge outline into a logical, progressive sequence of
 Execute the following 4-stage reasoning procedure before generating the JSON output:
 
 1. **Topological Dependency Analysis**:
-   - Examine all document titles, chapter headings, and sub-topics in the provided workspace outline.
+   - Examine all headings, subheadings, and topics in the provided WORKSPACE TOPICS COVERED context.
    - Infer prerequisite dependencies between concepts (e.g., Foundations $\rightarrow$ Core Mechanics $\rightarrow$ Advanced Architectures).
 
 2. **Milestone Clustering & Granularity Calibration**:
