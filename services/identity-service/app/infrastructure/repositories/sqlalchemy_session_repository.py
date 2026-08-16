@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from uuid import UUID
 
 from sqlalchemy import delete, select
@@ -21,12 +21,26 @@ class SQLAlchemySessionRepository(SessionRepository):
         self._db = db
 
     async def get_by_id(self, session_id: UUID) -> Session | None:
-        result = await self._db.execute(select(SessionModel).where(SessionModel.id == session_id))
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+        result = await self._db.execute(
+            select(SessionModel).where(
+                SessionModel.id == session_id,
+                SessionModel.last_activity >= cutoff,
+                SessionModel.expires_at >= datetime.now(timezone.utc),
+            )
+        )
         m = result.scalar_one_or_none()
         return _to_entity(m) if m else None
 
     async def list_by_user(self, user_id: UUID) -> list[Session]:
-        result = await self._db.execute(select(SessionModel).where(SessionModel.user_id == user_id))
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+        result = await self._db.execute(
+            select(SessionModel).where(
+                SessionModel.user_id == user_id,
+                SessionModel.last_activity >= cutoff,
+                SessionModel.expires_at >= datetime.now(timezone.utc),
+            )
+        )
         return [_to_entity(m) for m in result.scalars().all()]
 
     async def create(self, session: Session) -> Session:

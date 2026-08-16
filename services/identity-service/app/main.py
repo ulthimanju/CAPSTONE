@@ -9,9 +9,48 @@ from app.domain.exceptions.oauth import IdentityServiceError
 from app.api.middlewares.exception_handler import identity_exception_handler
 
 
+from sqlalchemy import text
 from app.infrastructure.database.session import engine
 from app.infrastructure.database.base import Base
 import app.infrastructure.database.models  # Ensure models are imported for metadata registration
+
+POSTGRES_SESSION_TRIGGERS_SQL = """
+CREATE OR REPLACE FUNCTION fn_revoke_inactive_sessions()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM sessions
+    WHERE last_activity < (CURRENT_TIMESTAMP - INTERVAL '1 hour')
+       OR expires_at < CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_auto_revoke_on_session ON sessions;
+CREATE TRIGGER trg_auto_revoke_on_session
+BEFORE INSERT OR UPDATE ON sessions
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_revoke_inactive_sessions();
+
+DROP TRIGGER IF EXISTS trg_auto_revoke_on_token ON refresh_tokens;
+CREATE TRIGGER trg_auto_revoke_on_token
+BEFORE INSERT OR UPDATE ON refresh_tokens
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_revoke_inactive_sessions();
+
+CREATE OR REPLACE FUNCTION fn_update_last_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.last_activity = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_touch_last_activity ON sessions;
+CREATE TRIGGER trg_touch_last_activity
+BEFORE UPDATE ON sessions
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_last_activity();
+"""
 
 
 @asynccontextmanager
@@ -19,6 +58,12 @@ async def lifespan(app: FastAPI):
     setup_logging()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        if "postgresql" in engine.url.drivername:
+            try:
+                await conn.execute(text(POSTGRES_SESSION_TRIGGERS_SQL))
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning("Could not apply postgres session triggers: %s", e)
     yield
     try:
         await engine.dispose()

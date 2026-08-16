@@ -174,7 +174,7 @@ export function ActiveSessionsPage() {
             Active Sessions & Devices
           </h1>
           <p className="font-body text-xs text-text/70 mt-1 max-w-xl">
-            Review and manage all browsers, mobile devices, and computers currently signed into your academic account.
+            Review and manage all browsers, mobile devices, and computers signed into your academic account. Sessions are automatically revoked after 1 hour of inactivity.
           </p>
         </div>
 

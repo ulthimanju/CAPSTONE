@@ -15,3 +15,9 @@ if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
         create_database $db
     done
 fi
+
+# Run identity triggers on identity_db if SQL file exists
+if [ -f /docker-entrypoint-initdb.d/init-identity-triggers.sql ]; then
+    echo "Applying identity triggers and functions to identity_db..."
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" -d identity_db -f /docker-entrypoint-initdb.d/init-identity-triggers.sql
+fi
