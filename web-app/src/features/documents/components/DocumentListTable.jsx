@@ -105,6 +105,8 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
 
         {/* Rows */}
         {documents.map((doc) => {
+          const isPdf = (doc.file_extension || '').toLowerCase() === 'pdf' ||
+            (doc.original_filename || '').toLowerCase().endsWith('.pdf');
           const FileIcon = getFileIcon(doc.file_extension);
           const webViewLink =
             doc.storage_metadata_json?.web_view_link || doc.web_view_link;
@@ -122,8 +124,16 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
             >
               {/* Document Info & Direct Web View Link */}
               <div className="col-span-7 flex items-center gap-3 min-w-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border border-sep-line bg-sand text-accent">
-                  <FileIcon className="h-4 w-4" aria-hidden="true" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border border-sep-line bg-sand p-1.5 text-accent">
+                  {isPdf ? (
+                    <img
+                      src="/icons/pdf-icon.svg"
+                      alt="PDF Document"
+                      className="h-5 w-5 object-contain"
+                    />
+                  ) : (
+                    <FileIcon className="h-4 w-4" aria-hidden="true" />
+                  )}
                 </div>
                 <div className="min-w-0">
                   {webViewLink ? (
