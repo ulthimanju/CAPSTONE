@@ -22,6 +22,7 @@ import {
   Settings,
   Archive,
   Lock,
+  ArrowRightLeft,
 } from 'lucide-react';
 import {
   CodeBoldIcon,
@@ -32,6 +33,12 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -86,6 +93,8 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [memberToRemove, setMemberToRemove] = useState(null);
   const [memberToTransfer, setMemberToTransfer] = useState(null);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [selectedNewOwnerId, setSelectedNewOwnerId] = useState('');
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [showActivities, setShowActivities] = useState(false);
 
@@ -327,6 +336,10 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
       (inv.role || '').toLowerCase().includes(query)
     );
   }, [invitations, searchQuery]);
+
+  const eligibleTransferMembers = useMemo(() => {
+    return members.filter((m) => m.user_id !== currentUser?.id && m.user_id !== workspace?.owner_id);
+  }, [members, currentUser?.id, workspace?.owner_id]);
 
   const handleRoleChange = (userId, newRole, currentVersion = 1) => {
     updateRoleMutation.mutate({ userId, role: newRole, version: currentVersion });
@@ -653,7 +666,36 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                 </h3>
 
                 <div className="rounded-card border border-danger/30 divide-y divide-danger/20 overflow-hidden bg-danger-tint/5">
-                  {/* Row 1: Archive Workspace */}
+                  {/* Row 1: Transfer Ownership */}
+                  <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-danger-tint/10 transition-colors">
+                    <div>
+                      <h4 className="text-xs font-mono font-bold text-text">
+                        Transfer ownership
+                      </h4>
+                      <p className="text-[11px] text-text/60 font-body mt-0.5">
+                        Transfer this workspace to another collaborator who will become the primary owner.
+                      </p>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (eligibleTransferMembers.length > 0) {
+                          setSelectedNewOwnerId(eligibleTransferMembers[0].user_id);
+                        }
+                        setIsTransferModalOpen(true);
+                      }}
+                      isLoading={transferMutation.isPending}
+                      leftIcon={<ArrowRightLeft className="h-3.5 w-3.5" />}
+                      className="shrink-0 text-xs font-mono text-danger border-danger/40 hover:bg-danger-tint hover:border-danger"
+                    >
+                      Transfer ownership
+                    </Button>
+                  </div>
+
+                  {/* Row 2: Archive Workspace */}
                   <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-danger-tint/10 transition-colors">
                     <div>
                       <h4 className="text-xs font-mono font-bold text-text">
@@ -1131,7 +1173,102 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
         }}
       />
 
-      {/* Transfer Ownership Confirmation Modal */}
+      {/* Transfer Ownership Modal (Danger Zone) */}
+      <Dialog open={isTransferModalOpen} onOpenChange={setIsTransferModalOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle className="text-danger flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4" />
+              Transfer Workspace Ownership
+            </DialogTitle>
+            <DialogDescription>
+              Transfer primary ownership of <span className="font-semibold text-text">{workspace.name}</span> to an active collaborator. You will become a regular member.
+            </DialogDescription>
+          </DialogHeader>
+
+          {eligibleTransferMembers.length === 0 ? (
+            <div className="py-4 text-center space-y-3">
+              <p className="text-xs font-mono text-text/60">
+                There are no other active collaborators in this workspace. Invite a collaborator first before transferring ownership.
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setIsTransferModalOpen(false);
+                  setIsInviteModalOpen(true);
+                }}
+                leftIcon={<UserPlus className="h-3.5 w-3.5" />}
+                className="text-xs font-mono"
+              >
+                Invite Collaborator
+              </Button>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (selectedNewOwnerId) {
+                  transferMutation.mutate(selectedNewOwnerId, {
+                    onSuccess: () => {
+                      setIsTransferModalOpen(false);
+                    },
+                  });
+                }
+              }}
+              className="space-y-4 py-2"
+            >
+              <div className="space-y-1.5">
+                <label className="block text-xs font-mono font-medium text-text">
+                  Select New Owner
+                </label>
+                <Select
+                  value={selectedNewOwnerId}
+                  onValueChange={setSelectedNewOwnerId}
+                >
+                  <SelectTrigger className="w-full text-xs font-mono">
+                    <SelectValue placeholder="Choose a collaborator..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eligibleTransferMembers.map((m) => (
+                      <SelectItem key={m.user_id} value={m.user_id} className="text-xs font-mono">
+                        {m.user_name || m.user_email} ({m.user_email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-ui bg-danger-tint/10 border border-danger/20 p-3 text-[11px] font-body text-danger">
+                <strong>Warning:</strong> This action cannot be undone by you once transferred. Only the new owner can transfer ownership back.
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsTransferModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="danger"
+                  size="sm"
+                  isLoading={transferMutation.isPending}
+                  disabled={!selectedNewOwnerId}
+                  leftIcon={<ArrowRightLeft className="h-3.5 w-3.5" />}
+                >
+                  Transfer Ownership
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Ownership Confirmation Modal (Collaborators list row) */}
       <ConfirmDialog
         open={!!memberToTransfer}
         onOpenChange={(open) => {
