@@ -21,6 +21,7 @@ export function SidebarNav() {
       label: 'Documents',
       to: `${basePath}/documents`,
       icon: FileText,
+      customIconSrc: '/icons/folder-icon.png',
       isActive:
         location.pathname === basePath ||
         location.pathname.startsWith(`${basePath}/documents`),
@@ -74,7 +75,15 @@ export function SidebarNav() {
                 : 'text-text/70 hover:bg-surface-hover hover:text-text'
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {item.customIconSrc ? (
+              <img
+                src={item.customIconSrc}
+                alt={item.label}
+                className="h-4 w-4 shrink-0 object-contain"
+              />
+            ) : (
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            )}
             <span>{item.label}</span>
           </NavLink>
         );
