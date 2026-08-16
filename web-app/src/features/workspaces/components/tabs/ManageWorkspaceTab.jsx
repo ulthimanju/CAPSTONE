@@ -444,16 +444,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
         {/* 1. General Settings Section */}
         {activeTab === 'general' && (
           <div className="space-y-5 animate-fadeIn">
-            <div>
-              <h2 className="font-display text-lg font-bold text-text flex items-center gap-2">
-                <Settings className="h-5 w-5 text-accent" />
-                Workspace Settings
-              </h2>
-              <p className="font-body text-xs text-text/70">
-                Configure workspace preferences, domain specialization, programming language, and access levels individually.
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 gap-5">
             {/* Card 1: Workspace Name */}
             <Card className="p-5 space-y-3">

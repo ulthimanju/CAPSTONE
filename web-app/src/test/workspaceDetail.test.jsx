@@ -177,7 +177,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     const generalTabBtn = screen.getByRole('button', { name: /^general$/i });
     await user.click(generalTabBtn);
 
-    expect(await screen.findByText(/Workspace Settings/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Domain Specialization/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/workspace name/i)).toHaveValue('Operating Systems (CS301)');
   });
 
