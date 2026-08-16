@@ -227,8 +227,8 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
 
     renderAppWithSidebarAndDetail('/workspaces/e4b3c2a1-0000-4000-8000-000000000001/manage?tab=general');
 
-    const archiveBtn = await screen.findByRole('button', { name: /archive workspace/i });
-    const deleteBtn = screen.getByRole('button', { name: /delete workspace/i });
+    const archiveBtn = await screen.findByRole('button', { name: /archive this workspace/i });
+    const deleteBtn = screen.getByRole('button', { name: /delete this workspace/i });
 
     expect(archiveBtn).toBeInTheDocument();
     expect(deleteBtn).toBeInTheDocument();

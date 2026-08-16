@@ -653,43 +653,64 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
               </Card>
             )}
 
-            {/* Card 4: Danger Zone & Actions (Owner Only) */}
+            {/* Danger Zone (Owner Only) */}
             {isOwner && (
-              <Card className="p-5 border-danger/30 bg-danger-tint/10 flex flex-col justify-between space-y-4">
-                <div>
-                  <h3 className="text-xs font-mono font-bold text-danger flex items-center gap-1.5">
-                    <Trash2 className="h-4 w-4" />
-                    Danger Zone
-                  </h3>
-                  <p className="text-[11px] text-text/60 font-body mt-1">
-                    Archive this workspace to make it read-only, or permanently delete all associated documents and AI summaries.
-                  </p>
-                </div>
+              <div className="space-y-2 pt-2">
+                <h3 className="text-xs font-mono font-bold text-danger flex items-center gap-1.5">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Danger Zone
+                </h3>
 
-                <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-danger/20">
-                  <Button
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsArchiveDialogOpen(true)}
-                    isLoading={archiveWorkspaceMutation.isPending}
-                    leftIcon={<Archive className="h-3.5 w-3.5" />}
-                  >
-                    Archive Workspace
-                  </Button>
+                <div className="rounded-card border border-danger/30 divide-y divide-danger/20 overflow-hidden bg-danger-tint/5">
+                  {/* Row 1: Archive Workspace */}
+                  <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-danger-tint/10 transition-colors">
+                    <div>
+                      <h4 className="text-xs font-mono font-bold text-text">
+                        Archive this workspace
+                      </h4>
+                      <p className="text-[11px] text-text/60 font-body mt-0.5">
+                        Mark this workspace as archived and read-only.
+                      </p>
+                    </div>
 
-                  <Button
-                    size="sm"
-                    type="button"
-                    variant="danger"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    isLoading={deleteWorkspaceMutation.isPending}
-                    leftIcon={<Trash2 className="h-3.5 w-3.5" />}
-                  >
-                    Delete Workspace
-                  </Button>
+                    <Button
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsArchiveDialogOpen(true)}
+                      isLoading={archiveWorkspaceMutation.isPending}
+                      leftIcon={<Archive className="h-3.5 w-3.5" />}
+                      className="shrink-0 text-xs font-mono text-danger border-danger/40 hover:bg-danger-tint hover:border-danger"
+                    >
+                      Archive this workspace
+                    </Button>
+                  </div>
+
+                  {/* Row 2: Delete Workspace */}
+                  <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-danger-tint/10 transition-colors">
+                    <div>
+                      <h4 className="text-xs font-mono font-bold text-text">
+                        Delete this workspace
+                      </h4>
+                      <p className="text-[11px] text-text/60 font-body mt-0.5">
+                        Once you delete a workspace, there is no going back. Please be certain.
+                      </p>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      type="button"
+                      variant="danger"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                      isLoading={deleteWorkspaceMutation.isPending}
+                      leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                      className="shrink-0 text-xs font-mono"
+                    >
+                      Delete this workspace
+                    </Button>
+                  </div>
                 </div>
-              </Card>
+              </div>
             )}
           </div>
         </div>
