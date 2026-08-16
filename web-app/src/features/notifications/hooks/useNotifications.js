@@ -110,19 +110,19 @@ export function useNotificationSSE() {
               toast.success(title, {
                 id: toastKey,
                 description: message,
-                duration: 4000,
+                duration: 3000,
               });
             } else if (isError) {
               toast.error(title, {
                 id: toastKey,
                 description: message,
-                duration: 5500,
+                duration: 3000,
               });
             } else {
               toast(title, {
                 id: toastKey,
                 description: message,
-                duration: 4000,
+                duration: 3000,
               });
             }
           }
