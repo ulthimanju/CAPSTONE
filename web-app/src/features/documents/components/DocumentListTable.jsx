@@ -124,15 +124,15 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
             >
               {/* Document Info & Direct Web View Link */}
               <div className="col-span-7 flex items-center gap-3 min-w-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border border-sep-line bg-sand p-1.5 text-accent">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui border border-sep-line bg-sand/70 p-1 text-accent shadow-xs">
                   {isPdf ? (
                     <img
                       src="/icons/pdf-icon.svg"
                       alt="PDF Document"
-                      className="h-5 w-5 object-contain"
+                      className="h-8 w-8 object-contain"
                     />
                   ) : (
-                    <FileIcon className="h-4 w-4" aria-hidden="true" />
+                    <FileIcon className="h-5 w-5" aria-hidden="true" />
                   )}
                 </div>
                 <div className="min-w-0">
