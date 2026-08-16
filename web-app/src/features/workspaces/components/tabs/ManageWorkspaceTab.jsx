@@ -92,7 +92,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [memberToRemove, setMemberToRemove] = useState(null);
-  const [memberToTransfer, setMemberToTransfer] = useState(null);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedNewOwnerId, setSelectedNewOwnerId] = useState('');
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
@@ -942,19 +941,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                             <Badge variant="role">{member.role}</Badge>
                           )}
 
-                          {/* Transfer Ownership (Owner only) */}
-                          {isOwner && !isMemberOwner && !isSelf && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setMemberToTransfer(member)}
-                              className="text-xs py-1 px-2.5 font-mono"
-                              title="Transfer workspace ownership to this member"
-                            >
-                              Transfer Ownership
-                            </Button>
-                          )}
-
                           {/* Remove Member Button */}
                           {canRemoveThisMember && (
                             <button
@@ -1267,25 +1253,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Transfer Ownership Confirmation Modal (Collaborators list row) */}
-      <ConfirmDialog
-        open={!!memberToTransfer}
-        onOpenChange={(open) => {
-          if (!open) setMemberToTransfer(null);
-        }}
-        title="Transfer Workspace Ownership"
-        description={`Are you sure you want to transfer primary ownership of "${workspace.name}" to ${
-          memberToTransfer?.user_name || memberToTransfer?.user_email || 'this member'
-        }? You will no longer be the primary owner.`}
-        confirmText="Transfer Ownership"
-        cancelText="Cancel"
-        variant="danger"
-        isLoading={transferMutation.isPending}
-        onConfirm={() => {
-          if (memberToTransfer) transferMutation.mutate(memberToTransfer.user_id);
-        }}
-      />
 
       {/* Leave Workspace Confirmation Modal */}
       <ConfirmDialog
