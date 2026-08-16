@@ -164,12 +164,37 @@ export function useMarkNotificationReadMutation(options = {}) {
 
   return useMutation({
     mutationFn: (notificationId) => notificationApi.markAsRead(notificationId),
+    onMutate: async (notificationId) => {
+      await queryClient.cancelQueries({ queryKey: notificationKeys.all });
+      const previousData = queryClient.getQueriesData({ queryKey: notificationKeys.all });
+
+      // Optimistically update all notification queries in cache
+      queryClient.setQueriesData({ queryKey: notificationKeys.all }, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          unread_count: Math.max(0, (old.unread_count || 1) - 1),
+          notifications: Array.isArray(old.notifications)
+            ? old.notifications.map((n) =>
+                n.id === notificationId || n._id === notificationId ? { ...n, status: 'READ' } : n
+              )
+            : [],
+        };
+      });
+
+      return { previousData };
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
       queryClient.refetchQueries({ queryKey: notificationKeys.all });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([key, value]) => {
+          queryClient.setQueryData(key, value);
+        });
+      }
       options.onError?.(error, variables, context);
     },
     ...options,
@@ -184,12 +209,35 @@ export function useMarkAllNotificationsReadMutation(options = {}) {
 
   return useMutation({
     mutationFn: () => notificationApi.markAllAsRead(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: notificationKeys.all });
+      const previousData = queryClient.getQueriesData({ queryKey: notificationKeys.all });
+
+      // Optimistically mark all notifications as READ and unread_count to 0
+      queryClient.setQueriesData({ queryKey: notificationKeys.all }, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          unread_count: 0,
+          notifications: Array.isArray(old.notifications)
+            ? old.notifications.map((n) => ({ ...n, status: 'READ' }))
+            : [],
+        };
+      });
+
+      return { previousData };
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
       queryClient.refetchQueries({ queryKey: notificationKeys.all });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([key, value]) => {
+          queryClient.setQueryData(key, value);
+        });
+      }
       options.onError?.(error, variables, context);
     },
     ...options,
