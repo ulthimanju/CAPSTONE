@@ -14,7 +14,7 @@ flowchart TD
     end
 
     %% ── Microservices Layer ──
-    subgraph SERVICES["Microservices Layer"]
+    subgraph SERVICES["Core Microservices Layer"]
         ID["identity-service"]
         WS["workspace-service"]
         DOC["document-service"]
@@ -23,54 +23,62 @@ flowchart TD
         NOTIFY["notification-service"]
     end
 
-    GW -->|/api/v1/auth, /sessions| ID
-    GW -->|/api/v1/workspaces| WS
-    GW -->|/api/v1/documents| DOC
-    GW -->|/api/v1/rag| RAG
-    GW -->|/api/v1/ai| AI
-    GW -->|/api/v1/notifications| NOTIFY
+    %% Gateway Ingress Routing
+    GW -->|/auth, /sessions, /users| ID
+    GW -->|/workspaces| WS
+    GW -->|/documents| DOC
+    GW -->|/rag| RAG
+    GW -->|/ai (Summary, Quiz, Flashcards, Path)| AI
+    GW -->|/notifications| NOTIFY
 
-    %% Service-to-Service Interaction
-    RAG -->|1. Embedding & 2. LLM Synthesis| AI
+    %% Codebase Inter-Service Dependencies
+    DOC -->|1. Trigger Chunk Indexing| RAG
+    RAG -->|2. Get Embeddings & Synthesize| AI
+    AI -->|Fetch Doc Text for Summary/Quiz/Path| DOC
+    WS -->|Lookup Invite User by Email| ID
+    DOC -->|Verify Workspace Membership| WS
+    RAG -->|Verify Workspace Access| WS
+    AI -->|Verify Workspace Access| WS
 
-    %% ── Message Broker & Cache ──
+    %% Event Dispatching to Notifications & Message Broker
     subgraph MESSAGING["Event Bus & Cache"]
         RMQ[["RabbitMQ (Event Bus)"]]
-        REDIS[("Redis (Rate Limits & Cache)")]
+        REDIS[("Redis (Rate Limits & Token Cache)")]
     end
+
+    WS -.->|Dispatch Events| RMQ
+    DOC -.->|Dispatch Events| RMQ
+    AI -.->|Dispatch Events| RMQ
+    RMQ -->|Consume Notification Events| NOTIFY
 
     %% ── Data Storage Layer ──
     subgraph STORAGE["Databases & Vector Stores"]
         PG_ID[("PostgreSQL: identity_db")]
         PG_WS[("PostgreSQL: workspace_db")]
         PG_DOC[("PostgreSQL: document_db + pgvector")]
-        MONGO[("MongoDB: notifications & audit")]
+        MONGO[("MongoDB: notifications & document chunks")]
     end
 
     %% ── External Integrations ──
     subgraph EXTERNAL["External Cloud APIs"]
         GOOGLE["Google OAuth 2.0"]
         LLAMA["LlamaParse API"]
-        GEMINI["Google Gemini API"]
+        GEMINI["Google Gemini API (LLM + Embeddings)"]
     end
 
-    %% Service Connections
+    %% Service Database & External Connections
     ID --> PG_ID
     ID --> REDIS
     ID --> GOOGLE
 
     WS --> PG_WS
-    WS --> RMQ
 
     DOC --> PG_DOC
+    DOC --> MONGO
     DOC --> LLAMA
-    DOC --> RMQ
 
     RAG --> PG_DOC
-    RAG --> RMQ
 
     AI --> GEMINI
-    AI --> RMQ
 
-    RMQ -->|Consume Events| NOTIFY
     NOTIFY --> MONGO
