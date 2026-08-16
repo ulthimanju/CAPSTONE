@@ -13,8 +13,18 @@ class ListWorkspacesUseCase:
         self.workspace_repo = workspace_repo
         self.member_repo = member_repo
 
-    async def execute(self, user_id: UUID) -> WorkspaceListResponse:
-        workspaces = await self.workspace_repo.list_by_user_id(user_id)
+    async def execute(
+        self,
+        user_id: UUID,
+        limit: int = 50,
+        offset: int = 0,
+        status: str = "ACTIVE",
+    ) -> WorkspaceListResponse:
+        if status.upper() == "ARCHIVED":
+            workspaces = await self.workspace_repo.list_archived_by_user_id(user_id)
+        else:
+            workspaces = await self.workspace_repo.list_by_user_id(user_id)
+
         responses = []
         for ws in workspaces:
             res = WorkspaceResponse.model_validate(ws)
@@ -26,4 +36,5 @@ class ListWorkspacesUseCase:
                 res.user_role = WorkspaceRole.OWNER
             responses.append(res)
 
-        return WorkspaceListResponse(workspaces=responses, total=len(responses))
+        paginated = responses[offset : offset + limit]
+        return WorkspaceListResponse(workspaces=paginated, total=len(responses))

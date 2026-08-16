@@ -196,7 +196,9 @@ class NotificationStore:
                 }
             }
             res = await notifications_col.update_one(query, update_data)
-            return res.modified_count > 0 or res.matched_count > 0
+            if isinstance(res, dict):
+                return bool(res.get("nModified", 0) > 0 or res.get("n", 0) > 0 or res.get("ok", 0) == 1)
+            return bool(getattr(res, "modified_count", 0) > 0 or getattr(res, "matched_count", 0) > 0)
         except Exception as exc:
             logger.warning(f"MongoDB mark_as_read failed ({exc}), updating in-memory store.")
             return self.mark_as_read(notification_id)
@@ -226,7 +228,9 @@ class NotificationStore:
                 }
             }
             res = await notifications_col.update_many(query, update_data)
-            return res.modified_count
+            if isinstance(res, dict):
+                return int(res.get("nModified", res.get("n", 0)))
+            return int(getattr(res, "modified_count", 0))
         except Exception as exc:
             logger.warning(f"MongoDB mark_all_as_read failed ({exc}).")
             for item in self._memory_items.values():

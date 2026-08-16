@@ -108,12 +108,15 @@ from fastapi.responses import JSONResponse
 
 
 @app.get("/health/live")
+@app.get("/api/v1/health/live")
 async def liveness_check():
     return {"status": "live", "service": "api-gateway"}
 
 
 @app.get("/health")
 @app.get("/health/ready")
+@app.get("/api/v1/health")
+@app.get("/api/v1/health/ready")
 async def readiness_check():
     services = {
         "identity-service": f"{settings.service_identity_url}/health/ready",
