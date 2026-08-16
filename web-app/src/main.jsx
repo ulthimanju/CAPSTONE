@@ -36,7 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <App />
-          <Toaster position="top-right" closeButton />
+          <Toaster position="top-right" />
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
