@@ -16,6 +16,9 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.schemas.workspace import (
     CreateWorkspaceRequest,
     UpdateWorkspaceRequest,
+    SaveSummaryRequest,
+    SaveLearningPathRequest,
+    SaveTopicsCoveredRequest,
     WorkspaceResponse,
     WorkspaceListResponse,
 )
@@ -257,6 +260,42 @@ async def save_workspace_learning_path(
     try:
         from shared.events import publish_workspace_event
         await publish_workspace_event(workspace_id, "workspace.learning_path.updated")
+    except Exception:
+        pass
+    return {"status": "saved", "workspace_id": str(workspace_id)}
+
+
+@router.get("/{workspace_id}/topics")
+async def get_workspace_topics(
+    workspace_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
+    from app.infrastructure.database.models import WorkspaceModel
+    from sqlalchemy import select
+    stmt = select(WorkspaceModel.topics_covered).where(WorkspaceModel.id == workspace_id)
+    result = await db.execute(stmt)
+    topics = result.scalar_one_or_none()
+    return {"workspace_id": str(workspace_id), "topics_covered": topics or ""}
+
+
+@router.put("/{workspace_id}/topics")
+async def save_workspace_topics(
+    workspace_id: UUID,
+    req: SaveTopicsCoveredRequest,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
+):
+    ws = await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
+    ws.topics_covered = req.topics_covered
+    await ws_repo.update(ws)
+    try:
+        from shared.events import publish_workspace_event
+        await publish_workspace_event(workspace_id, "workspace.topics.updated")
     except Exception:
         pass
     return {"status": "saved", "workspace_id": str(workspace_id)}

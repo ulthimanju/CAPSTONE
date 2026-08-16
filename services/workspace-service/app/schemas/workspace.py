@@ -24,6 +24,10 @@ class SaveLearningPathRequest(BaseModel):
     learning_path_json: dict
 
 
+class SaveTopicsCoveredRequest(BaseModel):
+    topics_covered: str
+
+
 class SaveUnitContentRequest(BaseModel):
     unit_title: str
     summary_json: dict | None = None
@@ -53,6 +57,7 @@ class WorkspaceResponse(BaseModel):
     status: WorkspaceStatus
     domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
     is_summary_generated: bool = False
+    topics_covered: str | None = None
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None

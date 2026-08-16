@@ -24,6 +24,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             is_summary_generated=workspace.is_summary_generated,
             summary_json=workspace.summary_json,
             learning_path_json=workspace.learning_path_json,
+            topics_covered=workspace.topics_covered,
             created_at=workspace.created_at,
             updated_at=workspace.updated_at,
             archived_at=workspace.archived_at
@@ -58,6 +59,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             archived_at=model.archived_at,
             summary_json=model.summary_json,
             learning_path_json=model.learning_path_json,
+            topics_covered=getattr(model, "topics_covered", None),
         )
         await self.cache.set(ws)
         return ws
@@ -90,6 +92,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             archived_at=model.archived_at,
             summary_json=model.summary_json,
             learning_path_json=model.learning_path_json,
+            topics_covered=getattr(model, "topics_covered", None),
         )
 
     async def list_by_user_id(self, user_id: UUID) -> list[Workspace]:
@@ -123,6 +126,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 archived_at=m.archived_at,
                 summary_json=m.summary_json,
                 learning_path_json=m.learning_path_json,
+                topics_covered=getattr(m, "topics_covered", None),
             ) for m in models
         ]
         await self.cache.set_user_workspaces(user_id, workspaces)
@@ -154,6 +158,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
                 archived_at=m.archived_at,
                 summary_json=m.summary_json,
                 learning_path_json=m.learning_path_json,
+                topics_covered=getattr(m, "topics_covered", None),
             ) for m in models
         ]
 
@@ -169,6 +174,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
             model.is_summary_generated = workspace.is_summary_generated or bool(workspace.summary_json)
             model.summary_json = workspace.summary_json
             model.learning_path_json = workspace.learning_path_json
+            model.topics_covered = workspace.topics_covered
             model.archived_at = workspace.archived_at
             model.updated_at = workspace.updated_at
             await self.session.flush()

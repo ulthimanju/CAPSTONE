@@ -28,6 +28,7 @@ class WorkspaceModel(Base):
     is_summary_generated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     summary_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     learning_path_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    topics_covered: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

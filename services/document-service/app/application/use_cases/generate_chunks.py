@@ -118,13 +118,68 @@ class GenerateChunksUseCase:
             if hasattr(self.doc_repo, "session") and self.doc_repo.session:
                 await self.doc_repo.session.commit()
 
-            # Trigger automatic embedding generation in rag-service & publish notification platform event
+            # Trigger automatic embedding generation, workspace topics update, and notification event
             try:
                 import httpx
+                import uuid
                 from app.config.settings import settings
+                from sqlalchemy import text
                 rag_service_url = os.environ.get("RAG_SERVICE_URL", "http://rag-service:8000")
+                workspace_service_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
                 notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
+
+                # 1. Extract and aggregate deduplicated hierarchical topics markdown for this workspace
+                topics_md = ""
+                if hasattr(self.doc_repo, "session") and self.doc_repo.session:
+                    stmt = text("""
+                        SELECT c.title, c.heading_level
+                        FROM document_chunks c
+                        JOIN documents d ON c.document_id = d.id
+                        WHERE d.workspace_id = :ws_id AND d.is_deleted = false AND c.title IS NOT NULL
+                        ORDER BY d.created_at ASC, c.chunk_index ASC
+                    """)
+                    t_res = await self.doc_repo.session.execute(stmt, {"ws_id": doc.workspace_id})
+                    t_rows = t_res.mappings().all()
+                    seen_headings = set()
+                    outline_lines = []
+                    for r in t_rows:
+                        t_title = r["title"]
+                        level = r["heading_level"] or 1
+                        if not t_title:
+                            continue
+                        clean = t_title.strip()
+                        if clean.startswith("**") and clean.endswith("**"):
+                            clean = clean[2:-2].strip()
+                        elif clean.startswith("__") and clean.endswith("__"):
+                            clean = clean[2:-2].strip()
+                        if not clean or clean.lower() in seen_headings:
+                            continue
+                        seen_headings.add(clean.lower())
+                        prefix = "#" * max(1, min(6, level))
+                        outline_lines.append(f"{prefix} {clean}")
+                    topics_md = "\n".join(outline_lines)
+
                 async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=30.0)) as client:
+                    from shared.security.jwt import JWTManager, JWTSettings
+                    jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
+                    internal_token = jwt_mgr.create_access_token(
+                        user_id=str(doc.uploaded_by),
+                        email="internal@synapse.edu",
+                        role="ADMIN",
+                        session_id=str(uuid.uuid4()),
+                        expire_minutes=60,
+                    )
+                    headers = {"Authorization": f"Bearer {internal_token}"}
+
+                    # Push updated topics_covered to workspace-service
+                    if topics_md:
+                        await client.put(
+                            f"{workspace_service_url}/api/v1/workspaces/{doc.workspace_id}/topics",
+                            json={"topics_covered": topics_md},
+                            headers=headers,
+                        )
+
+                    # Trigger embeddings in rag-service
                     await client.post(
                         f"{rag_service_url}/api/v1/rag/embeddings/generate",
                         json={
@@ -158,7 +213,7 @@ class GenerateChunksUseCase:
                         }
                     )
             except Exception as rag_err:
-                logger.warning(f"Automatic RAG embedding trigger failed: {rag_err}", extra={"document_id": str(document_id)})
+                logger.warning(f"Automatic RAG embedding / topics update trigger failed: {rag_err}", extra={"document_id": str(document_id)})
 
 
             responses = [ChunkResponse.model_validate(c) for c in created_chunks]
