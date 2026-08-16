@@ -125,20 +125,24 @@ export function SummaryTab() {
 
               {/* Separate Code Block */}
               {section.code_snippet && (
-                <div className="mt-4 rounded-ui bg-[#1E1E1E] border border-sep-line overflow-hidden shadow-xs">
-                  <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#252526] border-b border-[#333333] text-[11px] font-mono text-text/70">
-                    <span className="font-bold text-accent uppercase">
-                      {section.code_language || 'code'}
-                    </span>
+                <div className="mt-5 rounded-ui border border-sep-line bg-surface-raised overflow-hidden shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-2 bg-sand/30 border-b border-sep-line gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-accent/10 px-2 py-0.5 font-mono text-[11px] font-bold uppercase text-accent border border-accent/20">
+                        {section.code_language || 'Code'}
+                      </span>
+                    </div>
                     {section.code_explanation && (
-                      <span className="text-text/60 truncate max-w-md italic">
+                      <span className="text-xs font-sans text-text/75 italic">
                         {section.code_explanation}
                       </span>
                     )}
                   </div>
-                  <pre className="p-3.5 text-xs font-mono text-[#D4D4D4] overflow-x-auto leading-relaxed">
-                    <code>{section.code_snippet}</code>
-                  </pre>
+                  <div className="p-3">
+                    <MarkdownRenderer
+                      content={`\`\`\`${section.code_language || ''}\n${section.code_snippet}\n\`\`\``}
+                    />
+                  </div>
                 </div>
               )}
 

@@ -134,13 +134,49 @@ const defaultComponents = {
       {children}
     </td>
   ),
+  h1: ({ children, ...props }) => (
+    <h1 className="mt-6 mb-3 font-display text-lg font-bold text-text border-b border-sep-line/60 pb-1.5" {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2 className="mt-5 mb-2.5 font-display text-base font-bold text-text flex items-center gap-2" {...props}>
+      <span className="h-2 w-2 rounded-full bg-accent inline-block"></span>
+      <span>{children}</span>
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 className="mt-4 mb-2 font-display text-sm font-semibold text-text tracking-wide text-accent" {...props}>
+      {children}
+    </h3>
+  ),
+  h4: ({ children, ...props }) => (
+    <h4 className="mt-3 mb-1.5 font-display text-xs font-semibold text-text uppercase tracking-wider" {...props}>
+      {children}
+    </h4>
+  ),
+  ul: ({ children, ...props }) => (
+    <ul className="my-2.5 space-y-1.5 pl-5 list-disc text-text/85 text-xs sm:text-sm marker:text-accent" {...props}>
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }) => (
+    <ol className="my-2.5 space-y-1.5 pl-5 list-decimal text-text/85 text-xs sm:text-sm marker:font-mono marker:text-accent marker:font-bold" {...props}>
+      {children}
+    </ol>
+  ),
+  li: ({ children, ...props }) => (
+    <li className="leading-relaxed" {...props}>
+      {children}
+    </li>
+  ),
   p: ({ children, ...props }) => (
-    <p className="mb-2 last:mb-0 leading-relaxed" {...props}>
+    <p className="mb-2.5 last:mb-0 leading-relaxed text-text/85" {...props}>
       {children}
     </p>
   ),
   a: ({ children, ...props }) => (
-    <a target="_blank" rel="noopener noreferrer" className="text-accent underline hover:opacity-80" {...props}>
+    <a target="_blank" rel="noopener noreferrer" className="text-accent underline hover:opacity-80 font-medium" {...props}>
       {children}
     </a>
   ),
