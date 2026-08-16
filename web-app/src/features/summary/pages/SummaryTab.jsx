@@ -39,8 +39,8 @@ function SectionCodeCard({ snippet, language, explanation }) {
   };
 
   return (
-    <div className="mt-4 overflow-hidden rounded-ui border border-sep-line/70 bg-[#F9F6F0] dark:bg-[#1C1812] shadow-xs">
-      <div className="flex items-center justify-between border-b border-sep-line/60 bg-sand/40 dark:bg-surface-raised px-3.5 py-1.5 gap-2">
+    <div className="mt-4 overflow-hidden rounded-ui border border-sep-line/80 bg-sand/40 dark:bg-surface-raised shadow-xs">
+      <div className="flex items-center justify-between border-b border-sep-line/60 bg-sand/60 dark:bg-surface-hover px-3.5 py-1.5 gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent border border-accent/25">
             {language || 'Code'}
@@ -59,7 +59,7 @@ function SectionCodeCard({ snippet, language, explanation }) {
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto p-3.5 font-mono text-xs leading-relaxed text-[#2A2318] dark:text-[#EDE4D0] hljs">
+      <pre className="overflow-x-auto p-3.5 font-mono text-xs leading-relaxed bg-sand/40 dark:bg-surface-raised text-text hljs">
         <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
       </pre>
     </div>

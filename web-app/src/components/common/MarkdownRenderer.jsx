@@ -80,8 +80,8 @@ function CodeBlock({ node, inline, className = '', children, ...props }) {
   };
 
   return (
-    <div className="relative my-3 overflow-hidden rounded-ui border border-sep-line/70 bg-[#F9F6F0] dark:bg-[#1C1812] shadow-xs">
-      <div className="flex items-center justify-between border-b border-sep-line/60 bg-sand/40 dark:bg-surface-raised px-3.5 py-1.5 text-[11px] font-mono">
+    <div className="relative my-3 overflow-hidden rounded-ui border border-sep-line/80 bg-sand/40 dark:bg-surface-raised shadow-xs">
+      <div className="flex items-center justify-between border-b border-sep-line/60 bg-sand/60 dark:bg-surface-hover px-3.5 py-1.5 text-[11px] font-mono">
         <span className="font-semibold uppercase tracking-wider text-accent">{match ? match[1] : 'CODE'}</span>
         <button
           type="button"
@@ -91,7 +91,7 @@ function CodeBlock({ node, inline, className = '', children, ...props }) {
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto p-3.5 font-mono text-xs leading-relaxed text-[#2A2318] dark:text-[#EDE4D0] hljs">
+      <pre className="overflow-x-auto p-3.5 font-mono text-xs leading-relaxed bg-sand/40 dark:bg-surface-raised text-text hljs">
         <code className={className} {...props}>
           {children}
         </code>
