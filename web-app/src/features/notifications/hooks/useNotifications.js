@@ -87,13 +87,44 @@ export function useNotificationSSE() {
           }
 
           // 5. Display real-time toast alert for actionable notifications
-          const title = payload.title || payload.event_name || 'New Notification';
+          const eventName = payload.event_name || payload.title || '';
+          const title = payload.title || (eventName ? eventName.replace(/([A-Z])/g, ' $1').trim() : 'Notification');
           const message = payload.message || payload.description || '';
+          const toastKey = payload.event_id || `${eventName}-${payload.resource_id || wsId || docId || title}`;
+
           if (message || title) {
-            toast.info(title, {
-              description: message,
-              duration: 5000,
-            });
+            const isSuccess =
+              payload.status === 'COMPLETED' ||
+              eventType.includes('completed') ||
+              eventType.includes('joined') ||
+              eventType.includes('restored') ||
+              eventName.toLowerCase().includes('parsed') ||
+              eventName.toLowerCase().includes('indexed');
+
+            const isError =
+              payload.status === 'FAILED' ||
+              eventType.includes('failed') ||
+              eventType.includes('error');
+
+            if (isSuccess) {
+              toast.success(title, {
+                id: toastKey,
+                description: message,
+                duration: 4000,
+              });
+            } else if (isError) {
+              toast.error(title, {
+                id: toastKey,
+                description: message,
+                duration: 5500,
+              });
+            } else {
+              toast(title, {
+                id: toastKey,
+                description: message,
+                duration: 4000,
+              });
+            }
           }
         } catch (err) {
           console.debug('Notification SSE parse error:', err);
