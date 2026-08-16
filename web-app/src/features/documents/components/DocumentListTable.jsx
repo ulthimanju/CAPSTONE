@@ -115,6 +115,13 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
             filename.endsWith('.docx') ||
             filename.endsWith('.doc') ||
             filename.endsWith('.wps');
+          const isPptx =
+            ext === 'pptx' ||
+            ext === 'ppt' ||
+            ext === 'key' ||
+            filename.endsWith('.pptx') ||
+            filename.endsWith('.ppt') ||
+            filename.endsWith('.key');
           const isTxt =
             ext === 'txt' ||
             ext === 'text' ||
@@ -148,6 +155,12 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
                     <img
                       src="/icons/docx-icon.svg"
                       alt="Word Document"
+                      className="h-8 w-8 object-contain"
+                    />
+                  ) : isPptx ? (
+                    <img
+                      src="/icons/pptx-icon.svg"
+                      alt="PowerPoint Presentation"
                       className="h-8 w-8 object-contain"
                     />
                   ) : isTxt ? (
