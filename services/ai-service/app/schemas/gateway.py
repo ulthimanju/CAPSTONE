@@ -80,12 +80,12 @@ class ChatRequest(BaseModel):
 
 class LearningUnit(BaseModel):
     title: str = Field(..., description="Title of the learning milestone")
-    description: str = Field(..., description="1-2 sentence introduction to unit scope")
+    description: str | None = Field(default=None, description="Optional legacy description")
 
 
 class LearningPathResponse(BaseModel):
     title: str = Field(..., description="Title of the overall curriculum")
-    description: str = Field(..., description="Comprehensive curriculum description")
+    description: str | None = Field(default=None, description="Optional legacy description")
     units: list[LearningUnit] = Field(default_factory=list, description="Ordered list of learning units (10-30)")
 
 

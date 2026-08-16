@@ -165,9 +165,11 @@ export function LearningPathTab({ workspace: propWorkspace }) {
                     {unit.title}
                   </h4>
 
-                  <p className="font-body text-xs text-text/75 mt-2 leading-relaxed">
-                    {unit.description}
-                  </p>
+                  {unit.description && (
+                    <p className="font-body text-xs text-text/75 mt-2 leading-relaxed">
+                      {unit.description}
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-sep-line/40 flex items-center justify-end font-mono text-[11px]">
