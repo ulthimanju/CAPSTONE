@@ -47,6 +47,7 @@ export {
   Menu,
 } from 'lucide-react';
 
+import React from 'react';
 import {
   Settings,
   Archive,
@@ -97,12 +98,12 @@ import {
 } from 'lucide-react';
 
 /* ==========================================================================
-   Centralized Custom SVG Icons
-   To change any icon across the entire app, update ONLY its definition here!
+   Centralized Design System Custom SVG Icons
+   Calibrated for consistent 24x24 optical grid, stroke weight, & visual mass
    ========================================================================== */
 
 /**
- * Documents Tab Icon (files-filled)
+ * Documents Tab Icon (files-filled) - Normalized 24x24
  */
 export function DocumentsIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
@@ -123,7 +124,7 @@ export function DocumentsIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
 }
 
 /**
- * Summary Tab Icon (summary)
+ * Summary Tab Icon (summary) - Normalized 24x24, 2px stroke
  */
 export function SummaryIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
@@ -147,7 +148,7 @@ export function SummaryIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
 }
 
 /**
- * Learning Path Tab Icon (path-arrow-solid)
+ * Learning Path Tab Icon (path-arrow-solid) - Normalized 24x24
  */
 export function LearningPathIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
@@ -173,64 +174,34 @@ export function LearningPathIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
 }
 
 /**
- * AI Tutor Tab Icon (question)
+ * AI Tutor Tab Icon (question) - Normalized 24x24, 2px stroke
  */
 export function AITutorIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden="true"
       {...props}
     >
       <title>question</title>
-      <g
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.5"
-      >
-        <path d="M15.4 7.5h-.05m3.35 0h-.05m-3.2 0a.1.1 0 1 1-.2 0a.1.1 0 0 1 .2 0m3.3 0a.1.1 0 1 1-.2 0a.1.1 0 0 1 .2 0" />
-        <path d="M17 12.567c2.761 0 5-2.142 5-4.784S19.761 3 17 3s-5 2.142-5 4.783c0 1.27.517 2.423 1.36 3.279c.185.188.309.445.259.71a2.66 2.66 0 0 1-.543 1.175a3.25 3.25 0 0 0 2.111-.329h.001c.227-.12.34-.181.42-.193s.195.01.425.052q.479.09.967.09M10 13a3 3 0 1 1-6 0a3 3 0 0 1 6 0" />
-        <path d="M12 21a5 5 0 0 0-10 0" />
-      </g>
+      <path d="M15.4 7.5h-.05m3.35 0h-.05m-3.2 0a.1.1 0 1 1-.2 0a.1.1 0 0 1 .2 0m3.3 0a.1.1 0 1 1-.2 0a.1.1 0 0 1 .2 0" />
+      <path d="M17 12.567c2.761 0 5-2.142 5-4.784S19.761 3 17 3s-5 2.142-5 4.783c0 1.27.517 2.423 1.36 3.279c.185.188.309.445.259.71a2.66 2.66 0 0 1-.543 1.175a3.25 3.25 0 0 0 2.111-.329h.001c.227-.12.34-.181.42-.193s.195.01.425.052q.479.09.967.09M10 13a3 3 0 1 1-6 0a3 3 0 0 1 6 0" />
+      <path d="M12 21a5 5 0 0 0-10 0" />
     </svg>
   );
 }
 
 /**
- * Plus / New Button Icon (new-16)
+ * Plus / New Button Icon - Normalized into 24x24 optical frame
  */
 export function PlusIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 16 16"
-      className={className}
-      aria-hidden="true"
-      {...props}
-    >
-      <title>new-16</title>
-      <path
-        fill="currentColor"
-        d="M7.5 4a.5.5 0 0 1 .5.5V7h2.5a.5.5 0 0 1 0 1H8v2.5a.5.5 0 0 1-1 0V8H4.5a.5.5 0 0 1 0-1H7V4.5a.5.5 0 0 1 .5-.5"
-      />
-      <path
-        fill="currentColor"
-        fillRule="evenodd"
-        d="M0 6.4c0-2.24 0-3.36.436-4.22A4.03 4.03 0 0 1 2.186.43c.856-.436 1.98-.436 4.22-.436h2.2c2.24 0 3.36 0 4.22.436c.753.383 1.36.995 1.75 1.75c.436.856.436 1.98.436 4.22v2.2c0 2.24 0 3.36-.436 4.22a4.03 4.03 0 0 1-1.75 1.75c-.856.436-1.98.436-4.22.436h-2.2c-2.24 0-3.36 0-4.22-.436a4.03 4.03 0 0 1-1.75-1.75C0 11.964 0 10.84 0 8.6zM6.4 1h2.2c1.14 0 1.93 0 2.55.051c.605.05.953.142 1.22.276a3.02 3.02 0 0 1 1.31 1.31c.134.263.226.611.276 1.22c.05.617.051 1.41.051 2.55v2.2c0 1.14 0 1.93-.051 2.55c-.05.605-.142.953-.276 1.22a3 3 0 0 1-1.31 1.31c-.263.134-.611.226-1.22.276c-.617.05-1.41.051-2.55.051H6.4c-1.14 0-1.93 0-2.55-.05c-.605-.05-.953-.143-1.22-.277a3 3 0 0 1-1.31-1.31c-.134-.263-.226-.61-.276-1.22c-.05-.617-.051-1.41-.051-2.55v-2.2c0-1.14 0-1.93.051-2.55c.05-.605.142-.953.276-1.22a3.02 3.02 0 0 1 1.31-1.31c.263-.134.611-.226 1.22-.276C4.467 1.001 5.26 1 6.4 1"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
-
-/**
- * Logs / Activity Trail Icon (logs)
- */
-export function LogsIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -239,21 +210,48 @@ export function LogsIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
       aria-hidden="true"
       {...props}
     >
-      <title>logs</title>
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d="M3 5h1m-1 7h1m-1 7h1M8 5h1m-1 7h1m-1 7h1m4-14h8m-8 7h8m-8 7h8"
-      />
+      <title>new</title>
+      <g transform="translate(2, 2) scale(1.25)">
+        <path
+          fill="currentColor"
+          d="M7.5 4a.5.5 0 0 1 .5.5V7h2.5a.5.5 0 0 1 0 1H8v2.5a.5.5 0 0 1-1 0V8H4.5a.5.5 0 0 1 0-1H7V4.5a.5.5 0 0 1 .5-.5"
+        />
+        <path
+          fill="currentColor"
+          fillRule="evenodd"
+          d="M0 6.4c0-2.24 0-3.36.436-4.22A4.03 4.03 0 0 1 2.186.43c.856-.436 1.98-.436 4.22-.436h2.2c2.24 0 3.36 0 4.22.436c.753.383 1.36.995 1.75 1.75c.436.856.436 1.98.436 4.22v2.2c0 2.24 0 3.36-.436 4.22a4.03 4.03 0 0 1-1.75 1.75c-.856.436-1.98.436-4.22.436h-2.2c-2.24 0-3.36 0-4.22-.436a4.03 4.03 0 0 1-1.75-1.75C0 11.964 0 10.84 0 8.6zM6.4 1h2.2c1.14 0 1.93 0 2.55.051c.605.05.953.142 1.22.276a3.02 3.02 0 0 1 1.31 1.31c.134.263.226.611.276 1.22c.05.617.051 1.41.051 2.55v2.2c0 1.14 0 1.93-.051 2.55c-.05.605-.142.953-.276 1.22a3 3 0 0 1-1.31 1.31c-.263.134-.611.226-1.22.276c-.617.05-1.41.051-2.55.051H6.4c-1.14 0-1.93 0-2.55-.05c-.605-.05-.953-.143-1.22-.277a3 3 0 0 1-1.31-1.31c-.134-.263-.226-.61-.276-1.22c-.05-.617-.051-1.41-.051-2.55v-2.2c0-1.14 0-1.93.051-2.55c.05-.605.142-.953.276-1.22a3.02 3.02 0 0 1 1.31-1.31c.263-.134.611-.226 1.22-.276C4.467 1.001 5.26 1 6.4 1"
+          clipRule="evenodd"
+        />
+      </g>
     </svg>
   );
 }
 
 /**
- * Quiz Icon (quiz-outline)
+ * Logs / Activity Trail Icon - Normalized 24x24, 2px stroke
+ */
+export function LogsIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <title>logs</title>
+      <path d="M3 5h1m-1 7h1m-1 7h1M8 5h1m-1 7h1m-1 7h1m4-14h8m-8 7h8m-8 7h8" />
+    </svg>
+  );
+}
+
+/**
+ * Quiz Icon - Normalized 24x24
  */
 export function QuizIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
@@ -274,32 +272,30 @@ export function QuizIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
 }
 
 /**
- * Flashcards Icon (flashcards)
+ * Flashcards Icon - Calibrated optical weight (strokeWidth=3.5 in 48x48 space = 1.75px optical weight)
  */
 export function FlashcardsIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 48 48"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden="true"
       {...props}
     >
       <title>flashcards</title>
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d="M14.243 7.561h19.514a2.65 2.65 0 0 1 2.657 2.658v27.563a2.65 2.65 0 0 1-2.657 2.657H14.243a2.65 2.65 0 0 1-2.657-2.657V10.219a2.65 2.65 0 0 1 2.656-2.658m1.108 9.325h17.703M15.35 20.312h17.703M15.35 23.74h17.703M15.35 27.166h17.703M15.35 13.459h7.097M15.35 30.593h7.097M15.35 34.02h17.703m-21.468 3.716h24.83m-16.556 0v2.702m8.283-2.702v2.702m-16.573-3.6L5.592 14.524a2.65 2.65 0 0 1 1.878-3.255h0l4.1-1.099m24.861 26.668l5.977-22.314a2.65 2.65 0 0 0-1.878-3.255h0l-4.1-1.099"
-      />
+      <path d="M14.243 7.561h19.514a2.65 2.65 0 0 1 2.657 2.658v27.563a2.65 2.65 0 0 1-2.657 2.657H14.243a2.65 2.65 0 0 1-2.657-2.657V10.219a2.65 2.65 0 0 1 2.656-2.658m1.108 9.325h17.703M15.35 20.312h17.703M15.35 23.74h17.703M15.35 27.166h17.703M15.35 13.459h7.097M15.35 30.593h7.097M15.35 34.02h17.703m-21.468 3.716h24.83m-16.556 0v2.702m8.283-2.702v2.702m-16.573-3.6L5.592 14.524a2.65 2.65 0 0 1 1.878-3.255h0l4.1-1.099m24.861 26.668l5.977-22.314a2.65 2.65 0 0 0-1.878-3.255h0l-4.1-1.099" />
     </svg>
   );
 }
 
 /**
- * Regenerate / Generate Icon (regenerate)
+ * Regenerate / Generate Icon - Normalized 24x24
  */
 export function RegenerateIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
@@ -314,7 +310,7 @@ export function RegenerateIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
       <path
         fill="currentColor"
         fillRule="evenodd"
-        d="M5.5 4.4A9.95 9.95 0 0 1 12 2v-.005c5.515 0 10 4.485 10 10c0 1.115-.18 2.205-.54 3.25l-1.42-.485c.305-.885.46-1.815.46-2.76c0-4.685-3.815-8.5-8.5-8.5c-2.03 0-3.945.715-5.46 1.995H8.5v1.5H4V2.5h1.5zm11.96 14.105H15.5V17.01H20v4.495h-1.5v-1.9a9.95 9.95 0 0 1-6.5 2.4c-5.515 0-10-4.485-10-10c0-1.115.18-2.205.54-3.25l1.42.485A8.5 8.5 0 0 0 3.5 12c0 4.685 3.815 8.5 8.5 8.5c2.03 0 3.945-.715 5.46-1.995M13.25 14h1.5c0-1.79 1.46-3.25 3.25-3.25v-1.5c-1.79 0-3.25-1.46-3.25-3.25h-1.5c0 1.79-1.46 3.25-3.25 3.25v1.5c1.79 0 3.25 1.46 3.25 3.25M14 8.55c.37.58.865 1.075 1.45 1.45c-.58.37-1.075.865-1.45 1.45A4.8 4.8 0 0 0 12.55 10A4.8 4.8 0 0 0 14 8.55m-7.5 5.7c.965 0 1.75-.785 1.75-1.75h1.5c0 .965.785 1.75 1.75 1.75v1.5c-.965 0-1.75.785-1.75 1.75h-1.5c0-.965-.785-1.75-1.75-1.75z"
+        d="M5.5 4.4A9.95 9.95 0 0 1 12 2v-.005c5.515 0 10 4.485 10 10c0 1.115-.18 2.205-.54 3.25l-1.42-.485c.305-.885.46-1.815.46-2.76c0-4.685-3.815-8.5-8.5-8.5c-2.03 0-3.945.715-5.46 1.995H8.5v1.5H4V2.5h1.5zm11.96 14.105H15.5V17.01H20v4.495h-1.5v-1.9a9.95 9.95 0 0 1-6.5 2.4c-5.515 0-10-4.485-10-10c0-1.115.18-2.205.54-3.25l1.42.485A8.5 8.5 0 0 0 3.5 12c0 4.685 3.815 8.5 8.5 8.5c2.03 0 3.945-.715 5.46-1.995M13.25 14h1.5c0-1.79 1.46-3.25 3.25-3.25v-1.5c-1.79 0-3.25-1.46-3.25-3.25h-1.5c0 1.79-1.46 3.25-3.25 3.25v1.5c1.79 0 3.25 1.46 3.25 3.25M14 8.55c.37.58.865 1.075 1.45 1.45c-.58.37-1.075.865-1.45 1.45A4.8 4.8 0 0 0 12.55 10A4.8 4.8 0 0 0 14 8.55m-7.5 5.7c.965 0 1.75-.785 1.75-1.75h1.5c0 .965.785 1.75 1.75 1.75v1.5c-.965 0-1.75.785-1.75-1.75h-1.5c0-.965-.785-1.75-1.75-1.75z"
         clipRule="evenodd"
       />
     </svg>
@@ -322,7 +318,7 @@ export function RegenerateIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
 }
 
 /**
- * Devices & Sessions Icon (devices-outline-rounded)
+ * Devices & Sessions Icon - Normalized 24x24
  */
 export function DevicesIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
@@ -334,16 +330,18 @@ export function DevicesIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
       {...props}
     >
       <title>devices-outline-rounded</title>
-      <path
-        fill="currentColor"
-        d="M11.539 19H3.5q-.213 0-.356-.144T3 18.499t.144-.356T3.5 18h8.039q.212 0 .356.144t.144.357t-.144.356t-.356.143m-5.923-2.384q-.691 0-1.153-.463T4 15V6.616q0-.691.463-1.153T5.616 5h13.73q.213 0 .357.144t.143.357t-.143.356t-.357.143H5.616q-.231 0-.424.192T5 6.616V15q0 .23.192.423t.423.193h5.924q.212 0 .356.143q.143.144.143.357t-.143.356t-.357.144zm14.576 1.057v-7.577q0-.134-.096-.23q-.096-.097-.23-.097h-3.732q-.134 0-.23.096t-.096.231v7.577q0 .135.096.23q.096.097.23.097h3.731q.135 0 .231-.096t.096-.231M16.02 19q-.504 0-.858-.353q-.353-.354-.353-.858V9.98q0-.505.353-.858q.353-.354.858-.354h3.962q.504 0 .858.353q.353.354.353.859v7.807q0 .505-.353.859q-.353.353-.858.353zm1.978-6.5q.29 0 .483-.2q.193-.202.193-.47q0-.29-.193-.483t-.488-.193q-.273 0-.469.193t-.196.488q0 .273.2.469q.201.196.47.196M18 13.885"
-      />
+      <g transform="translate(0.5, 0.5) scale(0.95)">
+        <path
+          fill="currentColor"
+          d="M11.539 19H3.5q-.213 0-.356-.144T3 18.499t.144-.356T3.5 18h8.039q.212 0 .356.144t.144.357t-.144.356t-.356.143m-5.923-2.384q-.691 0-1.153-.463T4 15V6.616q0-.691.463-1.153T5.616 5h13.73q.213 0 .357.144t.143.357t-.143.356t-.357.143H5.616q-.231 0-.424.192T5 6.616V15q0 .23.192.423t.423.193h5.924q.212 0 .356.143q.143.144.143.357t-.143.356t-.357.144zm14.576 1.057v-7.577q0-.134-.096-.23q-.096-.097-.23-.097h-3.732q-.134 0-.23.096t-.096.231v7.577q0 .135.096.23q.096.097.23.097h3.731q.135 0 .231-.096t.096-.231M16.02 19q-.504 0-.858-.353q-.353-.354-.353-.858V9.98q0-.505.353-.858q.353-.354.858-.354h3.962q.504 0 .858.353q.353.354.353.859v7.807q0 .505-.353.859q-.353.353-.858.353zm1.978-6.5q.29 0 .483-.2q.193-.202.193-.47q0-.29-.193-.483t-.488-.193q-.273 0-.469.193t-.196.488q0 .273.2.469q.201.196.47.196M18 13.885"
+        />
+      </g>
     </svg>
   );
 }
 
 /**
- * Technical / Code Workspace Icon (code-bold)
+ * Technical / Code Workspace Icon (code-bold) - Normalized 24x24
  */
 export function CodeBoldIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
@@ -364,29 +362,32 @@ export function CodeBoldIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
 }
 
 /**
- * Non-Technical / Book Workspace Icon (book-linear)
+ * Non-Technical / Book Workspace Icon (book-linear) - Normalized 24x24, 1.8px stroke
  */
 export function BookLinearIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
       aria-hidden="true"
       {...props}
     >
       <title>book-linear</title>
-      <g fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M4 8c0-2.828 0-4.243.879-5.121C5.757 2 7.172 2 10 2h4c2.828 0 4.243 0 5.121.879C20 3.757 20 5.172 20 8v8c0 2.828 0 4.243-.879 5.121C18.243 22 16.828 22 14 22h-4c-2.828 0-4.243 0-5.121-.879C4 20.243 4 18.828 4 16z" />
-        <path d="M19.898 16h-12c-.93 0-1.395 0-1.777.102A3 3 0 0 0 4 18.224" />
-        <path strokeLinecap="round" d="M8 7h8m-8 3.5h5" />
-      </g>
+      <path d="M4 8c0-2.828 0-4.243.879-5.121C5.757 2 7.172 2 10 2h4c2.828 0 4.243 0 5.121.879C20 3.757 20 5.172 20 8v8c0 2.828 0 4.243-.879 5.121C18.243 22 16.828 22 14 22h-4c-2.828 0-4.243 0-5.121-.879C4 20.243 4 18.828 4 16z" />
+      <path d="M19.898 16h-12c-.93 0-1.395 0-1.777.102A3 3 0 0 0 4 18.224" />
+      <path d="M8 7h8m-8 3.5h5" />
     </svg>
   );
 }
 
 /**
- * Google Drive Brand Icon
+ * Google Drive Brand Icon - Normalized 24x24
  */
 export function GoogleDriveIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
