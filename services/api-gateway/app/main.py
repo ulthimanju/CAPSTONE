@@ -187,18 +187,31 @@ async def proxy_request(service_url: str, request: Request):
     headers["X-Correlation-ID"] = req_id
 
     content = await request.body()
+    is_streaming = "stream" in request.url.path or "events" in request.url.path
+    req_timeout = (
+        httpx.Timeout(connect=10.0, read=None, write=30.0, pool=None)
+        if is_streaming
+        else settings.get_httpx_timeout(read_override=60.0)
+    )
+
     req = client.build_request(
         method=request.method,
         url=target_url,
         headers=headers,
         content=content,
         cookies=request.cookies,
+        timeout=req_timeout,
     )
     res = await client.send(req, stream=True)
+    res_headers = dict(res.headers)
+    if is_streaming:
+        res_headers["Cache-Control"] = "no-cache, no-transform"
+        res_headers["X-Accel-Buffering"] = "no"
+
     return StreamingResponse(
         res.aiter_raw(),
         status_code=res.status_code,
-        headers=dict(res.headers),
+        headers=res_headers,
         background=None,
     )
 

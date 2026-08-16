@@ -18,15 +18,29 @@ async def stream_notifications(user_id: uuid.UUID = Depends(get_current_user_id)
 
     async def event_generator():
         try:
-            # Initial ping
+            # Initial connection confirmation ping
             yield "data: {\"event_name\": \"Ping\", \"status\": \"CONNECTED\"}\n\n"
             while True:
-                data = await queue.get()
-                yield data
+                try:
+                    data = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    yield data
+                except asyncio.TimeoutError:
+                    # Keep-alive heartbeat comment to prevent proxy/socket timeouts
+                    yield ": keep-alive\n\n"
         except asyncio.CancelledError:
+            pass
+        finally:
             sse_manager.unsubscribe(channel_id, queue)
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/events")

@@ -10,22 +10,21 @@ export const notificationKeys = {
 };
 
 /**
- * Hook to fetch user notifications from MongoDB with zero polling.
- * Query invalidation is driven in real-time by the SSE notification stream.
+ * Hook to fetch user notifications from MongoDB with real-time SSE updates.
+ * staleTime is 0 so any invalidation triggers immediate re-render and query update.
  */
 export function useNotificationsQuery({ limit = 50, offset = 0 } = {}, options = {}) {
   return useQuery({
     queryKey: notificationKeys.list({ limit, offset }),
     queryFn: () => notificationApi.getNotifications({ limit, offset }),
-    staleTime: Infinity, // Real-time SSE updates manage cache invalidation
+    staleTime: 0,
     ...options,
   });
 }
 
 /**
  * Real-time SSE subscription hook for live notification stream.
- * Drives instant reactive UI updates across workspaces, documents, collaborators,
- * learning paths, summaries, and notifications.
+ * Automatically invalidates notification & invitation caches and displays toast alerts.
  */
 export function useNotificationSSE() {
   const queryClient = useQueryClient();
@@ -57,9 +56,11 @@ export function useNotificationSSE() {
           const docId = payload.document_id || payload.resource_id || payload.metadata?.document_id;
           const eventType = (payload.event_type || payload.event_name || payload.type || '').toLowerCase();
 
-          // 1. Invalidate notifications & pending invitations immediately
+          // 1. Invalidate and immediately refetch notifications
           queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+          queryClient.refetchQueries({ queryKey: notificationKeys.all });
           queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] });
+          queryClient.refetchQueries({ queryKey: ['user-pending-invitations'] });
 
           // 2. Invalidate workspace lists and active workspace details
           queryClient.invalidateQueries({ queryKey: ['workspaces'] });
@@ -100,6 +101,7 @@ export function useNotificationSSE() {
       };
 
       eventSource.onmessage = handleNotification;
+      eventSource.addEventListener('message', handleNotification);
       eventSource.addEventListener('notification', handleNotification);
       eventSource.addEventListener('WorkspaceInvitationSent', handleNotification);
       eventSource.addEventListener('WorkspaceArchived', handleNotification);
@@ -133,6 +135,7 @@ export function useMarkNotificationReadMutation(options = {}) {
     mutationFn: (notificationId) => notificationApi.markAsRead(notificationId),
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      queryClient.refetchQueries({ queryKey: notificationKeys.all });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -152,6 +155,7 @@ export function useMarkAllNotificationsReadMutation(options = {}) {
     mutationFn: () => notificationApi.markAllAsRead(),
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      queryClient.refetchQueries({ queryKey: notificationKeys.all });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {

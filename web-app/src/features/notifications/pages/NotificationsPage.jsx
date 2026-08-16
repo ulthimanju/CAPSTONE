@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import {
   useNotificationsQuery,
+  useNotificationSSE,
   useMarkNotificationReadMutation,
   useMarkAllNotificationsReadMutation,
 } from '../hooks/useNotifications';
@@ -24,6 +25,9 @@ import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
 
 export function NotificationsPage() {
+  // Real-time live SSE notification stream listener
+  useNotificationSSE();
+
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'UNREAD'
 
   const { data, isLoading, error } = useNotificationsQuery({ limit: 100 });
