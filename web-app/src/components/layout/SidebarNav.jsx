@@ -25,82 +25,20 @@ function SummaryIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   );
 }
 
-function DocumentsAnimatedIcon({ isHovered, className = 'h-4 w-4 shrink-0', ...props }) {
-  const [animKey, setAnimKey] = React.useState(0);
-  const prevHovered = React.useRef(false);
-
-  React.useEffect(() => {
-    if (isHovered && !prevHovered.current) {
-      setAnimKey((k) => k + 1);
-    }
-    prevHovered.current = isHovered;
-  }, [isHovered]);
-
+function DocumentsFilesFilledIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
     <svg
-      key={animKey}
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       className={className}
       aria-hidden="true"
       {...props}
     >
-      <title>folder-multiple</title>
-      <g
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      >
-        <path
-          strokeDasharray="62"
-          d="M14 5h8c0.55 0 1 0.45 1 1v10c0 0.55 -0.45 1 -1 1h-16c-0.55 0 -1 -0.45 -1 -1v-11Z"
-        >
-          {animKey > 0 && (
-            <animate
-              fill="freeze"
-              attributeName="stroke-dashoffset"
-              dur="0.6s"
-              values="62;0"
-            />
-          )}
-        </path>
-        <path
-          d="M14 5h-9v-1c0 -0.55 0.45 -1 1 -1h6Z"
-          opacity={animKey > 0 ? '0' : '1'}
-        >
-          {animKey > 0 && (
-            <>
-              <set fill="freeze" attributeName="opacity" begin="0.6s" to="1" />
-              <animate
-                fill="freeze"
-                attributeName="d"
-                begin="0.6s"
-                dur="0.2s"
-                values="M14 5h-9v0c0 0 0.45 0 1 0h6Z;M14 5h-9v-1c0 -0.55 0.45 -1 1 -1h6Z"
-              />
-            </>
-          )}
-        </path>
-        <path
-          d="M19 21h-17c-0.55 0 -1 -0.45 -1 -1v-13"
-          opacity={animKey > 0 ? '0' : '1'}
-        >
-          {animKey > 0 && (
-            <>
-              <set fill="freeze" attributeName="opacity" begin="0.8s" to="1" />
-              <animate
-                fill="freeze"
-                attributeName="d"
-                begin="0.8s"
-                dur="0.2s"
-                values="M22 17h-16c-0.55 0 -1 -0.45 -1 -1v-12;M19 21h-17c-0.55 0 -1 -0.45 -1 -1v-13"
-              />
-            </>
-          )}
-        </path>
-      </g>
+      <title>files-filled</title>
+      <path
+        fill="currentColor"
+        d="m11 2l3 .001V8a1 1 0 0 0 .883.993L15 9h6v6a3 3 0 0 1-3 3h-1v1a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h1V5a3 3 0 0 1 3-3M8 8H7a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-1h-4a3 3 0 0 1-3-3zm12.415-1H16V2.585z"
+      />
     </svg>
   );
 }
@@ -151,7 +89,7 @@ export function SidebarNav() {
     {
       label: 'Documents',
       to: `${basePath}/documents`,
-      icon: DocumentsAnimatedIcon,
+      icon: DocumentsFilesFilledIcon,
       isActive:
         location.pathname === basePath ||
         location.pathname.startsWith(`${basePath}/documents`),
