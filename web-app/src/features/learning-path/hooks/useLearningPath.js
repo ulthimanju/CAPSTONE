@@ -56,7 +56,7 @@ export function useWorkspaceLearningPathQuery(workspaceId) {
     },
     enabled: Boolean(workspaceId),
     refetchInterval: isGenerating ? 2500 : false,
-    staleTime: isGenerating ? 0 : 5 * 60 * 1000,
+    staleTime: isGenerating ? 0 : 10 * 1000,
   });
 }
 
@@ -101,7 +101,7 @@ export function useUnitContentQuery(workspaceId, unitTitle) {
     },
     enabled: Boolean(workspaceId && unitTitle),
     refetchInterval: isGeneratingUnit ? 3000 : false,
-    staleTime: isGeneratingUnit ? 0 : 5 * 60 * 1000,
+    staleTime: isGeneratingUnit ? 0 : 10 * 1000,
   });
 }
 

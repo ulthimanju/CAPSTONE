@@ -24,7 +24,8 @@ export function useNotificationsQuery({ limit = 50, offset = 0 } = {}, options =
 
 /**
  * Real-time SSE subscription hook for live notification stream.
- * Automatically invalidates notification & invitation caches and displays toast alerts.
+ * Drives instant reactive UI updates across workspaces, documents, collaborators,
+ * learning paths, summaries, and notifications.
  */
 export function useNotificationSSE() {
   const queryClient = useQueryClient();
@@ -52,19 +53,39 @@ export function useNotificationSSE() {
             return;
           }
 
-          // Invalidate notifications queries
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+          const wsId = payload.workspace_id || payload.metadata?.workspace_id;
+          const docId = payload.document_id || payload.resource_id || payload.metadata?.document_id;
+          const eventType = (payload.event_type || payload.event_name || payload.type || '').toLowerCase();
 
-          // Invalidate invitations query if notification is an invitation event
-          if (
-            payload.event_type?.includes('invitation') ||
-            payload.event_name?.includes('Invitation') ||
-            payload.type === 'INVITATION'
-          ) {
-            queryClient.invalidateQueries({ queryKey: ['workspaces', 'invitations'] });
+          // 1. Invalidate notifications & pending invitations immediately
+          queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+          queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] });
+
+          // 2. Invalidate workspace lists and active workspace details
+          queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+
+          if (wsId) {
+            queryClient.invalidateQueries({ queryKey: ['workspaces', 'detail', wsId] });
+            queryClient.invalidateQueries({ queryKey: ['documents', 'workspace', wsId] });
+            queryClient.invalidateQueries({ queryKey: ['workspace-members', 'list', wsId] });
+            queryClient.invalidateQueries({ queryKey: ['workspace-members', 'invitations', wsId] });
+            queryClient.invalidateQueries({ queryKey: ['workspace-members', 'activities', wsId] });
+            queryClient.invalidateQueries({ queryKey: ['workspace-summary', wsId] });
+            queryClient.invalidateQueries({ queryKey: ['workspace-learning-path', wsId] });
           }
 
-          // Display real-time toast alert
+          // 3. Invalidate specific document details if document event
+          if (docId) {
+            queryClient.invalidateQueries({ queryKey: ['documents', 'detail', docId] });
+            queryClient.invalidateQueries({ queryKey: ['documents', 'parse-result', docId] });
+          }
+
+          // 4. Invalidate auth sessions if session-related event
+          if (eventType.includes('session') || eventType.includes('auth')) {
+            queryClient.invalidateQueries({ queryKey: ['auth', 'sessions'] });
+          }
+
+          // 5. Display real-time toast alert for actionable notifications
           const title = payload.title || payload.event_name || 'New Notification';
           const message = payload.message || payload.description || '';
           if (message || title) {
@@ -103,7 +124,7 @@ export function useNotificationSSE() {
 }
 
 /**
- * Hook to mark a notification as read.
+ * Hook to mark a notification as read with instant cache update.
  */
 export function useMarkNotificationReadMutation(options = {}) {
   const queryClient = useQueryClient();
@@ -122,7 +143,7 @@ export function useMarkNotificationReadMutation(options = {}) {
 }
 
 /**
- * Hook to mark all notifications as read.
+ * Hook to mark all notifications as read with instant cache update.
  */
 export function useMarkAllNotificationsReadMutation(options = {}) {
   const queryClient = useQueryClient();

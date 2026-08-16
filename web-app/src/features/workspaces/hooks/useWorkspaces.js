@@ -18,7 +18,7 @@ export function useWorkspacesQuery({ limit = 50, offset = 0 } = {}, options = {}
   return useQuery({
     queryKey: workspaceKeys.list({ limit, offset }),
     queryFn: () => workspaceApi.getWorkspaces({ limit, offset }),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 10, // 10 seconds
     ...options,
   });
 }
@@ -30,7 +30,7 @@ export function useArchivedWorkspacesQuery({ limit = 50, offset = 0 } = {}, opti
   return useQuery({
     queryKey: workspaceKeys.archived({ limit, offset }),
     queryFn: () => workspaceApi.getArchivedWorkspaces({ limit, offset }),
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 10,
     ...options,
   });
 }
@@ -43,7 +43,7 @@ export function useWorkspaceQuery(workspaceId, options = {}) {
     queryKey: workspaceKeys.detail(workspaceId),
     queryFn: () => workspaceApi.getWorkspaceById(workspaceId),
     enabled: !!workspaceId,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 10,
     ...options,
   });
 }

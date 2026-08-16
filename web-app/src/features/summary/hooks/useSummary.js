@@ -17,7 +17,7 @@ export function useWorkspaceSummaryQuery(workspaceId) {
       return summaryApi.getWorkspaceSummary(workspaceId);
     },
     enabled: Boolean(workspaceId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 1000,
   });
 }
 
