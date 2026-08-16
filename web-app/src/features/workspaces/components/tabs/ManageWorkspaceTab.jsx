@@ -1,7 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Save,
   Trash2,
@@ -51,7 +49,6 @@ import {
 import { InviteCollaboratorModal } from '../InviteCollaboratorModal';
 import { WorkspaceNameAvailabilityFeedback } from '../WorkspaceNameAvailabilityFeedback';
 import { PREDEFINED_CODE_LANGUAGES } from '../CreateWorkspaceModal';
-import { createWorkspaceRequestSchema } from '../../schemas/workspaceSchemas';
 import {
   useUpdateWorkspaceMutation,
   useDeleteWorkspaceMutation,
@@ -95,36 +92,117 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
   const currentUser = useAuthStore((state) => state.user);
 
-  // Form for Workspace Settings
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    formState: { errors: formErrors },
-  } = useForm({
-    resolver: zodResolver(createWorkspaceRequestSchema),
-    defaultValues: {
-      name: workspace?.name || '',
-      domain_type: workspace?.domain_type || 'TECHNICAL',
-      workspace_code_language: workspace?.workspace_code_language || 'Python',
-      visibility: workspace?.visibility || 'PRIVATE',
-    },
-  });
+  const [nameValue, setNameValue] = useState(workspace?.name || '');
+  const [domainValue, setDomainValue] = useState(workspace?.domain_type || 'TECHNICAL');
+  const [languageValue, setLanguageValue] = useState(workspace?.workspace_code_language || 'Python');
+  const [visibilityValue, setVisibilityValue] = useState(workspace?.visibility || 'PRIVATE');
+  const [savingField, setSavingField] = useState(null);
+  const [savedField, setSavedField] = useState(null);
 
-  const watchedName = watch('name');
-  const watchedDomainType = watch('domain_type');
+  useEffect(() => {
+    if (workspace) {
+      setNameValue(workspace.name || '');
+      setDomainValue(workspace.domain_type || 'TECHNICAL');
+      setLanguageValue(workspace.workspace_code_language || 'Python');
+      setVisibilityValue(workspace.visibility || 'PRIVATE');
+    }
+  }, [
+    workspace?.id,
+    workspace?.name,
+    workspace?.domain_type,
+    workspace?.workspace_code_language,
+    workspace?.visibility,
+  ]);
 
-  const updateWorkspaceMutation = useUpdateWorkspaceMutation(workspace?.id, {
-    onSuccess: () => {
-      setSaveSuccess(true);
-      toast.success('Workspace settings updated successfully');
-      setTimeout(() => setSaveSuccess(false), 3000);
-    },
-    onError: (err) => {
-      toast.error(getErrorMessage(err, 'Failed to update workspace settings'));
-    },
-  });
+  const updateWorkspaceMutation = useUpdateWorkspaceMutation(workspace?.id);
+
+  const handleSaveName = (e) => {
+    e?.preventDefault();
+    const cleanName = nameValue.trim();
+    if (!cleanName || cleanName === workspace?.name) return;
+    setSavingField('name');
+    updateWorkspaceMutation.mutate(
+      { name: cleanName },
+      {
+        onSuccess: () => {
+          setSavingField(null);
+          setSavedField('name');
+          toast.success('Workspace name updated');
+          setTimeout(() => setSavedField(null), 2500);
+        },
+        onError: (err) => {
+          setSavingField(null);
+          toast.error(getErrorMessage(err, 'Failed to update workspace name'));
+        },
+      }
+    );
+  };
+
+  const handleSaveDomain = (e) => {
+    e?.preventDefault();
+    if (domainValue === workspace?.domain_type) return;
+    setSavingField('domain');
+    updateWorkspaceMutation.mutate(
+      {
+        domain_type: domainValue,
+        workspace_code_language: domainValue === 'TECHNICAL' ? languageValue : null,
+      },
+      {
+        onSuccess: () => {
+          setSavingField(null);
+          setSavedField('domain');
+          toast.success('Domain specialization updated');
+          setTimeout(() => setSavedField(null), 2500);
+        },
+        onError: (err) => {
+          setSavingField(null);
+          toast.error(getErrorMessage(err, 'Failed to update domain specialization'));
+        },
+      }
+    );
+  };
+
+  const handleSaveLanguage = (e) => {
+    e?.preventDefault();
+    if (languageValue === workspace?.workspace_code_language) return;
+    setSavingField('language');
+    updateWorkspaceMutation.mutate(
+      { workspace_code_language: languageValue },
+      {
+        onSuccess: () => {
+          setSavingField(null);
+          setSavedField('language');
+          toast.success('Primary code language updated');
+          setTimeout(() => setSavedField(null), 2500);
+        },
+        onError: (err) => {
+          setSavingField(null);
+          toast.error(getErrorMessage(err, 'Failed to update code language'));
+        },
+      }
+    );
+  };
+
+  const handleSaveVisibility = (e) => {
+    e?.preventDefault();
+    if (visibilityValue === workspace?.visibility) return;
+    setSavingField('visibility');
+    updateWorkspaceMutation.mutate(
+      { visibility: visibilityValue },
+      {
+        onSuccess: () => {
+          setSavingField(null);
+          setSavedField('visibility');
+          toast.success('Privacy & visibility updated');
+          setTimeout(() => setSavedField(null), 2500);
+        },
+        onError: (err) => {
+          setSavingField(null);
+          toast.error(getErrorMessage(err, 'Failed to update visibility'));
+        },
+      }
+    );
+  };
 
   const archiveWorkspaceMutation = useArchiveWorkspaceMutation({
     onSuccess: () => {
@@ -258,15 +336,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     updateRoleMutation.mutate({ userId, role: newRole, version: currentVersion });
   };
 
-  const handleSettingsSubmit = (formData) => {
-    const payload = {
-      ...formData,
-      workspace_code_language:
-        formData.domain_type === 'TECHNICAL' ? formData.workspace_code_language || 'Python' : null,
-    };
-    updateWorkspaceMutation.mutate(payload);
-  };
-
   const formatActivityDate = (isoStr) => {
     if (!isoStr) return '';
     try {
@@ -321,233 +390,336 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
   return (
     <div className="space-y-10 pb-16">
-      {/* 1. Workspace General Settings Section */}
-      <div className="space-y-4">
+      {/* 1. Workspace Individual Settings Section */}
+      <div className="space-y-5">
         <div>
           <h2 className="font-display text-lg font-bold text-text flex items-center gap-2">
             <Settings className="h-5 w-5 text-accent" />
             Workspace Settings
           </h2>
           <p className="font-body text-xs text-text/70">
-            Configure workspace display name, academic specialization domain, and privacy visibility.
+            Configure workspace preferences, domain specialization, programming language, and access levels individually.
           </p>
         </div>
 
-        <Card className="p-6">
-          <form onSubmit={handleSubmit(handleSettingsSubmit)} className="space-y-5">
-            {/* Name Input with Real-time Availability Validator */}
+        <div className="grid grid-cols-1 gap-5">
+          {/* Card 1: Workspace Name */}
+          <Card className="p-5 flex flex-col justify-between space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="manage-workspace-name" className="block text-xs font-mono font-medium text-text">
-                Workspace Name
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="manage-workspace-name" className="block text-xs font-mono font-medium text-text">
+                  Workspace Name
+                </label>
+              </div>
+              <p className="text-[11px] text-text/60 font-body">
+                The public identifier and title representing this course or collaborative environment.
+              </p>
               <Input
                 id="manage-workspace-name"
-                error={!!formErrors.name}
-                disabled={!isOwner && callerRole !== 'ADMIN'}
-                {...register('name')}
+                value={nameValue}
+                onChange={(e) => setNameValue(e.target.value)}
+                disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'name'}
+                placeholder="e.g. Operating Systems (CS301)"
               />
               <WorkspaceNameAvailabilityFeedback
-                name={watchedName}
+                name={nameValue}
                 excludeWorkspaceId={workspace?.id}
                 initialName={workspace?.name}
-                schemaError={formErrors.name?.message}
               />
             </div>
 
-            {/* Domain Type Selection */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-mono font-medium text-text">
-                Domain Specialization
-              </label>
-              <Controller
-                name="domain_type"
-                control={control}
-                render={({ field }) => (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      disabled={!isOwner && callerRole !== 'ADMIN'}
-                      onClick={() => field.onChange('TECHNICAL')}
-                      className={cn(
-                        'flex items-center gap-2.5 rounded-ui border p-3 text-left transition-all',
-                        field.value === 'TECHNICAL'
-                          ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                          : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover',
-                        (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                      )}
-                    >
-                      <CodeBoldIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      <div>
-                        <div className="text-xs font-bold font-mono">Technical (CSE / Code / Math)</div>
-                        <div className="text-[10px] text-text/60 font-body">Syntax parsing & algorithm focus</div>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={!isOwner && callerRole !== 'ADMIN'}
-                      onClick={() => field.onChange('NON_TECHNICAL')}
-                      className={cn(
-                        'flex items-center gap-2.5 rounded-ui border p-3 text-left transition-all',
-                        field.value === 'NON_TECHNICAL'
-                          ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                          : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover',
-                        (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                      )}
-                    >
-                      <BookLinearIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      <div>
-                        <div className="text-xs font-bold font-mono">Non-Technical</div>
-                        <div className="text-[10px] text-text/60 font-body">Humanities, General study</div>
-                      </div>
-                    </button>
-                  </div>
-                )}
-              />
-            </div>
-
-            {/* Primary Code Language Selection (Visible ONLY for Technical workspaces) */}
-            {watchedDomainType === 'TECHNICAL' && (
-              <div className="space-y-1.5 transition-all">
-                <label
-                  htmlFor="manage-workspace-code-language-select"
-                  className="block text-xs font-mono font-medium text-text"
+            {(isOwner || callerRole === 'ADMIN') && (
+              <div className="flex justify-end pt-2 border-t border-sep-line/60">
+                <Button
+                  size="sm"
+                  type="button"
+                  onClick={handleSaveName}
+                  disabled={
+                    !nameValue.trim() ||
+                    nameValue.trim() === (workspace?.name || '').trim() ||
+                    savingField !== null
+                  }
+                  isLoading={savingField === 'name'}
+                  leftIcon={
+                    savedField === 'name' ? (
+                      <Check className="h-3.5 w-3.5 text-success" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )
+                  }
                 >
-                  Primary Code Language
-                </label>
-                <Controller
-                  name="workspace_code_language"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      disabled={!isOwner && callerRole !== 'ADMIN'}
-                      value={field.value || 'Python'}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger
-                        id="manage-workspace-code-language-select"
-                        className={cn(
-                          (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                        )}
-                      >
-                        <SelectValue placeholder="Select primary language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PREDEFINED_CODE_LANGUAGES.map((lang) => (
-                          <SelectItem key={lang} value={lang}>
-                            {lang}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <p className="text-[10px] text-text/60 font-body">
-                  Specifies the default code and syntax language for AI summaries, code blocks, and tutoring.
+                  {savedField === 'name' ? 'Name Saved' : 'Save Name'}
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          {/* Card 2: Domain Specialization */}
+          <Card className="p-5 flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <div>
+                <h3 className="text-xs font-mono font-medium text-text">Domain Specialization</h3>
+                <p className="text-[11px] text-text/60 font-body">
+                  Configures AI synthesis routines for code syntax, systems algorithms, or humanities.
                 </p>
               </div>
-            )}
 
-            {/* Visibility Selection */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-mono font-medium text-text">
-                Visibility
-              </label>
-              <Controller
-                name="visibility"
-                control={control}
-                render={({ field }) => (
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      disabled={!isOwner && callerRole !== 'ADMIN'}
-                      onClick={() => field.onChange('PRIVATE')}
-                      className={cn(
-                        'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
-                        field.value === 'PRIVATE'
-                          ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                          : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
-                        (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                      )}
-                    >
-                      <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span className="text-[11px] font-mono">Private</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={!isOwner && callerRole !== 'ADMIN'}
-                      onClick={() => field.onChange('INTERNAL')}
-                      className={cn(
-                        'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
-                        field.value === 'INTERNAL'
-                          ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                          : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
-                        (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                      )}
-                    >
-                      <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span className="text-[11px] font-mono">Internal</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={!isOwner && callerRole !== 'ADMIN'}
-                      onClick={() => field.onChange('PUBLIC')}
-                      className={cn(
-                        'flex flex-col items-center gap-1 rounded-ui border p-2 text-center transition-all',
-                        field.value === 'PUBLIC'
-                          ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
-                          : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
-                        (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                      )}
-                    >
-                      <Globe className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span className="text-[11px] font-mono">Public</span>
-                    </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'domain'}
+                  onClick={() => setDomainValue('TECHNICAL')}
+                  className={cn(
+                    'flex items-center gap-2.5 rounded-ui border p-3 text-left transition-all',
+                    domainValue === 'TECHNICAL'
+                      ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                      : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover',
+                    (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  <CodeBoldIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <div>
+                    <div className="text-xs font-bold font-mono">Technical (CSE / Code / Math)</div>
+                    <div className="text-[10px] text-text/60 font-body">Syntax parsing & algorithm focus</div>
                   </div>
-                )}
-              />
+                </button>
+
+                <button
+                  type="button"
+                  disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'domain'}
+                  onClick={() => setDomainValue('NON_TECHNICAL')}
+                  className={cn(
+                    'flex items-center gap-2.5 rounded-ui border p-3 text-left transition-all',
+                    domainValue === 'NON_TECHNICAL'
+                      ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                      : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover',
+                    (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  <BookLinearIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <div>
+                    <div className="text-xs font-bold font-mono">Non-Technical</div>
+                    <div className="text-[10px] text-text/60 font-body">Humanities & General study</div>
+                  </div>
+                </button>
+              </div>
             </div>
 
-            {/* Action Buttons */}
             {(isOwner || callerRole === 'ADMIN') && (
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-sep-line">
+              <div className="flex justify-end pt-2 border-t border-sep-line/60">
                 <Button
-                  type="submit"
-                  isLoading={updateWorkspaceMutation.isPending}
-                  leftIcon={saveSuccess ? <Check className="h-4 w-4 text-success" /> : <Save className="h-4 w-4" />}
+                  size="sm"
+                  type="button"
+                  onClick={handleSaveDomain}
+                  disabled={
+                    domainValue === (workspace?.domain_type || 'TECHNICAL') ||
+                    savingField !== null
+                  }
+                  isLoading={savingField === 'domain'}
+                  leftIcon={
+                    savedField === 'domain' ? (
+                      <Check className="h-3.5 w-3.5 text-success" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )
+                  }
                 >
-                  {saveSuccess ? 'Saved Changes' : 'Save Changes'}
+                  {savedField === 'domain' ? 'Domain Saved' : 'Save Domain'}
                 </Button>
-
-                {isOwner && (
-                  <div className="flex items-center gap-2.5">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsArchiveDialogOpen(true)}
-                      isLoading={archiveWorkspaceMutation.isPending}
-                      leftIcon={<Archive className="h-4 w-4" />}
-                    >
-                      Archive Workspace
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="danger"
-                      onClick={() => setIsDeleteDialogOpen(true)}
-                      isLoading={deleteWorkspaceMutation.isPending}
-                      leftIcon={<Trash2 className="h-4 w-4" />}
-                    >
-                      Delete Workspace
-                    </Button>
-                  </div>
-                )}
               </div>
             )}
-          </form>
-        </Card>
+          </Card>
+
+          {/* Card 3: Primary Code Language (Visible when Technical) */}
+          {domainValue === 'TECHNICAL' && (
+            <Card className="p-5 flex flex-col justify-between space-y-4 animate-fadeIn">
+              <div className="space-y-2">
+                <div>
+                  <label
+                    htmlFor="manage-workspace-code-language-select"
+                    className="block text-xs font-mono font-medium text-text"
+                  >
+                    Primary Code Language
+                  </label>
+                  <p className="text-[11px] text-text/60 font-body">
+                    Specifies the default code syntax and implementation language for AI summaries, code blocks, and tutoring.
+                  </p>
+                </div>
+
+                <Select
+                  disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'language'}
+                  value={languageValue}
+                  onValueChange={setLanguageValue}
+                >
+                  <SelectTrigger
+                    id="manage-workspace-code-language-select"
+                    className={cn(
+                      (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                    )}
+                  >
+                    <SelectValue placeholder="Select primary language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PREDEFINED_CODE_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {lang}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(isOwner || callerRole === 'ADMIN') && (
+                <div className="flex justify-end pt-2 border-t border-sep-line/60">
+                  <Button
+                    size="sm"
+                    type="button"
+                    onClick={handleSaveLanguage}
+                    disabled={
+                      languageValue === (workspace?.workspace_code_language || 'Python') ||
+                      savingField !== null
+                    }
+                    isLoading={savingField === 'language'}
+                    leftIcon={
+                      savedField === 'language' ? (
+                        <Check className="h-3.5 w-3.5 text-success" />
+                      ) : (
+                        <Save className="h-3.5 w-3.5" />
+                      )
+                    }
+                  >
+                    {savedField === 'language' ? 'Language Saved' : 'Save Language'}
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Card 4: Visibility & Access */}
+          <Card className="p-5 flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <div>
+                <h3 className="text-xs font-mono font-medium text-text">Privacy & Visibility</h3>
+                <p className="text-[11px] text-text/60 font-body">
+                  Controls workspace discovery and collaboration permissions across your institution.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'visibility'}
+                  onClick={() => setVisibilityValue('PRIVATE')}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-ui border p-2.5 text-center transition-all',
+                    visibilityValue === 'PRIVATE'
+                      ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                      : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
+                    (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="text-[11px] font-mono">Private</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'visibility'}
+                  onClick={() => setVisibilityValue('INTERNAL')}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-ui border p-2.5 text-center transition-all',
+                    visibilityValue === 'INTERNAL'
+                      ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                      : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
+                    (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="text-[11px] font-mono">Internal</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={(!isOwner && callerRole !== 'ADMIN') || savingField === 'visibility'}
+                  onClick={() => setVisibilityValue('PUBLIC')}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-ui border p-2.5 text-center transition-all',
+                    visibilityValue === 'PUBLIC'
+                      ? 'border-accent bg-sand ring-1 ring-accent text-accent font-semibold shadow-theme'
+                      : 'border-sep-line bg-bg text-text/70 hover:bg-surface-hover',
+                    (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  <Globe className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="text-[11px] font-mono">Public</span>
+                </button>
+              </div>
+            </div>
+
+            {(isOwner || callerRole === 'ADMIN') && (
+              <div className="flex justify-end pt-2 border-t border-sep-line/60">
+                <Button
+                  size="sm"
+                  type="button"
+                  onClick={handleSaveVisibility}
+                  disabled={
+                    visibilityValue === (workspace?.visibility || 'PRIVATE') ||
+                    savingField !== null
+                  }
+                  isLoading={savingField === 'visibility'}
+                  leftIcon={
+                    savedField === 'visibility' ? (
+                      <Check className="h-3.5 w-3.5 text-success" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )
+                  }
+                >
+                  {savedField === 'visibility' ? 'Visibility Saved' : 'Save Visibility'}
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          {/* Card 5: Danger Zone & Actions (Owner Only) */}
+          {isOwner && (
+            <Card className="p-5 border-danger/30 bg-danger-tint/10 flex flex-col justify-between space-y-4">
+              <div>
+                <h3 className="text-xs font-mono font-bold text-danger flex items-center gap-1.5">
+                  <Trash2 className="h-4 w-4" />
+                  Danger Zone
+                </h3>
+                <p className="text-[11px] text-text/60 font-body mt-1">
+                  Archive this workspace to make it read-only, or permanently delete all associated documents and AI summaries.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-danger/20">
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsArchiveDialogOpen(true)}
+                  isLoading={archiveWorkspaceMutation.isPending}
+                  leftIcon={<Archive className="h-3.5 w-3.5" />}
+                >
+                  Archive Workspace
+                </Button>
+
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="danger"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  isLoading={deleteWorkspaceMutation.isPending}
+                  leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                >
+                  Delete Workspace
+                </Button>
+              </div>
+            </Card>
+          )}
+        </div>
       </div>
 
       {/* 2. Active Collaborators Section */}
