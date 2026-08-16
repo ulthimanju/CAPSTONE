@@ -159,7 +159,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     expect(screen.getByRole('button', { name: /generate summary with gemini/i })).toBeInTheDocument();
   });
 
-  it('navigates to Manage Workspace view via sidebar and shows settings and members', async () => {
+  it('navigates to Manage Workspace view via sidebar and switches between Collaborators and General tabs', async () => {
     const user = userEvent.setup();
 
     renderAppWithSidebarAndDetail();
@@ -169,9 +169,16 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     const manageLink = screen.getByRole('link', { name: /manage workspace/i });
     await user.click(manageLink);
 
-    expect(await screen.findByText(/Workspace Settings/i)).toBeInTheDocument();
+    // Collaborators tab is active by default
     expect(await screen.findByText('Alex Rivera')).toBeInTheDocument();
     expect(screen.getByText('alex@example.com')).toBeInTheDocument();
+
+    // Switch to General tab
+    const generalTabBtn = screen.getByRole('button', { name: /^general$/i });
+    await user.click(generalTabBtn);
+
+    expect(await screen.findByText(/Workspace Settings/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/workspace name/i)).toHaveValue('Operating Systems (CS301)');
   });
 
   it('submits collaborator invite form from manage workspace view', async () => {
@@ -218,7 +225,7 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
       status: 'ARCHIVED',
     });
 
-    renderAppWithSidebarAndDetail('/workspaces/e4b3c2a1-0000-4000-8000-000000000001/manage');
+    renderAppWithSidebarAndDetail('/workspaces/e4b3c2a1-0000-4000-8000-000000000001/manage?tab=general');
 
     const archiveBtn = await screen.findByRole('button', { name: /archive workspace/i });
     const deleteBtn = screen.getByRole('button', { name: /delete workspace/i });
