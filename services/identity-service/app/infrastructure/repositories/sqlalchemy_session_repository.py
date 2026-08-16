@@ -34,6 +34,11 @@ class SQLAlchemySessionRepository(SessionRepository):
 
     async def list_by_user(self, user_id: UUID) -> list[Session]:
         cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+        await self._db.execute(
+            delete(SessionModel).where(
+                (SessionModel.last_activity < cutoff) | (SessionModel.expires_at < datetime.now(timezone.utc))
+            )
+        )
         result = await self._db.execute(
             select(SessionModel).where(
                 SessionModel.user_id == user_id,
