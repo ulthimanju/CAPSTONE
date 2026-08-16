@@ -12,15 +12,12 @@ import {
 } from '@/components/ui';
 
 function SidebarNavItem({ item, closeMobileSidebar }) {
-  const [isHovered, setIsHovered] = React.useState(false);
   const Icon = item.icon;
 
   return (
     <NavLink
       to={item.to}
       onClick={closeMobileSidebar}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={cn(
         'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
         item.isActive
@@ -35,7 +32,7 @@ function SidebarNavItem({ item, closeMobileSidebar }) {
           className="h-4 w-4 shrink-0 object-contain"
         />
       ) : (
-        <Icon isHovered={isHovered} className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
       )}
       <span>{item.label}</span>
     </NavLink>
