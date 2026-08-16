@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FileText, ScrollText, Sparkles, Bot, Route, Users, Settings } from 'lucide-react';
+import { FolderOpenDot, ScrollText, Sparkles, Bot, Route, Users, Settings } from 'lucide-react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
@@ -20,8 +20,7 @@ export function SidebarNav() {
     {
       label: 'Documents',
       to: `${basePath}/documents`,
-      icon: FileText,
-      customIconSrc: '/icons/folder-icon.png',
+      icon: FolderOpenDot,
       isActive:
         location.pathname === basePath ||
         location.pathname.startsWith(`${basePath}/documents`),
