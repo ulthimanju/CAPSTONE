@@ -2,7 +2,15 @@ import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Globe, Users, AlertCircle } from 'lucide-react';
-import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
+import {
+  CodeBoldIcon,
+  BookLinearIcon,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import {
   Dialog,
   DialogContent,
@@ -176,19 +184,21 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
                 name="workspace_code_language"
                 control={control}
                 render={({ field }) => (
-                  <select
-                    id="workspace-code-language-select"
-                    {...field}
+                  <Select
                     value={field.value || 'Python'}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    className="w-full rounded-ui border border-sep-line bg-bg px-3 py-2 text-xs font-mono text-text transition-colors hover:border-sep-line/80 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                    onValueChange={field.onChange}
                   >
-                    {PREDEFINED_CODE_LANGUAGES.map((lang) => (
-                      <option key={lang} value={lang}>
-                        {lang}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger id="workspace-code-language-select">
+                      <SelectValue placeholder="Select primary language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PREDEFINED_CODE_LANGUAGES.map((lang) => (
+                        <SelectItem key={lang} value={lang}>
+                          {lang}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               />
               <p className="text-[10px] text-text/60 font-body">

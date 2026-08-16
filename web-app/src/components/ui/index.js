@@ -25,6 +25,15 @@ export {
   DropdownMenuLabel,
 } from './DropdownMenu';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+} from './Select';
 
 // Centralized Design System Icons
 export * from './icons';

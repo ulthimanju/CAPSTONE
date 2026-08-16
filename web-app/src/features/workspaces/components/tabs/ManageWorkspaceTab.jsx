@@ -26,7 +26,16 @@ import {
   Settings,
   Archive,
 } from 'lucide-react';
-import { CodeBoldIcon, BookLinearIcon, LogsIcon } from '@/components/ui';
+import {
+  CodeBoldIcon,
+  BookLinearIcon,
+  LogsIcon,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -410,23 +419,27 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                   name="workspace_code_language"
                   control={control}
                   render={({ field }) => (
-                    <select
-                      id="manage-workspace-code-language-select"
+                    <Select
                       disabled={!isOwner && callerRole !== 'ADMIN'}
-                      {...field}
                       value={field.value || 'Python'}
-                      onChange={(e) => field.onChange(e.target.value)}
-                      className={cn(
-                        'w-full rounded-ui border border-sep-line bg-bg px-3 py-2 text-xs font-mono text-text transition-colors hover:border-sep-line/80 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent',
-                        (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
-                      )}
+                      onValueChange={field.onChange}
                     >
-                      {PREDEFINED_CODE_LANGUAGES.map((lang) => (
-                        <option key={lang} value={lang}>
-                          {lang}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger
+                        id="manage-workspace-code-language-select"
+                        className={cn(
+                          (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
+                        )}
+                      >
+                        <SelectValue placeholder="Select primary language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PREDEFINED_CODE_LANGUAGES.map((lang) => (
+                          <SelectItem key={lang} value={lang}>
+                            {lang}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
                 />
                 <p className="text-[10px] text-text/60 font-body">

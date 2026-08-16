@@ -4,7 +4,7 @@ from app.utils.ids import generate_uuid
 from app.domain.entities.workspace import Workspace
 from app.domain.entities.workspace_member import WorkspaceMember
 from app.domain.entities.workspace_activity import WorkspaceActivity
-from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceRole, ActivityType
+from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceRole, ActivityType, WorkspaceDomainType
 from app.domain.repositories.workspace_repository import WorkspaceRepository
 from app.domain.repositories.member_repository import MemberRepository
 from app.domain.repositories.activity_repository import ActivityRepository
