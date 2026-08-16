@@ -47,52 +47,63 @@ function parseJwtSessionId(token) {
   }
 }
 
-/**
- * Infers device type, OS, and browser from device and user_agent strings.
- */
 function parseDeviceInfo(session) {
-  const ua = (session.user_agent || '').toLowerCase();
-  const device = session.device || '';
+  const ua = (session.user_agent || session.device || '').toLowerCase();
+  const rawDevice = session.device || '';
 
   let icon = Laptop;
   let type = 'Desktop / Laptop';
-  let os = 'Unknown OS';
-  let browser = 'Web Browser';
+  let os = 'Windows';
+  let browser = 'Chrome';
 
   // Detect OS
-  if (ua.includes('windows') || device.toLowerCase().includes('windows')) {
+  if (ua.includes('windows') || rawDevice.toLowerCase().includes('windows')) {
     os = 'Windows';
-  } else if (ua.includes('macintosh') || ua.includes('mac os') || device.toLowerCase().includes('mac')) {
+    type = 'Windows PC';
+    icon = Laptop;
+  } else if (ua.includes('macintosh') || ua.includes('mac os') || rawDevice.toLowerCase().includes('mac')) {
     os = 'macOS';
-  } else if (ua.includes('linux') || device.toLowerCase().includes('linux')) {
-    os = 'Linux';
+    type = 'Mac';
+    icon = Laptop;
   } else if (ua.includes('android')) {
     os = 'Android';
-    type = 'Mobile Device';
+    type = 'Android Device';
     icon = Smartphone;
-  } else if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) {
-    os = ua.includes('ipad') ? 'iPadOS' : 'iOS';
-    type = ua.includes('ipad') ? 'Tablet' : 'iPhone';
-    icon = ua.includes('ipad') ? Tablet : Smartphone;
+  } else if (ua.includes('iphone')) {
+    os = 'iOS';
+    type = 'iPhone';
+    icon = Smartphone;
+  } else if (ua.includes('ipad')) {
+    os = 'iPadOS';
+    type = 'iPad';
+    icon = Tablet;
+  } else if (ua.includes('linux')) {
+    os = 'Linux';
+    type = 'Linux PC';
+    icon = Laptop;
   }
 
   // Detect Browser
   if (ua.includes('edg/')) {
     browser = 'Microsoft Edge';
-  } else if (ua.includes('chrome/') && !ua.includes('edg/')) {
-    browser = 'Google Chrome';
-  } else if (ua.includes('safari/') && !ua.includes('chrome/')) {
-    browser = 'Apple Safari';
+  } else if (ua.includes('chrome/')) {
+    browser = 'Chrome';
   } else if (ua.includes('firefox/')) {
-    browser = 'Mozilla Firefox';
+    browser = 'Firefox';
+  } else if (ua.includes('safari/') && !ua.includes('chrome/')) {
+    browser = 'Safari';
   }
+
+  // Only use rawDevice if it's already a clean human-readable name, otherwise format nicely
+  const isRawUserAgent = rawDevice.startsWith('Mozilla/') || rawDevice.length > 40;
+  const displayName = !isRawUserAgent && rawDevice.trim() ? rawDevice : `${browser} on ${os}`;
 
   return {
     icon,
     type,
     os,
     browser,
-    displayName: session.device || `${browser} on ${os}`,
+    displayName,
   };
 }
 

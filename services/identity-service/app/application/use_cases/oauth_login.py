@@ -103,10 +103,17 @@ class OAuthUseCase:
 
             # 3. Create Session
             expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
+            device_summary = device
+            if user_agent:
+                ua_lower = user_agent.lower()
+                os_name = "Windows" if "windows" in ua_lower else "macOS" if ("macintosh" in ua_lower or "mac os" in ua_lower) else "Android" if "android" in ua_lower else "iOS" if ("iphone" in ua_lower or "ipad" in ua_lower) else "Linux" if "linux" in ua_lower else "PC"
+                browser_name = "Edge" if "edg/" in ua_lower else "Chrome" if "chrome/" in ua_lower else "Firefox" if "firefox/" in ua_lower else "Safari" if "safari/" in ua_lower else "Web Browser"
+                device_summary = f"{browser_name} on {os_name}"
+
             session = Session(
                 id=generate_uuid(),
                 user_id=user.id,
-                device=device,
+                device=device_summary,
                 ip_address=ip_address,
                 user_agent=user_agent,
                 last_activity=datetime.now(timezone.utc),
