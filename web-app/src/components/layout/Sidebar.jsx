@@ -4,6 +4,7 @@ import { X, Mail, Bell, Archive } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUserPendingInvitationsQuery } from '@/features/workspaces/hooks/useMembers';
+import { useNotificationsQuery } from '@/features/notifications/hooks/useNotifications';
 import { UserProfileMenu } from './UserProfileMenu';
 import { SidebarNav } from './SidebarNav';
 import { cn } from '@/lib/cn';
@@ -15,6 +16,9 @@ export function Sidebar({ header, footer, children, className }) {
 
   const { data: pendingInvitations = [] } = useUserPendingInvitationsQuery();
   const pendingInvitesCount = Array.isArray(pendingInvitations) ? pendingInvitations.length : 0;
+
+  const { data: notificationsData } = useNotificationsQuery({ limit: 1 });
+  const unreadNotificationsCount = notificationsData?.unread_count || 0;
 
   const invitationsPath = '/invitations';
   const notificationsPath = '/notifications';
@@ -96,15 +100,22 @@ export function Sidebar({ header, footer, children, className }) {
           onClick={closeMobileSidebar}
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium transition-colors',
+              'flex items-center justify-between rounded-ui px-3 py-2 text-xs font-mono font-medium transition-colors',
               isActive
                 ? 'bg-sand font-bold text-accent shadow-theme'
                 : 'text-text/70 hover:bg-surface-hover hover:text-text'
             )
           }
         >
-          <Bell className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>Notifications</span>
+          <div className="flex items-center gap-3">
+            <Bell className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>Notifications</span>
+          </div>
+          {unreadNotificationsCount > 0 && (
+            <span className="rounded-full bg-accent px-1.5 py-0.2 font-mono text-[10px] font-bold text-on-accent">
+              {unreadNotificationsCount}
+            </span>
+          )}
         </NavLink>
         <NavLink
           to={archivedWorkspacesPath}
