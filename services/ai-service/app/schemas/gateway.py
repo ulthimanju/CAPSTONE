@@ -37,30 +37,6 @@ class GenerationResponse(BaseModel):
     latency_ms: int
 
 
-class FlashcardItem(BaseModel):
-    front: str
-    back: str
-    concept_key: str | None = None
-
-
-class FlashcardSetResponse(BaseModel):
-    title: str
-    description: str
-    cards: list[FlashcardItem]
-
-
-class QuizQuestionItem(BaseModel):
-    question: str
-    options: list[str]
-    correct_answer_index: int
-    explanation: str
-
-
-class QuizResponse(BaseModel):
-    title: str
-    questions: list[QuizQuestionItem]
-
-
 class SummaryResponse(BaseModel):
     summary: str
     key_takeaways: list[str]

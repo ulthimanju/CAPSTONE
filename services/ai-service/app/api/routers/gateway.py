@@ -16,8 +16,6 @@ from app.schemas.gateway import (
     GenerationRequest,
     GenerationResponse,
     SummaryResponse,
-    FlashcardSetResponse,
-    QuizResponse,
     ChatRequest,
 )
 from app.utils.ids import generate_uuid
@@ -828,40 +826,6 @@ Generate a unified learning bundle containing:
         await _publish_unit_generation_event(ws_id, req.unit_title, "FAILED", user_id=x_user_id, error=str(e))
         logger.exception("Error generating unit content", extra={"workspace_id": ws_id, "unit_title": req.unit_title})
         raise HTTPException(status_code=500, detail=f"Failed to generate unit content: {str(e)}")
-
-
-@router.post("/flashcards", response_model=FlashcardSetResponse)
-async def generate_flashcards(req: GenerationRequest):
-    try:
-        sys_instruction = "Generate a structured set of educational study flashcards (front question, back answer, key concept) from the text."
-        res = await gemini_client.generate_text(
-            prompt=req.prompt,
-            system_instruction=sys_instruction,
-            model=req.model,
-            temperature=0.5,
-            response_mime_type="application/json",
-            response_schema=FlashcardSetResponse,
-        )
-        return FlashcardSetResponse.model_validate_json(res["text"])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Flashcard generation error: {e}")
-
-
-@router.post("/quizzes", response_model=QuizResponse)
-async def generate_quiz(req: GenerationRequest):
-    try:
-        sys_instruction = "Generate a 5-question multiple choice quiz (question, 4 options, correct_answer_index, explanation) based on the text."
-        res = await gemini_client.generate_text(
-            prompt=req.prompt,
-            system_instruction=sys_instruction,
-            model=req.model,
-            temperature=0.5,
-            response_mime_type="application/json",
-            response_schema=QuizResponse,
-        )
-        return QuizResponse.model_validate_json(res["text"])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Quiz generation error: {e}")
 
 
 from fastapi.responses import StreamingResponse

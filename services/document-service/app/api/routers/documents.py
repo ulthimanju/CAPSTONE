@@ -15,8 +15,6 @@ from app.api.dependencies.database import (
     get_document_parse_result_repository,
     get_document_part_repository,
     get_document_chunk_repository,
-    get_document_version_repository,
-    get_document_processing_history_repository,
     get_document_validator,
     get_llama_parse_client,
 )
@@ -29,13 +27,6 @@ from app.schemas.document import (
 from app.schemas.processing import ValidationResponse, ProcessingJobResponse
 from app.schemas.parsing import ParseResultResponse, MarkdownResponse, DocumentPartsResponse
 from app.schemas.chunking import ChunkListResponse, ChunkResponse
-from app.schemas.lifecycle import (
-    CreateVersionRequest,
-    RestoreVersionRequest,
-    DocumentVersionResponse,
-    DocumentVersionListResponse,
-    DocumentProcessingHistoryListResponse,
-)
 from app.application.use_cases.upload_document import UploadDocumentUseCase
 from app.application.use_cases.get_document import GetDocumentUseCase
 from app.application.use_cases.list_documents import ListDocumentsUseCase
@@ -681,67 +672,14 @@ async def get_chunk(
     return await use_case.execute_single(chunk_id)
 
 
-# Phase 5 Lifecycle & Versioning Endpoints
-@router.get("/{document_id}/versions", response_model=DocumentVersionListResponse)
-async def list_versions(
-    document_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
-):
-    doc_repo = get_document_repository(session)
-    ver_repo = get_document_version_repository(session)
-    hist_repo = get_document_processing_history_repository(session)
-    use_case = ManageLifecycleUseCase(doc_repo, ver_repo, hist_repo)
-    return await use_case.list_versions(document_id)
-
-
-@router.post("/{document_id}/versions", response_model=DocumentVersionResponse)
-async def create_version(
-    document_id: UUID,
-    req: CreateVersionRequest,
-    user_id: UUID = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_db_session),
-):
-    doc_repo = get_document_repository(session)
-    ver_repo = get_document_version_repository(session)
-    hist_repo = get_document_processing_history_repository(session)
-    use_case = ManageLifecycleUseCase(doc_repo, ver_repo, hist_repo)
-    return await use_case.create_version(document_id, user_id, req)
-
-
-@router.post("/{document_id}/restore", response_model=DocumentVersionResponse)
-async def restore_version(
-    document_id: UUID,
-    req: RestoreVersionRequest,
-    session: AsyncSession = Depends(get_db_session),
-):
-    doc_repo = get_document_repository(session)
-    ver_repo = get_document_version_repository(session)
-    hist_repo = get_document_processing_history_repository(session)
-    use_case = ManageLifecycleUseCase(doc_repo, ver_repo, hist_repo)
-    return await use_case.restore_version(document_id, req.version)
-
-
-@router.get("/{document_id}/history", response_model=DocumentProcessingHistoryListResponse)
-async def get_processing_history(
-    document_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
-):
-    doc_repo = get_document_repository(session)
-    ver_repo = get_document_version_repository(session)
-    hist_repo = get_document_processing_history_repository(session)
-    use_case = ManageLifecycleUseCase(doc_repo, ver_repo, hist_repo)
-    return await use_case.get_history(document_id)
-
-
+# Phase 5 Lifecycle Endpoints
 @router.post("/{document_id}/archive")
 async def archive_document(
     document_id: UUID,
     session: AsyncSession = Depends(get_db_session),
 ):
     doc_repo = get_document_repository(session)
-    ver_repo = get_document_version_repository(session)
-    hist_repo = get_document_processing_history_repository(session)
-    use_case = ManageLifecycleUseCase(doc_repo, ver_repo, hist_repo)
+    use_case = ManageLifecycleUseCase(doc_repo)
     return await use_case.archive_document(document_id)
 
 
@@ -751,7 +689,5 @@ async def recover_document(
     session: AsyncSession = Depends(get_db_session),
 ):
     doc_repo = get_document_repository(session)
-    ver_repo = get_document_version_repository(session)
-    hist_repo = get_document_processing_history_repository(session)
-    use_case = ManageLifecycleUseCase(doc_repo, ver_repo, hist_repo)
+    use_case = ManageLifecycleUseCase(doc_repo)
     return await use_case.recover_document(document_id)

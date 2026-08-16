@@ -19,12 +19,6 @@ class BatchUsersRequest(BaseModel):
     user_ids: list[UUID]
 
 
-
-class UserUpdate(BaseModel):
-    name: str | None = None
-    picture_url: str | None = None
-
-
 class SessionResponse(BaseModel):
     id: UUID
     user_id: UUID
