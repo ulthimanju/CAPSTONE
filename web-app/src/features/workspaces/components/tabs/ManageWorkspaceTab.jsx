@@ -300,7 +300,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
   const transferMutation = useTransferOwnershipMutation(workspace?.id, {
     onSuccess: () => {
-      setMemberToTransfer(null);
+      setIsTransferModalOpen(false);
       toast.success('Workspace ownership transferred successfully');
     },
     onError: (err) => {
