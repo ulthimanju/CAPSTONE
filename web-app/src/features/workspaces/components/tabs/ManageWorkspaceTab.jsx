@@ -361,11 +361,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                         (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
                       )}
                     >
-                      <img
-                        src="/icons/tech-icon.svg"
-                        alt="Technical"
-                        className="h-4 w-4 shrink-0 object-contain"
-                      />
+                      <Terminal className="h-4 w-4 shrink-0" aria-hidden="true" />
                       <div>
                         <div className="text-xs font-bold font-mono">Technical (CSE / Code / Math)</div>
                         <div className="text-[10px] text-text/60 font-body">Syntax parsing & algorithm focus</div>

@@ -89,12 +89,8 @@ export function WorkspaceSelector({ className }) {
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-accent" />
             ) : currentWorkspace?.domain_type === 'TECHNICAL' ? (
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-ui bg-sand/60 p-0.5">
-                <img
-                  src="/icons/tech-icon.svg"
-                  alt="Technical Workspace"
-                  className="h-4 w-4 object-contain"
-                />
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-ui bg-accent/10 text-accent">
+                <Terminal className="h-3.5 w-3.5" aria-hidden="true" />
               </div>
             ) : currentWorkspace?.domain_type === 'NON_TECHNICAL' ? (
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-ui bg-sand text-text/80">
@@ -212,11 +208,7 @@ export function WorkspaceSelector({ className }) {
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {isTech ? (
-                        <img
-                          src="/icons/tech-icon.svg"
-                          alt="Technical"
-                          className="h-3.5 w-3.5 shrink-0 object-contain"
-                        />
+                        <Terminal className="h-3.5 w-3.5 shrink-0 text-accent" />
                       ) : (
                         <BookOpen className="h-3.5 w-3.5 shrink-0 text-text/60" />
                       )}

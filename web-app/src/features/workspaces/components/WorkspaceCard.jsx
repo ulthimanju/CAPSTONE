@@ -38,11 +38,7 @@ export function WorkspaceCard({ workspace, className }) {
             <div className="flex flex-wrap items-center gap-1.5">
               {isTechnical ? (
                 <Badge variant="technical">
-                  <img
-                    src="/icons/tech-icon.svg"
-                    alt="Technical"
-                    className="h-3 w-3 object-contain"
-                  />
+                  <Terminal className="h-3 w-3 text-accent" aria-hidden="true" />
                   <span>Technical</span>
                 </Badge>
               ) : (
