@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FolderOpenDot, ScrollText, Sparkles, Bot, Route, Users, Settings } from 'lucide-react';
+import { FolderOpenDot, ScrollText, Sparkles, Bot, Waypoints, Users, Settings } from 'lucide-react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
@@ -40,7 +40,7 @@ export function SidebarNav() {
     {
       label: 'Learning Path',
       to: `${basePath}/learning-path`,
-      icon: Route,
+      icon: Waypoints,
       isActive: location.pathname.startsWith(`${basePath}/learning-path`),
     },
     {
