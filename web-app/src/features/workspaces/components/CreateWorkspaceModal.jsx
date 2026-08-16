@@ -1,7 +1,8 @@
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Terminal, BookOpen, Lock, Globe, Users, AlertCircle } from 'lucide-react';
+import { BookOpen, Lock, Globe, Users, AlertCircle } from 'lucide-react';
+import { CodeBoldIcon } from '@/components/ui/CodeBoldIcon';
 import {
   Dialog,
   DialogContent,
@@ -106,7 +107,7 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
                         : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover hover:border-sep-line/80'
                     )}
                   >
-                    <Terminal className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <CodeBoldIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                     <div>
                       <div className="text-xs font-bold font-mono">Technical</div>
                       <div className="text-[10px] text-text/60 font-body">CS, Code, Math</div>

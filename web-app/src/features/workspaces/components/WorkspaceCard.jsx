@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Terminal, BookOpen, Lock, Globe, Users, ArrowUpRight } from 'lucide-react';
+import { BookOpen, Lock, Globe, Users, ArrowUpRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { CodeBoldIcon } from '@/components/ui/CodeBoldIcon';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { cn } from '@/lib/cn';
 
@@ -38,7 +39,7 @@ export function WorkspaceCard({ workspace, className }) {
             <div className="flex flex-wrap items-center gap-1.5">
               {isTechnical ? (
                 <Badge variant="technical">
-                  <Terminal className="h-3 w-3 text-accent" aria-hidden="true" />
+                  <CodeBoldIcon className="h-3 w-3 text-accent" aria-hidden="true" />
                   <span>Technical</span>
                 </Badge>
               ) : (

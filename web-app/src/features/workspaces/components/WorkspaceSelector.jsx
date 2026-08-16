@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Terminal,
   BookOpen,
   Layers,
   ChevronsUpDown,
@@ -20,6 +19,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/DropdownMenu';
 import { Badge } from '@/components/ui/Badge';
+import { CodeBoldIcon } from '@/components/ui/CodeBoldIcon';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
 import { useWorkspacesQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -90,7 +90,7 @@ export function WorkspaceSelector({ className }) {
               <Loader2 className="h-4 w-4 animate-spin text-accent" />
             ) : currentWorkspace?.domain_type === 'TECHNICAL' ? (
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-ui bg-accent/10 text-accent">
-                <Terminal className="h-3.5 w-3.5" aria-hidden="true" />
+                <CodeBoldIcon className="h-3.5 w-3.5" aria-hidden="true" />
               </div>
             ) : currentWorkspace?.domain_type === 'NON_TECHNICAL' ? (
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-ui bg-sand text-text/80">
@@ -208,7 +208,7 @@ export function WorkspaceSelector({ className }) {
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {isTech ? (
-                        <Terminal className="h-3.5 w-3.5 shrink-0 text-accent" />
+                        <CodeBoldIcon className="h-3.5 w-3.5 shrink-0 text-accent" />
                       ) : (
                         <BookOpen className="h-3.5 w-3.5 shrink-0 text-text/60" />
                       )}

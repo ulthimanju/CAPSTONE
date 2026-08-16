@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Save,
   Trash2,
-  Terminal,
   BookOpen,
   Lock,
   Users,
@@ -29,6 +28,7 @@ import {
   Settings,
   Archive,
 } from 'lucide-react';
+import { CodeBoldIcon } from '@/components/ui/CodeBoldIcon';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -361,7 +361,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                         (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
                       )}
                     >
-                      <Terminal className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <CodeBoldIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                       <div>
                         <div className="text-xs font-bold font-mono">Technical (CSE / Code / Math)</div>
                         <div className="text-[10px] text-text/60 font-body">Syntax parsing & algorithm focus</div>
