@@ -256,7 +256,7 @@ export function Header({ title, children, className }) {
               </Button>
             )}
 
-            {/* Clear Chat History Button - Visible ONLY on Chat / AI Tutor Tab */}
+            {/* Clear Chat History Button - Visible ONLY on Chat / Clarify Doubts Tab */}
             {isChatTab && hasChatMessages && (
               <Button
                 variant="outline"
@@ -264,7 +264,7 @@ export function Header({ title, children, className }) {
                 isLoading={saveChatMutation.isPending}
                 leftIcon={<RotateCcw className="h-4 w-4 text-text/70" />}
                 className="text-xs py-1.5 px-3 border-sep-line hover:border-danger/40 hover:text-danger"
-                title="Clear workspace AI Tutor chat history"
+                title="Clear workspace Clarify Doubts chat history"
               >
                 Clear History
               </Button>

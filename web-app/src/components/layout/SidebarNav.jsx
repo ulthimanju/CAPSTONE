@@ -69,7 +69,7 @@ export function SidebarNav() {
       isActive: location.pathname.startsWith(`${basePath}/summary`),
     },
     {
-      label: 'AI Tutor',
+      label: 'Clarify Doubts',
       to: `${basePath}/chat`,
       icon: AITutorIcon,
       isActive: location.pathname.startsWith(`${basePath}/chat`),

@@ -435,6 +435,7 @@ export const AppIcons = {
   Documents: DocumentsIcon,
   Summary: SummaryIcon,
   LearningPath: LearningPathIcon,
+  ClarifyDoubts: AITutorIcon,
   AITutor: AITutorIcon,
   ManageWorkspace: Settings,
   

@@ -128,13 +128,13 @@ describe('WorkspaceDetailPage & SidebarNav Navigation', () => {
     );
   };
 
-  it('renders sidebar navigation links (Documents, Summary, AI Tutor, Learning Path, Manage Workspace) and default Documents view', async () => {
+  it('renders sidebar navigation links (Documents, Summary, Clarify Doubts, Learning Path, Manage Workspace) and default Documents view', async () => {
     renderAppWithSidebarAndDetail();
 
     // Verify Sidebar navigation items
     expect(screen.getByRole('link', { name: /documents/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /summary/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ai tutor/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /clarify doubts/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /learning path/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /manage workspace/i })).toBeInTheDocument();
 
