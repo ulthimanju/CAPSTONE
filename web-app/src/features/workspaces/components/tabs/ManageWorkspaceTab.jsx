@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Save,
   Trash2,
-  BookOpen,
   Lock,
   Users,
   Globe,
@@ -28,7 +27,7 @@ import {
   Settings,
   Archive,
 } from 'lucide-react';
-import { CodeBoldIcon } from '@/components/ui/CodeBoldIcon';
+import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -380,7 +379,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                         (!isOwner && callerRole !== 'ADMIN') && 'opacity-60 cursor-not-allowed'
                       )}
                     >
-                      <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <BookLinearIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                       <div>
                         <div className="text-xs font-bold font-mono">Non-Technical</div>
                         <div className="text-[10px] text-text/60 font-body">Humanities, General study</div>

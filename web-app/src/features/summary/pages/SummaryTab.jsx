@@ -2,14 +2,11 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Sparkles,
-  BookOpen,
   Loader2,
   Lightbulb,
   CheckCircle2,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+import { Card, Button, Badge, BookLinearIcon } from '@/components/ui';
 import { useWorkspaceSummaryQuery, useGenerateSummaryMutation } from '../hooks/useSummary';
 import { MermaidDiagram } from '../components/MermaidDiagram';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
@@ -87,7 +84,7 @@ export function SummaryTab() {
         <Card className="border-accent/20 bg-surface p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-3 border-b border-sep-line pb-3">
             <div className="flex items-center gap-2 text-accent">
-              <BookOpen className="h-5 w-5" />
+              <BookLinearIcon className="h-5 w-5" />
               <h2 className="font-display text-base font-bold text-text">Executive Synthesis</h2>
             </div>
             <Badge variant="outline" className="font-mono text-[11px] text-accent border-accent/30 bg-accent/5">

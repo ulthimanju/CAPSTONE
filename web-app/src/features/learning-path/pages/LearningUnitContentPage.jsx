@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
-  BookOpen,
   Sparkles,
   Layers,
   HelpCircle,
@@ -10,9 +9,7 @@ import {
   Compass,
   FileText,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+import { Card, Button, Badge, BookLinearIcon } from '@/components/ui';
 import {
   useUnitContentQuery,
   useGenerateUnitContentMutation,
@@ -88,7 +85,7 @@ export function LearningUnitContentPage() {
     {
       id: 'summary',
       label: 'Summary',
-      icon: BookOpen,
+      icon: BookLinearIcon,
       count: null,
     },
     {

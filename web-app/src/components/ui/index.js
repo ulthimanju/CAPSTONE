@@ -27,3 +27,4 @@ export {
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
 export { GoogleDriveIcon } from './GoogleDriveIcon';
 export { CodeBoldIcon } from './CodeBoldIcon';
+export { BookLinearIcon } from './BookLinearIcon';

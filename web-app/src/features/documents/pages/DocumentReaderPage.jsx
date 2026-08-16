@@ -9,12 +9,9 @@ import {
   FileText,
   Loader2,
   Sparkles,
-  BookOpen,
   HelpCircle,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+import { Card, Button, Badge, BookLinearIcon } from '@/components/ui';
 import {
   useDocumentQuery,
   useDocumentParseResultQuery,
@@ -241,7 +238,7 @@ export function DocumentReaderPage() {
 
           <Card className="p-4 space-y-3">
             <div className="flex items-center gap-2 font-display text-xs font-bold text-text uppercase tracking-wider">
-              <BookOpen className="h-4 w-4 text-accent" />
+              <BookLinearIcon className="h-4 w-4 text-accent" />
               <span>Study Units</span>
             </div>
             <p className="font-body text-xs text-text/70">

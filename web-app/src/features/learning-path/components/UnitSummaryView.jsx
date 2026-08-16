@@ -1,7 +1,6 @@
 import React from 'react';
-import { BookOpen, Lightbulb, CheckCircle2, FileText } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Lightbulb, CheckCircle2, FileText } from 'lucide-react';
+import { Card, Badge, BookLinearIcon } from '@/components/ui';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
 import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
 
@@ -21,7 +20,7 @@ export function UnitSummaryView({ summary }) {
         <Card className="border-accent/20 bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between gap-4 mb-3 border-b border-sep-line pb-3">
             <div className="flex items-center gap-2 text-accent">
-              <BookOpen className="h-5 w-5" />
+              <BookLinearIcon className="h-5 w-5" />
               <h3 className="font-display text-base font-bold text-text">
                 Unit Overview
               </h3>

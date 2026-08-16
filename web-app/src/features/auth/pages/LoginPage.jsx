@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
-import { BookOpen, ShieldCheck } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { ShieldCheck } from 'lucide-react';
+import { Card, Button, BookLinearIcon } from '@/components/ui';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '../api/authApi';
 import { ROUTES } from '@/config/constants';
@@ -52,7 +51,7 @@ export function LoginPage() {
         <Card className="flex flex-col items-center text-center">
           {/* Brand Icon & Heading */}
           <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-ui border border-sep-line bg-sand text-accent">
-            <BookOpen className="h-6 w-6" aria-hidden="true" />
+            <BookLinearIcon className="h-6 w-6" aria-hidden="true" />
           </div>
 
           <h1 className="font-display text-2xl font-bold tracking-tight text-text sm:text-3xl">

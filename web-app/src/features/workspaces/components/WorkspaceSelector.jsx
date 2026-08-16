@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  BookOpen,
   Layers,
   ChevronsUpDown,
   Check,
@@ -19,7 +18,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/DropdownMenu';
 import { Badge } from '@/components/ui/Badge';
-import { CodeBoldIcon } from '@/components/ui/CodeBoldIcon';
+import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
 import { useWorkspacesQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -94,7 +93,7 @@ export function WorkspaceSelector({ className }) {
               </div>
             ) : currentWorkspace?.domain_type === 'NON_TECHNICAL' ? (
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-ui bg-sand text-text/80">
-                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                <BookLinearIcon className="h-3.5 w-3.5" aria-hidden="true" />
               </div>
             ) : (
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-ui bg-sand text-text/80">
@@ -210,7 +209,7 @@ export function WorkspaceSelector({ className }) {
                       {isTech ? (
                         <CodeBoldIcon className="h-3.5 w-3.5 shrink-0 text-accent" />
                       ) : (
-                        <BookOpen className="h-3.5 w-3.5 shrink-0 text-text/60" />
+                        <BookLinearIcon className="h-3.5 w-3.5 shrink-0 text-text/60" />
                       )}
                       <span className="truncate text-xs text-text">{ws.name}</span>
                     </div>

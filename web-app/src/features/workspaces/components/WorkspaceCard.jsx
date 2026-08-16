@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Lock, Globe, Users, ArrowUpRight } from 'lucide-react';
+import { Lock, Globe, Users, ArrowUpRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { CodeBoldIcon } from '@/components/ui/CodeBoldIcon';
+import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { cn } from '@/lib/cn';
 
@@ -44,7 +44,7 @@ export function WorkspaceCard({ workspace, className }) {
                 </Badge>
               ) : (
                 <Badge variant="nonTechnical">
-                  <BookOpen className="h-3 w-3 text-text/60" aria-hidden="true" />
+                  <BookLinearIcon className="h-3 w-3 text-text/60" aria-hidden="true" />
                   <span>Non-Technical</span>
                 </Badge>
               )}

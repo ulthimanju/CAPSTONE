@@ -13,7 +13,6 @@ import {
   UserMinus,
   Trash2,
   Folder,
-  BookOpen,
   Compass,
 } from 'lucide-react';
 import {
@@ -22,8 +21,7 @@ import {
   useMarkNotificationReadMutation,
   useMarkAllNotificationsReadMutation,
 } from '../hooks/useNotifications';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Card, Button, BookLinearIcon } from '@/components/ui';
 import { toast } from 'sonner';
 
 export function NotificationsPage() {
@@ -56,7 +54,7 @@ export function NotificationsPage() {
     if (evt.includes('remove') || evt.includes('leave')) return <UserMinus className="h-4 w-4" />;
     if (evt.includes('delete')) return <Trash2 className="h-4 w-4" />;
     if (evt.includes('learning_path') || evt.includes('learning path')) return <Compass className="h-4 w-4" />;
-    if (evt.includes('unit')) return <BookOpen className="h-4 w-4" />;
+    if (evt.includes('unit')) return <BookLinearIcon className="h-4 w-4" />;
     if (evt.includes('summary') || evt.includes('document')) return <FileText className="h-4 w-4" />;
     if (item.type === 'TUTOR') return <Sparkles className="h-4 w-4" />;
     if (item.type === 'INVITE') return <Mail className="h-4 w-4" />;

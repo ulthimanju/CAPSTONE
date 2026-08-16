@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, Trash2, Archive, BookOpen, Lock, Users, Globe, Check } from 'lucide-react';
-import { CodeBoldIcon } from '@/components/ui/CodeBoldIcon';
+import { Save, Trash2, Archive, Lock, Users, Globe, Check } from 'lucide-react';
+import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -135,7 +135,7 @@ export function SettingsTab({ workspace: propWorkspace }) {
                         : 'border-sep-line bg-bg text-text/80 hover:bg-surface-hover'
                     )}
                   >
-                    <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <BookLinearIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                     <div>
                       <div className="text-xs font-bold font-mono">Non-Technical</div>
                       <div className="text-[10px] text-text/60 font-body">Humanities, General</div>
