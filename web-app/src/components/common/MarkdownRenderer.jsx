@@ -276,23 +276,24 @@ export function preprocessMarkdownForMath(text) {
   // 1. Escape currency inside bold/italic markdown spans (e.g. "**$50** to **$60**" or "*$50*")
   processed = processed.replace(
     /(\*{1,2}|_{1,2})\$(\d+(?:,\d{3})*(?:\.\d+)?(?:k|m|b|bn|tn)?)\1/gi,
-    '$1\\$$$2$1'
+    (m, p1, p2) => `${p1}\\\\$${p2}${p1}`
   );
 
   // 2. Escape standalone multi-word currency ranges (e.g. "$50 to $60" or "$50 - $60")
   processed = processed.replace(
     /\$(\d+(?:,\d{3})*(?:\.\d+)?)\s+(to|and|or|from|-)\s+\$(\d+(?:,\d{3})*(?:\.\d+)?)/gi,
-    '\\$$$1 $2 \\$$$3'
+    (m, p1, p2, p3) => `\\\\$${p1} ${p2} \\\\$${p3}`
   );
 
-  // 3. Fix false-positive inline math spans where text between $...$ contains markdown emphasis or multi-word sentences
+  // 3. Fix false-positive inline math spans only when inner text is pure English sentence without math operators/subscripts
   processed = processed.replace(/\$([^\$\n]+)\$/g, (match, inner) => {
-    if (/\*{1,2}|_{1,2}/.test(inner)) {
-      return `\\$${inner}\\$`;
+    // If it contains backslash (\rightarrow, \alpha, etc.), subscripts (_), superscripts (^), or math operators, it IS math!
+    const isMath = /[\\_^=+\-<>\/\(\)\{\}]/.test(inner);
+    if (isMath) {
+      return match;
     }
-    const hasBackslash = inner.includes('\\');
     const hasEnglishWords = /\s+(to|from|and|or|in|with|for|the|is|are|was|were|increases|decreases|than|means|which|simplifies)\s+/i.test(inner);
-    if (!hasBackslash && hasEnglishWords) {
+    if (hasEnglishWords) {
       return `\\$${inner}\\$`;
     }
     return match;
