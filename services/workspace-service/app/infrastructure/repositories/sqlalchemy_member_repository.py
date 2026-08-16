@@ -105,7 +105,25 @@ class SQLAlchemyMemberRepository(MemberRepository):
         return members
 
     async def update_role(self, member: WorkspaceMember) -> WorkspaceMember:
-        return await self.update_role_with_version(member, getattr(member, "version", 1))
+        role_val = member.role.value if hasattr(member.role, "value") else str(member.role)
+        stmt = (
+            update(WorkspaceMemberModel)
+            .where(
+                WorkspaceMemberModel.workspace_id == member.workspace_id,
+                WorkspaceMemberModel.user_id == member.user_id,
+            )
+            .values(
+                role=role_val,
+                version=WorkspaceMemberModel.version + 1,
+            )
+        )
+        result = await self.session.execute(stmt)
+        await self.session.flush()
+        if result.rowcount > 0:
+            member.version = getattr(member, "version", 1) + 1
+            await self.cache.invalidate_workspace_members(member.workspace_id)
+            await self.cache.invalidate_user_permission(member.workspace_id, member.user_id)
+        return member
 
     async def update_role_with_version(self, member: WorkspaceMember, expected_version: int) -> WorkspaceMember:
         role_val = member.role.value if hasattr(member.role, "value") else str(member.role)

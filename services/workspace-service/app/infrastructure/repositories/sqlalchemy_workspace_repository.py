@@ -177,6 +177,7 @@ class SQLAlchemyWorkspaceRepository(WorkspaceRepository):
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         if model:
+            model.owner_id = workspace.owner_id
             model.name = workspace.name
             model.visibility = workspace.visibility.value if hasattr(workspace.visibility, "value") else str(workspace.visibility)
             model.status = workspace.status.value if hasattr(workspace.status, "value") else str(workspace.status)

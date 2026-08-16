@@ -225,6 +225,7 @@ export function useTransferOwnershipMutation(workspaceId, options = {}) {
     mutationFn: (newOwnerId) => memberApi.transferOwnership(workspaceId, newOwnerId),
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      queryClient.refetchQueries({ queryKey: ['workspaces'] });
       queryClient.invalidateQueries({ queryKey: memberKeys.all });
       queryClient.refetchQueries({ queryKey: memberKeys.all });
       options.onSuccess?.(data, variables, context);
