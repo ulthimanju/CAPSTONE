@@ -22,3 +22,11 @@ def test_workspace_summary_prompt_builder_returns_system_instruction():
     assert isinstance(instruction, str)
     assert len(instruction) > 50
     assert "summary" in instruction.lower() or "overview" in instruction.lower()
+
+
+def test_workspace_summary_prompt_builder_with_code_language():
+    instruction = WorkspaceSummaryPromptBuilder.build_system_instruction(workspace_code_language="C")
+    assert isinstance(instruction, str)
+    assert "C" in instruction
+    assert "code_language: \"c\"" in instruction
+    assert "Primary Programming Language Enforcement" in instruction

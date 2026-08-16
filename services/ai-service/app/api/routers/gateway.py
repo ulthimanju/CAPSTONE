@@ -465,18 +465,27 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
                 if topics_res.status_code == 200:
                     topics_covered = topics_res.json().get("topics_covered", "")
 
+        workspace_code_language = ws_meta.get("workspace_code_language")
+
         context_parts = [
             f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
-            f"Domain Type: {ws_meta.get('domain_type', 'TECHNICAL')}\n",
+            f"Domain Type: {ws_meta.get('domain_type', 'TECHNICAL')}",
+        ]
+        if workspace_code_language:
+            context_parts.append(f"Primary Code Language: {workspace_code_language}")
+        context_parts.extend([
+            "",
             "--- WORKSPACE TOPICS COVERED & KNOWLEDGE OUTLINE ---",
             topics_covered if topics_covered else "No processed topics covered outline available yet.",
-        ]
+        ])
 
         assembled_prompt = "\n".join(context_parts)
         if len(assembled_prompt) > 40000:
             assembled_prompt = assembled_prompt[:40000] + "\n... [Context Truncated]"
 
-        sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction()
+        sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction(
+            workspace_code_language=workspace_code_language
+        )
 
         gemini_res = await gemini_client.generate_text(
             prompt=assembled_prompt,
