@@ -5,28 +5,78 @@ import {
   inviteMemberRequestSchema,
   invitationResponseSchema,
   invitationListResponseSchema,
+  collaboratorListResponseSchema,
+  collaboratorDetailResponseSchema,
 } from '../schemas/memberSchemas';
 
 export const memberApi = {
   /**
-   * List all active members of a workspace.
+   * List all active collaborators/members of a workspace with pagination.
    */
-  getMembers: async (workspaceId) => {
-    const response = await apiClient.get(`/api/v1/workspaces/${workspaceId}/members`);
-    const parseResult = memberListResponseSchema.safeParse(response.data);
-    if (!parseResult.success) {
-      console.warn('MemberList schema validation warning:', parseResult.error);
-      return response.data;
-    }
-    return parseResult.data;
+  getCollaborators: async (workspaceId, { limit = 30, cursor = null } = {}) => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit);
+    if (cursor) params.append('cursor', cursor);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+
+    const response = await apiClient.get(`/api/v1/workspaces/${workspaceId}/collaborators${queryString}`);
+    const data = response.data;
+    
+    // Normalize raw response (support array or { items, pagination })
+    const rawItems = Array.isArray(data) ? data : (data?.items || []);
+    const normalized = rawItems.map((item) => {
+      const user = item.user || {
+        id: item.user_id,
+        name: item.user_name,
+        email: item.user_email,
+      };
+      const membershipId = item.membership_id || item.id;
+      const perm = item.permission || item.role;
+      return {
+        membership_id: membershipId,
+        id: membershipId,
+        user_id: user?.id || item.user_id,
+        user_name: user?.name || item.user_name,
+        user_email: user?.email || item.user_email,
+        user,
+        role: perm,
+        permission: perm,
+        joined_at: item.joined_at,
+        last_accessed_at: item.last_accessed_at,
+        version: item.version,
+      };
+    });
+
+    return normalized;
+  },
+
+  /**
+   * Backward-compatible alias for getCollaborators.
+   */
+  getMembers: async (workspaceId, options) => {
+    return await memberApi.getCollaborators(workspaceId, options);
+  },
+
+  /**
+   * Get single collaborator detail by membership ID.
+   */
+  getCollaboratorDetail: async (workspaceId, membershipId) => {
+    const response = await apiClient.get(
+      `/api/v1/workspaces/${workspaceId}/collaborators/${membershipId}`
+    );
+    return response.data;
   },
 
   /**
    * Invite a collaborator to a workspace by email.
    */
   inviteMember: async (workspaceId, data) => {
-    const validated = inviteMemberRequestSchema.parse(data);
-    const response = await apiClient.post(`/api/v1/workspaces/${workspaceId}/invite`, validated);
+    const payload = {
+      email: data.email,
+      role: data.permission || data.role || 'VIEWER',
+      permission: data.permission || data.role || 'VIEWER',
+    };
+    const response = await apiClient.post(`/api/v1/workspaces/${workspaceId}/collaborators`, payload);
     const parseResult = invitationResponseSchema.safeParse(response.data);
     if (!parseResult.success) {
       console.warn('InvitationResponse schema validation warning:', parseResult.error);
@@ -36,27 +86,45 @@ export const memberApi = {
   },
 
   /**
-   * Remove a member from a workspace.
+   * Alias for inviteMember.
    */
-  removeMember: async (workspaceId, userId) => {
-    const response = await apiClient.delete(`/api/v1/workspaces/${workspaceId}/members/${userId}`);
+  inviteCollaborator: async (workspaceId, data) => {
+    return await memberApi.inviteMember(workspaceId, data);
+  },
+
+  /**
+   * Remove a collaborator from a workspace by membership ID or user ID.
+   */
+  removeMember: async (workspaceId, memberIdentifier) => {
+    const response = await apiClient.delete(
+      `/api/v1/workspaces/${workspaceId}/collaborators/${memberIdentifier}`
+    );
     return response.data;
   },
 
   /**
-   * Update a member's role in a workspace.
+   * Alias for removeMember.
    */
-  updateMemberRole: async (workspaceId, userId, role) => {
+  removeCollaborator: async (workspaceId, membershipId) => {
+    return await memberApi.removeMember(workspaceId, membershipId);
+  },
+
+  /**
+   * Update a collaborator's permission level.
+   */
+  updateCollaboratorPermission: async (workspaceId, membershipId, permission) => {
     const response = await apiClient.patch(
-      `/api/v1/workspaces/${workspaceId}/members/${userId}/role`,
-      { role }
+      `/api/v1/workspaces/${workspaceId}/collaborators/${membershipId}`,
+      { permission }
     );
-    const parseResult = memberResponseSchema.safeParse(response.data);
-    if (!parseResult.success) {
-      console.warn('MemberResponse role update validation warning:', parseResult.error);
-      return response.data;
-    }
-    return parseResult.data;
+    return response.data;
+  },
+
+  /**
+   * Backward-compatible alias for updateMemberRole.
+   */
+  updateMemberRole: async (workspaceId, memberIdentifier, role) => {
+    return await memberApi.updateCollaboratorPermission(workspaceId, memberIdentifier, role);
   },
 
   /**

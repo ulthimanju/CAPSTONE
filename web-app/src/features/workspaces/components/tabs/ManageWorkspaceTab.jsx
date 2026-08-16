@@ -864,7 +864,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                               <DropdownMenuContent align="end" className="w-36 p-1">
                                 {isOwner && (
                                   <DropdownMenuItem
-                                    onClick={() => handleRoleChange(member.user_id, 'ADMIN', member.version)}
+                                    onClick={() => handleRoleChange(member.membership_id || member.id || member.user_id, 'ADMIN', member.version)}
                                     className="flex items-center justify-between text-xs font-mono py-1.5 cursor-pointer"
                                   >
                                     <div className="flex items-center gap-2">
@@ -875,7 +875,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
-                                  onClick={() => handleRoleChange(member.user_id, 'EDITOR', member.version)}
+                                  onClick={() => handleRoleChange(member.membership_id || member.id || member.user_id, 'EDITOR', member.version)}
                                   className="flex items-center justify-between text-xs font-mono py-1.5 cursor-pointer"
                                 >
                                   <div className="flex items-center gap-2">
@@ -885,7 +885,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                                   {member.role === 'EDITOR' && <Check className="h-3.5 w-3.5 text-accent" />}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => handleRoleChange(member.user_id, 'VIEWER', member.version)}
+                                  onClick={() => handleRoleChange(member.membership_id || member.id || member.user_id, 'VIEWER', member.version)}
                                   className="flex items-center justify-between text-xs font-mono py-1.5 cursor-pointer"
                                 >
                                   <div className="flex items-center gap-2">
@@ -1127,7 +1127,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
         variant="danger"
         isLoading={removeMutation.isPending}
         onConfirm={() => {
-          if (memberToRemove) removeMutation.mutate(memberToRemove.user_id);
+          if (memberToRemove) removeMutation.mutate(memberToRemove.membership_id || memberToRemove.id || memberToRemove.user_id);
         }}
       />
 

@@ -63,6 +63,25 @@ class SQLAlchemyMemberRepository(MemberRepository):
         await self.cache.set_user_permission(workspace_id, user_id, member)
         return member
 
+    async def get_by_membership_id(self, workspace_id: UUID, membership_id: UUID) -> WorkspaceMember | None:
+        stmt = select(WorkspaceMemberModel).where(
+            WorkspaceMemberModel.workspace_id == workspace_id,
+            WorkspaceMemberModel.id == membership_id
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+        return WorkspaceMember(
+            id=model.id,
+            workspace_id=model.workspace_id,
+            user_id=model.user_id,
+            role=WorkspaceRole(model.role),
+            version=model.version,
+            joined_at=model.joined_at,
+            last_accessed_at=model.last_accessed_at
+        )
+
     async def list_members(self, workspace_id: UUID) -> list[WorkspaceMember]:
         cached_members = await self.cache.get_workspace_members(workspace_id)
         if cached_members is not None:
@@ -121,5 +140,21 @@ class SQLAlchemyMemberRepository(MemberRepository):
         if result.rowcount > 0:
             await self.cache.invalidate_workspace_members(workspace_id)
             await self.cache.invalidate_user_permission(workspace_id, user_id)
+            return True
+        return False
+
+    async def remove_by_membership_id(self, workspace_id: UUID, membership_id: UUID) -> bool:
+        member = await self.get_by_membership_id(workspace_id, membership_id)
+        if not member:
+            return False
+        stmt = delete(WorkspaceMemberModel).where(
+            WorkspaceMemberModel.workspace_id == workspace_id,
+            WorkspaceMemberModel.id == membership_id
+        )
+        result = await self.session.execute(stmt)
+        await self.session.flush()
+        if result.rowcount > 0:
+            await self.cache.invalidate_workspace_members(workspace_id)
+            await self.cache.invalidate_user_permission(workspace_id, member.user_id)
             return True
         return False
