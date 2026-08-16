@@ -121,6 +121,12 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
             ext === 'ppt' ||
             filename.endsWith('.pptx') ||
             filename.endsWith('.ppt');
+          const isXlsx =
+            ext === 'xlsx' ||
+            ext === 'xls' ||
+            filename.endsWith('.xlsx') ||
+            filename.endsWith('.xls');
+          const isCsv = ext === 'csv' || filename.endsWith('.csv');
           const isTxt =
             ext === 'txt' ||
             ext === 'text' ||
@@ -166,6 +172,18 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
                     <img
                       src="/icons/pptx-icon.svg"
                       alt="PowerPoint Presentation"
+                      className="h-8 w-8 object-contain"
+                    />
+                  ) : isXlsx ? (
+                    <img
+                      src="/icons/xlsx-icon.svg"
+                      alt="Excel Spreadsheet"
+                      className="h-8 w-8 object-contain"
+                    />
+                  ) : isCsv ? (
+                    <img
+                      src="/icons/csv-icon.svg"
+                      alt="CSV Spreadsheet"
                       className="h-8 w-8 object-contain"
                     />
                   ) : isTxt ? (
