@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
-import { Card, Button, BookLinearIcon } from '@/components/ui';
+import { FileText, Lightbulb, Share2, Shield } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '../api/authApi';
 import { ROUTES } from '@/config/constants';
-import appDemoVideo from '@/assets/app_demo.mp4';
 
 function GoogleIcon({ className = 'h-5 w-5 shrink-0' }) {
   return (
@@ -29,6 +28,22 @@ function GoogleIcon({ className = 'h-5 w-5 shrink-0' }) {
   );
 }
 
+function SynapseDocBadge({ className = 'h-11 w-11' }) {
+  return (
+    <div
+      className={`inline-flex items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs ${className}`}
+      aria-hidden="true"
+    >
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2" ry="2" />
+        <line x1="8" y1="8" x2="16" y2="8" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+        <line x1="8" y1="16" x2="12" y2="16" />
+      </svg>
+    </div>
+  );
+}
+
 export function LoginPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -46,56 +61,160 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex h-screen max-h-screen w-full flex-col lg:flex-row overflow-hidden bg-bg font-body text-text">
-      {/* Left Column: Non-interactive looping video in natural aspect ratio */}
-      <section className="flex flex-1 h-1/2 lg:h-full items-center justify-center border-b border-sep-line bg-surface p-4 sm:p-6 lg:border-b-0 lg:border-r lg:p-8 overflow-hidden select-none">
-        <div className="flex h-full w-full items-center justify-center overflow-hidden">
-          <video
-            src={appDemoVideo}
-            autoPlay
-            loop
-            muted
-            playsInline
-            disablePictureInPicture
-            disableRemotePlayback
-            className="max-h-full max-w-full h-auto w-auto object-contain rounded-ui pointer-events-none select-none shadow-card border border-sep-line/60"
-          >
-            <source src="/assets/app_demo.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+    <div className="relative flex min-h-screen w-full flex-col justify-between bg-[#F4EFE6] font-body text-[#2A2318] p-6 sm:p-10 lg:p-14 overflow-hidden selection:bg-[#A8551E]/20">
+      {/* Bottom-left subtle decorative dot pattern */}
+      <div
+        className="pointer-events-none absolute -bottom-4 -left-4 h-64 w-64 opacity-35 [mask-image:radial-gradient(circle_at_bottom_left,black_20%,transparent_75%)]"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #8C7A5B 1.75px, transparent 1.75px)',
+          backgroundSize: '18px 18px',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Top Header: Brand & Tagline */}
+      <header className="relative z-10 flex items-center gap-3">
+        <SynapseDocBadge className="h-10 w-10 sm:h-11 sm:w-11" />
+        <div>
+          <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[#2A2318]">
+            SYNAPSE
+          </h1>
+          <p className="font-mono text-[10px] sm:text-xs tracking-widest text-[#7D705C] uppercase mt-0.5">
+            UNDERSTAND. CONNECT. REMEMBER.
+          </p>
         </div>
-      </section>
+      </header>
 
-      {/* Right Column: Clean Authentication Form */}
-      <aside className="flex h-1/2 lg:h-full w-full lg:w-[420px] xl:w-[460px] shrink-0 flex-col justify-center p-6 sm:p-8 lg:p-10 bg-bg">
-        <main className="mx-auto w-full max-w-sm">
-          <Card className="flex flex-col items-center text-center p-6 sm:p-8">
-            {/* Brand Icon & Heading */}
-            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-ui border border-sep-line bg-sand text-accent shadow-2xs">
-              <BookLinearIcon className="h-6 w-6" aria-hidden="true" />
+      {/* Main Dual-Column Content */}
+      <main className="relative z-10 my-auto grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16 py-8">
+        {/* Left Hero & Feature Highlights Column */}
+        <div className="flex flex-col space-y-7 lg:col-span-7 xl:col-span-7 max-w-xl">
+          {/* Main Headline */}
+          <div>
+            <h2 className="font-display text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-tight text-[#2A2318] leading-[1.12]">
+              Your documents,<br />
+              <span className="italic font-serif font-normal text-[#A8551E]">intelligently</span> summarized.
+            </h2>
+
+            {/* Amber accent underline indicator */}
+            <div className="mt-4 h-1 w-14 rounded-full bg-[#A8551E]" aria-hidden="true" />
+          </div>
+
+          {/* Subtitle description */}
+          <p className="font-body text-base sm:text-lg text-[#5A5040] leading-relaxed max-w-lg">
+            Synapse helps you turn long documents into clear insights. Save time, grasp the essentials, and focus on what matters.
+          </p>
+
+          {/* 4 Feature Items */}
+          <div className="flex flex-col space-y-4 pt-1">
+            {/* Feature 1: Smart Summaries */}
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div className="pt-0.5">
+                <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">
+                  Smart Summaries
+                </h3>
+                <p className="font-body text-xs sm:text-sm text-[#7D705C]">
+                  Extract key points and core concepts instantly.
+                </p>
+              </div>
             </div>
 
-            <h1 className="font-display text-2xl font-bold tracking-tight text-text sm:text-3xl">
-              SYNAPSE
-            </h1>
+            {/* Feature 2: Deep Insights */}
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
+                <Lightbulb className="h-5 w-5" />
+              </div>
+              <div className="pt-0.5">
+                <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">
+                  Deep Insights
+                </h3>
+                <p className="font-body text-xs sm:text-sm text-[#7D705C]">
+                  Understand the context, connections, and implications.
+                </p>
+              </div>
+            </div>
 
-            <div className="my-6 h-px w-full bg-sep-line" role="separator" />
+            {/* Feature 3: Organized Knowledge */}
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
+                <Share2 className="h-5 w-5" />
+              </div>
+              <div className="pt-0.5">
+                <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">
+                  Organized Knowledge
+                </h3>
+                <p className="font-body text-xs sm:text-sm text-[#7D705C]">
+                  Structure information for better recall and learning.
+                </p>
+              </div>
+            </div>
 
-            {/* Primary Google Login Button */}
-            <div className="w-full">
-              <Button
+            {/* Feature 4: Secure & Private */}
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
+                <Shield className="h-5 w-5" />
+              </div>
+              <div className="pt-0.5">
+                <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">
+                  Secure &amp; Private
+                </h3>
+                <p className="font-body text-xs sm:text-sm text-[#7D705C]">
+                  Your documents and data are always protected.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Authentication Card */}
+        <div className="flex justify-center lg:col-span-5 xl:col-span-5 lg:justify-end">
+          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-[#E4DBCB] bg-[#FAF6EE]/90 p-8 sm:p-12 text-center shadow-xl shadow-[#2A2318]/5 backdrop-blur-xs">
+            {/* Top Centered Doc Icon */}
+            <div className="mb-6 flex justify-center">
+              <SynapseDocBadge className="h-12 w-12 sm:h-14 sm:w-14" />
+            </div>
+
+            {/* Card Heading */}
+            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#2A2318]">
+              Welcome to Synapse
+            </h2>
+            <p className="mt-2 font-body text-xs sm:text-sm text-[#7D705C]">
+              Sign in to continue to your workspace
+            </p>
+
+            {/* Google Action Button */}
+            <div className="mt-8">
+              <button
+                type="button"
                 onClick={handleGoogleLogin}
-                isLoading={isRedirecting}
-                leftIcon={<GoogleIcon />}
-                className="w-full py-2.5 text-sm sm:text-base font-medium shadow-2xs"
-                aria-label="Continue with Google sign-in"
+                disabled={isRedirecting}
+                className="group relative flex w-full items-center justify-center gap-3 rounded-xl bg-[#A8551E] px-6 py-3.5 font-body text-sm sm:text-base font-medium text-white shadow-md shadow-[#A8551E]/20 transition-all duration-200 hover:bg-[#8F4414] hover:shadow-lg hover:shadow-[#A8551E]/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A8551E] focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none"
+                aria-label="Continue with Google"
               >
-                {isRedirecting ? 'Connecting to Google...' : 'Continue with Google'}
-              </Button>
+                {isRedirecting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Connecting to Google...
+                  </span>
+                ) : (
+                  <>
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white p-0.5 shadow-2xs">
+                      <GoogleIcon className="h-4 w-4" />
+                    </div>
+                    <span>Continue with Google</span>
+                  </>
+                )}
+              </button>
             </div>
-          </Card>
-        </main>
-      </aside>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer spacer */}
+      <footer className="relative z-10 h-2" aria-hidden="true" />
     </div>
   );
 }
