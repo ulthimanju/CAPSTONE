@@ -5,9 +5,9 @@ import uuid
 import aio_pika
 from app.config.settings import settings
 from app.infrastructure.clients.embedding.ai_service_client import AIServiceClient
-from app.domain.repositories.vector_repository import VectorRepository
+from app.infrastructure.repositories.vector_repository import VectorRepository
 from app.infrastructure.cache.rag_cache import RAGCacheManager
-from app.infrastructure.database.session import async_session_maker
+from app.infrastructure.database.session import AsyncSessionLocal
 from shared.rabbitmq import setup_rabbitmq_queues_with_dlx, reject_message_to_dlq
 from shared.events.idempotency import is_event_processed, mark_event_processed
 from shared.events.schemas import DomainEvent
@@ -59,7 +59,7 @@ async def process_rag_ingest_event(data: dict) -> None:
             "vector": vectors[idx],
         })
 
-    async with async_session_maker() as session:
+    async with AsyncSessionLocal() as session:
         vector_repo = VectorRepository(session)
         count = await vector_repo.upsert_embeddings(
             workspace_id=ws_id,

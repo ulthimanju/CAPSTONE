@@ -430,3 +430,13 @@ async def proxy_ai(request: Request, path: str = ""):
 @app.api_route("/api/v1/notifications", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_notification(request: Request, path: str = ""):
     return await proxy_request(settings.service_notification_url, request)
+
+
+@app.get("/health")
+@app.get("/api/v1/health")
+async def health_check():
+    return JSONResponse(
+        status_code=200,
+        content={"status": "healthy", "service": "api-gateway"}
+    )
+
