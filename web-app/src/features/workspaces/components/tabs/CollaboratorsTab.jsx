@@ -144,6 +144,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
   const isOwner = workspace.user_role === 'OWNER' || workspace.owner_id === currentUser?.id;
   const currentMember = members.find((m) => m.user_id === currentUser?.id);
   const callerRole = isOwner ? 'OWNER' : (currentMember?.role || workspace.user_role || 'VIEWER');
+  const isOwnerOrAdmin = isOwner || callerRole === 'ADMIN';
   const canManageMembers = isOwner || callerRole === 'ADMIN' || callerRole === 'EDITOR';
 
   // Filtered members and invitations
@@ -422,141 +423,145 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
         )}
       </div>
 
-      {/* Pending Invitations Section */}
-      <div className="space-y-4 pt-4 border-t border-sep-line">
-        <div>
-          <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-            <Envelope className="h-4 w-4 text-accent" />
-            Pending Invitations ({filteredInvitations.length})
-          </h3>
-          <p className="font-body text-xs text-text/70">
-            Invitations waiting for recipient email acceptance.
-          </p>
-        </div>
-
-        {isLoadingInvites && (
-          <div className="flex justify-center py-4">
-            <CircleNotch className="h-5 w-5 animate-spin text-accent" />
-          </div>
-        )}
-
-        {!isLoadingInvites && filteredInvitations.length === 0 && (
-          <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-6 text-center">
-            <p className="font-mono text-xs text-text/60">
-              No pending invitations for this workspace.
-            </p>
-          </div>
-        )}
-
-        {!isLoadingInvites && filteredInvitations.length > 0 && (
-          <Card className="divide-y divide-sep-line p-0 overflow-hidden shadow-xs">
-            {filteredInvitations.map((inv) => (
-              <div
-                key={inv.id}
-                className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/50 transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Envelope className="h-4 w-4 text-text/50 shrink-0" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-medium text-text">
-                        {inv.invited_email}
-                      </span>
-                      <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-sand border border-sep-line text-text/70">
-                        {inv.role}
-                      </span>
-                    </div>
-                    {inv.expires_at && (
-                      <div className="font-mono text-[10px] text-text/50 flex items-center gap-1 mt-0.5">
-                        <Clock className="h-3 w-3" />
-                        Expires: {formatActivityDate(inv.expires_at)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {canManageMembers && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => resendInviteMutation.mutate(inv.id)}
-                      disabled={resendInviteMutation.isPending}
-                      leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
-                      className="text-xs py-1 px-2.5"
-                    >
-                      Resend
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => cancelInviteMutation.mutate(inv.id)}
-                      disabled={cancelInviteMutation.isPending}
-                      className="text-xs py-1 px-2.5 text-danger hover:bg-danger-tint hover:border-danger/30"
-                    >
-                      Revoke
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </Card>
-        )}
-      </div>
-
-      {/* Activity & Audit Trail Section */}
-      <div className="space-y-4 pt-4 border-t border-sep-line">
-        <div className="flex items-center justify-between">
+      {/* Pending Invitations Section (Owner & Admin only) */}
+      {isOwnerOrAdmin && (
+        <div className="space-y-4 pt-4 border-t border-sep-line">
           <div>
             <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-              <LogsIcon className="h-4 w-4 text-accent" />
-              Collaborator Activity Log
+              <Envelope className="h-4 w-4 text-accent" />
+              Pending Invitations ({filteredInvitations.length})
             </h3>
             <p className="font-body text-xs text-text/70">
-              Audit log of member invitations, role changes, and workspace access events.
+              Invitations waiting for recipient email acceptance.
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowActivities((prev) => !prev)}
-            rightIcon={showActivities ? <CaretUp className="h-3.5 w-3.5" /> : <CaretDown className="h-3.5 w-3.5" />}
-            className="text-xs font-mono"
-          >
-            {showActivities ? 'Hide Activity' : 'View Activity'}
-          </Button>
-        </div>
+          {isLoadingInvites && (
+            <div className="flex justify-center py-4">
+              <CircleNotch className="h-5 w-5 animate-spin text-accent" />
+            </div>
+          )}
 
-        {showActivities && (
-          <div className="space-y-2 mt-2">
-            {isLoadingActivities ? (
-              <div className="flex justify-center py-4">
-                <CircleNotch className="h-5 w-5 animate-spin text-accent" />
-              </div>
-            ) : activities.length === 0 ? (
-              <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-4 text-center">
-                <p className="font-mono text-xs text-text/60">No recent activity recorded.</p>
-              </div>
-            ) : (
-              <Card className="divide-y divide-sep-line p-0 overflow-hidden shadow-xs">
-                {activities.slice(0, 25).map((act) => (
-                  <div key={act.id} className="p-3 text-xs font-mono flex items-center justify-between hover:bg-surface-hover/30 transition-colors">
+          {!isLoadingInvites && filteredInvitations.length === 0 && (
+            <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-6 text-center">
+              <p className="font-mono text-xs text-text/60">
+                No pending invitations for this workspace.
+              </p>
+            </div>
+          )}
+
+          {!isLoadingInvites && filteredInvitations.length > 0 && (
+            <Card className="divide-y divide-sep-line p-0 overflow-hidden shadow-xs">
+              {filteredInvitations.map((inv) => (
+                <div
+                  key={inv.id}
+                  className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Envelope className="h-4 w-4 text-text/50 shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-medium text-text">
+                          {inv.invited_email}
+                        </span>
+                        <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-sand border border-sep-line text-text/70">
+                          {inv.role}
+                        </span>
+                      </div>
+                      {inv.expires_at && (
+                        <div className="font-mono text-[10px] text-text/50 flex items-center gap-1 mt-0.5">
+                          <Clock className="h-3 w-3" />
+                          Expires: {formatActivityDate(inv.expires_at)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {canManageMembers && (
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-text">
-                        {formatActivityDescription(act)}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => resendInviteMutation.mutate(inv.id)}
+                        disabled={resendInviteMutation.isPending}
+                        leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+                        className="text-xs py-1 px-2.5"
+                      >
+                        Resend
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => cancelInviteMutation.mutate(inv.id)}
+                        disabled={cancelInviteMutation.isPending}
+                        className="text-xs py-1 px-2.5 text-danger hover:bg-danger-tint hover:border-danger/30"
+                      >
+                        Revoke
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Activity & Audit Trail Section (Owner & Admin only) */}
+      {isOwnerOrAdmin && (
+        <div className="space-y-4 pt-4 border-t border-sep-line">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
+                <LogsIcon className="h-4 w-4 text-accent" />
+                Collaborator Activity Log
+              </h3>
+              <p className="font-body text-xs text-text/70">
+                Audit log of member invitations, role changes, and workspace access events.
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowActivities((prev) => !prev)}
+              rightIcon={showActivities ? <CaretUp className="h-3.5 w-3.5" /> : <CaretDown className="h-3.5 w-3.5" />}
+              className="text-xs font-mono"
+            >
+              {showActivities ? 'Hide Activity' : 'View Activity'}
+            </Button>
+          </div>
+
+          {showActivities && (
+            <div className="space-y-2 mt-2">
+              {isLoadingActivities ? (
+                <div className="flex justify-center py-4">
+                  <CircleNotch className="h-5 w-5 animate-spin text-accent" />
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-4 text-center">
+                  <p className="font-mono text-xs text-text/60">No recent activity recorded.</p>
+                </div>
+              ) : (
+                <Card className="divide-y divide-sep-line p-0 overflow-hidden shadow-xs">
+                  {activities.slice(0, 25).map((act) => (
+                    <div key={act.id} className="p-3 text-xs font-mono flex items-center justify-between hover:bg-surface-hover/30 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-text">
+                          {formatActivityDescription(act)}
+                        </span>
+                      </div>
+                      <span className="text-text/50 text-[10px] shrink-0">
+                        {formatActivityDate(act.created_at)}
                       </span>
                     </div>
-                    <span className="text-text/50 text-[10px] shrink-0">
-                      {formatActivityDate(act.created_at)}
-                    </span>
-                  </div>
-                ))}
-              </Card>
-            )}
-          </div>
-        )}
-      </div>
+                  ))}
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Invite Collaborator Modal */}
       <InviteCollaboratorModal

@@ -978,91 +978,93 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
             )}
           </div>
 
-          {/* 3. Pending Invitations Section */}
-          <div className="space-y-4 pt-6 border-t border-sep-line">
-            <div>
-              <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-                <Envelope className="h-4 w-4 text-accent" />
-                Pending Invitations ({filteredInvitations.length})
-              </h3>
-              <p className="font-body text-xs text-text/70">
-                Invitations sent and waiting for recipient email verification.
-              </p>
-            </div>
-
-            {isLoadingInvites && (
-              <div className="flex justify-center py-4">
-                <CircleNotch className="h-5 w-5 animate-spin text-accent" />
-              </div>
-            )}
-
-            {!isLoadingInvites && filteredInvitations.length === 0 && (
-              <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-6 text-center">
-                <p className="font-mono text-xs text-text/60">
-                  No pending invitations for this workspace.
+          {/* 3. Pending Invitations Section (Owner & Admin only) */}
+          {isOwnerOrAdmin && (
+            <div className="space-y-4 pt-6 border-t border-sep-line">
+              <div>
+                <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
+                  <Envelope className="h-4 w-4 text-accent" />
+                  Pending Invitations ({filteredInvitations.length})
+                </h3>
+                <p className="font-body text-xs text-text/70">
+                  Invitations sent and waiting for recipient email verification.
                 </p>
               </div>
-            )}
 
-            {!isLoadingInvites && filteredInvitations.length > 0 && (
-              <div className="rounded-card border border-sep-line/80 bg-surface overflow-hidden shadow-xs divide-y divide-sep-line/60">
-                {filteredInvitations.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/40 transition-colors"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Envelope className="h-4 w-4 text-text/50 shrink-0" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-medium text-text">
-                            {inv.invited_email}
-                          </span>
-                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-sand border border-sep-line text-text/70">
-                            {inv.role}
-                          </span>
-                          <span className="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 border border-amber-500/30">
-                            <Clock className="h-2.5 w-2.5" />
-                            Pending Invite
-                          </span>
-                        </div>
-                        {inv.expires_at && (
-                          <div className="font-mono text-[10px] text-text/50 flex items-center gap-1 mt-0.5">
-                            <Clock className="h-3 w-3" />
-                            Expires: {formatActivityDate(inv.expires_at)}
+              {isLoadingInvites && (
+                <div className="flex justify-center py-4">
+                  <CircleNotch className="h-5 w-5 animate-spin text-accent" />
+                </div>
+              )}
+
+              {!isLoadingInvites && filteredInvitations.length === 0 && (
+                <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-6 text-center">
+                  <p className="font-mono text-xs text-text/60">
+                    No pending invitations for this workspace.
+                  </p>
+                </div>
+              )}
+
+              {!isLoadingInvites && filteredInvitations.length > 0 && (
+                <div className="rounded-card border border-sep-line/80 bg-surface overflow-hidden shadow-xs divide-y divide-sep-line/60">
+                  {filteredInvitations.map((inv) => (
+                    <div
+                      key={inv.id}
+                      className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/40 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Envelope className="h-4 w-4 text-text/50 shrink-0" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-medium text-text">
+                              {inv.invited_email}
+                            </span>
+                            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-sand border border-sep-line text-text/70">
+                              {inv.role}
+                            </span>
+                            <span className="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                              <Clock className="h-2.5 w-2.5" />
+                              Pending Invite
+                            </span>
                           </div>
-                        )}
+                          {inv.expires_at && (
+                            <div className="font-mono text-[10px] text-text/50 flex items-center gap-1 mt-0.5">
+                              <Clock className="h-3 w-3" />
+                              Expires: {formatActivityDate(inv.expires_at)}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    {canManageMembers && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => resendInviteMutation.mutate(inv.id)}
-                          disabled={resendInviteMutation.isPending}
-                          leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
-                          className="text-xs py-1 px-2.5"
-                        >
-                          Resend
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => cancelInviteMutation.mutate(inv.id)}
-                          disabled={cancelInviteMutation.isPending}
-                          className="text-xs py-1 px-2.5 text-danger hover:bg-danger-tint hover:border-danger/30"
-                        >
-                          Revoke
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                      {canManageMembers && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => resendInviteMutation.mutate(inv.id)}
+                            disabled={resendInviteMutation.isPending}
+                            leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+                            className="text-xs py-1 px-2.5"
+                          >
+                            Resend
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => cancelInviteMutation.mutate(inv.id)}
+                            disabled={cancelInviteMutation.isPending}
+                            className="text-xs py-1 px-2.5 text-danger hover:bg-danger-tint hover:border-danger/30"
+                          >
+                            Revoke
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
       )}
