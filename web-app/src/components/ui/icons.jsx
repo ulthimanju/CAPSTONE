@@ -332,22 +332,31 @@ export function BookLinearIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return <BookOpen weight="regular" className={className} aria-hidden="true" {...props} />;
 }
 
-/** Google Drive Brand Icon — custom SVG (no Phosphor equivalent) */
+/** Google Drive Brand Icon — Official 3-colored trapezoid geometry */
 export function GoogleDriveIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 87.3 78"
+      viewBox="0 0 24 24"
       className={className}
       aria-hidden="true"
       {...props}
     >
-      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da" />
-      <path d="M43.65 25 29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44A9.06 9.06 0 0 0 0 53h27.5z" fill="#00ac47" />
-      <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.85 10.15z" fill="#ea4335" />
-      <path d="M43.65 25H87.3c0-1.55-.4-3.1-1.2-4.5l-3.85-6.65c-.8-1.4-1.95-2.5-3.3-3.3L65.2 23.8H43.65z" fill="#00832d" />
-      <path d="M59.8 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc" />
-      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.15 28h27.5c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00" />
+      {/* Top Green Slanted Segment */}
+      <path
+        d="M16.34 1.47H8.97l7.31 12.66h7.37L16.34 1.47z"
+        fill="#00AC47"
+      />
+      {/* Left Yellow Slanted Segment */}
+      <path
+        d="M12.01 1.47 4.7 14.13l3.65 6.33 7.31-12.66L12.01 1.47z"
+        fill="#FFBA00"
+      />
+      {/* Bottom Blue Horizontal Segment */}
+      <path
+        d="M15.37 14.13H4.03l3.65 6.34h11.34l-3.65-6.34z"
+        fill="#2684FC"
+      />
     </svg>
   );
 }
