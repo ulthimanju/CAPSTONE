@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
 import { Card, Button, BookLinearIcon } from '@/components/ui';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '../api/authApi';
@@ -48,7 +47,7 @@ export function LoginPage() {
 
   return (
     <div className="flex h-screen max-h-screen w-full flex-col lg:flex-row overflow-hidden bg-bg font-body text-text">
-      {/* Left Column: Exactly fits window height with proper padding and non-interactive looping video */}
+      {/* Left Column: Non-interactive looping video in natural aspect ratio */}
       <section className="flex flex-1 h-1/2 lg:h-full items-center justify-center border-b border-sep-line bg-surface p-4 sm:p-6 lg:border-b-0 lg:border-r lg:p-8 overflow-hidden select-none">
         <div className="flex h-full w-full items-center justify-center overflow-hidden">
           <video
@@ -67,13 +66,9 @@ export function LoginPage() {
         </div>
       </section>
 
-      {/* Right Column: Exactly fits window height with clean vertical layout */}
-      <aside className="flex h-1/2 lg:h-full w-full lg:w-[420px] xl:w-[460px] shrink-0 flex-col justify-between p-6 sm:p-8 lg:p-10 overflow-y-auto bg-bg">
-        <div className="hidden lg:block">
-          {/* Top spacer */}
-        </div>
-
-        <main className="mx-auto w-full max-w-sm my-auto">
+      {/* Right Column: Clean Authentication Form */}
+      <aside className="flex h-1/2 lg:h-full w-full lg:w-[420px] xl:w-[460px] shrink-0 flex-col justify-center p-6 sm:p-8 lg:p-10 bg-bg">
+        <main className="mx-auto w-full max-w-sm">
           <Card className="flex flex-col items-center text-center p-6 sm:p-8">
             {/* Brand Icon & Heading */}
             <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-ui border border-sep-line bg-sand text-accent shadow-2xs">
@@ -83,14 +78,11 @@ export function LoginPage() {
             <h1 className="font-display text-2xl font-bold tracking-tight text-text sm:text-3xl">
               SYNAPSE
             </h1>
-            <p className="mt-1 font-body text-xs sm:text-sm text-text/80">
-              Collaborative Document & AI Learning Platform
-            </p>
 
             <div className="my-6 h-px w-full bg-sep-line" role="separator" />
 
             {/* Primary Google Login Button */}
-            <div className="w-full space-y-4">
+            <div className="w-full">
               <Button
                 onClick={handleGoogleLogin}
                 isLoading={isRedirecting}
@@ -100,25 +92,9 @@ export function LoginPage() {
               >
                 {isRedirecting ? 'Connecting to Google...' : 'Continue with Google'}
               </Button>
-
-              {/* Privacy & Storage Note */}
-              <div className="flex items-start gap-2.5 rounded-ui border border-sep-line bg-sand/40 p-3 text-left">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                <p className="font-mono text-xs text-text/75 leading-relaxed">
-                  Google authorization provides seamless single sign-on and links your view-only Google Drive for document uploads.
-                </p>
-              </div>
             </div>
           </Card>
-
-          <p className="mt-4 text-center font-mono text-xs text-text/60">
-            Field Journal Edition &bull; Computer Science & Engineering
-          </p>
         </main>
-
-        <div className="hidden lg:block text-center font-mono text-[11px] text-text/40">
-          <span>Academic Collaborative Study Environment</span>
-        </div>
       </aside>
     </div>
   );
