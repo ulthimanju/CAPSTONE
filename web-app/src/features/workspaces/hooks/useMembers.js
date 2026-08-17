@@ -132,12 +132,34 @@ export function useRemoveMemberMutation(workspaceId, options = {}) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (userId) => memberApi.removeMember(workspaceId, userId),
+    mutationFn: (memberIdentifier) => memberApi.removeMember(workspaceId, memberIdentifier),
+    onMutate: async (memberIdentifier) => {
+      await queryClient.cancelQueries({ queryKey: workspaceKeys.members(workspaceId) });
+      const previousMembers = queryClient.getQueryData(workspaceKeys.members(workspaceId));
+
+      // Optimistically remove member from query cache immediately
+      queryClient.setQueryData(workspaceKeys.members(workspaceId), (old) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter(
+          (m) =>
+            m.membership_id !== memberIdentifier &&
+            m.id !== memberIdentifier &&
+            m.user_id !== memberIdentifier
+        );
+      });
+
+      return { previousMembers };
+    },
     onSuccess: async (data, variables, context) => {
       await queryClient.invalidateQueries({ queryKey: workspaceKeys.members(workspaceId) });
+      await queryClient.refetchQueries({ queryKey: workspaceKeys.members(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: memberKeys.activities(workspaceId) });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
+      if (context?.previousMembers) {
+        queryClient.setQueryData(workspaceKeys.members(workspaceId), context.previousMembers);
+      }
       options.onError?.(error, variables, context);
     },
     ...options,
@@ -152,11 +174,32 @@ export function useUpdateMemberRoleMutation(workspaceId, options = {}) {
 
   return useMutation({
     mutationFn: ({ userId, role, version }) => memberApi.updateMemberRole(workspaceId, userId, role, version),
+    onMutate: async ({ userId, role }) => {
+      await queryClient.cancelQueries({ queryKey: workspaceKeys.members(workspaceId) });
+      const previousMembers = queryClient.getQueryData(workspaceKeys.members(workspaceId));
+
+      // Optimistically update role in query cache immediately
+      queryClient.setQueryData(workspaceKeys.members(workspaceId), (old) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((m) =>
+          m.user_id === userId || m.membership_id === userId || m.id === userId
+            ? { ...m, role, permission: role }
+            : m
+        );
+      });
+
+      return { previousMembers };
+    },
     onSuccess: async (data, variables, context) => {
       await queryClient.invalidateQueries({ queryKey: workspaceKeys.members(workspaceId) });
+      await queryClient.refetchQueries({ queryKey: workspaceKeys.members(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: memberKeys.activities(workspaceId) });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
+      if (context?.previousMembers) {
+        queryClient.setQueryData(workspaceKeys.members(workspaceId), context.previousMembers);
+      }
       options.onError?.(error, variables, context);
     },
     ...options,
@@ -173,6 +216,8 @@ export function useResendInvitationMutation(workspaceId, options = {}) {
     mutationFn: (invitationId) => memberApi.resendInvitation(invitationId),
     onSuccess: async (data, variables, context) => {
       await queryClient.invalidateQueries({ queryKey: memberKeys.invitations(workspaceId) });
+      await queryClient.refetchQueries({ queryKey: memberKeys.invitations(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: memberKeys.activities(workspaceId) });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -192,6 +237,8 @@ export function useCancelInvitationMutation(workspaceId, options = {}) {
     mutationFn: (invitationId) => memberApi.cancelInvitation(invitationId),
     onSuccess: async (data, variables, context) => {
       await queryClient.invalidateQueries({ queryKey: memberKeys.invitations(workspaceId) });
+      await queryClient.refetchQueries({ queryKey: memberKeys.invitations(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: memberKeys.activities(workspaceId) });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -209,9 +256,12 @@ export function useLeaveWorkspaceMutation(workspaceId, options = {}) {
 
   return useMutation({
     mutationFn: () => memberApi.leaveWorkspace(workspaceId),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.members(workspaceId) });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: workspaceKeys.members(workspaceId) }),
+        queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() }),
+      ]);
+      queryClient.refetchQueries({ queryKey: workspaceKeys.lists() });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {

@@ -224,7 +224,9 @@ async def update_collaborator_permission(
 
     target_member = await mem_repo.get_by_membership_id(workspace_id, membership_id)
     if not target_member:
-        raise HTTPException(status_code=404, detail="Collaborator membership not found")
+        target_member = await mem_repo.get_member(workspace_id, membership_id)
+        if not target_member:
+            raise HTTPException(status_code=404, detail="Collaborator membership not found")
 
     if workspace.owner_id == target_member.user_id:
         raise HTTPException(status_code=400, detail="Cannot modify workspace owner permission via this endpoint.")
@@ -302,7 +304,7 @@ async def remove_collaborator(
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
     """
-    Remove a collaborator from the workspace by membership ID.
+    Remove a collaborator from the workspace by membership ID or user ID.
     """
     workspace = await ws_repo.get_by_id(workspace_id)
     if not workspace:
@@ -310,8 +312,11 @@ async def remove_collaborator(
 
     target_member = await mem_repo.get_by_membership_id(workspace_id, membership_id)
     if not target_member:
-        # Idempotent return
-        return None
+        # Fallback: support passing user_id as membership_id
+        target_member = await mem_repo.get_member(workspace_id, membership_id)
+        if not target_member:
+            # Idempotent return
+            return None
 
     use_case = RemoveMemberUseCase(ws_repo, mem_repo, act_repo)
     await use_case.execute(workspace_id, user_id, target_member.user_id, user_email)

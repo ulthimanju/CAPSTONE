@@ -581,9 +581,11 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
         confirmText="Remove Collaborator"
         cancelText="Cancel"
         variant="danger"
-        isLoading={removeMutation.isPending}
         onConfirm={() => {
-          if (memberToRemove) removeMutation.mutate(memberToRemove.user_id);
+          if (memberToRemove) {
+            const idToPass = memberToRemove.membership_id || memberToRemove.id || memberToRemove.user_id;
+            removeMutation.mutate(idToPass);
+          }
         }}
       />
 
