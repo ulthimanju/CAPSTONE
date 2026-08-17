@@ -145,7 +145,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
   const currentMember = members.find((m) => m.user_id === currentUser?.id);
   const callerRole = isOwner ? 'OWNER' : (currentMember?.role || workspace.user_role || 'VIEWER');
   const isOwnerOrAdmin = isOwner || callerRole === 'ADMIN';
-  const canManageMembers = isOwner || callerRole === 'ADMIN' || callerRole === 'EDITOR';
+  const canManageMembers = isOwner || callerRole === 'ADMIN';
 
   // Filtered members and invitations
   const filteredMembers = useMemo(() => {

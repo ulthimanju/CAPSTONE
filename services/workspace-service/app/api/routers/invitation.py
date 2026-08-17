@@ -136,7 +136,7 @@ async def resend_invitation(
 
     caller_mem = await mem_repo.get_member(invitation.workspace_id, user_id)
     is_owner = ws.owner_id == user_id
-    can_manage = is_owner or (caller_mem and caller_mem.role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
+    can_manage = is_owner or (caller_mem and caller_mem.role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN))
     if not can_manage:
         raise HTTPException(status_code=403, detail="Permission denied to resend invitation")
 
@@ -176,7 +176,7 @@ async def cancel_invitation(
 
     caller_mem = await mem_repo.get_member(invitation.workspace_id, user_id)
     is_owner = ws.owner_id == user_id
-    can_manage = is_owner or (caller_mem and caller_mem.role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
+    can_manage = is_owner or (caller_mem and caller_mem.role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN))
     if not can_manage:
         raise HTTPException(status_code=403, detail="Permission denied to cancel invitation")
 

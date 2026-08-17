@@ -39,7 +39,7 @@ class InviteMemberUseCase:
 
         member = await self.member_repo.get_member(workspace_id, invited_by)
         is_owner = workspace.owner_id == invited_by
-        can_invite = is_owner or (member and member.role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
+        can_invite = is_owner or (member and member.role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN))
         if not can_invite:
             raise HTTPException(status_code=403, detail="Permission denied to invite member")
 
