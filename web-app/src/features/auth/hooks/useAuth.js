@@ -50,13 +50,23 @@ export function useSessionsQuery(options = {}) {
 
 /**
  * Mutation hook for revoking a specific active session.
+ * 
+ * Security Guard-Rail:
+ * Non-optimistic execution ensures the session is confirmed revoked on the server (HTTP 204)
+ * before removing it from client cache, preventing false security confidence on network failures.
  */
 export function useRevokeSessionMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (sessionId) => authApi.revokeSession(sessionId),
-    onSuccess: () => {
+    onSuccess: (_, sessionId) => {
+      // 1. Instant cache update upon confirmed server 2xx
+      queryClient.setQueryData(AUTH_QUERY_KEYS.SESSIONS, (old) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((s) => s.id !== sessionId);
+      });
+      // 2. Non-blocking background revalidation safety net
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSIONS });
       toast.success('Session revoked successfully.');
     },
@@ -67,7 +77,11 @@ export function useRevokeSessionMutation() {
 }
 
 /**
- * Mutation hook for revoking all sessions.
+ * Mutation hook for revoking all sessions except the active device.
+ * 
+ * Security Guard-Rail:
+ * Non-optimistic execution guarantees the backend logout-all transaction completes
+ * before updating local session state, followed by non-blocking background revalidation.
  */
 export function useRevokeAllSessionsMutation() {
   const queryClient = useQueryClient();
@@ -75,6 +89,26 @@ export function useRevokeAllSessionsMutation() {
   return useMutation({
     mutationFn: () => authApi.revokeAllSessions(),
     onSuccess: () => {
+      const token = useAuthStore.getState().token;
+      let currentSessionId = null;
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          currentSessionId = payload.session_id || payload.sid || payload.jti;
+        } catch {
+          // ignore decode error
+        }
+      }
+
+      // 1. Instant cache update upon confirmed server 2xx
+      queryClient.setQueryData(AUTH_QUERY_KEYS.SESSIONS, (old) => {
+        if (!Array.isArray(old)) return old;
+        if (currentSessionId) {
+          return old.filter((s) => s.id === currentSessionId);
+        }
+        return old.length > 0 ? [old[0]] : [];
+      });
+      // 2. Non-blocking background revalidation safety net
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SESSIONS });
       toast.success('All other sessions signed out.');
     },
