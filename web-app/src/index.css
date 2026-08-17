@@ -40,8 +40,8 @@
     --surface-raised: var(--color-sand);  /* Card / sidebar / panel background */
     --surface-hover: #DDD0BA;             /* Distinct hover background on sand surfaces */
     --surface-hover-strong: #D5C7AF;      /* Stronger hover, e.g. dropdown items */
-    --shadow-color: rgba(43, 38, 32, 0.17);
-    --shadow-ink: 0 16px 18px rgba(43, 38, 32, 0.17);
+    --shadow-color: transparent;
+    --shadow-ink: none;
     --danger-tint: rgba(193, 98, 45, 0.12);
 
     /* ---- Gradients (135deg top-left to bottom-right) --------------------- */

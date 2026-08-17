@@ -165,7 +165,7 @@ export function LoginPage() {
 
         {/* Right Authentication Card */}
         <div className="flex justify-center lg:col-span-5 xl:col-span-5 lg:justify-end">
-          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-sep-line bg-surface-raised/90 p-8 sm:p-12 text-center shadow-theme backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-sep-line bg-surface-raised p-8 sm:p-12 text-center">
             {/* Top Centered Doc Icon */}
             <div className="mb-6 flex justify-center">
               <SynapseDocBadge className="h-12 w-12 sm:h-14 sm:w-14" />
@@ -185,7 +185,7 @@ export function LoginPage() {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={isRedirecting}
-                className="group relative flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-br from-[#E08850] to-[#C1622D] hover:from-[#E89860] hover:to-[#C96C35] px-6 py-3.5 font-body text-sm sm:text-base font-medium text-white shadow-theme transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none"
+                className="group relative flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-br from-[#E08850] to-[#C1622D] hover:from-[#E89860] hover:to-[#C96C35] px-6 py-3.5 font-body text-sm sm:text-base font-medium text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none"
                 aria-label="Continue with Google"
               >
                 {isRedirecting ? (
@@ -195,7 +195,7 @@ export function LoginPage() {
                   </span>
                 ) : (
                   <>
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white p-0.5 shadow-2xs">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white p-0.5">
                       <GoogleIcon className="h-4 w-4" />
                     </div>
                     <span>Continue with Google</span>

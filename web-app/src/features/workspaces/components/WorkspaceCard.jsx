@@ -27,7 +27,7 @@ export function WorkspaceCard({ workspace, className }) {
     >
       <Card
         className={cn(
-          'flex h-full flex-col justify-between p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-theme hover:border-accent/40',
+          'flex h-full flex-col justify-between p-5 transition-colors duration-200 hover:border-accent/40',
           isActive && 'border-accent ring-1 ring-accent/30',
           className
         )}
