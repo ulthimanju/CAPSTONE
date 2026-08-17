@@ -12,9 +12,13 @@ router = APIRouter(prefix="/workspaces/{workspace_id}/activities", tags=["Activi
 @router.get("", response_model=list[ActivityResponse])
 async def list_activities(
     workspace_id: UUID,
-    limit: int = 50,
+    page: int = 1,
+    limit: int = 10,
     act_repo: ActivityRepository = Depends(get_activity_repository),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
+    limit = min(max(1, limit), 100)
+    page = max(1, page)
+    offset = (page - 1) * limit
     use_case = ListActivitiesUseCase(act_repo, cache_manager=cache)
-    return await use_case.execute(workspace_id, limit=limit)
+    return await use_case.execute(workspace_id, limit=limit, offset=offset)

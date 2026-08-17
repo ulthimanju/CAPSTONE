@@ -47,6 +47,7 @@ export function AppRoutes() {
             <Route path="learning-path/:unitTitle" element={<LearningUnitContentPage />} />
             <Route path="manage" element={<ManageWorkspaceTab />} />
             <Route path="collaborators" element={<ManageWorkspaceTab />} />
+            <Route path="activity" element={<ManageWorkspaceTab />} />
             <Route path="settings" element={<ManageWorkspaceTab />} />
             <Route path="invitations" element={<InvitationsPage />} />
             <Route path="notifications" element={<NotificationsPage />} />

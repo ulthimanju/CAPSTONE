@@ -200,11 +200,11 @@ export const memberApi = {
   },
 
   /**
-   * List recent workspace activity audit log.
+   * List recent workspace activity audit log with pagination.
    */
-  getActivities: async (workspaceId, limit = 50) => {
+  getActivities: async (workspaceId, { page = 1, limit = 10 } = {}) => {
     const response = await apiClient.get(
-      `/api/v1/workspaces/${workspaceId}/activities?limit=${limit}`
+      `/api/v1/workspaces/${workspaceId}/activities?page=${page}&limit=${limit}`
     );
     return response.data;
   },

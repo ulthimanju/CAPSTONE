@@ -101,6 +101,7 @@ class InviteMemberUseCase:
 
         # 5. Check for existing pending invitations and expire stale ones
         now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(days=7)
         existing_invitations = await self.invitation_repo.list_by_workspace(workspace_id)
         for inv in existing_invitations:
             if inv.status == InvitationStatus.PENDING:
@@ -135,7 +136,7 @@ class InviteMemberUseCase:
             expires_at=expires_at,
             created_at=now,
         )
-        await self.invitation_repo.create(invitation)
+        await self.invitation_repo.create_invitation(invitation)
 
         activity = WorkspaceActivity(
             id=generate_uuid(),

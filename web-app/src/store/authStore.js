@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { STORAGE_KEYS } from '@/config/constants';
+import { useWorkspaceStore } from './workspaceStore';
 
 export const useAuthStore = create((set) => ({
   user: (() => {
@@ -34,6 +35,18 @@ export const useAuthStore = create((set) => ({
   },
 
   setAuth: (token, user) => {
+    // If switching users or fresh login, clear any previous workspace context
+    const prevUser = localStorage.getItem(STORAGE_KEYS.USER);
+    if (prevUser && user) {
+      try {
+        const parsed = JSON.parse(prevUser);
+        if (parsed.id !== user.id || parsed.email !== user.email) {
+          useWorkspaceStore.getState().clearActiveWorkspace();
+          localStorage.removeItem('cpa_active_workspace');
+        }
+      } catch {}
+    }
+
     localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
     if (user) {
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
@@ -44,6 +57,8 @@ export const useAuthStore = create((set) => ({
   clearAuth: () => {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem('cpa_active_workspace');
+    useWorkspaceStore.getState().clearActiveWorkspace();
     set({ token: null, user: null, isAuthenticated: false });
   },
 }));

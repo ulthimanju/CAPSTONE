@@ -58,12 +58,16 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     db_model_mock = MagicMock()
     db_model_mock.id = ws_id
     db_model_mock.owner_id = owner_id
+    db_model_mock.created_by = owner_id
     db_model_mock.name = "Cache Test Workspace"
     db_model_mock.visibility = "PRIVATE"
     db_model_mock.status = "ACTIVE"
     db_model_mock.domain_type = "TECHNICAL"
     db_model_mock.created_at = now
     db_model_mock.updated_at = now
+    db_model_mock.workspace_code_language = "python"
+    db_model_mock.is_summary_generated = False
+    db_model_mock.topics_covered = None
     db_model_mock.archived_at = None
     db_model_mock.summary_json = {"overview": "AI Summary"}
     db_model_mock.learning_path_json = {"modules": ["Unit 1"]}
@@ -80,7 +84,7 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     exec_res = MagicMock()
     exec_res.scalar_one_or_none.return_value = db_model_mock
     exec_res.scalars().unique().all.return_value = [db_model_mock]
-    exec_res.scalars().all.return_value = [member_model_mock]
+    exec_res.scalars().all.return_value = [db_model_mock]
     session.execute.return_value = exec_res
 
     fetched_ws = await repo.get_by_id(ws_id)
@@ -96,6 +100,7 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
 
     # 3. List workspace members: Cache MISS -> sets workspace_members:{workspace_id}
     redis_mock.get.return_value = None
+    exec_res.scalars().all.return_value = [member_model_mock]
     members_list = await mem_repo.list_members(ws_id)
     assert len(members_list) == 1
     assert redis_mock.set.called
@@ -134,6 +139,7 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     mock_mem_repo = AsyncMock()
     create_uc = CreateWorkspaceUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
+    exec_res.scalar_one_or_none.return_value = None
     await create_uc.execute(owner_id, CreateWorkspaceRequest(name="New Workspace"))
     assert redis_mock.delete.called
 
@@ -141,6 +147,7 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     member_mock = MagicMock()
     member_mock.role = "OWNER"
     mock_mem_repo.get_member.return_value = member_mock
+    exec_res.scalar_one_or_none.return_value = db_model_mock
 
     update_uc = UpdateWorkspaceUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
@@ -157,11 +164,12 @@ async def test_workspace_cache_aside_pattern_and_usecase_invalidation():
     mock_mem_repo.remove_member.return_value = True
     remove_uc = RemoveMemberUseCase(repo, mock_mem_repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
-    await remove_uc.execute(ws_id, owner_id, member_user_id)
+    other_member_id = uuid.uuid4()
+    await remove_uc.execute(ws_id, member_user_id, other_member_id)
     assert redis_mock.delete.called
 
     # 12. DeleteWorkspaceUseCase invalidation (invalidates workspace, members, permissions, summary, learning_path, and learning_units)
     delete_uc = DeleteWorkspaceUseCase(repo, act_repo, cache_manager=cache)
     redis_mock.delete.reset_mock()
-    await delete_uc.execute(ws_id, owner_id)
+    await delete_uc.execute(ws_id, member_user_id)
     assert redis_mock.delete.called

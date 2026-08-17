@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2, FolderPlus, AlertCircle } from 'lucide-react';
 import { Button, Card, PlusIcon } from '@/components/ui';
@@ -10,8 +10,15 @@ export function WorkspacesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data, isLoading, isError, error, refetch } = useWorkspacesQuery();
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+  const clearActiveWorkspace = useWorkspaceStore((state) => state.clearActiveWorkspace);
 
   const workspaces = data?.workspaces || [];
+
+  useEffect(() => {
+    if (!isLoading && workspaces.length === 0 && activeWorkspaceId) {
+      clearActiveWorkspace();
+    }
+  }, [isLoading, workspaces.length, activeWorkspaceId, clearActiveWorkspace]);
 
   // If workspaces exist, redirect directly to active workspace or the first workspace detail view
   if (!isLoading && !isError && workspaces.length > 0) {

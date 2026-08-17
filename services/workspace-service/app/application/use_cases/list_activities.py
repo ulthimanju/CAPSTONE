@@ -11,11 +11,6 @@ class ListActivitiesUseCase:
         self.activity_repo = activity_repo
         self.cache_manager = cache_manager or WorkspaceCacheManager()
 
-    async def execute(self, workspace_id: UUID, limit: int = 50) -> list[ActivityResponse]:
-        cached = await self.cache_manager.get_workspace_activity(workspace_id)
-        if cached is not None:
-            return [ActivityResponse.model_validate(a) for a in cached[:limit]]
-
-        activities = await self.activity_repo.list_activities(workspace_id, limit=limit)
-        await self.cache_manager.set_workspace_activity(workspace_id, activities, ttl=120)
+    async def execute(self, workspace_id: UUID, limit: int = 10, offset: int = 0) -> list[ActivityResponse]:
+        activities = await self.activity_repo.list_activities(workspace_id, limit=limit, offset=offset)
         return [ActivityResponse.model_validate(a) for a in activities]

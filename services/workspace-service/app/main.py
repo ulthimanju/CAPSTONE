@@ -31,11 +31,43 @@ async def lifespan(app: FastAPI):
                 "ADD COLUMN IF NOT EXISTS role VARCHAR(50) NOT NULL DEFAULT 'VIEWER'"
             )
         )
-        # Ensure problems_json column exists — added after initial table creation
+        # Ensure unit_id and content_json columns exist on learning_unit_contents
         await conn.execute(
             __import__("sqlalchemy", fromlist=["text"]).text(
                 "ALTER TABLE learning_unit_contents "
-                "ADD COLUMN IF NOT EXISTS problems_json JSONB"
+                "ADD COLUMN IF NOT EXISTS unit_id VARCHAR(255)"
+            )
+        )
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "ALTER TABLE learning_unit_contents "
+                "ADD COLUMN IF NOT EXISTS content_json JSONB DEFAULT '{}'::jsonb"
+            )
+        )
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "CREATE TABLE IF NOT EXISTS user_quiz_submissions ("
+                "id UUID PRIMARY KEY DEFAULT gen_random_uuid(), "
+                "workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE, "
+                "unit_id VARCHAR(255) NOT NULL, "
+                "user_id UUID NOT NULL, "
+                "score INTEGER NOT NULL DEFAULT 0, "
+                "total_questions INTEGER NOT NULL DEFAULT 5, "
+                "answers_json JSONB NOT NULL DEFAULT '{}'::jsonb, "
+                "submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), "
+                "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), "
+                "CONSTRAINT uq_user_workspace_unit UNIQUE (workspace_id, unit_id, user_id)"
+                ")"
+            )
+        )
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "CREATE INDEX IF NOT EXISTS idx_user_quiz_ws_unit ON user_quiz_submissions (workspace_id, unit_id)"
+            )
+        )
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "CREATE INDEX IF NOT EXISTS idx_user_quiz_user ON user_quiz_submissions (user_id)"
             )
         )
     yield

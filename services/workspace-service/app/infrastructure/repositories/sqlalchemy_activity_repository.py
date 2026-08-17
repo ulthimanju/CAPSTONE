@@ -34,20 +34,17 @@ class SQLAlchemyActivityRepository(ActivityRepository):
             await self.cache.invalidate_workspace_activity(activity.workspace_id)
         return activity
 
-    async def list_activities(self, workspace_id: UUID, limit: int = 50) -> list[WorkspaceActivity]:
-        cached = await self.cache.get_workspace_activity(workspace_id)
-        if cached is not None:
-            return cached[:limit]
-
+    async def list_activities(self, workspace_id: UUID, limit: int = 10, offset: int = 0) -> list[WorkspaceActivity]:
         stmt = (
             select(WorkspaceActivityModel)
             .where(WorkspaceActivityModel.workspace_id == workspace_id)
             .order_by(WorkspaceActivityModel.created_at.desc())
+            .offset(offset)
             .limit(limit)
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        activities = [
+        return [
             WorkspaceActivity(
                 id=m.id,
                 workspace_id=m.workspace_id,
@@ -59,5 +56,3 @@ class SQLAlchemyActivityRepository(ActivityRepository):
                 created_at=m.created_at
             ) for m in models
         ]
-        await self.cache.set_workspace_activity(workspace_id, activities, ttl=120)
-        return activities[:limit]

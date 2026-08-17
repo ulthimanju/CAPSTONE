@@ -8,16 +8,19 @@ import {
   useAcceptUserInvitationMutation,
   useRejectUserInvitationMutation,
 } from '@/features/workspaces/hooks/useMembers';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 import { toast } from 'sonner';
 
 export function InvitationsPage() {
   const navigate = useNavigate();
+  const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
   const { data: invitations = [], isLoading, error } = useUserPendingInvitationsQuery();
 
   const acceptMutation = useAcceptUserInvitationMutation({
     onSuccess: (data) => {
       toast.success('Invitation accepted! Welcome to the workspace.');
       if (data?.workspace_id) {
+        setActiveWorkspaceId(data.workspace_id);
         navigate(`/workspaces/${data.workspace_id}/documents`);
       }
     },
@@ -108,14 +111,12 @@ export function InvitationsPage() {
                         <h3 className="font-display text-sm font-bold text-text">
                           {inv.workspace_name || 'Collaborative Workspace'}
                         </h3>
-                        <span className="inline-flex items-center gap-1 rounded bg-sand px-2 py-0.5 font-mono text-[10px] font-bold text-accent border border-sep-line/50">
-                          <ShieldCheck className="h-3 w-3" />
-                          {inv.role}
-                        </span>
                       </div>
 
                       <p className="font-body text-xs text-text/70 leading-relaxed">
-                        You were invited to join this workspace as a <strong className="text-text font-semibold">{inv.role}</strong>.
+                        You were invited{inv.invited_by_name ? (
+                          <> by <strong className="text-text font-semibold">{inv.invited_by_name}</strong>{inv.invited_by_email && inv.invited_by_email !== inv.invited_by_name ? <span className="text-text/50"> ({inv.invited_by_email})</span> : null}</>
+                        ) : null} to join this workspace as a <strong className="text-text font-semibold">{inv.role}</strong>.
                       </p>
 
                       <div className="flex flex-wrap items-center gap-3 pt-1 font-mono text-[11px] text-text/50">
@@ -138,22 +139,20 @@ export function InvitationsPage() {
                   <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                     <Button
                       variant="outline"
-                      size="sm"
                       onClick={() => handleReject(inv.id)}
                       disabled={isProcessing}
-                      className="text-xs text-danger hover:text-danger hover:bg-danger/10 border-sep-line"
+                      leftIcon={<X className="h-3.5 w-3.5" />}
+                      className="text-xs text-danger hover:text-danger hover:bg-danger/10 border-sep-line h-8 px-3"
                     >
-                      <X className="h-3.5 w-3.5 mr-1" />
                       Decline
                     </Button>
                     <Button
                       variant="primary"
-                      size="sm"
                       onClick={() => handleAccept(inv.id)}
                       isLoading={isProcessing}
-                      className="text-xs"
+                      leftIcon={<Check className="h-3.5 w-3.5" />}
+                      className="text-xs h-8 px-3.5"
                     >
-                      <Check className="h-3.5 w-3.5 mr-1" />
                       Accept & Join
                     </Button>
                   </div>

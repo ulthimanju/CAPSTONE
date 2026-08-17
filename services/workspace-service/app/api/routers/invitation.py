@@ -47,13 +47,37 @@ async def list_pending_invitations(
         )
     )
     res = await db.execute(stmt)
+    rows = res.all()
+
+    # Batch resolve inviter user profiles (names & emails)
+    invited_by_ids = [inv.invited_by for inv, _ in rows if inv.invited_by]
+    profiles = {}
+    if invited_by_ids:
+        try:
+            from app.api.routers.member import _resolve_user_profiles
+            profiles = await _resolve_user_profiles(invited_by_ids)
+        except Exception:
+            pass
+
     invites = []
-    for inv, ws_name in res.all():
+    for inv, ws_name in rows:
+        inviter_id_str = str(inv.invited_by) if inv.invited_by else None
+        inviter_prof = profiles.get(inviter_id_str, {}) if inviter_id_str else {}
+        inviter_name = (
+            inviter_prof.get("name")
+            or inviter_prof.get("full_name")
+            or inviter_prof.get("email")
+            or None
+        )
+        inviter_email = inviter_prof.get("email")
+
         invites.append({
             "id": str(inv.id),
             "workspace_id": str(inv.workspace_id),
             "workspace_name": ws_name,
-            "invited_by": str(inv.invited_by),
+            "invited_by": inviter_id_str,
+            "invited_by_name": inviter_name,
+            "invited_by_email": inviter_email,
             "invited_email": inv.invited_email,
             "role": inv.role or "VIEWER",
             "status": inv.status,
@@ -66,14 +90,12 @@ async def list_pending_invitations(
 @router.post("/{invitation_id}/accept", response_model=InvitationResponse)
 async def accept_invitation(
     invitation_id: UUID,
-    request: Request,
-    authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     inv_repo: InvitationRepository = Depends(get_invitation_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
     act_repo: ActivityRepository = Depends(get_activity_repository),
 ):
-    user_email = _extract_user_email(request, authorization)
     use_case = AcceptInvitationUseCase(inv_repo, mem_repo, act_repo)
     return await use_case.execute(invitation_id, user_id, user_email)
 
@@ -81,12 +103,10 @@ async def accept_invitation(
 @router.post("/{invitation_id}/reject", response_model=InvitationResponse)
 async def reject_invitation(
     invitation_id: UUID,
-    request: Request,
-    authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
+    user_email: str | None = Depends(get_current_user_email),
     inv_repo: InvitationRepository = Depends(get_invitation_repository),
 ):
-    user_email = _extract_user_email(request, authorization)
     use_case = RejectInvitationUseCase(inv_repo)
     res = await use_case.execute(invitation_id, user_id, user_email)
     try:

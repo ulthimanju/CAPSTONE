@@ -113,7 +113,8 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
             </label>
             <Input
               id="workspace-name-input"
-              placeholder="e.g. Distributed Systems (CS401)"
+              placeholder="e.g. Operating System"
+              maxLength={16}
               error={!!errors.name}
               {...register('name')}
               autoFocus

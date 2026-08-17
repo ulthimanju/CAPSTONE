@@ -70,6 +70,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
   const {
     data: invitations = [],
     isLoading: isLoadingInvites,
+    refetch: refetchInvitations,
   } = useInvitationsQuery(workspace?.id);
 
   const {
@@ -562,6 +563,9 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
         workspaceId={workspace.id}
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
+        onSuccess={() => {
+          refetchInvitations();
+        }}
       />
 
       {/* Remove Member Confirmation Modal */}

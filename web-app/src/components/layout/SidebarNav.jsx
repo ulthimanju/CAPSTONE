@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useWorkspacesQuery } from '@/features/workspaces/hooks/useWorkspaces';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/cn';
 import {
@@ -11,8 +12,20 @@ import {
   Settings,
 } from '@/components/ui';
 
-function SidebarNavItem({ item, closeMobileSidebar }) {
+function SidebarNavItem({ item, closeMobileSidebar, disabled }) {
   const Icon = item.icon;
+
+  if (disabled) {
+    return (
+      <div
+        className="flex items-center gap-3 rounded-ui px-3 py-2 text-xs font-mono font-medium text-text/40 opacity-40 cursor-not-allowed select-none border border-transparent"
+        title="Create or select a workspace to access this feature"
+      >
+        <Icon className="h-4 w-4 shrink-0 text-text/30" aria-hidden="true" />
+        <span>{item.label}</span>
+      </div>
+    );
+  }
 
   return (
     <NavLink
@@ -44,11 +57,19 @@ export function SidebarNav() {
   const closeMobileSidebar = useUIStore((state) => state.closeMobileSidebar);
   const location = useLocation();
 
-  if (!activeWorkspaceId) {
-    return null;
-  }
+  // Extract workspaceId from URL path if on a workspace route
+  const pathMatch = location.pathname.match(/\/workspaces\/([0-9a-fA-F-]+)/);
+  const routeWorkspaceId = pathMatch ? pathMatch[1] : null;
 
-  const basePath = `/workspaces/${activeWorkspaceId}`;
+  const { data, isLoading } = useWorkspacesQuery();
+  const workspaces = data?.workspaces || [];
+
+  // Determine if valid workspaces exist
+  const currentWsId = routeWorkspaceId || activeWorkspaceId;
+  const hasWorkspaces = Boolean(currentWsId) || (!isLoading && workspaces.length > 0);
+  const validWorkspaceId = currentWsId || (workspaces.length > 0 ? workspaces[0].id : null);
+
+  const basePath = validWorkspaceId ? `/workspaces/${validWorkspaceId}` : '#';
 
   const navItems = [
     {
@@ -56,48 +77,54 @@ export function SidebarNav() {
       to: `${basePath}/documents`,
       icon: DocumentsIcon,
       isActive:
-        location.pathname === basePath ||
-        location.pathname.startsWith(`${basePath}/documents`),
+        Boolean(validWorkspaceId) &&
+        (location.pathname === basePath ||
+          location.pathname.startsWith(`${basePath}/documents`)),
     },
     {
       label: 'Summary',
       to: `${basePath}/summary`,
       icon: SummaryIcon,
-      isActive: location.pathname.startsWith(`${basePath}/summary`),
+      isActive: Boolean(validWorkspaceId) && location.pathname.startsWith(`${basePath}/summary`),
     },
     {
       label: 'Clarify Doubts',
       to: `${basePath}/chat`,
       icon: AITutorIcon,
-      isActive: location.pathname.startsWith(`${basePath}/chat`),
+      isActive: Boolean(validWorkspaceId) && location.pathname.startsWith(`${basePath}/chat`),
     },
     {
       label: 'Learning Path',
       to: `${basePath}/learning-path`,
       icon: LearningPathIcon,
-      isActive: location.pathname.startsWith(`${basePath}/learning-path`),
+      isActive: Boolean(validWorkspaceId) && location.pathname.startsWith(`${basePath}/learning-path`),
     },
     {
       label: 'Manage Workspace',
       to: `${basePath}/manage`,
       icon: Settings,
       isActive:
-        location.pathname.startsWith(`${basePath}/manage`) ||
-        location.pathname.startsWith(`${basePath}/collaborators`) ||
-        location.pathname.startsWith(`${basePath}/settings`),
+        Boolean(validWorkspaceId) &&
+        (location.pathname.startsWith(`${basePath}/manage`) ||
+          location.pathname.startsWith(`${basePath}/collaborators`) ||
+          location.pathname.startsWith(`${basePath}/settings`)),
     },
   ];
 
   return (
     <div className="space-y-1">
-      <div className="px-3 py-1 font-mono text-[11px] font-semibold tracking-wider text-text/50 uppercase">
-        Workspace
+      <div className="px-3 py-1 font-mono text-[11px] font-semibold tracking-wider text-text/50 uppercase flex items-center justify-between">
+        <span>Workspace</span>
+        {!hasWorkspaces && !isLoading && (
+          <span className="text-[10px] font-normal lowercase text-text/40 tracking-normal">(none)</span>
+        )}
       </div>
 
       {navItems.map((item) => (
         <SidebarNavItem
-          key={item.to}
+          key={item.label}
           item={item}
+          disabled={!hasWorkspaces}
           closeMobileSidebar={closeMobileSidebar}
         />
       ))}

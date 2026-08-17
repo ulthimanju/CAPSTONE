@@ -6,6 +6,7 @@ from app.infrastructure.repositories.sqlalchemy_workspace_repository import SQLA
 from app.infrastructure.repositories.sqlalchemy_member_repository import SQLAlchemyMemberRepository
 from app.infrastructure.repositories.sqlalchemy_invitation_repository import SQLAlchemyInvitationRepository
 from app.infrastructure.repositories.sqlalchemy_activity_repository import SQLAlchemyActivityRepository
+from app.infrastructure.repositories.sql_quiz_submission_repository import SqlQuizSubmissionRepository
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 
 
@@ -22,6 +23,7 @@ def get_workspace_cache() -> WorkspaceCacheManager:
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         session.info["post_commit_invalidations"] = set()
+        session.info["post_commit_user_invalidations"] = set()
         session.info["post_commit_events"] = []
         try:
             yield session
@@ -30,6 +32,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             for ws_id in session.info.get("post_commit_invalidations", set()):
                 await cache.invalidate(ws_id)
                 await cache.invalidate_workspace_activity(ws_id)
+            for uid in session.info.get("post_commit_user_invalidations", set()):
+                await cache.invalidate_user_workspaces(uid)
             for evt in session.info.get("post_commit_events", []):
                 try:
                     from shared.events import publish_workspace_event
@@ -58,3 +62,7 @@ def get_activity_repository(
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ) -> SQLAlchemyActivityRepository:
     return SQLAlchemyActivityRepository(session, cache_manager=cache)
+
+
+def get_quiz_submission_repository(session: AsyncSession = Depends(get_db)) -> SqlQuizSubmissionRepository:
+    return SqlQuizSubmissionRepository(session)

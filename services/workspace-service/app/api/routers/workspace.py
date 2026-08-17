@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from app.api.dependencies.auth import get_current_user_id, get_current_user_email
@@ -7,12 +8,14 @@ from app.api.dependencies.database import (
     get_workspace_repository,
     get_member_repository,
     get_activity_repository,
+    get_quiz_submission_repository,
     get_workspace_cache,
 )
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
 from app.domain.repositories.workspace_repository import WorkspaceRepository
 from app.domain.repositories.member_repository import MemberRepository
 from app.domain.repositories.activity_repository import ActivityRepository
+from app.domain.repositories.quiz_submission_repository import QuizSubmissionRepository
 from app.schemas.workspace import (
     CreateWorkspaceRequest,
     UpdateWorkspaceRequest,
@@ -29,6 +32,9 @@ from app.application.use_cases.update_workspace import UpdateWorkspaceUseCase
 from app.application.use_cases.archive_workspace import ArchiveWorkspaceUseCase
 from app.application.use_cases.restore_workspace import RestoreWorkspaceUseCase
 from app.application.use_cases.delete_workspace import DeleteWorkspaceUseCase
+from app.application.use_cases.submit_quiz import SubmitQuizUseCase
+from app.application.use_cases.get_unit_content import GetUnitContentUseCase
+from app.application.use_cases.get_quiz_leaderboard import GetQuizLeaderboardUseCase
 from app.config.settings import settings
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
@@ -209,7 +215,7 @@ async def save_workspace_summary(
     ws.summary_json = req.summary_json
     ws.is_summary_generated = True
     await ws_repo.update(ws)
-    await cache.invalidate_workspace_summary(workspace_id)
+    await cache.set_workspace_summary(workspace_id, req.summary_json)
     try:
         from shared.events import publish_workspace_event
         await publish_workspace_event(workspace_id, "workspace.summary.updated")
@@ -256,7 +262,7 @@ async def save_workspace_learning_path(
     ws = await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
     ws.learning_path_json = req.learning_path_json
     await ws_repo.update(ws)
-    await cache.invalidate_workspace_learning_path(workspace_id)
+    await cache.set_workspace_learning_path(workspace_id, req.learning_path_json)
     try:
         from shared.events import publish_workspace_event
         await publish_workspace_event(workspace_id, "workspace.learning_path.updated")
@@ -301,10 +307,16 @@ async def save_workspace_topics(
     return {"status": "saved", "workspace_id": str(workspace_id)}
 
 
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.database import get_db
-from app.infrastructure.database.models import LearningUnitContentModel, WorkspaceChatModel, WorkspaceModel
+from app.infrastructure.database.models import (
+    LearningUnitContentModel,
+    WorkspaceChatModel,
+    WorkspaceModel,
+    UserQuizSubmissionModel,
+)
 
 
 @router.get("/{workspace_id}/chat")
@@ -344,6 +356,7 @@ async def save_workspace_chat(
         db.add(chat)
     else:
         chat.messages_json = req.messages
+        flag_modified(chat, "messages_json")
 
     await db.flush()
     await db.commit()
@@ -364,6 +377,7 @@ async def clear_workspace_chat(
     chat = res.scalar_one_or_none()
     if chat:
         chat.messages_json = []
+        flag_modified(chat, "messages_json")
         await db.flush()
         await db.commit()
     return {"status": "cleared", "workspace_id": str(workspace_id)}
@@ -376,68 +390,59 @@ async def update_quiz_progress(
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
+    act_repo: ActivityRepository = Depends(get_activity_repository),
+    quiz_repo: QuizSubmissionRepository = Depends(get_quiz_submission_repository),
     db: AsyncSession = Depends(get_db),
-    cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
-    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
-    stmt = select(LearningUnitContentModel).where(
-        LearningUnitContentModel.workspace_id == workspace_id,
-        LearningUnitContentModel.unit_title == req.unit_title
+    use_case = SubmitQuizUseCase(ws_repo, mem_repo, act_repo, quiz_repo, db)
+    return await use_case.execute(
+        workspace_id=workspace_id,
+        user_id=user_id,
+        unit_identifier=req.unit_id or req.unit_title,
+        user_quiz=req.quiz_json,
     )
-    res = await db.execute(stmt)
-    unit_content = res.scalar_one_or_none()
 
-    if not unit_content:
-        raise HTTPException(status_code=404, detail="Learning unit content not found")
 
-    unit_content.quiz_json = req.quiz_json
-    await db.flush()
-    await db.commit()
-    await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
-    if unit_content.id:
-        await cache.invalidate_learning_unit_content(workspace_id, unit_content.id)
-    return {"status": "updated", "workspace_id": str(workspace_id), "unit_title": req.unit_title}
+@router.get("/{workspace_id}/units/{unit_identifier}/quiz-leaderboard")
+async def get_quiz_leaderboard(
+    workspace_id: UUID,
+    unit_identifier: str,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
+    quiz_repo: QuizSubmissionRepository = Depends(get_quiz_submission_repository),
+):
+    use_case = GetQuizLeaderboardUseCase(ws_repo, mem_repo, quiz_repo)
+    return await use_case.execute(
+        workspace_id=workspace_id,
+        user_id=user_id,
+        unit_identifier=unit_identifier,
+    )
 
 
 @router.get("/{workspace_id}/units/content")
 async def get_learning_unit_content(
     workspace_id: UUID,
-    unit_title: str,
+    unit_title: str | None = None,
+    unit_id: str | None = None,
     user_id: UUID = Depends(get_current_user_id),
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     mem_repo: MemberRepository = Depends(get_member_repository),
+    quiz_repo: QuizSubmissionRepository = Depends(get_quiz_submission_repository),
     db: AsyncSession = Depends(get_db),
     cache: WorkspaceCacheManager = Depends(get_workspace_cache),
 ):
-    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
-    cached = await cache.get_learning_unit_content(workspace_id, unit_title)
-    if cached is not None:
-        return cached
-
-    stmt = select(LearningUnitContentModel).where(
-        LearningUnitContentModel.workspace_id == workspace_id,
-        LearningUnitContentModel.unit_title == unit_title
+    lookup_key = unit_id or unit_title
+    if not lookup_key:
+        raise HTTPException(status_code=400, detail="unit_id or unit_title is required")
+    use_case = GetUnitContentUseCase(ws_repo, mem_repo, quiz_repo, db, cache)
+    return await use_case.execute(
+        workspace_id=workspace_id,
+        user_id=user_id,
+        lookup_key=lookup_key,
+        unit_id=unit_id,
+        unit_title=unit_title,
     )
-    res = await db.execute(stmt)
-    unit_content = res.scalar_one_or_none()
-    if not unit_content or unit_content.status != "READY":
-        return {"content": None, "status": unit_content.status if unit_content else "NOT_GENERATED"}
-
-    payload = {
-        "content": {
-            "summary": unit_content.summary_json,
-            "flashcards": unit_content.flashcards_json,
-            "quiz": unit_content.quiz_json,
-            "problems": unit_content.problems_json or [],
-        },
-        "status": unit_content.status,
-        "model": unit_content.model,
-        "updated_at": unit_content.updated_at.isoformat() if unit_content.updated_at else None
-    }
-    await cache.set_learning_unit_content(workspace_id, unit_title, payload)
-    if unit_content.id:
-        await cache.set_learning_unit_content(workspace_id, unit_content.id, payload)
-    return payload
 
 
 @router.put("/{workspace_id}/units/content")
@@ -452,55 +457,124 @@ async def save_learning_unit_content(
 ):
     await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
 
-    def _is_valid_problem_url(url: str | None) -> bool:
-        if not url or not isinstance(url, str):
-            return False
+    def _canonicalize_problem_dict(p: dict) -> dict | None:
+        import re
+        from urllib.parse import urlparse
+        if not isinstance(p, dict) or not p.get("title"):
+            return None
+        url = (p.get("url") or "").strip()
+        title = str(p.get("title")).strip()
+        platform = str(p.get("platform") or "").lower()
+        slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+
+        if not url or url in ("https://leetcode.com", "https://leetcode.com/", "https://leetcode.com/problemset/all/", "https://leetcode.com/problemset/", "https://www.hackerrank.com", "https://www.hackerrank.com/", "https://codeforces.com", "https://codeforces.com/"):
+            if "leetcode" in platform or "leetcode" in url:
+                p["url"] = f"https://leetcode.com/problems/{slug}/"
+                p["platform"] = "LeetCode"
+            elif "hackerrank" in platform or "hackerrank" in url:
+                p["url"] = f"https://www.hackerrank.com/challenges/{slug}/problem"
+                p["platform"] = "HackerRank"
+            elif "codeforces" in platform or "codeforces" in url:
+                p["url"] = f"https://codeforces.com/problemset"
+                p["platform"] = "Codeforces"
+
         try:
-            from urllib.parse import urlparse
-            parsed = urlparse(url.strip())
+            parsed = urlparse(p.get("url", "").strip())
             if parsed.scheme not in ("http", "https"):
-                return False
+                return None
             hostname = (parsed.hostname or "").lower()
             allowed = ("leetcode.com", "hackerrank.com", "codeforces.com")
-            return any(hostname == d or hostname.endswith("." + d) for d in allowed)
+            if not any(hostname == d or hostname.endswith("." + d) for d in allowed):
+                return None
+            if ("leetcode.com" in hostname) and (parsed.path.rstrip("/") in ("", "/problemset", "/problemset/all")):
+                p["url"] = f"https://leetcode.com/problems/{slug}/"
+            elif ("hackerrank.com" in hostname) and (parsed.path.rstrip("/") in ("", "/challenges", "/domains")):
+                p["url"] = f"https://www.hackerrank.com/challenges/{slug}/problem"
+            return p
         except Exception:
-            return False
+            return None
 
-    valid_problems = [p for p in (req.problems_json or []) if _is_valid_problem_url(p.get("url"))] if req.problems_json is not None else None
+    raw_problems = req.problems_json if req.problems_json is not None else []
+    valid_problems = [cp for p in raw_problems if (cp := _canonicalize_problem_dict(p)) is not None] if req.problems_json is not None else None
 
+    c_json = req.content_json or {
+        "unit_title": req.unit_title,
+        "summary_json": req.summary_json,
+        "flashcards_json": req.flashcards_json or [],
+        "quiz_json": req.quiz_json or [],
+        "problems_json": valid_problems or [],
+        "status": req.status,
+    }
+    if "unit_title" not in c_json:
+        c_json["unit_title"] = req.unit_title
+    if valid_problems is not None:
+        c_json["problems_json"] = valid_problems
+    c_json["status"] = req.status
+
+    target_unit_id = req.unit_id or req.unit_title
+
+    from sqlalchemy import or_, func
     stmt = select(LearningUnitContentModel).where(
         LearningUnitContentModel.workspace_id == workspace_id,
-        LearningUnitContentModel.unit_title == req.unit_title
+        or_(
+            LearningUnitContentModel.unit_id == target_unit_id,
+            LearningUnitContentModel.unit_id == req.unit_title,
+            func.jsonb_extract_path_text(LearningUnitContentModel.content_json, "unit_title") == req.unit_title
+        )
     )
     res = await db.execute(stmt)
     unit_content = res.scalar_one_or_none()
 
+    now_dt = datetime.now(timezone.utc)
     if not unit_content:
         unit_content = LearningUnitContentModel(
             workspace_id=workspace_id,
-            unit_title=req.unit_title,
-            summary_json=req.summary_json,
-            flashcards_json=req.flashcards_json,
-            quiz_json=req.quiz_json,
-            problems_json=valid_problems,
-            status=req.status,
-            model=req.model
+            unit_id=target_unit_id,
+            model=req.model,
+            content_json=c_json,
+            created_at=now_dt,
+            updated_at=now_dt,
         )
         db.add(unit_content)
     else:
-        unit_content.summary_json = req.summary_json
-        unit_content.flashcards_json = req.flashcards_json
-        unit_content.quiz_json = req.quiz_json
-        unit_content.problems_json = valid_problems
-        unit_content.status = req.status
+        unit_content.unit_id = target_unit_id
         unit_content.model = req.model
+        unit_content.content_json = c_json
+        flag_modified(unit_content, "content_json")
+        unit_content.updated_at = now_dt
 
     await db.flush()
+    unit_content_id = unit_content.id
+    unit_id_val = unit_content.unit_id
+    model_val = unit_content.model
+    now_iso = now_dt.isoformat()
+
     await db.commit()
-    await cache.invalidate_learning_unit_content(workspace_id, req.unit_title)
-    if unit_content.id:
-        await cache.invalidate_learning_unit_content(workspace_id, unit_content.id)
-    return {"status": "saved", "workspace_id": str(workspace_id), "unit_title": req.unit_title}
+    payload = {
+        "unit_id": unit_id_val,
+        "content": {
+            "unit_title": req.unit_title,
+            "summary": c_json.get("summary_json") or c_json.get("summary"),
+            "flashcards": c_json.get("flashcards_json") or c_json.get("flashcards") or [],
+            "quiz": c_json.get("quiz_json") or c_json.get("quiz") or [],
+            "problems": c_json.get("problems_json") or c_json.get("problems") or [],
+        },
+        "content_json": c_json,
+        "status": req.status,
+        "model": model_val,
+        "updated_at": now_iso,
+    }
+    if unit_content_id:
+        await cache.set_learning_unit_content(workspace_id, unit_content_id, payload)
+    await cache.set_learning_unit_content(workspace_id, unit_id_val, payload)
+    if req.unit_title != unit_id_val:
+        await cache.set_learning_unit_content(workspace_id, req.unit_title, payload)
+    try:
+        from shared.events import publish_workspace_event
+        await publish_workspace_event(workspace_id, "workspace.unit.updated")
+    except Exception:
+        pass
+    return {"status": "saved", "workspace_id": str(workspace_id), "unit_id": unit_content.unit_id, "unit_title": req.unit_title}
 
 
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)

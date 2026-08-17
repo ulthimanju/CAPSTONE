@@ -24,8 +24,9 @@ import {
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useQueryClient } from '@tanstack/react-query';
 import { inviteMemberRequestSchema } from '../schemas/memberSchemas';
-import { useInviteMemberMutation } from '../hooks/useMembers';
+import { useInviteMemberMutation, memberKeys } from '../hooks/useMembers';
 import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/errorUtils';
@@ -37,6 +38,7 @@ export function InviteCollaboratorModal({
   onSuccess,
   isOwner = true,
 }) {
+  const queryClient = useQueryClient();
   const [showMatrix, setShowMatrix] = useState(false);
 
   const {
@@ -57,17 +59,28 @@ export function InviteCollaboratorModal({
     onSuccess: (data, variables) => {
       const targetEmail = variables?.email || data?.invited_email || 'collaborator';
       const assignedRole = variables?.role || data?.role || 'EDITOR';
+
+      // 1. Optimistic Cache Update: immediately append new invitation into local query cache
+      if (workspaceId && data) {
+        queryClient.setQueryData(memberKeys.invitations(workspaceId), (old) => {
+          const list = Array.isArray(old) ? [...old] : [];
+          const exists = list.some((inv) => inv.id === data.id);
+          if (!exists) {
+            list.unshift(data);
+          }
+          return list;
+        });
+      }
+
+      // 2. Invalidate & force refetch across all listeners
+      queryClient.invalidateQueries({ queryKey: memberKeys.all });
+      queryClient.invalidateQueries({ queryKey: memberKeys.invitations(workspaceId) });
+      queryClient.refetchQueries({ queryKey: memberKeys.invitations(workspaceId) });
+
       toast.success(`Invitation successfully sent to ${targetEmail} as ${assignedRole}!`);
       reset();
       onOpenChange(false);
       onSuccess?.(data);
-    },
-    onError: (err) => {
-      const errorMsg = getErrorMessage(
-        err,
-        'Failed to send invitation. Please verify the email and try again.'
-      );
-      toast.error(errorMsg);
     },
   });
 

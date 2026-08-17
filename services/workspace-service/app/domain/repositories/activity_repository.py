@@ -9,5 +9,5 @@ class ActivityRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_activities(self, workspace_id: UUID, limit: int = 50) -> list[WorkspaceActivity]:
+    async def list_activities(self, workspace_id: UUID, limit: int = 10, offset: int = 0) -> list[WorkspaceActivity]:
         pass

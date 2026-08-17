@@ -42,10 +42,6 @@ class WorkspaceCacheManager:
     def _get_workspace_learning_path_key(self, workspace_id: uuid.UUID) -> str:
         return f"workspace_learning_path:{workspace_id}"
 
-    def _get_learning_unit_key(self, workspace_id: uuid.UUID, unit_title: str) -> str:
-        title_hash = hashlib.sha256(unit_title.encode("utf-8")).hexdigest()[:16]
-        return f"learning_unit:{workspace_id}:{title_hash}"
-
     async def get(self, workspace_id: uuid.UUID) -> Workspace | None:
         if not self.redis:
             return None
@@ -364,9 +360,13 @@ class WorkspaceCacheManager:
 
     def _get_learning_unit_key(self, workspace_id: uuid.UUID, unit_identifier: uuid.UUID | str) -> str:
         if isinstance(unit_identifier, uuid.UUID):
-            return f"learning_unit:{workspace_id}:{unit_identifier}"
-        title_hash = hashlib.sha256(unit_identifier.strip().lower().encode("utf-8")).hexdigest()[:16]
-        return f"learning_unit:{workspace_id}:{title_hash}"
+            return f"workspace_unit_content:{workspace_id}:{unit_identifier}"
+        try:
+            val_uuid = uuid.UUID(str(unit_identifier))
+            return f"workspace_unit_content:{workspace_id}:{val_uuid}"
+        except (ValueError, AttributeError):
+            title_hash = hashlib.sha256(str(unit_identifier).strip().lower().encode("utf-8")).hexdigest()[:16]
+            return f"workspace_unit_content:{workspace_id}:{title_hash}"
 
     async def get_learning_unit_content(self, workspace_id: uuid.UUID, unit_identifier: uuid.UUID | str) -> Any | None:
         if not self.redis:
@@ -400,7 +400,7 @@ class WorkspaceCacheManager:
         if not self.redis:
             return
         try:
-            pattern = f"learning_unit:{workspace_id}:*"
+            pattern = f"workspace_unit_content:{workspace_id}:*"
             keys = []
             if hasattr(self.redis, "scan_iter") and callable(getattr(self.redis, "scan_iter")):
                 try:

@@ -90,6 +90,7 @@ export function SettingsTab({ workspace: propWorkspace }) {
             </label>
             <Input
               id="settings-workspace-name"
+              maxLength={16}
               error={!!errors.name}
               {...register('name')}
             />

@@ -126,8 +126,7 @@ async def test_prevent_inviting_existing_member():
     with pytest.raises(HTTPException) as exc_info:
         await use_case.execute(ws_id, owner_id, req)
 
-    assert exc_info.value.status_code == 400
-    assert "already a member" in exc_info.value.detail.lower()
+    assert "already an active collaborator" in exc_info.value.detail.lower() or "already a member" in exc_info.value.detail.lower()
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Layers,
   ChevronsUpDown,
@@ -19,14 +19,19 @@ import {
 import { Badge } from '@/components/ui/Badge';
 import { CodeBoldIcon, BookLinearIcon, PlusIcon } from '@/components/ui';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
-import { useWorkspacesQuery } from '../hooks/useWorkspaces';
+import { useWorkspacesQuery, useWorkspaceQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/cn';
 
 export function WorkspaceSelector({ className }) {
   const navigate = useNavigate();
-  const { workspaceId: routeWorkspaceId } = useParams();
+  const location = useLocation();
+
+  // Extract workspaceId reliably from the URL path even when rendered outside child routes
+  const pathMatch = location.pathname.match(/\/workspaces\/([0-9a-fA-F-]+)/);
+  const routeWorkspaceId = pathMatch ? pathMatch[1] : null;
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'OWNED' | 'COLLABORATED'
 
@@ -37,6 +42,19 @@ export function WorkspaceSelector({ className }) {
   const { data, isLoading } = useWorkspacesQuery();
   const workspaces = data?.workspaces || [];
 
+  const currentTargetId = routeWorkspaceId || activeWorkspaceId;
+  const isFoundInList = workspaces.some((w) => w.id === currentTargetId);
+  const { data: detailWorkspace } = useWorkspaceQuery(currentTargetId, {
+    enabled: Boolean(currentTargetId) && !isFoundInList,
+  });
+
+  const allWorkspaces = React.useMemo(() => {
+    if (detailWorkspace && !workspaces.some((w) => w.id === detailWorkspace.id)) {
+      return [detailWorkspace, ...workspaces];
+    }
+    return workspaces;
+  }, [workspaces, detailWorkspace]);
+
   const isOwned = (ws) => {
     if (ws.user_role === 'OWNER') return true;
     if (user?.id && ws.owner_id === user.id) return true;
@@ -44,10 +62,10 @@ export function WorkspaceSelector({ className }) {
     return false;
   };
 
-  const ownedCount = workspaces.filter(isOwned).length;
-  const collaboratedCount = workspaces.filter((w) => !isOwned(w)).length;
+  const ownedCount = allWorkspaces.filter(isOwned).length;
+  const collaboratedCount = allWorkspaces.filter((w) => !isOwned(w)).length;
 
-  const filteredWorkspaces = workspaces.filter((ws) => {
+  const filteredWorkspaces = allWorkspaces.filter((ws) => {
     if (filter === 'OWNED') return isOwned(ws);
     if (filter === 'COLLABORATED') return !isOwned(ws);
     return true;
@@ -55,17 +73,24 @@ export function WorkspaceSelector({ className }) {
 
   // Determine current active workspace
   const currentWorkspace =
-    workspaces.find((w) => w.id === (routeWorkspaceId || activeWorkspaceId)) ||
-    workspaces[0];
+    allWorkspaces.find((w) => w.id === currentTargetId) ||
+    detailWorkspace ||
+    (allWorkspaces.length > 0 ? allWorkspaces[0] : null);
 
   // Sync route param or fallback to active workspace store
   useEffect(() => {
-    if (routeWorkspaceId && routeWorkspaceId !== activeWorkspaceId) {
-      setActiveWorkspaceId(routeWorkspaceId);
-    } else if (!activeWorkspaceId && workspaces.length > 0) {
-      setActiveWorkspaceId(workspaces[0].id);
+    if (routeWorkspaceId) {
+      if (routeWorkspaceId !== activeWorkspaceId) {
+        setActiveWorkspaceId(routeWorkspaceId);
+      }
+    } else if (allWorkspaces.length > 0) {
+      if (!activeWorkspaceId || !allWorkspaces.some((w) => w.id === activeWorkspaceId)) {
+        setActiveWorkspaceId(allWorkspaces[0].id);
+      }
+    } else if (allWorkspaces.length === 0 && activeWorkspaceId) {
+      setActiveWorkspaceId(null);
     }
-  }, [routeWorkspaceId, activeWorkspaceId, workspaces, setActiveWorkspaceId]);
+  }, [routeWorkspaceId, activeWorkspaceId, allWorkspaces, setActiveWorkspaceId]);
 
   const handleSelectWorkspace = (ws) => {
     setActiveWorkspaceId(ws.id);

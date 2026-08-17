@@ -22,7 +22,7 @@ class WorkspaceModel(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(16), nullable=False)
     visibility: Mapped[str] = mapped_column(String(50), nullable=False, default="PRIVATE", index=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="ACTIVE", index=True)
     domain_type: Mapped[str] = mapped_column(String(50), nullable=False, default="TECHNICAL")
@@ -99,18 +99,14 @@ class WorkspaceActivityModel(Base):
 class LearningUnitContentModel(Base):
     __tablename__ = "learning_unit_contents"
     __table_args__ = (
-        Index("idx_unit_contents_ws_title", "workspace_id", "unit_title"),
+        Index("idx_unit_contents_ws_unit", "workspace_id", "unit_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
-    unit_title: Mapped[str] = mapped_column(String(255), nullable=False)
-    summary_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
-    flashcards_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
-    quiz_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
-    problems_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
-    status: Mapped[str] = mapped_column(String(50), nullable=False, default="NOT_GENERATED")
+    unit_id: Mapped[str] = mapped_column(String(255), nullable=False)
     model: Mapped[str | None] = mapped_column(String(100))
+    content_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -121,4 +117,23 @@ class WorkspaceChatModel(Base):
     workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), primary_key=True)
     messages_json: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class UserQuizSubmissionModel(Base):
+    __tablename__ = "user_quiz_submissions"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "unit_id", "user_id", name="uq_user_workspace_unit"),
+        Index("idx_user_quiz_ws_unit", "workspace_id", "unit_id"),
+        Index("idx_user_quiz_user", "user_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    unit_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_questions: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    answers_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

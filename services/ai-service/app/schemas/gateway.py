@@ -128,6 +128,7 @@ class UnitContentResponse(BaseModel):
 
 
 class GenerateUnitContentRequest(BaseModel):
+    unit_id: str | None = None
     unit_title: str
     unit_description: str | None = None
     learning_objectives: list[str] = Field(default_factory=list)

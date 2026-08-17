@@ -10,7 +10,7 @@ export const createWorkspaceRequestSchema = z.object({
     .string()
     .trim()
     .min(1, 'Workspace name is required')
-    .max(255, 'Workspace name must be less than 255 characters'),
+    .max(16, 'Workspace name must be at most 16 characters'),
   domain_type: workspaceDomainTypeSchema.default('TECHNICAL'),
   workspace_code_language: z.string().nullable().optional(),
   visibility: workspaceVisibilitySchema.default('PRIVATE'),

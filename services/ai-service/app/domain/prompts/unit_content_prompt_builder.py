@@ -47,16 +47,23 @@ Your task is to analyze the provided Learning Unit Metadata (Title, Description,
 - `explanation`: Educational explanation of why the correct option is right and others are incorrect.
 
 ### 4. Problems
-- Recommend **exactly 3** existing online coding/practice problems related to this unit.
-- Prefer real, existing online problems from platforms such as: **LeetCode**, **HackerRank**, **Codeforces**.
-- Do NOT invent new problem statements or fake URLs. Return the problem's actual platform URL belonging to `leetcode.com`, `hackerrank.com`, or `codeforces.com`.
-- `title`: Name of the problem (e.g., "Two Sum", "Binary Tree Inorder Traversal").
-- `platform`: Name of the platform ("LeetCode", "HackerRank", or "Codeforces").
-- `difficulty`: Difficulty rating ("Easy", "Medium", "Hard").
-- `description`: A short 1-2 sentence description of the problem statement.
-- `url`: Direct valid link URL to the problem on the platform.
-- `concepts`: Array of short concept tags (e.g., ["Arrays", "Hash Table"]).
-- `relevance`: 1 sentence explaining why this problem is relevant to the learning unit concepts.
+- Recommend **exactly 3** well-known, canonical coding and systems practice problems that directly reinforce the unit's concepts.
+- **Platform Selection**: Use verified problems from **LeetCode**, **HackerRank**, or **Codeforces**.
+- **Canonical Direct URLs ONLY**:
+  - LeetCode format: `https://leetcode.com/problems/<kebab-case-slug>/` (e.g., `https://leetcode.com/problems/task-scheduler/`, `https://leetcode.com/problems/design-circular-queue/`, `https://leetcode.com/problems/lru-cache/`, `https://leetcode.com/problems/the-dining-philosophers/`, `https://leetcode.com/problems/print-in-order/`, `https://leetcode.com/problems/design-bounded-blocking-queue/`, `https://leetcode.com/problems/design-in-memory-file-system/`, `https://leetcode.com/problems/design-parking-system/`).
+  - HackerRank format: `https://www.hackerrank.com/challenges/<kebab-case-slug>/problem`
+  - Codeforces format: `https://codeforces.com/problemset/problem/<contest-id>/<index>`
+- **STRICT URL RULES**:
+  - `url` MUST point directly to the individual problem page.
+  - NEVER output generic root domains or search URLs (e.g., `https://leetcode.com/`, `https://leetcode.com/problemset/all/`, `https://www.hackerrank.com/`, `https://codeforces.com/`).
+  - If unsure of a niche custom problem's slug, choose a classic, widely known canonical problem related to the concept with a verified slug.
+- `title`: Exact official name of the problem (e.g., "Task Scheduler", "Design Circular Queue", "LRU Cache").
+- `platform`: "LeetCode", "HackerRank", or "Codeforces".
+- `difficulty`: "Easy", "Medium", or "Hard".
+- `description`: A clear 1-2 sentence description of the problem statement.
+- `url`: Direct canonical URL matching the exact problem slug.
+- `concepts`: Array of 2-4 concept tags (e.g., ["CPU Scheduling", "Queue", "Greedy"]).
+- `relevance`: 1 sentence explaining specifically how this problem exercises the OS/computer science principles from this unit.
 
 ---
 

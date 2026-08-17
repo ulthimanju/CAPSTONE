@@ -847,24 +847,49 @@ Generate a unified learning bundle containing:
             response_schema=UnitContentResponse,
         )
 
-        # 4. Validate Schema & Filter Problem URLs
+        # 4. Validate Schema & Canonicalize/Filter Problem URLs
         unit_validated = UnitContentResponse.model_validate_json(gemini_res["text"])
 
-        def _is_valid_problem_url(url: str | None) -> bool:
-            if not url or not isinstance(url, str):
+        def _canonicalize_problem(p) -> bool:
+            import re
+            from urllib.parse import urlparse
+            if not p or not getattr(p, "title", None):
                 return False
+            url = (getattr(p, "url", "") or "").strip()
+            title = p.title.strip()
+            platform = (getattr(p, "platform", "") or "").lower()
+            slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+
+            # If URL is a generic root, search URL, or missing path, auto-construct canonical URL
+            if not url or url in ("https://leetcode.com", "https://leetcode.com/", "https://leetcode.com/problemset/all/", "https://leetcode.com/problemset/", "https://www.hackerrank.com", "https://www.hackerrank.com/", "https://codeforces.com", "https://codeforces.com/"):
+                if "leetcode" in platform or "leetcode" in url:
+                    p.url = f"https://leetcode.com/problems/{slug}/"
+                    p.platform = "LeetCode"
+                elif "hackerrank" in platform or "hackerrank" in url:
+                    p.url = f"https://www.hackerrank.com/challenges/{slug}/problem"
+                    p.platform = "HackerRank"
+                elif "codeforces" in platform or "codeforces" in url:
+                    p.url = f"https://codeforces.com/problemset"
+                    p.platform = "Codeforces"
+
             try:
-                from urllib.parse import urlparse
-                parsed = urlparse(url.strip())
+                parsed = urlparse(p.url.strip())
                 if parsed.scheme not in ("http", "https"):
                     return False
                 hostname = (parsed.hostname or "").lower()
                 allowed = ("leetcode.com", "hackerrank.com", "codeforces.com")
-                return any(hostname == d or hostname.endswith("." + d) for d in allowed)
+                if not any(hostname == d or hostname.endswith("." + d) for d in allowed):
+                    return False
+                # If leetcode URL is still generic root, upgrade it using title slug
+                if ("leetcode.com" in hostname) and (parsed.path.rstrip("/") in ("", "/problemset", "/problemset/all")):
+                    p.url = f"https://leetcode.com/problems/{slug}/"
+                elif ("hackerrank.com" in hostname) and (parsed.path.rstrip("/") in ("", "/challenges", "/domains")):
+                    p.url = f"https://www.hackerrank.com/challenges/{slug}/problem"
+                return True
             except Exception:
                 return False
 
-        unit_validated.problems = [p for p in unit_validated.problems if _is_valid_problem_url(p.url)]
+        unit_validated.problems = [p for p in unit_validated.problems if _canonicalize_problem(p)]
 
         # 5. Persist to workspace-service
         workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
@@ -879,6 +904,7 @@ Generate a unified learning bundle containing:
             res = await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/units/content",
                 json={
+                    "unit_id": req.unit_id or req.unit_title,
                     "unit_title": req.unit_title,
                     "summary_json": unit_validated.summary.model_dump(),
                     "flashcards_json": [f.model_dump() for f in unit_validated.flashcards],

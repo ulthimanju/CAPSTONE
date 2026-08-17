@@ -64,13 +64,16 @@ export const updateMemberRoleRequestSchema = z.object({
 });
 
 export const invitationResponseSchema = z.object({
-  id: z.string().uuid(),
-  workspace_id: z.string().uuid(),
-  invited_by: z.string().uuid().optional(),
-  invited_email: z.string().email(),
-  role: workspaceRoleSchema,
-  status: z.enum(['PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED']),
-  created_at: z.string().optional(),
+  id: z.string(),
+  workspace_id: z.string(),
+  invited_by: z.string().optional().nullable(),
+  invited_user_id: z.string().optional().nullable(),
+  invited_email: z.string().nullable().optional(),
+  role: z.any(),
+  status: z.any(),
+  expires_at: z.string().optional().nullable(),
+  created_at: z.string().optional().nullable(),
+  accepted_at: z.string().optional().nullable(),
 });
 
 export const invitationListResponseSchema = z.array(invitationResponseSchema);

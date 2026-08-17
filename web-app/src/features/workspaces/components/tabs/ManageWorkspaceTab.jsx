@@ -72,6 +72,7 @@ import {
   useWorkspaceActivitiesQuery,
   useWorkspaceMemberSSE,
 } from '../../hooks/useMembers';
+import { ActivityTab } from './ActivityTab';
 import { useAuthStore } from '@/store/authStore';
 import { ROUTES } from '@/config/constants';
 import { cn } from '@/lib/cn';
@@ -95,7 +96,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedNewOwnerId, setSelectedNewOwnerId] = useState('');
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
-  const [showActivities, setShowActivities] = useState(false);
 
   const currentUser = useAuthStore((state) => state.user);
 
@@ -104,11 +104,14 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
   const activeTab = useMemo(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'collaborators' || tabParam === 'general') {
+    if (tabParam === 'collaborators' || tabParam === 'activity' || tabParam === 'general') {
       return tabParam;
     }
     if (location.pathname.endsWith('/collaborators')) {
       return 'collaborators';
+    }
+    if (location.pathname.endsWith('/activity')) {
+      return 'activity';
     }
     if (location.pathname.endsWith('/settings')) {
       return 'general';
@@ -240,14 +243,8 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   const {
     data: invitations = [],
     isLoading: isLoadingInvites,
+    refetch: refetchInvitations,
   } = useInvitationsQuery(workspace?.id);
-
-  const {
-    data: activities = [],
-    isLoading: isLoadingActivities,
-  } = useWorkspaceActivitiesQuery(workspace?.id, 50, {
-    enabled: showActivities,
-  });
 
   // Member Action Mutations
   const removeMutation = useRemoveMemberMutation(workspace?.id, {
@@ -402,6 +399,12 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
       label: 'Collaborators',
       icon: Users,
       count: members.length || null,
+    },
+    {
+      id: 'activity',
+      label: 'Activity',
+      icon: LogsIcon,
+      count: null,
     },
     {
       id: 'general',
@@ -1049,60 +1052,12 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
             )}
           </div>
 
-      {/* 4. Activity & Audit Trail Section */}
-      <div className="space-y-4 pt-6 border-t border-sep-line">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-              <LogsIcon className="h-4 w-4 text-accent" />
-              Collaborator Activity Log
-            </h3>
-            <p className="font-body text-xs text-text/70">
-              Audit log of member invitations, role changes, and workspace access events.
-            </p>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowActivities((prev) => !prev)}
-            rightIcon={showActivities ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            className="text-xs font-mono"
-          >
-            {showActivities ? 'Hide Activity' : 'View Activity'}
-          </Button>
         </div>
+      )}
 
-        {showActivities && (
-          <div className="space-y-2 mt-2">
-            {isLoadingActivities ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-accent" />
-              </div>
-            ) : activities.length === 0 ? (
-              <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-4 text-center">
-                <p className="font-mono text-xs text-text/60">No recent activity recorded.</p>
-              </div>
-            ) : (
-              <Card className="divide-y divide-sep-line p-0 overflow-hidden shadow-xs">
-                {activities.slice(0, 25).map((act) => (
-                  <div key={act.id} className="p-3 text-xs font-mono flex items-center justify-between hover:bg-surface-hover/30 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-text">
-                        {formatActivityDescription(act)}
-                      </span>
-                    </div>
-                    <span className="text-text/50 text-[10px] shrink-0">
-                      {formatActivityDate(act.created_at)}
-                    </span>
-                  </div>
-                ))}
-              </Card>
-            )}
-          </div>
-        )}
-      </div>
-      </div>
+      {/* 3. Dedicated Activity Tab Section */}
+      {activeTab === 'activity' && (
+        <ActivityTab workspaceId={workspace.id} members={members} />
       )}
       </div>
 
@@ -1111,6 +1066,9 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
         workspaceId={workspace.id}
         open={isInviteModalOpen}
         onOpenChange={setIsInviteModalOpen}
+        onSuccess={() => {
+          refetchInvitations();
+        }}
         isOwner={isOwner}
       />
 

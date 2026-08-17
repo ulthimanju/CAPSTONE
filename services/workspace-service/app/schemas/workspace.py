@@ -1,18 +1,18 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 from app.constants.enums import WorkspaceStatus, WorkspaceVisibility, WorkspaceRole, WorkspaceDomainType
 
 
 class CreateWorkspaceRequest(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=16, description="Workspace name (1-16 characters)")
     visibility: WorkspaceVisibility = WorkspaceVisibility.PRIVATE
     domain_type: WorkspaceDomainType = WorkspaceDomainType.TECHNICAL
     workspace_code_language: str | None = None
 
 
 class UpdateWorkspaceRequest(BaseModel):
-    name: str | None = None
+    name: str | None = Field(None, min_length=1, max_length=16, description="Workspace name (1-16 characters)")
     domain_type: WorkspaceDomainType | None = None
     workspace_code_language: str | None = None
 
@@ -30,16 +30,19 @@ class SaveTopicsCoveredRequest(BaseModel):
 
 
 class SaveUnitContentRequest(BaseModel):
+    unit_id: str | None = None
     unit_title: str
     summary_json: dict | None = None
     flashcards_json: list[dict] | None = None
     quiz_json: list[dict] | None = None
     problems_json: list[dict] | None = None
+    content_json: dict | None = None
     model: str | None = "gemini-flash-latest"
     status: str = "READY"
 
 
 class UpdateQuizProgressRequest(BaseModel):
+    unit_id: str | None = None
     unit_title: str
     quiz_json: list[dict]
 

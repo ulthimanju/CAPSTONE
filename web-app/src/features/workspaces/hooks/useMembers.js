@@ -7,7 +7,7 @@ export const memberKeys = {
   all: ['workspace-members'],
   members: (workspaceId) => [...memberKeys.all, 'list', workspaceId],
   invitations: (workspaceId) => [...memberKeys.all, 'invitations', workspaceId],
-  activities: (workspaceId) => [...memberKeys.all, 'activities', workspaceId],
+  activities: (workspaceId, page = 1, limit = 10) => [...memberKeys.all, 'activities', workspaceId, page, limit],
 };
 
 /**
@@ -85,12 +85,12 @@ export function useInvitationsQuery(workspaceId, options = {}) {
 }
 
 /**
- * Hook to fetch recent workspace activities / audit trail.
+ * Hook to fetch recent workspace activities / audit trail with pagination.
  */
-export function useWorkspaceActivitiesQuery(workspaceId, limit = 50, options = {}) {
+export function useWorkspaceActivitiesQuery(workspaceId, { page = 1, limit = 10 } = {}, options = {}) {
   return useQuery({
-    queryKey: memberKeys.activities(workspaceId),
-    queryFn: () => memberApi.getActivities(workspaceId, limit),
+    queryKey: memberKeys.activities(workspaceId, page, limit),
+    queryFn: () => memberApi.getActivities(workspaceId, { page, limit }),
     enabled: !!workspaceId,
     staleTime: 1000 * 5,
     ...options,
@@ -105,9 +105,14 @@ export function useInviteMemberMutation(workspaceId, options = {}) {
 
   return useMutation({
     mutationFn: (data) => memberApi.inviteMember(workspaceId, data),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: memberKeys.all });
-      queryClient.refetchQueries({ queryKey: memberKeys.all });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: memberKeys.all }),
+        queryClient.invalidateQueries({ queryKey: memberKeys.invitations(workspaceId) }),
+        queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] }),
+        queryClient.refetchQueries({ queryKey: memberKeys.invitations(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.all }),
+      ]);
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -125,9 +130,13 @@ export function useRemoveMemberMutation(workspaceId, options = {}) {
 
   return useMutation({
     mutationFn: (userId) => memberApi.removeMember(workspaceId, userId),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: memberKeys.all });
-      queryClient.refetchQueries({ queryKey: memberKeys.all });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: memberKeys.all }),
+        queryClient.invalidateQueries({ queryKey: memberKeys.members(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.members(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.all }),
+      ]);
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -145,9 +154,13 @@ export function useUpdateMemberRoleMutation(workspaceId, options = {}) {
 
   return useMutation({
     mutationFn: ({ userId, role, version }) => memberApi.updateMemberRole(workspaceId, userId, role, version),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: memberKeys.all });
-      queryClient.refetchQueries({ queryKey: memberKeys.all });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: memberKeys.all }),
+        queryClient.invalidateQueries({ queryKey: memberKeys.members(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.members(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.all }),
+      ]);
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -165,9 +178,13 @@ export function useResendInvitationMutation(workspaceId, options = {}) {
 
   return useMutation({
     mutationFn: (invitationId) => memberApi.resendInvitation(invitationId),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: memberKeys.all });
-      queryClient.refetchQueries({ queryKey: memberKeys.all });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: memberKeys.all }),
+        queryClient.invalidateQueries({ queryKey: memberKeys.invitations(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.invitations(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.all }),
+      ]);
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -185,9 +202,13 @@ export function useCancelInvitationMutation(workspaceId, options = {}) {
 
   return useMutation({
     mutationFn: (invitationId) => memberApi.cancelInvitation(invitationId),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: memberKeys.all });
-      queryClient.refetchQueries({ queryKey: memberKeys.all });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: memberKeys.all }),
+        queryClient.invalidateQueries({ queryKey: memberKeys.invitations(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.invitations(workspaceId) }),
+        queryClient.refetchQueries({ queryKey: memberKeys.all }),
+      ]);
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -261,11 +282,15 @@ export function useAcceptUserInvitationMutation(options = {}) {
 
   return useMutation({
     mutationFn: (invitationId) => memberApi.acceptInvitation(invitationId),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] });
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      queryClient.invalidateQueries({ queryKey: memberKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['workspaces'] }),
+        queryClient.resetQueries({ queryKey: ['workspaces'] }),
+        queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] }),
+        queryClient.refetchQueries({ queryKey: ['user-pending-invitations'] }),
+        queryClient.invalidateQueries({ queryKey: memberKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+      ]);
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -283,10 +308,13 @@ export function useRejectUserInvitationMutation(options = {}) {
 
   return useMutation({
     mutationFn: (invitationId) => memberApi.rejectInvitation(invitationId),
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] });
-      queryClient.invalidateQueries({ queryKey: memberKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    onSuccess: async (data, variables, context) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] }),
+        queryClient.invalidateQueries({ queryKey: memberKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+        queryClient.refetchQueries({ queryKey: ['user-pending-invitations'] }),
+      ]);
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
