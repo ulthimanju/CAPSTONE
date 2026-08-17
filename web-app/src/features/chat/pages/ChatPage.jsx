@@ -127,25 +127,25 @@ export function ChatPage() {
   const todayFormatted = formatMessageDate(new Date().toISOString());
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#f5efe3] min-h-0 flex-1">
+    <div className="flex flex-col h-full w-full bg-bg min-h-0 flex-1">
       {/* Messages Viewport */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-8 lg:px-12 py-6 space-y-5 min-h-0">
         {/* Date Divider */}
         <div className="flex items-center my-4">
-          <div className="flex-1 border-t border-[#cfc5ae]" />
-          <span className="px-4 font-mono text-[11px] font-medium tracking-widest text-[#7a715d] uppercase">
+          <div className="flex-1 border-t border-sep-line" />
+          <span className="px-4 font-mono text-[11px] font-medium tracking-widest text-text/60 uppercase">
             {messages.length > 0 ? formatMessageDate(messages[0].timestamp) : todayFormatted}
           </span>
-          <div className="flex-1 border-t border-[#cfc5ae]" />
+          <div className="flex-1 border-t border-sep-line" />
         </div>
 
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#dfd7c2] text-accent mb-3 shadow-sm border border-[#cfc5ae]">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-sand text-accent mb-3 shadow-sm border border-sep-line">
               <Sparkle className="h-6 w-6" />
             </div>
-            <h3 className="font-display text-base font-bold text-[#2c271e]">Ask Your AI Study Tutor</h3>
-            <p className="mt-1 max-w-md text-xs text-[#7a715d] font-sans">
+            <h3 className="font-display text-base font-bold text-text">Ask Your AI Study Tutor</h3>
+            <p className="mt-1 max-w-md text-xs text-text/70 font-sans">
               Interactive tutoring anchored to your uploaded notes, slides, and textbooks. Type your question below to start learning.
             </p>
           </div>
@@ -160,23 +160,23 @@ export function ChatPage() {
                 className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}
               >
                 {isUser ? (
-                  /* User Bubble (Right - Rust/Terracotta) */
-                  <div className="relative group max-w-[80%] sm:max-w-[70%] rounded-md bg-[#9E5123] border border-[#88431b] p-3.5 text-white shadow-xs">
+                  /* User Bubble (Right - Rust Gradient) */
+                  <div className="relative group max-w-[80%] sm:max-w-[70%] rounded-md bg-gradient-to-br from-[#E08850] to-[#C1622D] border border-accent/40 p-3.5 text-white shadow-xs">
                     <p className="text-sm font-sans leading-relaxed text-white whitespace-pre-wrap">
                       {msg.content}
                     </p>
-                    <div className="mt-1 text-right font-mono text-[10px] text-white/70">
+                    <div className="mt-1 text-right font-mono text-[10px] text-white/80">
                       {timeStr}
                     </div>
                   </div>
                 ) : (
                   /* Assistant Bubble (Left - Sand/Parchment) */
-                  <div className="relative group max-w-[85%] sm:max-w-[75%] rounded-md bg-[#dfd7c2] border border-[#c4ba9f] p-3.5 text-[#2c271e] shadow-xs">
-                    <div className="text-sm font-sans leading-relaxed text-[#2c271e]">
+                  <div className="relative group max-w-[85%] sm:max-w-[75%] rounded-md bg-sand border border-sep-line p-3.5 text-text shadow-xs">
+                    <div className="text-sm font-sans leading-relaxed text-text">
                       <MarkdownRenderer content={msg.content} />
                     </div>
 
-                    <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-[#7a715d] border-t border-[#cfc5ae]/40 pt-1.5">
+                    <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-text/60 border-t border-sep-line/60 pt-1.5">
                       <button
                         type="button"
                         onClick={() => handleCopy(msg.content, index)}
@@ -206,9 +206,9 @@ export function ChatPage() {
 
         {sendMutation.isPending && (
           <div className="flex justify-start">
-            <div className="max-w-[75%] rounded-md bg-[#dfd7c2] border border-[#c4ba9f] p-3.5 shadow-xs flex items-center gap-3">
+            <div className="max-w-[75%] rounded-md bg-sand border border-sep-line p-3.5 shadow-xs flex items-center gap-3">
               <CircleNotch className="h-4 w-4 animate-spin text-accent" />
-              <span className="font-mono text-xs text-[#7a715d]">
+              <span className="font-mono text-xs text-text/70">
                 Analyzing documents & synthesizing response...
               </span>
             </div>
@@ -219,7 +219,7 @@ export function ChatPage() {
       </div>
 
       {/* Docked Bottom Input Bar */}
-      <div className="border-t border-[#cfc5ae] bg-[#e6ddc8] px-4 sm:px-8 lg:px-12 py-3.5 w-full">
+      <div className="border-t border-sep-line bg-surface-raised px-4 sm:px-8 lg:px-12 py-3.5 w-full">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -234,12 +234,12 @@ export function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             disabled={sendMutation.isPending}
-            className="flex-1 rounded-md border border-[#cfc5ae] bg-[#f7f5ed] px-4 py-2.5 font-sans text-xs sm:text-sm text-[#2c271e] placeholder:text-[#8a8069] focus:outline-none focus:border-[#9E5123] disabled:opacity-50 shadow-inner-xs transition-colors"
+            className="flex-1 rounded-md border border-sep-line bg-bg px-4 py-2.5 font-sans text-xs sm:text-sm text-text placeholder:text-text/40 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-50 shadow-inner-xs transition-colors"
           />
           <button
             type="submit"
             disabled={!input.trim() || sendMutation.isPending}
-            className="flex items-center justify-center rounded-md bg-[#9E5123] px-6 py-2.5 font-sans text-xs sm:text-sm font-medium text-white shadow-xs transition-all hover:bg-[#88431b] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            className="flex items-center justify-center rounded-md bg-gradient-to-br from-[#E08850] to-[#C1622D] hover:from-[#E89860] hover:to-[#C96C35] px-6 py-2.5 font-sans text-xs sm:text-sm font-medium text-white shadow-theme transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
           >
             {sendMutation.isPending ? (
               <CircleNotch className="h-4 w-4 animate-spin" />

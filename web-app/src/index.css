@@ -3,31 +3,30 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   Field Journal — Design Tokens
+   Field Journal — Design Tokens & Semantic Roles
    Warm editorial theme (Fraunces + Work Sans + IBM Plex Mono)
    ========================================================================== */
 
 :root {
-    /* ---- Base palette --------------------------------------------------
-       The raw hues the rest of the system is built from. Prefer the
-       semantic tokens below in components; reach for these only when
-       defining new semantic tokens. */
-    --color-paper: #F2EBDC;   /* light background */
-    --color-ink: #2A2318;     /* light text */
-    --color-rust: #A8551E;    /* primary accent */
-    --color-sage: #66774A;    /* secondary accent (raw) */
-    --color-sage-text: #4E5C38; /* sage, darkened for AA text contrast on light */
-    --color-sand: #E1D4B8;    /* light surface / card background */
-    --color-sep-line: #B5A482; /* light border / separator */
-    --color-danger: #8C3D12;  /* danger/error, darkened for AA on light */
-    --color-success: #3F5A2A; /* success, darkened for AA on light */
-    --color-on-accent: #FFFFFF; /* text/icon color placed on top of accent fills */
+    /* ---- Base Palette -------------------------------------------------- */
+    --color-paper: #F4EEE0;       /* Page background: Sand light */
+    --color-ink: #2B2620;         /* Primary text: Ink */
+    --color-sand: #E8DCC8;        /* Card / panel background: Sand */
+    --color-rust: #C1622D;        /* Primary accent: Solid Rust */
+    --color-rust-light: #E08850;  /* Rust gradient start */
+    --color-sage: #7A8B6F;        /* Secondary accent / success: Solid Sage */
+    --color-sage-light: #A3B598;  /* Sage gradient start */
+    --color-sage-text: #404E35;   /* Dark sage text for AA contrast on sage badges */
+    --color-sep-line: rgba(43, 38, 32, 0.12); /* Borders / dividers: Ink @ 12% */
+    --color-danger: #9A4518;      /* Danger/error */
+    --color-success: #7A8B6F;     /* Success / completed: Solid Sage */
+    --color-on-accent: #FFFFFF;   /* Text/icon on accent fills */
+    --color-knockout: #F4EEE0;    /* Negative-space fill inside icons / cutouts */
 
-    /* ---- Semantic tokens -------------------------------------------------
-       What components consume. */
+    /* ---- Semantic Tokens ------------------------------------------------- */
     --bg: var(--color-paper);
     --text: var(--color-ink);
-    --border: var(--color-sand);
+    --border: var(--color-sep-line);
     --accent: var(--color-rust);
     --sage: var(--color-sage);
     --sage-text: var(--color-sage-text);
@@ -37,25 +36,31 @@
     --success: var(--color-success);
     --on-accent: var(--color-on-accent);
 
-    /* ---- Elevated surfaces & interaction states --------------------------
-       Used for cards, panels, and sidebar backgrounds that sit "above"
-       the base --bg, plus their hover/pressed states. */
-    --surface-raised: var(--sand);        /* card / sidebar / panel background */
-    --surface-hover: #D7C7A3;             /* distinct hover background on sand surfaces */
-    --surface-hover-strong: #CFC09B;      /* stronger hover, e.g. dropdown items */
-    --shadow-color: rgba(42, 35, 24, 0.1);/* dropdown / card drop shadows */
-    --danger-tint: rgba(168, 85, 30, 0.1);/* subtle danger hover background */
+    /* ---- Elevated Surfaces & Interaction States -------------------------- */
+    --surface-raised: var(--color-sand);  /* Card / sidebar / panel background */
+    --surface-hover: #DDD0BA;             /* Distinct hover background on sand surfaces */
+    --surface-hover-strong: #D5C7AF;      /* Stronger hover, e.g. dropdown items */
+    --shadow-color: rgba(43, 38, 32, 0.17);
+    --shadow-ink: 0 16px 18px rgba(43, 38, 32, 0.17);
+    --danger-tint: rgba(193, 98, 45, 0.12);
 
-    /* ---- Radius & focus ---------------------------------------------- */
+    /* ---- Gradients (135deg top-left to bottom-right) --------------------- */
+    --gradient-rust: linear-gradient(135deg, #E08850 0%, #C1622D 100%);
+    --gradient-rust-hover: linear-gradient(135deg, #E89860 0%, #C96C35 100%);
+    --gradient-sage: linear-gradient(135deg, #A3B598 0%, #7A8B6F 100%);
+    --gradient-sage-hover: linear-gradient(135deg, #B0C1A6 0%, #87997C 100%);
+    --gradient-fold: linear-gradient(135deg, #C1622D 0%, #9A4518 100%);
+
+    /* ---- Radius & Focus ---------------------------------------------- */
     --radius-ui: 4px;
     --focus-ring-width: 3px;
-    --focus-ring: var(--focus-ring-width) solid var(--accent);
+    --focus-ring: var(--focus-ring-width) solid rgba(193, 98, 45, 0.4);
     --focus-ring-offset: 2px;
 
     /* ---- Typography ---------------------------------------------------- */
-    --font-display: 'Fraunces', serif;      /* headings */
-    --font-body: 'Work Sans', sans-serif;   /* body copy, UI labels */
-    --font-mono: 'IBM Plex Mono', monospace;/* eyebrows, tags, badges, timestamps */
+    --font-display: 'Fraunces', serif;      /* Headings */
+    --font-body: 'Work Sans', sans-serif;   /* Body copy, UI labels */
+    --font-mono: 'IBM Plex Mono', monospace;/* Eyebrows, tags, badges, timestamps */
 }
 
 @layer base {
@@ -133,14 +138,14 @@
 
 .hljs-comment,
 .hljs-quote {
-  color: #8C7B5D !important;
+  color: rgba(43, 38, 32, 0.55) !important;
   font-style: italic;
   opacity: 0.85;
 }
 
 .hljs-number,
 .hljs-literal {
-  color: #8C3D12 !important;
+  color: #9A4518 !important;
   font-weight: 600;
 }
 

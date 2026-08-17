@@ -31,10 +31,10 @@ function GoogleIcon({ className = 'h-5 w-5 shrink-0' }) {
 function SynapseDocBadge({ className = 'h-11 w-11' }) {
   return (
     <div
-      className={`inline-flex items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs ${className}`}
+      className={`inline-flex items-center justify-center rounded-xl border border-sep-line bg-sand text-accent shadow-xs ${className}`}
       aria-hidden="true"
     >
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="4" y="3" width="16" height="18" rx="2" ry="2" />
         <line x1="8" y1="8" x2="16" y2="8" />
         <line x1="8" y1="12" x2="16" y2="12" />
@@ -61,25 +61,24 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col justify-between bg-[#F4EFE6] font-body text-[#2A2318] p-6 sm:p-10 lg:p-14 overflow-hidden selection:bg-[#A8551E]/20">
+    <div className="relative flex min-h-screen w-full flex-col justify-between bg-bg font-body text-text p-6 sm:p-10 lg:p-14 overflow-hidden selection:bg-accent/20">
       {/* Bottom-left subtle decorative dot pattern */}
       <div
-        className="pointer-events-none absolute -bottom-4 -left-4 h-64 w-64 opacity-35 [mask-image:radial-gradient(circle_at_bottom_left,black_20%,transparent_75%)]"
+        className="pointer-events-none absolute -bottom-4 -left-4 h-64 w-64 opacity-25 [mask-image:radial-gradient(circle_at_bottom_left,black_20%,transparent_75%)]"
         style={{
-          backgroundImage: 'radial-gradient(circle, #8C7A5B 1.75px, transparent 1.75px)',
+          backgroundImage: 'radial-gradient(circle, #7A6F5D 1.75px, transparent 1.75px)',
           backgroundSize: '18px 18px',
         }}
         aria-hidden="true"
       />
 
       {/* Top Header: Brand & Tagline */}
-      <header className="relative z-10 flex items-center gap-3">
-        <SynapseDocBadge className="h-10 w-10 sm:h-11 sm:w-11" />
+      <header className="relative z-10 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[#2A2318]">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-text">
             SYNAPSE
           </h1>
-          <p className="font-mono text-[10px] sm:text-xs tracking-widest text-[#7D705C] uppercase mt-0.5">
+          <p className="font-mono text-[10px] sm:text-xs tracking-widest text-text/60 uppercase mt-0.5">
             UNDERSTAND. CONNECT. REMEMBER.
           </p>
         </div>
@@ -91,27 +90,27 @@ export function LoginPage() {
         <div className="flex flex-col space-y-7 lg:col-span-7 xl:col-span-7 max-w-xl">
           {/* Main Headline */}
           <div>
-            <h2 className="font-display text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-tight text-[#2A2318] leading-[1.12]">
+            <h2 className="font-display text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-tight text-text leading-[1.12]">
               Your documents,<br />
-              <span className="italic font-serif font-normal text-[#A8551E]">intelligently</span> summarized.
+              <span className="italic font-serif font-normal text-accent">intelligently</span> summarized.
             </h2>
 
             {/* Amber accent underline indicator */}
-            <div className="mt-4 h-1 w-14 rounded-full bg-[#A8551E]" aria-hidden="true" />
+            <div className="mt-4 h-1 w-14 rounded-full bg-accent" aria-hidden="true" />
           </div>
 
           {/* 4 Feature Items */}
           <div className="flex flex-col space-y-4 pt-1">
             {/* Feature 1: Smart Summaries */}
             <div className="flex items-start gap-3.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sep-line bg-sand text-accent shadow-xs">
                 <FileText className="h-5 w-5" />
               </div>
               <div className="pt-0.5">
-                <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">
+                <h3 className="font-body text-sm sm:text-base font-semibold text-text">
                   Smart Summaries
                 </h3>
-                <p className="font-body text-xs sm:text-sm text-[#7D705C]">
+                <p className="font-body text-xs sm:text-sm text-text/65">
                   Extract key points and core concepts instantly.
                 </p>
               </div>
@@ -119,14 +118,14 @@ export function LoginPage() {
 
             {/* Feature 2: Deep Insights */}
             <div className="flex items-start gap-3.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sep-line bg-sand text-accent shadow-xs">
                 <Lightbulb className="h-5 w-5" />
               </div>
               <div className="pt-0.5">
-                <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">
+                <h3 className="font-body text-sm sm:text-base font-semibold text-text">
                   Deep Insights
                 </h3>
-                <p className="font-body text-xs sm:text-sm text-[#7D705C]">
+                <p className="font-body text-xs sm:text-sm text-text/65">
                   Understand the context, connections, and implications.
                 </p>
               </div>
@@ -134,14 +133,14 @@ export function LoginPage() {
 
             {/* Feature 3: Organized Knowledge */}
             <div className="flex items-start gap-3.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sep-line bg-sand text-accent shadow-xs">
                 <Share className="h-5 w-5" />
               </div>
               <div className="pt-0.5">
-                <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">
+                <h3 className="font-body text-sm sm:text-base font-semibold text-text">
                   Organized Knowledge
                 </h3>
-                <p className="font-body text-xs sm:text-sm text-[#7D705C]">
+                <p className="font-body text-xs sm:text-sm text-text/65">
                   Structure information for better recall and learning.
                 </p>
               </div>
@@ -149,14 +148,14 @@ export function LoginPage() {
 
             {/* Feature 4: Secure & Private */}
             <div className="flex items-start gap-3.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sep-line bg-sand text-accent shadow-xs">
                 <Shield className="h-5 w-5" />
               </div>
               <div className="pt-0.5">
-                <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">
+                <h3 className="font-body text-sm sm:text-base font-semibold text-text">
                   Secure &amp; Private
                 </h3>
-                <p className="font-body text-xs sm:text-sm text-[#7D705C]">
+                <p className="font-body text-xs sm:text-sm text-text/65">
                   Your documents and data are always protected.
                 </p>
               </div>
@@ -166,17 +165,17 @@ export function LoginPage() {
 
         {/* Right Authentication Card */}
         <div className="flex justify-center lg:col-span-5 xl:col-span-5 lg:justify-end">
-          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-[#E4DBCB] bg-[#FAF6EE]/90 p-8 sm:p-12 text-center shadow-xl shadow-[#2A2318]/5 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-sep-line bg-surface-raised/90 p-8 sm:p-12 text-center shadow-theme backdrop-blur-xs">
             {/* Top Centered Doc Icon */}
             <div className="mb-6 flex justify-center">
               <SynapseDocBadge className="h-12 w-12 sm:h-14 sm:w-14" />
             </div>
 
             {/* Card Heading */}
-            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#2A2318]">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-text">
               Welcome to Synapse
             </h2>
-            <p className="mt-2 font-body text-xs sm:text-sm text-[#7D705C]">
+            <p className="mt-2 font-body text-xs sm:text-sm text-text/65">
               Sign in to continue to your workspace
             </p>
 
@@ -186,7 +185,7 @@ export function LoginPage() {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={isRedirecting}
-                className="group relative flex w-full items-center justify-center gap-3 rounded-xl bg-[#A8551E] px-6 py-3.5 font-body text-sm sm:text-base font-medium text-white shadow-md shadow-[#A8551E]/20 transition-all duration-200 hover:bg-[#8F4414] hover:shadow-lg hover:shadow-[#A8551E]/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A8551E] focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none"
+                className="group relative flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-br from-[#E08850] to-[#C1622D] hover:from-[#E89860] hover:to-[#C96C35] px-6 py-3.5 font-body text-sm sm:text-base font-medium text-white shadow-theme transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none"
                 aria-label="Continue with Google"
               >
                 {isRedirecting ? (
