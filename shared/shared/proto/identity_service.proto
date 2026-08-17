@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package identity;
+
+message UserItem {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string role = 4;
+  string picture_url = 5;
+}
+
+message BatchUserRequest {
+  repeated string user_ids = 1;
+}
+
+message BatchUserResponse {
+  repeated UserItem users = 1;
+}
+
+message UserByEmailRequest {
+  string email = 1;
+}
+
+message UserResponse {
+  bool found = 1;
+  UserItem user = 2;
+}
+
+service IdentityService {
+  rpc GetUsersBatch(BatchUserRequest) returns (BatchUserResponse);
+  rpc GetUserByEmail(UserByEmailRequest) returns (UserResponse);
+}

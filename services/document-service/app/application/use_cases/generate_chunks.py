@@ -173,47 +173,45 @@ class GenerateChunksUseCase:
 
                     # Push updated topics_covered to workspace-service
                     if topics_md:
-                        await client.put(
-                            f"{workspace_service_url}/api/v1/workspaces/{doc.workspace_id}/topics",
-                            json={"topics_covered": topics_md},
-                            headers=headers,
-                        )
+                        try:
+                            await client.put(
+                                f"{workspace_service_url}/api/v1/workspaces/{doc.workspace_id}/topics",
+                                json={"topics_covered": topics_md},
+                                headers=headers,
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to push topics to workspace-service: {e}")
 
-                    # Trigger embeddings in rag-service
-                    await client.post(
-                        f"{rag_service_url}/api/v1/rag/embeddings/generate",
-                        json={
-                            "workspace_id": str(doc.workspace_id),
-                            "document_id": str(doc.id),
-                            "document_name": doc.original_filename,
-                            "chunks": [
-                                {
-                                    "chunk_id": str(c.id),
-                                    "chunk_index": c.chunk_index,
-                                    "content": c.content,
-                                }
-                                for c in created_chunks
-                            ]
-                        }
-                    )
-                    # Broadcast Real-Time Platform Event over SSE via notification-service
-                    await client.post(
-                        f"{notification_url}/api/v1/notifications/events",
-                        json={
-                            "event_name": "VectorIndexing",
-                            "service": "document-service",
-                            "resource_type": "DOCUMENT",
-                            "resource_id": str(doc.id),
-                            "workspace_id": str(doc.workspace_id),
-                            "user_id": str(doc.uploaded_by),
-                            "status": "COMPLETED",
-                            "progress": 100,
-                            "message": f"Document '{doc.original_filename}' successfully indexed into pgvector",
-                            "payload": {"document_id": str(doc.id), "status": "READY_FOR_RAG"}
-                        }
-                    )
+                # Publish durable RAG ingestion business event to RabbitMQ topic exchange
+                from shared.events import DomainEvent, publish_domain_event
+                rag_event = DomainEvent(
+                    event_type="document.rag.ingest",
+                    workspace_id=str(doc.workspace_id),
+                    user_id=str(doc.uploaded_by),
+                    payload={
+                        "workspace_id": str(doc.workspace_id),
+                        "document_id": str(doc.id),
+                        "document_name": doc.original_filename,
+                        "chunks": [
+                            {
+                                "chunk_id": str(c.id),
+                                "chunk_index": c.chunk_index,
+                                "content": c.content,
+                            }
+                            for c in created_chunks
+                        ]
+                    }
+                )
+                published = await publish_domain_event("cpa.rag.ingest", rag_event)
+                if not published:
+                    # Fallback to direct HTTP if RabbitMQ is not reachable
+                    async with httpx.AsyncClient(timeout=30.0) as fb_client:
+                        await fb_client.post(
+                            f"{rag_service_url}/api/v1/rag/embeddings/generate",
+                            json=rag_event.payload,
+                        )
             except Exception as rag_err:
-                logger.warning(f"Automatic RAG embedding / topics update trigger failed: {rag_err}", extra={"document_id": str(document_id)})
+                logger.warning(f"Automatic RAG embedding trigger failed: {rag_err}", extra={"document_id": str(document_id)})
 
 
             responses = [ChunkResponse.model_validate(c) for c in created_chunks]

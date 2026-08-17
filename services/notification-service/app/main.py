@@ -11,8 +11,11 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.infrastructure.database.mongo import init_mongo_indices, close_mongo_client
+    from app.consumers.notification_consumer import start_notification_consumer
     await init_mongo_indices()
+    consumer_task = await start_notification_consumer()
     yield
+    consumer_task.cancel()
     await close_mongo_client()
 
 app = FastAPI(title="Notification Service", version="1.0.0", lifespan=lifespan)

@@ -64,7 +64,13 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 import logging
                 logging.getLogger(__name__).warning("Could not apply postgres session triggers: %s", e)
+    from app.grpc_server import start_identity_grpc_server
+    grpc_server = await start_identity_grpc_server(port=50051)
     yield
+    try:
+        await grpc_server.stop(grace=3.0)
+    except Exception:
+        pass
     try:
         await engine.dispose()
     except Exception:

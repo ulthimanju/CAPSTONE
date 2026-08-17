@@ -51,37 +51,41 @@ async def dispatch_workspace_notification(
     except Exception as e:
         logger.warning(f"Failed to publish workspace SSE event: {e}")
 
-    # 2. Dispatch to notification-service for persistence in MongoDB
+    # 2. Dispatch durable business event to RabbitMQ topic exchange
+    from shared.events import DomainEvent, publish_domain_event
+
     recipients = recipient_ids if recipient_ids else ([actor_id] if actor_id else [])
     for rec_id in recipients:
         if not rec_id:
             continue
         try:
-            payload = {
-                "event_id": str(uuid.uuid4()),
-                "event_name": event_name,
-                "service": "workspace-service",
-                "resource_type": "workspace",
-                "resource_id": ws_str,
-                "workspace_id": ws_str,
-                "workspace_name": workspace_name,
-                "user_id": str(rec_id),
-                "recipient_id": str(rec_id),
-                "actor_id": actor_str,
-                "actor_name": actor_name,
-                "status": "COMPLETED",
-                "title": title,
-                "message": message,
-                "metadata": meta,
-                "payload": meta,
-                "occurred_at": datetime.now(timezone.utc).isoformat(),
-            }
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                resp = await client.post(
-                    f"{NOTIFICATION_SERVICE_URL}/api/v1/notifications/events",
-                    json=payload,
-                )
-                if resp.status_code >= 400:
-                    logger.warning(f"Notification service returned {resp.status_code}: {resp.text}")
+            event = DomainEvent(
+                event_type=event_name,
+                workspace_id=ws_str,
+                user_id=str(rec_id),
+                payload={
+                    "event_name": event_name,
+                    "service": "workspace-service",
+                    "resource_type": "workspace",
+                    "resource_id": ws_str,
+                    "workspace_id": ws_str,
+                    "workspace_name": workspace_name,
+                    "user_id": str(rec_id),
+                    "recipient_id": str(rec_id),
+                    "actor_id": actor_str,
+                    "actor_name": actor_name,
+                    "title": title,
+                    "message": message,
+                    "metadata": meta,
+                }
+            )
+            success = await publish_domain_event("cpa.notifications.workspace", event)
+            if not success:
+                # Fallback to direct HTTP if RabbitMQ is unreachable
+                async with httpx.AsyncClient(timeout=3.0) as client:
+                    await client.post(
+                        f"{NOTIFICATION_SERVICE_URL}/api/v1/notifications/events",
+                        json=event.payload,
+                    )
         except Exception as exc:
-            logger.warning(f"Failed to dispatch workspace notification to notification-service: {exc}")
+            logger.warning(f"Failed to dispatch workspace notification to RabbitMQ: {exc}")

@@ -59,23 +59,29 @@ class InviteMemberUseCase:
 
         if target_email:
             try:
-                async with httpx.AsyncClient(timeout=4.0) as client:
-                    lookup_res = await client.get(
-                        f"{identity_url}/api/v1/users/lookup/email",
-                        params={"email": target_email}
-                    )
-                    if lookup_res.status_code == 404:
-                        raise HTTPException(
-                            status_code=404,
-                            detail=f"No registered account found with email '{target_email}'. The user must first sign in to CPA before being invited."
+                from app.infrastructure.clients.identity_grpc_client import IdentityGrpcClient
+                grpc_client = IdentityGrpcClient()
+                grpc_user = await grpc_client.get_user_by_email(target_email)
+                if grpc_user:
+                    target_user_id = UUID(grpc_user["id"])
+                else:
+                    # Fallback to HTTP check if gRPC returned empty
+                    async with httpx.AsyncClient(timeout=3.0) as client:
+                        lookup_res = await client.get(
+                            f"{identity_url}/api/v1/users/lookup/email",
+                            params={"email": target_email}
                         )
-                    elif lookup_res.status_code == 200:
-                        user_info = lookup_res.json()
-                        target_user_id = UUID(user_info["id"])
+                        if lookup_res.status_code == 404:
+                            raise HTTPException(
+                                status_code=404,
+                                detail=f"No registered account found with email '{target_email}'. The user must first sign in to CPA before being invited."
+                            )
+                        elif lookup_res.status_code == 200:
+                            user_info = lookup_res.json()
+                            target_user_id = UUID(user_info["id"])
             except HTTPException:
                 raise
             except Exception as exc:
-                # If identity-service lookup fails due to transient connection, proceed with caution or log
                 pass
 
         # 3. Prevent self-invitation

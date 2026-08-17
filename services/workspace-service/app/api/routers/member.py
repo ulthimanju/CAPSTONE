@@ -42,15 +42,25 @@ router = APIRouter(prefix="/workspaces/{workspace_id}", tags=["Members & Collabo
 
 
 async def _resolve_user_profiles(user_ids: list[UUID]) -> dict[str, dict]:
-    """Helper to batch-resolve user names and emails from identity-service."""
+    """Helper to batch-resolve user names and emails from identity-service via gRPC."""
     if not user_ids:
         return {}
+    str_ids = [str(uid) for uid in user_ids]
+    try:
+        from app.infrastructure.clients.identity_grpc_client import IdentityGrpcClient
+        grpc_client = IdentityGrpcClient()
+        profiles = await grpc_client.get_users_batch(str_ids)
+        if profiles:
+            return profiles
+    except Exception as err:
+        logger.debug(f"Identity gRPC resolution skipped ({err}), falling back to HTTP")
+
     identity_url = os.environ.get("IDENTITY_SERVICE_URL", "http://identity-service:8000").rstrip("/")
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=3.0) as client:
             res = await client.post(
                 f"{identity_url}/api/v1/users/batch",
-                json={"user_ids": [str(uid) for uid in user_ids]}
+                json={"user_ids": str_ids}
             )
             if res.status_code == 200:
                 return res.json()

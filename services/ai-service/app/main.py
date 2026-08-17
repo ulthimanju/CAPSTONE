@@ -10,7 +10,13 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from app.grpc_server import start_ai_grpc_server
+    grpc_server = await start_ai_grpc_server(port=50051)
     yield
+    try:
+        await grpc_server.stop(grace=3.0)
+    except Exception:
+        pass
 
 app = FastAPI(title="AI Service", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CorrelationIdMiddleware)

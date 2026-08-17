@@ -8,7 +8,10 @@ from app.api.routers.rag import router as rag_router
 async def lifespan(app: FastAPI):
     # Initialize pgvector database schema on startup
     await init_db()
+    from app.consumers.rag_ingest_consumer import start_rag_ingest_consumer
+    consumer_task = await start_rag_ingest_consumer()
     yield
+    consumer_task.cancel()
     try:
         from app.infrastructure.database.session import engine
         await engine.dispose()

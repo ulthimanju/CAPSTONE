@@ -1,14 +1,48 @@
+import logging
 import os
+from typing import List, Optional
+import grpc
 import httpx
 from shared.config import get_default_httpx_timeout
+from shared.grpc import ai_service_pb2, ai_service_pb2_grpc
+
+logger = logging.getLogger(__name__)
 
 
 class AIServiceClient:
-    def __init__(self, base_url: str | None = None):
+    def __init__(self, base_url: Optional[str] = None, grpc_target: Optional[str] = None):
         self.base_url = base_url or os.environ.get("AI_SERVICE_URL", "http://ai-service:8000")
+        self.grpc_target = grpc_target or os.environ.get("AI_GRPC_TARGET", "ai-service:50051")
         self.timeout = get_default_httpx_timeout(connect=5.0, read=30.0, write=30.0, pool=5.0)
+        self._channel: Optional[grpc.aio.Channel] = None
+        self._stub: Optional[ai_service_pb2_grpc.AIServiceStub] = None
 
-    async def get_embeddings(self, texts: list[str]) -> list[list[float]]:
+    def _get_grpc_stub(self) -> ai_service_pb2_grpc.AIServiceStub:
+        if self._stub is None or self._channel is None:
+            self._channel = grpc.aio.insecure_channel(
+                self.grpc_target,
+                options=[
+                    ("grpc.max_receive_message_length", 25 * 1024 * 1024),
+                    ("grpc.keepalive_time_ms", 30000),
+                ],
+            )
+            self._stub = ai_service_pb2_grpc.AIServiceStub(self._channel)
+        return self._stub
+
+    async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+        if not texts:
+            return []
+
+        # 1. Primary: High-speed Binary gRPC
+        try:
+            stub = self._get_grpc_stub()
+            req = ai_service_pb2.EmbeddingRequest(texts=texts)
+            resp = await stub.GetEmbeddings(req, timeout=30.0)
+            return [list(vec.values) for vec in resp.embeddings]
+        except Exception as e:
+            logger.warning(f"gRPC GetEmbeddings failed ({e}), falling back to HTTP")
+
+        # 2. Secondary: HTTP REST Fallback
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             resp = await client.post(
                 f"{self.base_url}/api/v1/ai/embeddings",
@@ -18,7 +52,22 @@ class AIServiceClient:
             data = resp.json()
             return data["vectors"]
 
-    async def generate_text(self, prompt: str, system_instruction: str | None = None) -> str:
+    async def generate_text(self, prompt: str, system_instruction: Optional[str] = None) -> str:
+        # 1. Primary: gRPC
+        try:
+            stub = self._get_grpc_stub()
+            req = ai_service_pb2.GenerateTextRequest(
+                prompt=prompt,
+                system_instruction=system_instruction or "",
+                temperature=0.2,
+                max_tokens=2048,
+            )
+            resp = await stub.GenerateText(req, timeout=60.0)
+            return resp.text
+        except Exception as e:
+            logger.warning(f"gRPC GenerateText failed ({e}), falling back to HTTP")
+
+        # 2. Secondary: HTTP REST Fallback
         long_timeout = get_default_httpx_timeout(connect=5.0, read=60.0, write=60.0, pool=5.0)
         async with httpx.AsyncClient(timeout=long_timeout) as client:
             resp = await client.post(
@@ -28,3 +77,7 @@ class AIServiceClient:
             resp.raise_for_status()
             data = resp.json()
             return data["text"]
+
+    async def close(self):
+        if self._channel is not None:
+            await self._channel.close()

@@ -158,8 +158,17 @@ async def _publish_summary_event(
             "payload": {"workspace_id": workspace_id, "workspace_name": workspace_name},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
-            await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+        from shared.events import DomainEvent, publish_domain_event
+        event = DomainEvent(
+            event_type="SummaryGeneration",
+            workspace_id=workspace_id,
+            user_id=user_id,
+            payload=payload,
+        )
+        published = await publish_domain_event("cpa.notifications.ai", event)
+        if not published:
+            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
+                await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
         logger.warning(f"Notice: Failed to publish SummaryGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
@@ -580,8 +589,17 @@ async def _publish_learning_path_event(
             "payload": {"workspace_id": workspace_id, "workspace_name": workspace_name},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
-            await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+        from shared.events import DomainEvent, publish_domain_event
+        event = DomainEvent(
+            event_type="LearningPathGeneration",
+            workspace_id=workspace_id,
+            user_id=user_id,
+            payload=payload,
+        )
+        published = await publish_domain_event("cpa.notifications.ai", event)
+        if not published:
+            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
+                await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
         logger.warning(f"Notice: Failed to publish LearningPathGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
@@ -711,8 +729,17 @@ async def _publish_unit_generation_event(
             "payload": {"workspace_id": workspace_id, "unit_title": unit_title},
             "occurred_at": datetime.now(timezone.utc).isoformat(),
         }
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
-            await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+        from shared.events import DomainEvent, publish_domain_event
+        event = DomainEvent(
+            event_type="LearningUnitGeneration",
+            workspace_id=workspace_id,
+            user_id=user_id,
+            payload=payload,
+        )
+        published = await publish_domain_event("cpa.notifications.ai", event)
+        if not published:
+            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
+                await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
     except Exception as evt_err:
         logger.warning(f"Notice: Failed to publish LearningUnitGeneration event: {evt_err}", extra={"workspace_id": workspace_id, "unit_title": unit_title})
 

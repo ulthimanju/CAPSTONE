@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package ai;
+
+message FloatVector {
+  repeated float values = 1;
+}
+
+message EmbeddingRequest {
+  repeated string texts = 1;
+}
+
+message EmbeddingResponse {
+  repeated FloatVector embeddings = 1;
+}
+
+message GenerateTextRequest {
+  string prompt = 1;
+  string system_instruction = 2;
+  float temperature = 3;
+  int32 max_tokens = 4;
+}
+
+message GenerateTextResponse {
+  string text = 1;
+  int32 total_tokens = 2;
+}
+
+service AIService {
+  rpc GetEmbeddings(EmbeddingRequest) returns (EmbeddingResponse);
+  rpc GenerateText(GenerateTextRequest) returns (GenerateTextResponse);
+}
