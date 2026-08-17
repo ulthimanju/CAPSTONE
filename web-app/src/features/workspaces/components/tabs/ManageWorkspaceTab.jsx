@@ -118,11 +118,14 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
   const activeTab = useMemo(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'collaborators' || tabParam === 'general') {
-      return tabParam;
+    if (tabParam === 'collaborators') {
+      return 'collaborators';
     }
     if (tabParam === 'activity') {
       return isOwnerOrAdmin ? 'activity' : 'collaborators';
+    }
+    if (tabParam === 'general') {
+      return isOwnerOrAdmin ? 'general' : 'collaborators';
     }
     if (location.pathname.endsWith('/collaborators')) {
       return 'collaborators';
@@ -130,8 +133,8 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     if (location.pathname.endsWith('/activity')) {
       return isOwnerOrAdmin ? 'activity' : 'collaborators';
     }
-    if (location.pathname.endsWith('/Gear')) {
-      return 'general';
+    if (location.pathname.endsWith('/Gear') || location.pathname.endsWith('/general')) {
+      return isOwnerOrAdmin ? 'general' : 'collaborators';
     }
     return 'collaborators';
   }, [searchParams, location.pathname, isOwnerOrAdmin]);
@@ -414,14 +417,14 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
         icon: LogsIcon,
         count: null,
       });
-    }
 
-    tabList.push({
-      id: 'general',
-      label: 'General',
-      icon: Gear,
-      count: null,
-    });
+      tabList.push({
+        id: 'general',
+        label: 'General',
+        icon: Gear,
+        count: null,
+      });
+    }
 
     return tabList;
   }, [members.length, isOwnerOrAdmin]);
@@ -469,8 +472,8 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
       {/* Main Content Area */}
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 w-full flex-1 space-y-6 pb-16">
-        {/* 1. General Gear Section */}
-        {activeTab === 'general' && (
+        {/* 1. General Gear Section (Owner & Admin only) */}
+        {activeTab === 'general' && isOwnerOrAdmin && (
           <div className="space-y-5 animate-fadeIn">
             <div className="grid grid-cols-1 gap-5">
             {/* Card 1: Workspace Name */}
