@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Sparkles,
-  RotateCw,
-  ChevronLeft,
-  ChevronRight,
+  Sparkle,
+  ArrowClockwise,
+  CaretLeft,
+  CaretRight,
   Shuffle,
   CheckCircle,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Card, Button, Badge, RegenerateIcon } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
@@ -113,7 +113,7 @@ export function UnitFlashcardsView({ flashcards = [] }) {
               {isFlipped ? 'Answer / Explanation' : 'Prompt / Concept Question'}
             </span>
             <span className="flex items-center gap-1 text-[11px] text-text/50">
-              <RotateCw className="h-3 w-3" />
+              <ArrowClockwise className="h-3 w-3" />
               <span>Click or Space to flip</span>
             </span>
           </div>
@@ -143,7 +143,7 @@ export function UnitFlashcardsView({ flashcards = [] }) {
         <Button
           variant="outline"
           onClick={handlePrev}
-          leftIcon={<ChevronLeft className="h-4 w-4" />}
+          leftIcon={<CaretLeft className="h-4 w-4" />}
           className="text-xs"
         >
           Previous
@@ -173,7 +173,7 @@ export function UnitFlashcardsView({ flashcards = [] }) {
         <Button
           variant="outline"
           onClick={handleNext}
-          rightIcon={<ChevronRight className="h-4 w-4" />}
+          rightIcon={<CaretRight className="h-4 w-4" />}
           className="text-xs"
         >
           Next

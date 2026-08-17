@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, CircleNotch } from '@/components/ui/icons';
 import { useWorkspaceNameAvailability } from '../hooks/useWorkspaces';
 import { cn } from '@/lib/cn';
 
@@ -59,7 +59,7 @@ export function WorkspaceNameAvailabilityFeedback({
   if (isSameAsInitial) {
     return (
       <div className={cn('flex items-center gap-1.5 font-mono text-[11px] text-text/60 mt-1.5', className)}>
-        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-text/50" aria-hidden="true" />
+        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-text/50" aria-hidden="true" />
         <span>Current workspace name</span>
       </div>
     );
@@ -69,7 +69,7 @@ export function WorkspaceNameAvailabilityFeedback({
   if (isLoading || (isFetching && debouncedName === trimmed)) {
     return (
       <div className={cn('flex items-center gap-1.5 font-mono text-[11px] text-text/60 mt-1.5', className)}>
-        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-accent" aria-hidden="true" />
+        <CircleNotch className="h-3.5 w-3.5 shrink-0 animate-spin text-accent" aria-hidden="true" />
         <span>Checking name availability...</span>
       </div>
     );
@@ -80,7 +80,7 @@ export function WorkspaceNameAvailabilityFeedback({
     if (availability.available) {
       return (
         <div className={cn('flex items-center gap-1.5 font-mono text-[11px] text-success mt-1.5', className)}>
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden="true" />
+          <CheckCircle className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden="true" />
           <span>{availability.reason || 'Workspace name is available.'}</span>
         </div>
       );

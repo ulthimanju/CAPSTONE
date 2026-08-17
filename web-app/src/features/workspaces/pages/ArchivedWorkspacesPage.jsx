@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Archive, RotateCcw, ArrowRight, Clock, ShieldAlert } from 'lucide-react';
+import { Archive, ArrowCounterClockwise, ArrowRight, Clock, ShieldWarning } from '@/components/ui/icons';
 import { useArchivedWorkspacesQuery, useRestoreWorkspaceMutation } from '../hooks/useWorkspaces';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -49,7 +49,7 @@ export function ArchivedWorkspacesPage() {
       {/* Error state */}
       {!isLoading && error && (
         <Card className="p-6 border-sep-line bg-surface text-center">
-          <ShieldAlert className="mx-auto h-8 w-8 text-accent mb-2" />
+          <ShieldWarning className="mx-auto h-8 w-8 text-accent mb-2" />
           <p className="text-xs text-text/80">Failed to load archived workspaces.</p>
         </Card>
       )}
@@ -64,7 +64,7 @@ export function ArchivedWorkspacesPage() {
             No archived workspaces
           </h3>
           <p className="mt-1 max-w-sm font-body text-xs text-text/70 leading-relaxed">
-            When a workspace is no longer active, you can archive it from workspace settings to keep it organized here.
+            When a workspace is no longer active, you can archive it from workspace Gear to keep it organized here.
           </p>
           <Link to="/workspaces" className="mt-5">
             <Button size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />} className="text-xs">
@@ -114,7 +114,7 @@ export function ArchivedWorkspacesPage() {
                   size="sm"
                   onClick={() => restoreMutation.mutate(workspace.id)}
                   isLoading={restoreMutation.isPending}
-                  leftIcon={<RotateCcw className="h-3 w-3" />}
+                  leftIcon={<ArrowCounterClockwise className="h-3 w-3" />}
                   className="text-xs px-2.5 py-1"
                 >
                   Restore

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, ChevronDown, ExternalLink } from 'lucide-react';
+import { FileText, CaretDown, ArrowSquareOut } from '@/components/ui/icons';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/cn';
 
@@ -28,7 +28,7 @@ export function CitationBadge({ citation, index }) {
         {scorePercent && (
           <span className="text-[10px] text-text/50 font-normal">({scorePercent}%)</span>
         )}
-        <ChevronDown className={cn('h-3 w-3 text-text/50 transition-transform', isOpen && 'rotate-180')} />
+        <CaretDown className={cn('h-3 w-3 text-text/50 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
       {isOpen && (

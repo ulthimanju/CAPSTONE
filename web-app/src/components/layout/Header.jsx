@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Menu, Upload, Sparkles, RotateCcw, UserPlus, ArrowLeft } from 'lucide-react';
+import { List, Upload, Sparkle, ArrowCounterClockwise, UserPlus, ArrowLeft } from '@/components/ui/icons';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
@@ -150,7 +150,7 @@ export function Header({ title, children, className }) {
           className="inline-flex h-10 w-10 items-center justify-center rounded-ui border border-sep-line bg-surface-raised text-text transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:hidden"
           aria-label="Toggle navigation menu"
         >
-          <Menu className="h-5 w-5" aria-hidden="true" />
+          <List className="h-5 w-5" aria-hidden="true" />
         </button>
 
         {/* On Learning Unit Content Page: Hide Workspace Dropdown, Show "Back to Learning Path" button */}
@@ -192,7 +192,7 @@ export function Header({ title, children, className }) {
                 variant="outline"
                 onClick={handleGenerateSummary}
                 isLoading={generateSummaryMutation.isPending}
-                leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+                leftIcon={<Sparkle className="h-4 w-4 text-accent" />}
                 className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
                 title={
                   isSummaryGenerated
@@ -214,7 +214,7 @@ export function Header({ title, children, className }) {
                 variant="outline"
                 onClick={handleGenerateLearningPath}
                 isLoading={generateLearningPathMutation.isPending || isGeneratingPath}
-                leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+                leftIcon={<Sparkle className="h-4 w-4 text-accent" />}
                 className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
                 title={
                   hasLearningPath
@@ -236,7 +236,7 @@ export function Header({ title, children, className }) {
                 variant="outline"
                 onClick={handleRegenerateUnitContent}
                 isLoading={generateUnitMutation.isPending || isGeneratingUnit}
-                leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+                leftIcon={<Sparkle className="h-4 w-4 text-accent" />}
                 className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
                 title="Regenerate this unit's complete study bundle with Gemini 2.5 Flash"
               >
@@ -252,7 +252,7 @@ export function Header({ title, children, className }) {
                 variant="outline"
                 onClick={handleClearChat}
                 isLoading={saveChatMutation.isPending}
-                leftIcon={<RotateCcw className="h-4 w-4 text-text/70" />}
+                leftIcon={<ArrowCounterClockwise className="h-4 w-4 text-text/70" />}
                 className="text-xs py-1.5 px-3 border-sep-line hover:border-danger/40 hover:text-danger"
                 title="Clear workspace Clarify Doubts chat history"
               >

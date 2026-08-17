@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
-  Sparkles,
-  Code2,
-  Loader2,
+  Sparkle,
+  Code,
+  CircleNotch,
   Compass,
   FileText,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Card, Button, Badge, BookLinearIcon, FlashcardsIcon, QuizIcon } from '@/components/ui';
 import {
   useUnitContentQuery,
@@ -101,7 +101,7 @@ export function LearningUnitContentPage() {
     {
       id: 'problems',
       label: 'Problems',
-      icon: Code2,
+      icon: Code,
       count: content?.problems?.length || null,
     },
   ];
@@ -109,7 +109,7 @@ export function LearningUnitContentPage() {
   if (isLoading && !hasContent && !isGeneratingUnit) {
     return (
       <div className="flex min-h-[360px] flex-col items-center justify-center p-8 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <CircleNotch className="h-8 w-8 animate-spin text-accent" />
         <p className="mt-3 font-mono text-xs text-text/70">
           Loading learning unit content...
         </p>
@@ -163,7 +163,7 @@ export function LearningUnitContentPage() {
         {isGeneratingUnit || generateMutation.isPending ? (
           <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border border-accent/40 bg-surface-raised/80 shadow-sm animate-pulse-subtle">
             <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-surface text-accent mb-4 shadow-sm border border-sep-line">
-              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <CircleNotch className="h-8 w-8 animate-spin text-accent" />
               <Compass className="absolute h-4 w-4 text-accent/80" />
             </div>
 
@@ -182,7 +182,7 @@ export function LearningUnitContentPage() {
             </p>
 
             <div className="mt-6 flex items-center gap-2 rounded-ui bg-surface-raised px-3.5 py-1.5 font-mono text-[11px] text-text/70 border border-sep-line">
-              <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
+              <Sparkle className="h-3.5 w-3.5 text-accent animate-pulse" />
               <span>Streaming live generation events...</span>
             </div>
           </Card>
@@ -204,7 +204,7 @@ export function LearningUnitContentPage() {
             <Button
               onClick={handleGenerate}
               isLoading={generateMutation.isPending || isGeneratingUnit}
-              leftIcon={<Sparkles className="h-4 w-4 text-accent" />}
+              leftIcon={<Sparkle className="h-4 w-4 text-accent" />}
               className="mt-6 text-xs sm:text-sm"
             >
               {isGeneratingUnit || generateMutation.isPending ? 'Synthesizing Content...' : 'Generate Unit Content'}

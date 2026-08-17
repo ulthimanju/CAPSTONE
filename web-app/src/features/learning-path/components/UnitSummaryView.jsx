@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lightbulb, CheckCircle2, FileText } from 'lucide-react';
+import { Lightbulb, CheckCircle, FileText } from '@/components/ui/icons';
 import { Card, Badge, BookLinearIcon } from '@/components/ui';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
 import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
@@ -81,7 +81,7 @@ export function UnitSummaryView({ summary }) {
           <ul className="space-y-2.5">
             {summary.key_takeaways.map((takeaway, idx) => (
               <li key={idx} className="flex items-start gap-2.5 font-body text-xs sm:text-sm text-text/80 leading-relaxed">
-                <CheckCircle2 className="h-4 w-4 text-sage shrink-0 mt-0.5" />
+                <CheckCircle className="h-4 w-4 text-sage shrink-0 mt-0.5" />
                 <span>{takeaway}</span>
               </li>
             ))}

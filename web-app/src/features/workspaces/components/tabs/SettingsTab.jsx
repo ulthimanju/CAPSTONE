@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, Trash2, Archive, Lock, Users, Globe, Check } from 'lucide-react';
+import { FloppyDisk, Trash, Archive, Lock, Users, Globe, Check } from '@/components/ui/icons';
 import { CodeBoldIcon, BookLinearIcon } from '@/components/ui';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -73,10 +73,10 @@ export function SettingsTab({ workspace: propWorkspace }) {
 
   return (
     <div className="max-w-2xl space-y-6">
-      {/* Workspace Settings Card */}
+      {/* Workspace Gear Card */}
       <Card className="p-6">
         <h2 className="font-display text-lg font-bold text-text">
-          Workspace Settings
+          Workspace Gear
         </h2>
         <p className="font-body text-xs text-text/70 mb-6">
           Update the display name, academic domain type, and collaborator visibility.
@@ -85,11 +85,11 @@ export function SettingsTab({ workspace: propWorkspace }) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Name Input */}
           <div className="space-y-1.5">
-            <label htmlFor="settings-workspace-name" className="block text-xs font-mono font-medium text-text">
+            <label htmlFor="Gear-workspace-name" className="block text-xs font-mono font-medium text-text">
               Workspace Name
             </label>
             <Input
-              id="settings-workspace-name"
+              id="Gear-workspace-name"
               maxLength={16}
               error={!!errors.name}
               {...register('name')}
@@ -203,14 +203,14 @@ export function SettingsTab({ workspace: propWorkspace }) {
             />
           </div>
 
-          {/* Action Buttons: Save Changes on Left, Archive and Delete Workspace on Right */}
+          {/* Action Buttons: FloppyDisk Changes on Left, Archive and Delete Workspace on Right */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-sep-line">
             <Button
               type="submit"
               isLoading={updateMutation.isPending}
-              leftIcon={saveSuccess ? <Check className="h-4 w-4 text-success" /> : <Save className="h-4 w-4" />}
+              leftIcon={saveSuccess ? <Check className="h-4 w-4 text-success" /> : <FloppyDisk className="h-4 w-4" />}
             >
-              {saveSuccess ? 'Saved Changes' : 'Save Changes'}
+              {saveSuccess ? 'Saved Changes' : 'FloppyDisk Changes'}
             </Button>
 
             <div className="flex items-center gap-2.5">
@@ -229,7 +229,7 @@ export function SettingsTab({ workspace: propWorkspace }) {
                 variant="danger"
                 onClick={() => setIsDeleteDialogOpen(true)}
                 isLoading={deleteMutation.isPending}
-                leftIcon={<Trash2 className="h-4 w-4" />}
+                leftIcon={<Trash className="h-4 w-4" />}
               >
                 Delete Workspace
               </Button>

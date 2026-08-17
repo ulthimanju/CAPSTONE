@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { X, Mail, Bell, Archive } from 'lucide-react';
+import { X, Envelope, Bell, Archive } from '@/components/ui/icons';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useUserPendingInvitationsQuery } from '@/features/workspaces/hooks/useMembers';
@@ -86,7 +86,7 @@ export function Sidebar({ header, footer, children, className }) {
           }
         >
           <div className="flex items-center gap-3">
-            <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <Envelope className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span>Invitations</span>
           </div>
           {pendingInvitesCount > 0 && (
@@ -134,7 +134,7 @@ export function Sidebar({ header, footer, children, className }) {
         </NavLink>
       </div>
 
-      {/* Sidebar Footer / User Profile Menu */}
+      {/* Sidebar Footer / User Profile List */}
       <div className="shrink-0 p-3 pt-1 border-t border-sep-line/40">
         {footer !== undefined ? footer : <UserProfileMenu />}
       </div>

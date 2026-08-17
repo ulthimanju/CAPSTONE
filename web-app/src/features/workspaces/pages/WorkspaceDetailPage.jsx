@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams, useLocation, Link, Outlet } from 'react-router-dom';
-import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { CircleNotch, WarningCircle, ArrowLeft } from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useWorkspaceQuery } from '../hooks/useWorkspaces';
@@ -28,7 +28,7 @@ export function WorkspaceDetailPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
+        <CircleNotch className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
         <p className="mt-3 font-mono text-xs text-text/70">
           Loading workspace details...
         </p>
@@ -40,7 +40,7 @@ export function WorkspaceDetailPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16">
         <Card className="flex flex-col items-center justify-center border-danger/30 bg-danger-tint p-8 text-center">
-          <AlertCircle className="h-8 w-8 text-danger" aria-hidden="true" />
+          <WarningCircle className="h-8 w-8 text-danger" aria-hidden="true" />
           <h2 className="mt-3 font-display text-lg font-bold text-danger">
             Workspace Not Found
           </h2>
@@ -65,7 +65,7 @@ export function WorkspaceDetailPage() {
     location.pathname.endsWith('/manage') ||
     location.pathname.includes('/manage') ||
     location.pathname.includes('/collaborators') ||
-    location.pathname.includes('/settings');
+    location.pathname.includes('/Gear');
 
   if (isChatTab) {
     return (
@@ -85,7 +85,7 @@ export function WorkspaceDetailPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      {/* Workspace Outlet Content (Overview, Documents, Collaborators, Settings) */}
+      {/* Workspace Outlet Content (Overview, Documents, Collaborators, Gear) */}
       <Outlet context={{ workspace }} />
     </div>
   );

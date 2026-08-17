@@ -5,13 +5,13 @@ import {
   Image as ImageIcon,
   FileSpreadsheet,
   Presentation,
-  Trash2,
-  ExternalLink,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
+  Trash,
+  ArrowSquareOut,
+  CircleNotch,
+  CheckCircle,
+  WarningCircle,
   Clock,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useDeleteDocumentMutation } from '../hooks/useDocuments';
@@ -60,7 +60,7 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
     ) {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-ui bg-success/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-success border border-success/30">
-          <CheckCircle2 className="h-3 w-3" />
+          <CheckCircle className="h-3 w-3" />
           <span>INDEXED</span>
         </span>
       );
@@ -69,7 +69,7 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
     if (status === 'PROCESSING' || status === 'PENDING' || parseStatus === 'PARSING') {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-ui bg-accent/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-accent border border-accent/30">
-          <Loader2 className="h-3 w-3 animate-spin" />
+          <CircleNotch className="h-3 w-3 animate-spin" />
           <span>PARSING</span>
         </span>
       );
@@ -78,7 +78,7 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
     if (status === 'FAILED' || parseStatus === 'FAILED') {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-ui bg-danger-tint px-2 py-0.5 font-mono text-[10px] font-semibold text-danger border border-danger/30">
-          <AlertCircle className="h-3 w-3" />
+          <WarningCircle className="h-3 w-3" />
           <span>FAILED</span>
         </span>
       );
@@ -217,7 +217,7 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
                       title={doc.original_filename}
                     >
                       <span className="truncate">{doc.original_filename}</span>
-                      <ExternalLink className="h-3 w-3 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
+                      <ArrowSquareOut className="h-3 w-3 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
                     </a>
                   ) : (
                     <Link
@@ -254,7 +254,7 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
                   aria-label={`Delete ${doc.original_filename}`}
                   title="Delete Document"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash className="h-4 w-4" />
                 </button>
               </div>
             </div>

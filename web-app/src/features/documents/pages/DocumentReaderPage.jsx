@@ -7,9 +7,9 @@ import rehypeKatex from 'rehype-katex';
 import {
   ArrowLeft,
   FileText,
-  Loader2,
-  Sparkles,
-} from 'lucide-react';
+  CircleNotch,
+  Sparkle,
+} from '@/components/ui/icons';
 import { Card, Button, Badge, BookLinearIcon, FlashcardsIcon, QuizIcon } from '@/components/ui';
 import {
   useDocumentQuery,
@@ -91,7 +91,7 @@ export function DocumentReaderPage() {
   if (isLoadingDoc) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <CircleNotch className="h-8 w-8 animate-spin text-accent" />
         <p className="mt-3 font-mono text-xs text-text/70">
           Loading document content...
         </p>
@@ -173,7 +173,7 @@ export function DocumentReaderPage() {
           <Card className="min-h-[500px] p-6">
             {isParsing && !markdownContent && (
               <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                <CircleNotch className="h-8 w-8 animate-spin text-accent" />
                 <h3 className="mt-3 font-display text-base font-bold text-text">
                   AI Document Parsing in Progress
                 </h3>

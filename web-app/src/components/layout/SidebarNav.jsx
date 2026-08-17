@@ -9,7 +9,7 @@ import {
   SummaryIcon,
   LearningPathIcon,
   AITutorIcon,
-  Settings,
+  Gear,
 } from '@/components/ui';
 
 function SidebarNavItem({ item, closeMobileSidebar, disabled }) {
@@ -57,7 +57,7 @@ export function SidebarNav() {
   const closeMobileSidebar = useUIStore((state) => state.closeMobileSidebar);
   const location = useLocation();
 
-  // Extract workspaceId from URL path if on a workspace route
+  // Extract workspaceId from URL path if on a workspace Path
   const pathMatch = location.pathname.match(/\/workspaces\/([0-9a-fA-F-]+)/);
   const routeWorkspaceId = pathMatch ? pathMatch[1] : null;
 
@@ -102,12 +102,12 @@ export function SidebarNav() {
     {
       label: 'Manage Workspace',
       to: `${basePath}/manage`,
-      icon: Settings,
+      icon: Gear,
       isActive:
         Boolean(validWorkspaceId) &&
         (location.pathname.startsWith(`${basePath}/manage`) ||
           location.pathname.startsWith(`${basePath}/collaborators`) ||
-          location.pathname.startsWith(`${basePath}/settings`)),
+          location.pathname.startsWith(`${basePath}/Gear`)),
     },
   ];
 

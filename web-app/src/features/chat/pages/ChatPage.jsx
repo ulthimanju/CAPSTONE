@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Send,
-  Sparkles,
-  RotateCcw,
-  Loader2,
+  Sparkle,
+  ArrowCounterClockwise,
+  CircleNotch,
   Copy,
   Check,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Button } from '@/components/ui/Button';
 import {
   useWorkspaceChatQuery,
@@ -116,7 +116,7 @@ export function ChatPage() {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          <CircleNotch className="h-8 w-8 animate-spin text-accent" />
           <p className="font-mono text-sm text-text/60">Loading tutor chat session...</p>
         </div>
       </div>
@@ -142,7 +142,7 @@ export function ChatPage() {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#dfd7c2] text-accent mb-3 shadow-sm border border-[#cfc5ae]">
-              <Sparkles className="h-6 w-6" />
+              <Sparkle className="h-6 w-6" />
             </div>
             <h3 className="font-display text-base font-bold text-[#2c271e]">Ask Your AI Study Tutor</h3>
             <p className="mt-1 max-w-md text-xs text-[#7a715d] font-sans">
@@ -207,7 +207,7 @@ export function ChatPage() {
         {sendMutation.isPending && (
           <div className="flex justify-start">
             <div className="max-w-[75%] rounded-md bg-[#dfd7c2] border border-[#c4ba9f] p-3.5 shadow-xs flex items-center gap-3">
-              <Loader2 className="h-4 w-4 animate-spin text-accent" />
+              <CircleNotch className="h-4 w-4 animate-spin text-accent" />
               <span className="font-mono text-xs text-[#7a715d]">
                 Analyzing documents & synthesizing response...
               </span>
@@ -242,7 +242,7 @@ export function ChatPage() {
             className="flex items-center justify-center rounded-md bg-[#9E5123] px-6 py-2.5 font-sans text-xs sm:text-sm font-medium text-white shadow-xs transition-all hover:bg-[#88431b] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
           >
             {sendMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <CircleNotch className="h-4 w-4 animate-spin" />
             ) : (
               'Send'
             )}

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Sparkles,
-  Loader2,
+  Sparkle,
+  CircleNotch,
   Lightbulb,
-  CheckCircle2,
-} from 'lucide-react';
+  CheckCircle,
+} from '@/components/ui/icons';
 import { Card, Button, Badge, BookLinearIcon, RegenerateIcon } from '@/components/ui';
 import { useWorkspaceSummaryQuery, useGenerateSummaryMutation } from '../hooks/useSummary';
 import { MermaidDiagram } from '../components/MermaidDiagram';
@@ -84,7 +84,7 @@ export function SummaryTab() {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          <CircleNotch className="h-8 w-8 animate-spin text-accent" />
           <p className="font-mono text-sm text-text/60">Loading workspace summary...</p>
         </div>
       </div>
@@ -96,13 +96,13 @@ export function SummaryTab() {
       <Card className="flex flex-col items-center justify-center p-12 text-center border-accent/30 bg-accent/5">
         <div className="relative mb-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent">
-            <Sparkles className="h-7 w-7 animate-pulse" />
+            <Sparkle className="h-7 w-7 animate-pulse" />
           </div>
-          <Loader2 className="absolute -bottom-1 -right-1 h-5 w-5 animate-spin text-accent" />
+          <CircleNotch className="absolute -bottom-1 -right-1 h-5 w-5 animate-spin text-accent" />
         </div>
         <h3 className="font-display text-lg font-bold text-text">Synthesizing with Gemini 2.5 Flash</h3>
         <p className="mt-2 max-w-md text-sm text-text/70 font-sans">
-          Gemini is analyzing all uploaded workspace documents, extracting key concepts, building comparison tables, and generating architecture diagrams. This may take 15–30 seconds.
+          Gemini is analyzing all uploaded workspace documents, extracting key concepts, Buildings comparison tables, and generating architecture diagrams. This may take 15–30 seconds.
         </p>
       </Card>
     );
@@ -112,7 +112,7 @@ export function SummaryTab() {
     return (
       <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed border-sep-line bg-surface">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-sand text-accent mb-4">
-          <Sparkles className="h-7 w-7" />
+          <Sparkle className="h-7 w-7" />
         </div>
         <h3 className="font-display text-lg font-bold text-text">No Workspace Summary Generated</h3>
         <p className="mt-2 max-w-md text-sm text-text/60 font-sans">
@@ -208,7 +208,7 @@ export function SummaryTab() {
       {summary.key_takeaways && summary.key_takeaways.length > 0 && (
         <Card className="p-6 bg-surface border-success/30 shadow-sm">
           <div className="flex items-center gap-2 text-success mb-3">
-            <CheckCircle2 className="h-5 w-5" />
+            <CheckCircle className="h-5 w-5" />
             <h3 className="font-display text-base font-bold text-text">Key Mastery Takeaways</h3>
           </div>
           <ul className="space-y-2 text-sm text-text/80">

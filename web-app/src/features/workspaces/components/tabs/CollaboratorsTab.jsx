@@ -2,22 +2,22 @@ import React, { useState, useMemo } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
   UserPlus,
-  Trash2,
-  Mail,
-  Loader2,
-  Search,
+  Trash,
+  Envelope,
+  CircleNotch,
+  MagnifyingGlass,
   Crown,
   Shield,
-  Edit3,
+  PencilSimple,
   Eye,
-  LogOut,
+  SignOut,
   RefreshCw,
   Clock,
-  ChevronDown,
-  ChevronUp,
-  UserCheck,
+  CaretDown,
+  CaretUp,
+  CheckCircle,
   Check,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Card, Button, Badge, Avatar, Input, ConfirmDialog, LogsIcon } from '@/components/ui';
 import {
   DropdownMenu,
@@ -241,7 +241,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
               <Button
                 variant="outline"
                 onClick={() => setIsLeaveDialogOpen(true)}
-                leftIcon={<LogOut className="h-4 w-4 text-danger" />}
+                leftIcon={<SignOut className="h-4 w-4 text-danger" />}
                 className="text-xs text-danger hover:bg-danger-tint hover:border-danger/40"
               >
                 Leave Workspace
@@ -250,13 +250,13 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
           )}
         </div>
 
-        {/* Search Filter Bar */}
+        {/* MagnifyingGlass Filter Bar */}
         {(members.length > 2 || invitations.length > 0) && (
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text/40 pointer-events-none" />
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text/40 pointer-events-none" />
             <Input
               type="text"
-              placeholder="Search collaborators by name or email..."
+              placeholder="MagnifyingGlass collaborators by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 text-xs font-mono bg-surface"
@@ -266,14 +266,14 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
 
         {isLoadingMembers && (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-accent" />
+            <CircleNotch className="h-6 w-6 animate-spin text-accent" />
           </div>
         )}
 
         {!isLoadingMembers && !isErrorMembers && filteredMembers.length === 0 && (
           <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-8 text-center">
             <p className="font-mono text-xs text-text/60">
-              {searchQuery ? 'No collaborators matched your search.' : 'No members found in this workspace.'}
+              {searchQuery ? 'No collaborators matched your MagnifyingGlass.' : 'No members found in this workspace.'}
             </p>
           </div>
         )}
@@ -342,11 +342,11 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
                           >
                             <span className="flex items-center gap-1">
                               {member.role === 'ADMIN' && <Shield className="h-3 w-3 text-amber-500" />}
-                              {member.role === 'EDITOR' && <Edit3 className="h-3 w-3 text-accent" />}
+                              {member.role === 'EDITOR' && <PencilSimple className="h-3 w-3 text-accent" />}
                               {member.role === 'VIEWER' && <Eye className="h-3 w-3 text-text/60" />}
                               <span>{member.role}</span>
                             </span>
-                            <ChevronDown className="h-3 w-3 text-text/40" />
+                            <CaretDown className="h-3 w-3 text-text/40" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-36 p-1">
@@ -367,7 +367,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
                             className="flex items-center justify-between text-xs font-mono py-1.5"
                           >
                             <div className="flex items-center gap-2">
-                              <Edit3 className="h-3.5 w-3.5 text-accent" />
+                              <PencilSimple className="h-3.5 w-3.5 text-accent" />
                               <span>EDITOR</span>
                             </div>
                             {member.role === 'EDITOR' && <Check className="h-3.5 w-3.5 text-accent" />}
@@ -411,7 +411,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
                         title="Remove member"
                         aria-label={`Remove ${member.user_name || member.user_email}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash className="h-4 w-4" />
                       </button>
                     )}
                   </div>
@@ -426,7 +426,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
       <div className="space-y-4 pt-4 border-t border-sep-line">
         <div>
           <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-            <Mail className="h-4 w-4 text-accent" />
+            <Envelope className="h-4 w-4 text-accent" />
             Pending Invitations ({filteredInvitations.length})
           </h3>
           <p className="font-body text-xs text-text/70">
@@ -436,7 +436,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
 
         {isLoadingInvites && (
           <div className="flex justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+            <CircleNotch className="h-5 w-5 animate-spin text-accent" />
           </div>
         )}
 
@@ -456,7 +456,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
                 className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/50 transition-colors"
               >
                 <div className="flex items-center gap-2.5">
-                  <Mail className="h-4 w-4 text-text/50 shrink-0" />
+                  <Envelope className="h-4 w-4 text-text/50 shrink-0" />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs font-medium text-text">
@@ -521,7 +521,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
             variant="outline"
             size="sm"
             onClick={() => setShowActivities((prev) => !prev)}
-            rightIcon={showActivities ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            rightIcon={showActivities ? <CaretUp className="h-3.5 w-3.5" /> : <CaretDown className="h-3.5 w-3.5" />}
             className="text-xs font-mono"
           >
             {showActivities ? 'Hide Activity' : 'View Activity'}
@@ -532,7 +532,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
           <div className="space-y-2 mt-2">
             {isLoadingActivities ? (
               <div className="flex justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                <CircleNotch className="h-5 w-5 animate-spin text-accent" />
               </div>
             ) : activities.length === 0 ? (
               <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-4 text-center">

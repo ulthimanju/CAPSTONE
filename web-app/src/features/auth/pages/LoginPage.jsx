@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
-import { FileText, Lightbulb, Share2, Shield } from 'lucide-react';
+import { FileText, Lightbulb, Share, Shield } from '@/components/ui/icons';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '../api/authApi';
 import { ROUTES } from '@/config/constants';
@@ -135,7 +135,7 @@ export function LoginPage() {
             {/* Feature 3: Organized Knowledge */}
             <div className="flex items-start gap-3.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9CEBA] bg-[#EFE8D8] text-[#A8551E] shadow-2xs">
-                <Share2 className="h-5 w-5" />
+                <Share className="h-5 w-5" />
               </div>
               <div className="pt-0.5">
                 <h3 className="font-body text-sm sm:text-base font-semibold text-[#2A2318]">

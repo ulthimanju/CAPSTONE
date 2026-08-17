@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle } from 'lucide-react';
+import { WarningCircle } from '@/components/ui/icons';
 import {
   CodeBoldIcon,
   BookLinearIcon,
@@ -212,7 +212,7 @@ export function CreateWorkspaceModal({ open, onOpenChange, onSuccess }) {
           {/* Server Error Message */}
           {createMutation.isError && (
             <div className="flex items-center gap-2 rounded-ui border border-danger/30 bg-danger-tint p-2.5 text-xs text-danger font-mono">
-              <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <WarningCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>
                 {getErrorMessage(createMutation.error, 'Failed to create workspace. Please try again.')}
               </span>

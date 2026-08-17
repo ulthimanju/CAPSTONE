@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Shield, ChevronsUpDown } from 'lucide-react';
+import { SignOut, Shield, CaretUpDown } from '@/components/ui/icons';
 import { Avatar, GoogleDriveIcon, DevicesIcon } from '@/components/ui';
 import {
   DropdownMenu,
@@ -43,7 +43,7 @@ export function UserProfileMenu({ className }) {
               </span>
             </div>
           </div>
-          <ChevronsUpDown className="h-4 w-4 shrink-0 text-text/50" aria-hidden="true" />
+          <CaretUpDown className="h-4 w-4 shrink-0 text-text/50" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
 
@@ -93,7 +93,7 @@ export function UserProfileMenu({ className }) {
           onClick={logout}
           className="text-danger hover:bg-danger-tint focus:bg-danger-tint focus:text-danger cursor-pointer font-mono text-xs"
         >
-          <LogOut className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
+          <SignOut className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>Sign Out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

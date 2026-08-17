@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { CircleNotch } from '@/components/ui/icons';
 import { cn } from '@/lib/cn';
 
 const variantStyles = {
@@ -44,7 +44,7 @@ export const Button = React.forwardRef(
         {...props}
       >
         {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
+          <CircleNotch className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
         ) : (
           leftIcon && <span className="shrink-0">{leftIcon}</span>
         )}

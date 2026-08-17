@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Layers,
-  ChevronsUpDown,
+  CaretUpDown,
   Check,
-  Loader2,
+  CircleNotch,
   User,
   Users,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -77,7 +77,7 @@ export function WorkspaceSelector({ className }) {
     detailWorkspace ||
     (allWorkspaces.length > 0 ? allWorkspaces[0] : null);
 
-  // Sync route param or fallback to active workspace store
+  // Sync Path param or fallback to active workspace store
   useEffect(() => {
     if (routeWorkspaceId) {
       if (routeWorkspaceId !== activeWorkspaceId) {
@@ -110,7 +110,7 @@ export function WorkspaceSelector({ className }) {
             aria-label="Select workspace"
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-accent" />
+              <CircleNotch className="h-4 w-4 animate-spin text-accent" />
             ) : currentWorkspace?.domain_type === 'TECHNICAL' ? (
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-ui bg-accent/10 text-accent">
                 <CodeBoldIcon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -140,7 +140,7 @@ export function WorkspaceSelector({ className }) {
               </Badge>
             )}
 
-            <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-text/50" aria-hidden="true" />
+            <CaretUpDown className="h-3.5 w-3.5 shrink-0 text-text/50" aria-hidden="true" />
           </button>
         </DropdownMenuTrigger>
 

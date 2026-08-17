@@ -1,12 +1,12 @@
 import React from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
-  Route as RouteIcon,
+  Path as RouteIcon,
   Compass,
-  Sparkles,
-  Loader2,
-  ChevronRight,
-} from 'lucide-react';
+  Sparkle,
+  CircleNotch,
+  CaretRight,
+} from '@/components/ui/icons';
 import { Card, Button, RegenerateIcon, FlashcardsIcon } from '@/components/ui';
 import {
   useWorkspaceLearningPathQuery,
@@ -54,7 +54,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
   if (isLoading && !hasPath && !isGenerating) {
     return (
       <div className="flex min-h-[360px] flex-col items-center justify-center p-8 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <CircleNotch className="h-8 w-8 animate-spin text-accent" />
         <p className="mt-3 font-mono text-xs text-text/70">
           Loading workspace learning path...
         </p>
@@ -68,7 +68,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
       {isGenerating ? (
         <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border border-accent/40 bg-surface-raised/80 shadow-sm animate-pulse-subtle">
           <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-sand text-accent mb-4 shadow-sm border border-sep-line">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            <CircleNotch className="h-8 w-8 animate-spin text-accent" />
             <Compass className="absolute h-4 w-4 text-accent/80" />
           </div>
 
@@ -87,7 +87,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
           </p>
 
           <div className="mt-6 flex items-center gap-2 rounded-ui bg-sand/80 px-3.5 py-1.5 font-mono text-[11px] text-text/70 border border-sep-line">
-            <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
+            <Sparkle className="h-3.5 w-3.5 text-accent animate-pulse" />
             <span>Listening to real-time platform event stream...</span>
           </div>
         </Card>
@@ -175,7 +175,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
                 <div className="mt-4 pt-3 border-t border-sep-line/40 flex items-center justify-end font-mono text-[11px]">
                   <span className="flex items-center gap-1 text-accent font-medium">
                     <span>Explore Unit</span>
-                    <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    <CaretRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </div>
               </Card>

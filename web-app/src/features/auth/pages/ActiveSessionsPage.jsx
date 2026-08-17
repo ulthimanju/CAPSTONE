@@ -4,14 +4,14 @@ import {
   Tablet,
   Globe,
   Shield,
-  ShieldAlert,
-  LogOut,
+  ShieldWarning,
+  SignOut,
   Clock,
   MapPin,
-  CheckCircle2,
-  AlertTriangle,
-  Loader2,
-} from 'lucide-react';
+  CheckCircle,
+  Warning,
+  CircleNotch,
+} from '@/components/ui/icons';
 import { Card, Button, Badge, ConfirmDialog, DevicesIcon, RegenerateIcon } from '@/components/ui';
 import {
   useSessionsQuery,
@@ -196,7 +196,7 @@ export function ActiveSessionsPage() {
               size="sm"
               onClick={() => setIsRevokeAllOpen(true)}
               disabled={revokeAllMutation.isPending}
-              leftIcon={<LogOut className="h-3.5 w-3.5 text-danger" />}
+              leftIcon={<SignOut className="h-3.5 w-3.5 text-danger" />}
               className="text-xs text-danger hover:bg-danger-tint hover:border-danger/40"
             >
               Sign Out Other Sessions
@@ -207,14 +207,14 @@ export function ActiveSessionsPage() {
 
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          <CircleNotch className="h-8 w-8 animate-spin text-accent" />
           <p className="font-mono text-xs text-text/60">Loading active sessions...</p>
         </div>
       )}
 
       {isError && (
         <div className="rounded-ui border border-danger/30 bg-danger-tint p-6 text-center space-y-3">
-          <AlertTriangle className="h-6 w-6 text-danger mx-auto" />
+          <Warning className="h-6 w-6 text-danger mx-auto" />
           <p className="font-display text-sm font-semibold text-danger">
             Unable to load active sessions
           </p>
@@ -234,7 +234,7 @@ export function ActiveSessionsPage() {
                   Current Session
                 </h2>
                 <Badge variant="success" className="text-[10px] py-0 px-1.5 flex items-center gap-1">
-                  <CheckCircle2 className="h-2.5 w-2.5" />
+                  <CheckCircle className="h-2.5 w-2.5" />
                   Active Now
                 </Badge>
               </div>

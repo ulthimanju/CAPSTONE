@@ -1,20 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import {
   Clock,
-  Search,
+  MagnifyingGlass,
   RefreshCw,
   Shield,
   Crown,
   UserPlus,
-  UserCheck,
+  CheckCircle,
   UserMinus,
   ArrowRightLeft,
   FileText,
   Trophy,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+  WarningCircle,
+  CaretLeft,
+  CaretRight,
+} from '@/components/ui/icons';
 import {
   Card,
   Button,
@@ -67,7 +67,7 @@ export function ActivityTab({ workspaceId, members = [] }) {
         }
       }
 
-      // Search query
+      // MagnifyingGlass query
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
 
@@ -99,7 +99,7 @@ export function ActivityTab({ workspaceId, members = [] }) {
       case 'WORKSPACE_DELETED':
         return {
           label: type.replace(/_/g, ' '),
-          icon: AlertCircle,
+          icon: WarningCircle,
           className: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
         };
       case 'MEMBER_INVITED':
@@ -111,7 +111,7 @@ export function ActivityTab({ workspaceId, members = [] }) {
       case 'MEMBER_JOINED':
         return {
           label: 'MEMBER JOINED',
-          icon: UserCheck,
+          icon: CheckCircle,
           className: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
         };
       case 'ROLE_CHANGED':
@@ -197,15 +197,15 @@ export function ActivityTab({ workspaceId, members = [] }) {
     <div className="space-y-4 animate-fadeIn">
       {/* Action & Filter Controls Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Search Box */}
+        {/* MagnifyingGlass Box */}
         <div className="relative min-w-[240px] flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text/40" />
+          <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text/40" />
           <Input
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
             }}
-            placeholder="Search by user or event..."
+            placeholder="MagnifyingGlass by user or event..."
             className="pl-8 text-xs h-8 font-mono w-full"
           />
         </div>
@@ -274,7 +274,7 @@ export function ActivityTab({ workspaceId, members = [] }) {
                       <p className="font-mono text-xs text-text/80 font-bold">No activity records found</p>
                       <p className="font-body text-[11px] text-text/50">
                         {searchQuery || typeFilter !== 'ALL'
-                          ? 'Try adjusting your search query or type filters.'
+                          ? 'Try adjusting your MagnifyingGlass query or type filters.'
                           : 'Actions taken by collaborators will appear here automatically.'}
                       </p>
                     </div>
@@ -357,7 +357,7 @@ export function ActivityTab({ workspaceId, members = [] }) {
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1 || isLoading}
-              leftIcon={<ChevronLeft className="h-3.5 w-3.5" />}
+              leftIcon={<CaretLeft className="h-3.5 w-3.5" />}
               className="h-7 text-xs font-mono px-2.5"
             >
               Previous
@@ -372,7 +372,7 @@ export function ActivityTab({ workspaceId, members = [] }) {
               size="sm"
               onClick={() => setPage((p) => p + 1)}
               disabled={activities.length < 10 || isLoading}
-              rightIcon={<ChevronRight className="h-3.5 w-3.5" />}
+              rightIcon={<CaretRight className="h-3.5 w-3.5" />}
               className="h-7 text-xs font-mono px-2.5"
             >
               Next

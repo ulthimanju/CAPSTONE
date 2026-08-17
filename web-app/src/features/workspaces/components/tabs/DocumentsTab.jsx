@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileText, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Upload, CircleNotch, WarningCircle } from '@/components/ui/icons';
 import { Card, Button, RegenerateIcon } from '@/components/ui';
 import { useWorkspaceDocumentsQuery } from '@/features/documents/hooks/useDocuments';
 import { useMultiFileUpload } from '@/features/documents/hooks/useMultiFileUpload';
@@ -62,14 +62,14 @@ export function DocumentsTab({ workspace: propWorkspace }) {
       {/* Loading state */}
       {isLoading && (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          <CircleNotch className="h-8 w-8 animate-spin text-accent" />
         </div>
       )}
 
       {/* Error state */}
       {isError && !isLoading && (
         <Card className="flex flex-col items-center justify-center border-danger/30 bg-danger-tint p-8 text-center">
-          <AlertCircle className="h-8 w-8 text-danger" aria-hidden="true" />
+          <WarningCircle className="h-8 w-8 text-danger" aria-hidden="true" />
           <h3 className="mt-3 font-display text-base font-bold text-danger">
             Unable to load documents
           </h3>
@@ -102,7 +102,7 @@ export function DocumentsTab({ workspace: propWorkspace }) {
             No documents attached yet
           </h3>
           <p className="mt-1 max-w-sm font-body text-xs text-text/70 leading-relaxed">
-            Upload PDF textbooks, lecture slides (PPTX), Word documents, or spreadsheets to initialize AI search and study units.
+            Upload PDF textbooks, lecture slides (PPTX), Word documents, or spreadsheets to initialize AI MagnifyingGlass and study units.
           </p>
           <Button
             onClick={() => fileInputRef.current?.click()}

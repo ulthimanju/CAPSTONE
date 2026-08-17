@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { CircleNotch, WarningCircle } from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
@@ -53,7 +53,7 @@ export function AuthCallbackPage() {
         <main className="w-full max-w-md">
           <Card className="flex flex-col items-center text-center">
             <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-ui border border-danger/40 bg-danger-tint text-danger">
-              <AlertCircle className="h-6 w-6" aria-hidden="true" />
+              <WarningCircle className="h-6 w-6" aria-hidden="true" />
             </div>
 
             <h1 className="font-display text-xl font-bold text-danger">
@@ -80,7 +80,7 @@ export function AuthCallbackPage() {
     <div className="flex min-h-screen items-center justify-center bg-bg p-4 font-body text-text">
       <main className="w-full max-w-md">
         <Card className="flex flex-col items-center text-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
+          <CircleNotch className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
           <h1 className="mt-4 font-display text-lg font-semibold text-text">
             Signing you in...
           </h1>

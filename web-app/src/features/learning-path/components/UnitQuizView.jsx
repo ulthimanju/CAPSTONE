@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  CheckCircle2,
+  CheckCircle,
   XCircle,
-  Sparkles,
+  Sparkle,
   Trophy,
   ArrowRight,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import { Card, Button, Badge, RegenerateIcon } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useUpdateQuizProgressMutation } from '../hooks/useLearningPath';
@@ -196,7 +196,7 @@ export function UnitQuizView({ workspaceId, unitTitle, quiz = [] }) {
                       </div>
 
                       {isSubmitted && isCorrect && (
-                        <CheckCircle2 className="h-4 w-4 text-sage shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-sage shrink-0" />
                       )}
                       {isSubmitted && isWrong && (
                         <XCircle className="h-4 w-4 text-danger shrink-0" />

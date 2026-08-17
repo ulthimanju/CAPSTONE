@@ -2,18 +2,18 @@ import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Mail,
-  AlertCircle,
+  Envelope,
+  WarningCircle,
   Shield,
-  Edit3,
+  PencilSimple,
   Eye,
   Check,
   Minus,
   Table,
-  ChevronDown,
-  ChevronUp,
+  CaretDown,
+  CaretUp,
   Info,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   Dialog,
   DialogContent,
@@ -156,7 +156,7 @@ export function InviteCollaboratorModal({
               >
                 <Table className="h-3 w-3" />
                 {showMatrix ? 'Hide Role Permissions' : 'Compare Role Permissions'}
-                {showMatrix ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                {showMatrix ? <CaretUp className="h-3 w-3" /> : <CaretDown className="h-3 w-3" />}
               </button>
             </div>
 
@@ -197,7 +197,7 @@ export function InviteCollaboratorModal({
                     )}
                   >
                     <div className="flex items-center gap-1.5 font-mono text-xs font-bold">
-                      <Edit3 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <PencilSimple className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       Editor
                     </div>
                     <div className="text-[10px] text-text/60 font-body leading-tight">
@@ -281,7 +281,7 @@ export function InviteCollaboratorModal({
           {/* Server Error Message */}
           {inviteMutation.isError && (
             <div className="flex items-start gap-2.5 rounded-ui border border-danger/30 bg-danger-tint p-3 text-xs text-danger font-mono">
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+              <WarningCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
               <div className="space-y-0.5">
                 <span className="font-bold">Invitation Failed:</span>
                 <p className="font-body text-xs text-danger/90">

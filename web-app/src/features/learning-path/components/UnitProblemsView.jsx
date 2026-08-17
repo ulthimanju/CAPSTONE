@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Code2, Tag, Compass, Sparkles } from 'lucide-react';
+import { ArrowSquareOut, Code, Tag, Compass, Sparkle } from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -35,7 +35,7 @@ export function UnitProblemsView({ problems = [] }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-sep-line pb-3">
         <div className="flex items-center gap-2">
-          <Code2 className="h-4 w-4 text-accent" />
+          <Code className="h-4 w-4 text-accent" />
           <h3 className="font-display text-sm sm:text-base font-bold text-text">
             Recommended Practice Problems ({problems.length})
           </h3>
@@ -116,7 +116,7 @@ export function UnitProblemsView({ problems = [] }) {
                 className="inline-flex items-center gap-1.5 rounded-ui bg-accent px-3.5 py-1.5 font-sans text-xs font-semibold text-white shadow-xs hover:bg-accent/90 transition-colors"
               >
                 <span>Solve on {problem.platform}</span>
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ArrowSquareOut className="h-3.5 w-3.5" />
               </a>
             </div>
           </Card>

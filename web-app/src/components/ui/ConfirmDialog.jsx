@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Info } from 'lucide-react';
+import { Warning, Info } from '@/components/ui/icons';
 import {
   Dialog,
   DialogContent,
@@ -39,7 +39,7 @@ export function ConfirmDialog({
             }`}
           >
             {isDanger ? (
-              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+              <Warning className="h-5 w-5" aria-hidden="true" />
             ) : (
               <Info className="h-5 w-5" aria-hidden="true" />
             )}

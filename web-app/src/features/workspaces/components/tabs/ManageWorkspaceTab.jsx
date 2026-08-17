@@ -1,29 +1,29 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useOutletContext, useLocation, useSearchParams } from 'react-router-dom';
 import {
-  Save,
-  Trash2,
+  FloppyDisk,
+  Trash,
   Users,
   Check,
   UserPlus,
-  Mail,
-  Loader2,
-  Search,
+  Envelope,
+  CircleNotch,
+  MagnifyingGlass,
   Crown,
   Shield,
-  Edit3,
+  PencilSimple,
   Eye,
-  LogOut,
+  SignOut,
   RefreshCw,
   Clock,
-  ChevronDown,
-  ChevronUp,
-  UserCheck,
-  Settings,
+  CaretDown,
+  CaretUp,
+  CheckCircle,
+  Gear,
   Archive,
   Lock,
   ArrowRightLeft,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   CodeBoldIcon,
   BookLinearIcon,
@@ -113,7 +113,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     if (location.pathname.endsWith('/activity')) {
       return 'activity';
     }
-    if (location.pathname.endsWith('/settings')) {
+    if (location.pathname.endsWith('/Gear')) {
       return 'general';
     }
     return 'collaborators';
@@ -409,7 +409,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     {
       id: 'general',
       label: 'General',
-      icon: Settings,
+      icon: Gear,
       count: null,
     },
   ];
@@ -457,7 +457,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
       {/* Main Content Area */}
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 w-full flex-1 space-y-6 pb-16">
-        {/* 1. General Settings Section */}
+        {/* 1. General Gear Section */}
         {activeTab === 'general' && (
           <div className="space-y-5 animate-fadeIn">
             <div className="grid grid-cols-1 gap-5">
@@ -500,7 +500,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                         savedField === 'name' ? (
                           <Check className="h-3.5 w-3.5 text-success" />
                         ) : (
-                          <Edit3 className="h-3.5 w-3.5" />
+                          <PencilSimple className="h-3.5 w-3.5" />
                         )
                       }
                     >
@@ -583,11 +583,11 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                       savedField === 'domain' ? (
                         <Check className="h-3.5 w-3.5 text-success" />
                       ) : (
-                        <Save className="h-3.5 w-3.5" />
+                        <FloppyDisk className="h-3.5 w-3.5" />
                       )
                     }
                   >
-                    {savedField === 'domain' ? 'Domain Saved' : 'Save Domain'}
+                    {savedField === 'domain' ? 'Domain Saved' : 'FloppyDisk Domain'}
                   </Button>
                 </div>
               )}
@@ -648,11 +648,11 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                         savedField === 'language' ? (
                           <Check className="h-3.5 w-3.5 text-success" />
                         ) : (
-                          <Save className="h-3.5 w-3.5" />
+                          <FloppyDisk className="h-3.5 w-3.5" />
                         )
                       }
                     >
-                      {savedField === 'language' ? 'Language Saved' : 'Save Language'}
+                      {savedField === 'language' ? 'Language Saved' : 'FloppyDisk Language'}
                     </Button>
                   )}
                 </div>
@@ -663,7 +663,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
             {isOwner && (
               <div className="space-y-2 pt-2">
                 <h3 className="text-xs font-mono font-bold text-danger flex items-center gap-1.5">
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash className="h-3.5 w-3.5" />
                   Danger Zone
                 </h3>
 
@@ -738,7 +738,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                       variant="danger"
                       onClick={() => setIsDeleteDialogOpen(true)}
                       isLoading={deleteWorkspaceMutation.isPending}
-                      leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                      leftIcon={<Trash className="h-3.5 w-3.5" />}
                       className="shrink-0 text-xs font-mono"
                     >
                       Delete this workspace
@@ -786,7 +786,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                 <Button
                   variant="outline"
                   onClick={() => setIsLeaveDialogOpen(true)}
-                  leftIcon={<LogOut className="h-4 w-4 text-danger" />}
+                  leftIcon={<SignOut className="h-4 w-4 text-danger" />}
                   className="text-xs text-danger hover:bg-danger-tint hover:border-danger/40"
                 >
                   Leave Workspace
@@ -796,13 +796,13 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
           </div>
 
           <div className="space-y-4">
-            {/* Search Filter Bar */}
+            {/* MagnifyingGlass Filter Bar */}
             {(members.length > 2 || invitations.length > 0) && (
               <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text/40 pointer-events-none" />
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text/40 pointer-events-none" />
                 <Input
                   type="text"
-                  placeholder="Search collaborators by name or email..."
+                  placeholder="MagnifyingGlass collaborators by name or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 text-xs font-mono bg-surface"
@@ -812,14 +812,14 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
             {isLoadingMembers && (
               <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-accent" />
+                <CircleNotch className="h-6 w-6 animate-spin text-accent" />
               </div>
             )}
 
             {!isLoadingMembers && !isErrorMembers && filteredMembers.length === 0 && (
               <div className="rounded-ui border border-dashed border-sep-line bg-surface-raised/40 p-8 text-center">
                 <p className="font-mono text-xs text-text/60">
-                  {searchQuery ? 'No collaborators matched your search.' : 'No members found in this workspace.'}
+                  {searchQuery ? 'No collaborators matched your MagnifyingGlass.' : 'No members found in this workspace.'}
                 </p>
               </div>
             )}
@@ -898,11 +898,11 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                                 >
                                   <span className="flex items-center gap-1">
                                     {member.role === 'ADMIN' && <Shield className="h-3 w-3 text-amber-500" />}
-                                    {member.role === 'EDITOR' && <Edit3 className="h-3 w-3 text-accent" />}
+                                    {member.role === 'EDITOR' && <PencilSimple className="h-3 w-3 text-accent" />}
                                     {member.role === 'VIEWER' && <Eye className="h-3 w-3 text-text/60" />}
                                     <span>{member.role}</span>
                                   </span>
-                                  <ChevronDown className="h-3 w-3 text-text/40" />
+                                  <CaretDown className="h-3 w-3 text-text/40" />
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-36 p-1">
@@ -923,7 +923,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                                   className="flex items-center justify-between text-xs font-mono py-1.5 cursor-pointer"
                                 >
                                   <div className="flex items-center gap-2">
-                                    <Edit3 className="h-3.5 w-3.5 text-accent" />
+                                    <PencilSimple className="h-3.5 w-3.5 text-accent" />
                                     <span>EDITOR</span>
                                   </div>
                                   {member.role === 'EDITOR' && <Check className="h-3.5 w-3.5 text-accent" />}
@@ -954,7 +954,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                               title="Remove member"
                               aria-label={`Remove ${member.user_name || member.user_email}`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash className="h-4 w-4" />
                             </button>
                           )}
                         </div>
@@ -970,7 +970,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
           <div className="space-y-4 pt-6 border-t border-sep-line">
             <div>
               <h3 className="font-display text-base font-bold text-text flex items-center gap-2">
-                <Mail className="h-4 w-4 text-accent" />
+                <Envelope className="h-4 w-4 text-accent" />
                 Pending Invitations ({filteredInvitations.length})
               </h3>
               <p className="font-body text-xs text-text/70">
@@ -980,7 +980,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
 
             {isLoadingInvites && (
               <div className="flex justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                <CircleNotch className="h-5 w-5 animate-spin text-accent" />
               </div>
             )}
 
@@ -1000,7 +1000,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
                     className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-surface-hover/40 transition-colors"
                   >
                     <div className="flex items-center gap-2.5">
-                      <Mail className="h-4 w-4 text-text/50 shrink-0" />
+                      <Envelope className="h-4 w-4 text-text/50 shrink-0" />
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-medium text-text">

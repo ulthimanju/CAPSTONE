@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Check, X, Clock, ShieldCheck, ArrowRight, Building } from 'lucide-react';
+import { Envelope, Check, X, Clock, ShieldCheck, ArrowRight, Buildings } from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import {
@@ -76,7 +76,7 @@ export function InvitationsPage() {
       {!isLoading && invitations.length === 0 && (
         <Card className="flex flex-col items-center justify-center border-dashed border-sep-line py-16 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-ui border border-sep-line bg-sand text-accent">
-            <Mail className="h-6 w-6" aria-hidden="true" />
+            <Envelope className="h-6 w-6" aria-hidden="true" />
           </div>
           <h3 className="mt-3 font-display text-base font-bold text-text">
             No pending invitations
@@ -103,7 +103,7 @@ export function InvitationsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ui border border-sep-line bg-sand text-accent">
-                      <Building className="h-5 w-5" aria-hidden="true" />
+                      <Buildings className="h-5 w-5" aria-hidden="true" />
                     </div>
 
                     <div className="space-y-1">

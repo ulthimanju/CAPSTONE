@@ -3,18 +3,18 @@ import {
   Bell,
   CheckCheck,
   Clock,
-  Mail,
+  Envelope,
   FileText,
-  Sparkles,
+  Sparkle,
   Archive,
-  RotateCcw,
-  Edit3,
+  ArrowCounterClockwise,
+  PencilSimple,
   UserPlus,
   UserMinus,
-  Trash2,
+  Trash,
   Folder,
   Compass,
-} from 'lucide-react';
+} from '@/components/ui/icons';
 import {
   useNotificationsQuery,
   useNotificationSSE,
@@ -48,16 +48,16 @@ export function NotificationsPage() {
   const getNotificationIcon = (item) => {
     const evt = (item.event_type || item.title || '').toLowerCase();
     if (evt.includes('archive')) return <Archive className="h-4 w-4" />;
-    if (evt.includes('restore') || evt.includes('unarchive')) return <RotateCcw className="h-4 w-4" />;
-    if (evt.includes('rename') || evt.includes('update')) return <Edit3 className="h-4 w-4" />;
+    if (evt.includes('restore') || evt.includes('unarchive')) return <ArrowCounterClockwise className="h-4 w-4" />;
+    if (evt.includes('rename') || evt.includes('update')) return <PencilSimple className="h-4 w-4" />;
     if (evt.includes('invite') || evt.includes('join')) return <UserPlus className="h-4 w-4" />;
     if (evt.includes('remove') || evt.includes('leave')) return <UserMinus className="h-4 w-4" />;
-    if (evt.includes('delete')) return <Trash2 className="h-4 w-4" />;
+    if (evt.includes('delete')) return <Trash className="h-4 w-4" />;
     if (evt.includes('learning_path') || evt.includes('learning path')) return <Compass className="h-4 w-4" />;
     if (evt.includes('unit')) return <BookLinearIcon className="h-4 w-4" />;
     if (evt.includes('summary') || evt.includes('document')) return <FileText className="h-4 w-4" />;
-    if (item.type === 'TUTOR') return <Sparkles className="h-4 w-4" />;
-    if (item.type === 'INVITE') return <Mail className="h-4 w-4" />;
+    if (item.type === 'TUTOR') return <Sparkle className="h-4 w-4" />;
+    if (item.type === 'INVITE') return <Envelope className="h-4 w-4" />;
     return <Bell className="h-4 w-4" />;
   };
 

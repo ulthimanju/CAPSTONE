@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Loader2, FolderPlus, AlertCircle } from 'lucide-react';
+import { CircleNotch, FolderPlus, WarningCircle } from '@/components/ui/icons';
 import { Button, Card, PlusIcon } from '@/components/ui';
 import { CreateWorkspaceModal } from '../components/CreateWorkspaceModal';
 import { useWorkspacesQuery } from '../hooks/useWorkspaces';
@@ -34,7 +34,7 @@ export function WorkspacesPage() {
       {/* Loading State */}
       {isLoading && (
         <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
+          <CircleNotch className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
           <p className="mt-3 font-mono text-xs text-text/70">
             Loading workspaces...
           </p>
@@ -44,7 +44,7 @@ export function WorkspacesPage() {
       {/* Error State */}
       {isError && (
         <Card className="flex flex-col items-center justify-center p-8 text-center border-danger/30 bg-danger-tint">
-          <AlertCircle className="h-8 w-8 text-danger" aria-hidden="true" />
+          <WarningCircle className="h-8 w-8 text-danger" aria-hidden="true" />
           <h2 className="mt-3 font-display text-base font-bold text-danger">
             Unable to load workspaces
           </h2>
