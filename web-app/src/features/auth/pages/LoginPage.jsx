@@ -100,11 +100,6 @@ export function LoginPage() {
             <div className="mt-4 h-1 w-14 rounded-full bg-[#A8551E]" aria-hidden="true" />
           </div>
 
-          {/* Subtitle description */}
-          <p className="font-body text-base sm:text-lg text-[#5A5040] leading-relaxed max-w-lg">
-            Synapse helps you turn long documents into clear insights. Save time, grasp the essentials, and focus on what matters.
-          </p>
-
           {/* 4 Feature Items */}
           <div className="flex flex-col space-y-4 pt-1">
             {/* Feature 1: Smart Summaries */}
