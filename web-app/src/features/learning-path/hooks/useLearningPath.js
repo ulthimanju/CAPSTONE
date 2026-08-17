@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import learningPathApi from '../api/learningPathApi';
 import { useWorkspaceDocumentSSE } from '@/features/documents/hooks/useDocuments';
 import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
+import { learningPathKeys } from './learningPathKeys';
 
-export const LEARNING_PATH_QUERY_KEY = 'workspace-learning-path';
-export const LEARNING_UNIT_QUERY_KEY = 'learning-unit-content';
+export { learningPathKeys };
 
 export const useLearningPathStore = create((set, get) => ({
   generatingWorkspaces: {},
@@ -45,7 +45,7 @@ export function useWorkspaceLearningPathQuery(workspaceId) {
   useWorkspaceDocumentSSE(workspaceId);
 
   return useQuery({
-    queryKey: [LEARNING_PATH_QUERY_KEY, workspaceId],
+    queryKey: learningPathKeys.path(workspaceId),
     queryFn: async () => {
       if (!workspaceId) return null;
       const res = await learningPathApi.getWorkspaceLearningPath(workspaceId);
@@ -73,7 +73,7 @@ export function useGenerateLearningPathMutation(workspaceId) {
     onSuccess: () => {
       setGenerating(workspaceId, true);
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
-      queryClient.invalidateQueries({ queryKey: [LEARNING_PATH_QUERY_KEY, workspaceId] });
+      queryClient.invalidateQueries({ queryKey: learningPathKeys.path(workspaceId) });
     },
     onError: () => {
       setGenerating(workspaceId, false);
@@ -91,7 +91,7 @@ export function useUnitContentQuery(workspaceId, unitTitle) {
   useWorkspaceDocumentSSE(workspaceId);
 
   return useQuery({
-    queryKey: [LEARNING_UNIT_QUERY_KEY, workspaceId, unitTitle],
+    queryKey: learningPathKeys.unit(workspaceId, unitTitle),
     queryFn: async () => {
       if (!workspaceId || !unitTitle) return null;
       const data = await learningPathApi.getLearningUnitContent(workspaceId, unitTitle);
@@ -125,10 +125,10 @@ export function useGenerateUnitContentMutation(workspaceId, unitTitle) {
       const title = variables?.unit_title || unitTitle;
       setGeneratingUnit(workspaceId, title, false);
       queryClient.invalidateQueries({
-        queryKey: [LEARNING_UNIT_QUERY_KEY, workspaceId, title],
+        queryKey: learningPathKeys.unit(workspaceId, title),
       });
       queryClient.invalidateQueries({
-        queryKey: [LEARNING_PATH_QUERY_KEY, workspaceId],
+        queryKey: learningPathKeys.path(workspaceId),
       });
     },
     onError: (err, variables) => {
@@ -148,10 +148,20 @@ export function useUpdateQuizProgressMutation(workspaceId, unitTitle) {
         quizJson,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [LEARNING_UNIT_QUERY_KEY, workspaceId, unitTitle],
+    onSuccess: (data, variables) => {
+      const targetQuiz = variables?.quizJson;
+      queryClient.setQueryData(learningPathKeys.unit(workspaceId, unitTitle), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          content: {
+            ...(old.content || {}),
+            ...(targetQuiz ? { quiz: targetQuiz } : {}),
+          },
+        };
       });
     },
   });
 }
+
+export default useWorkspaceLearningPathQuery;

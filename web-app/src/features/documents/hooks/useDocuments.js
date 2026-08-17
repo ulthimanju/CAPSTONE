@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { documentApi } from '../api/documentApi';
 import { documentKeys, DOCUMENT_QUERY_KEYS } from './documentKeys';
 import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
+import { learningPathKeys } from '@/features/learning-path/hooks/learningPathKeys';
 import { STORAGE_KEYS } from '@/config/constants';
 
 export { documentKeys, DOCUMENT_QUERY_KEYS };
@@ -48,7 +49,7 @@ export function useWorkspaceDocumentSSE(workspaceId) {
 
           // Invalidate learning path, summary, and workspace detail if related events arrive
           queryClient.invalidateQueries({
-            queryKey: ['workspace-learning-path', workspaceId],
+            queryKey: learningPathKeys.path(workspaceId),
           });
           queryClient.invalidateQueries({
             queryKey: ['workspace-summary', workspaceId],

@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import { notificationApi } from '../api/notificationApi';
 import { useAuthStore } from '@/store/authStore';
 import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
+import { documentKeys } from '@/features/documents/hooks/documentKeys';
+import { learningPathKeys } from '@/features/learning-path/hooks/learningPathKeys';
 
 export const notificationKeys = {
   all: ['notifications'],
@@ -97,13 +99,13 @@ export function useNotificationSSE() {
 
           // 3. Invalidate specific document details if document event
           if (docId) {
-            queryClient.invalidateQueries({ queryKey: ['documents', 'detail', docId] });
-            queryClient.invalidateQueries({ queryKey: ['documents', 'parse-result', docId] });
+            queryClient.invalidateQueries({ queryKey: documentKeys.detail(docId) });
+            queryClient.invalidateQueries({ queryKey: documentKeys.parseResult(docId) });
           }
           if (wsId && (eventType.includes('document') || eventType.includes('summary') || eventType.includes('learning_path'))) {
-            queryClient.invalidateQueries({ queryKey: ['documents', 'workspace', wsId] });
+            queryClient.invalidateQueries({ queryKey: documentKeys.workspaceList(wsId) });
             queryClient.invalidateQueries({ queryKey: ['workspace-summary', wsId] });
-            queryClient.invalidateQueries({ queryKey: ['workspace-learning-path', wsId] });
+            queryClient.invalidateQueries({ queryKey: learningPathKeys.path(wsId) });
           }
 
           // 4. Invalidate auth sessions if session-related event
