@@ -184,7 +184,22 @@ export function useNotificationSSE() {
 }
 
 /**
- * Hook to mark a notification as read with instant cache update.
+ * REFERENCE IMPLEMENTATION: Zero-Read Optimistic Mutation Pattern
+ * 
+ * 1. onMutate:
+ *    - Cancels outgoing refetches for the target key family.
+ *    - Captures snapshot of previous query data for all matching shapes.
+ *    - Optimistically applies update directly to cache via setQueriesData.
+ *    - Returns { previousData } for rollback on failure.
+ * 2. onSuccess:
+ *    - Skips invalidateQueries / refetchQueries entirely since cache was already updated optimistically.
+ *    - Zero background GET requests are dispatched.
+ * 3. onError:
+ *    - Restores previous snapshot data via setQueryData if request fails.
+ */
+
+/**
+ * Hook to mark a single notification as read with instant zero-read cache update and automatic rollback.
  */
 export function useMarkNotificationReadMutation(options = {}) {
   const queryClient = useQueryClient();
@@ -195,7 +210,7 @@ export function useMarkNotificationReadMutation(options = {}) {
       await queryClient.cancelQueries({ queryKey: notificationKeys.all });
       const previousData = queryClient.getQueriesData({ queryKey: notificationKeys.all });
 
-      // Optimistically update all notification queries in cache
+      // Optimistically update all notification queries matching notificationKeys.all
       queryClient.setQueriesData({ queryKey: notificationKeys.all }, (old) => {
         if (!old) return old;
         return {
@@ -212,11 +227,11 @@ export function useMarkNotificationReadMutation(options = {}) {
       return { previousData };
     },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      queryClient.refetchQueries({ queryKey: notificationKeys.all });
+      // Zero-read: no invalidateQueries/refetchQueries needed
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
+      // Rollback to previous cache snapshot on network/server error
       if (context?.previousData) {
         context.previousData.forEach(([key, value]) => {
           queryClient.setQueryData(key, value);
@@ -229,7 +244,7 @@ export function useMarkNotificationReadMutation(options = {}) {
 }
 
 /**
- * Hook to mark all notifications as read with instant cache update.
+ * Hook to mark all notifications as read with instant zero-read cache update and automatic rollback.
  */
 export function useMarkAllNotificationsReadMutation(options = {}) {
   const queryClient = useQueryClient();
@@ -240,7 +255,7 @@ export function useMarkAllNotificationsReadMutation(options = {}) {
       await queryClient.cancelQueries({ queryKey: notificationKeys.all });
       const previousData = queryClient.getQueriesData({ queryKey: notificationKeys.all });
 
-      // Optimistically mark all notifications as READ and unread_count to 0
+      // Optimistically mark all notifications as READ and set unread_count to 0
       queryClient.setQueriesData({ queryKey: notificationKeys.all }, (old) => {
         if (!old) return old;
         return {
@@ -255,11 +270,11 @@ export function useMarkAllNotificationsReadMutation(options = {}) {
       return { previousData };
     },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      queryClient.refetchQueries({ queryKey: notificationKeys.all });
+      // Zero-read: no invalidateQueries/refetchQueries needed
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
+      // Rollback to previous cache snapshot on network/server error
       if (context?.previousData) {
         context.previousData.forEach(([key, value]) => {
           queryClient.setQueryData(key, value);
