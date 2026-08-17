@@ -102,22 +102,39 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Queries for Collaborators, Invitations, Activities
+  const {
+    data: members = [],
+    isLoading: isLoadingMembers,
+    isError: isErrorMembers,
+  } = useMembersQuery(workspace?.id);
+
+  // Caller role determination
+  const isOwner = workspace?.user_role === 'OWNER' || workspace?.owner_id === currentUser?.id;
+  const currentMember = members.find((m) => m.user_id === currentUser?.id);
+  const callerRole = isOwner ? 'OWNER' : (currentMember?.role || workspace?.user_role || 'VIEWER');
+  const isOwnerOrAdmin = isOwner || callerRole === 'ADMIN';
+  const canManageMembers = isOwner || callerRole === 'ADMIN' || callerRole === 'EDITOR';
+
   const activeTab = useMemo(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'collaborators' || tabParam === 'activity' || tabParam === 'general') {
+    if (tabParam === 'collaborators' || tabParam === 'general') {
       return tabParam;
+    }
+    if (tabParam === 'activity') {
+      return isOwnerOrAdmin ? 'activity' : 'collaborators';
     }
     if (location.pathname.endsWith('/collaborators')) {
       return 'collaborators';
     }
     if (location.pathname.endsWith('/activity')) {
-      return 'activity';
+      return isOwnerOrAdmin ? 'activity' : 'collaborators';
     }
     if (location.pathname.endsWith('/Gear')) {
       return 'general';
     }
     return 'collaborators';
-  }, [searchParams, location.pathname]);
+  }, [searchParams, location.pathname, isOwnerOrAdmin]);
 
   const handleTabChange = (newTab) => {
     setSearchParams({ tab: newTab });
@@ -233,13 +250,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     },
   });
 
-  // Queries for Collaborators, Invitations, Activities
-  const {
-    data: members = [],
-    isLoading: isLoadingMembers,
-    isError: isErrorMembers,
-  } = useMembersQuery(workspace?.id);
-
   const {
     data: invitations = [],
     isLoading: isLoadingInvites,
@@ -306,12 +316,6 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   });
 
   if (!workspace) return null;
-
-  // Caller role determination
-  const isOwner = workspace.user_role === 'OWNER' || workspace.owner_id === currentUser?.id;
-  const currentMember = members.find((m) => m.user_id === currentUser?.id);
-  const callerRole = isOwner ? 'OWNER' : (currentMember?.role || workspace.user_role || 'VIEWER');
-  const canManageMembers = isOwner || callerRole === 'ADMIN' || callerRole === 'EDITOR';
 
   // Filtered members and invitations
   const filteredMembers = useMemo(() => {
@@ -393,26 +397,34 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
     return (type || '').replace(/_/g, ' ');
   };
 
-  const tabs = [
-    {
-      id: 'collaborators',
-      label: 'Collaborators',
-      icon: Users,
-      count: members.length || null,
-    },
-    {
-      id: 'activity',
-      label: 'Activity',
-      icon: LogsIcon,
-      count: null,
-    },
-    {
+  const tabs = useMemo(() => {
+    const tabList = [
+      {
+        id: 'collaborators',
+        label: 'Collaborators',
+        icon: Users,
+        count: members.length || null,
+      },
+    ];
+
+    if (isOwnerOrAdmin) {
+      tabList.push({
+        id: 'activity',
+        label: 'Activity',
+        icon: LogsIcon,
+        count: null,
+      });
+    }
+
+    tabList.push({
       id: 'general',
       label: 'General',
       icon: Gear,
       count: null,
-    },
-  ];
+    });
+
+    return tabList;
+  }, [members.length, isOwnerOrAdmin]);
 
   return (
     <div className="w-full flex flex-col min-h-0 flex-1">
@@ -1056,7 +1068,7 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
       )}
 
       {/* 3. Dedicated Activity Tab Section */}
-      {activeTab === 'activity' && (
+      {activeTab === 'activity' && isOwnerOrAdmin && (
         <ActivityTab workspaceId={workspace.id} members={members} />
       )}
       </div>
