@@ -332,31 +332,43 @@ export function BookLinearIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return <BookOpen weight="regular" className={className} aria-hidden="true" {...props} />;
 }
 
-/** Google Drive Brand Icon — Official 3-colored trapezoid geometry */
+/** Google Drive Brand Icon — Official Google Drive (2026) Edition */
 export function GoogleDriveIcon({ className = 'h-4 w-4 shrink-0', ...props }) {
   return (
     <svg
+      viewBox="0 0 800 742"
+      fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
       className={className}
       aria-hidden="true"
       {...props}
     >
-      {/* Top Green Slanted Segment */}
-      <path
-        d="M16.34 1.47H8.97l7.31 12.66h7.37L16.34 1.47z"
-        fill="#00AC47"
-      />
-      {/* Left Yellow Slanted Segment */}
-      <path
-        d="M12.01 1.47 4.7 14.13l3.65 6.33 7.31-12.66L12.01 1.47z"
-        fill="#FFBA00"
-      />
-      {/* Bottom Blue Horizontal Segment */}
-      <path
-        d="M15.37 14.13H4.03l3.65 6.34h11.34l-3.65-6.34z"
-        fill="#2684FC"
-      />
+      <mask id="gdrive-2026-mask" width="168" height="154" x="12" y="18" maskUnits="userSpaceOnUse">
+        <path
+          fill="#ffffff"
+          d="M63.09 37c14.626-25.333 51.193-25.334 65.819 0l45.033 78c14.626 25.334-3.657 57.001-32.91 57.001H50.967c-29.253 0-47.536-31.667-32.91-57.001Z"
+        />
+      </mask>
+      <g mask="url(#gdrive-2026-mask)" transform="matrix(4.8140532,0,0,4.8140532,-62.146701,-86.652356)">
+        <path fill="url(#gdrive-2026-grad-b)" d="M206.905 172.02h-91.888l-19.015-32.934 45.944-79.578Z" />
+        <path fill="url(#gdrive-2026-grad-c)" d="M-14.919 172.006 50.04 59.494v.002L31.032 92.422h38.02L115 172.004l-129.918.001Z" />
+        <path fill="url(#gdrive-2026-grad-d)" d="M96.007-20.085 141.954 59.5l-19.011 32.928H31.048Z" />
+      </g>
+      <defs>
+        <linearGradient id="gdrive-2026-grad-b" x1="193.6" x2="103.09" y1="165.6" y2="111.21" gradientUnits="userSpaceOnUse">
+          <stop offset=".09" stopColor="#ffe921" />
+          <stop offset="1" stopColor="#fec700" />
+        </linearGradient>
+        <linearGradient id="gdrive-2026-grad-c" x1="114.4" x2="15.53" y1="181.61" y2="121.8" gradientUnits="userSpaceOnUse">
+          <stop offset=".15" stopColor="#a9a8ff" />
+          <stop offset=".33" stopColor="#6d97ff" />
+          <stop offset=".48" stopColor="#3186ff" />
+        </linearGradient>
+        <linearGradient id="gdrive-2026-grad-d" x1="128.88" x2="28.7" y1="37.88" y2="84.64" gradientUnits="userSpaceOnUse">
+          <stop offset=".55" stopColor="#0ebc5f" />
+          <stop offset=".85" stopColor="#78c9ff" />
+        </linearGradient>
+      </defs>
     </svg>
   );
 }
