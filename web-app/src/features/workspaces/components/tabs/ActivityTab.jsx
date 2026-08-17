@@ -93,46 +93,46 @@ export function ActivityTab({ workspaceId, members = [] }) {
         return {
           label: type.replace(/_/g, ' '),
           icon: Shield,
-          className: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+          className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
         };
       case 'WORKSPACE_ARCHIVED':
       case 'WORKSPACE_DELETED':
         return {
           label: type.replace(/_/g, ' '),
           icon: WarningCircle,
-          className: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+          className: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
         };
       case 'MEMBER_INVITED':
         return {
           label: 'MEMBER INVITED',
           icon: UserPlus,
-          className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+          className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
         };
       case 'MEMBER_JOINED':
         return {
           label: 'MEMBER JOINED',
           icon: CheckCircle,
-          className: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+          className: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
         };
       case 'ROLE_CHANGED':
       case 'MEMBER_UPDATED':
         return {
           label: type === 'MEMBER_UPDATED' && entityType === 'quiz_submission' ? 'QUIZ SUBMITTED' : 'ROLE CHANGED',
           icon: ArrowRightLeft,
-          className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+          className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
         };
       case 'MEMBER_REMOVED':
       case 'MEMBER_LEFT':
         return {
           label: type.replace(/_/g, ' '),
           icon: UserMinus,
-          className: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+          className: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
         };
       case 'OWNERSHIP_TRANSFERRED':
         return {
           label: 'OWNERSHIP TRANSFERRED',
           icon: Crown,
-          className: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 font-bold',
+          className: 'bg-amber-500/15 text-amber-700 border-amber-500/30 font-bold',
         };
       case 'QUIZ_COMPLETED':
         return {
@@ -144,7 +144,7 @@ export function ActivityTab({ workspaceId, members = [] }) {
         return {
           label: 'DOCUMENT UPLOADED',
           icon: FileText,
-          className: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+          className: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20',
         };
       default:
         return {

@@ -5,12 +5,6 @@
 /* ==========================================================================
    Field Journal — Design Tokens
    Warm editorial theme (Fraunces + Work Sans + IBM Plex Mono)
-   Extracted from the Synapse app for reuse in other projects.
-
-   Usage:
-     1. Import this file, then set <html data-theme="dark"> to switch themes
-        (omit the attribute, or set it to anything else, for light mode).
-     2. Reference tokens as var(--token-name) in your own CSS.
    ========================================================================== */
 
 :root {
@@ -30,7 +24,7 @@
     --color-on-accent: #FFFFFF; /* text/icon color placed on top of accent fills */
 
     /* ---- Semantic tokens -------------------------------------------------
-       What components should actually consume. */
+       What components consume. */
     --bg: var(--color-paper);
     --text: var(--color-ink);
     --border: var(--color-sand);
@@ -64,28 +58,6 @@
     --font-mono: 'IBM Plex Mono', monospace;/* eyebrows, tags, badges, timestamps */
 }
 
-/* ---- Dark theme overrides ----------------------------------------------
-   Apply by setting data-theme="dark" on <html> (or another ancestor). */
-[data-theme="dark"] {
-    --bg: #1B1710;
-    --text: #EDE4D0;
-    --border: #3A3225;
-    --sand: #3A3225;          /* re-purposed in dark mode as a border/tint tone */
-    --sep-line: #5A4C39;
-    --sage-text: #9CB37E;     /* lightened for AA on dark backgrounds */
-    --danger: #D97A4C;
-    --success: #8FB36B;
-    --accent: var(--color-rust); /* accent stays constant across themes */
-
-    /* Elevated surfaces in dark mode use a dedicated near-black brown
-       rather than the repurposed --sand token above. */
-    --surface-raised: #231E16;      /* card / sidebar / panel background */
-    --surface-hover: #31291F;       /* hover background on --bg surfaces */
-    --surface-hover-strong: #3A3225;/* dropdown item hover */
-    --shadow-color: rgba(0, 0, 0, 0.35);
-    --danger-tint: rgba(217, 122, 76, 0.15);
-}
-
 @layer base {
   * {
     border-color: var(--border);
@@ -114,129 +86,45 @@
     width: 0;
     height: 0;
   }
-}
 
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  /* Custom selection highlight matching warm editorial theme */
+  ::selection {
+    background-color: var(--accent);
+    color: var(--on-accent);
   }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+
+  /* Focus ring utility */
+  :focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
   }
 }
 
 /* ==========================================================================
-   Sonner Toast Theme Customizations — SYNAPSE Warm Editorial Palette
+   Syntax Highlighting (hljs) — Field Journal Warm Editorial Palette
    ========================================================================== */
 
-[data-sonner-toaster] {
-  font-family: var(--font-body) !important;
-}
-
-[data-sonner-toast] {
-  background-color: var(--surface-raised) !important;
-  border: 1px solid var(--sep-line) !important;
+.hljs {
   color: var(--text) !important;
-  border-radius: var(--radius-ui) !important;
-  box-shadow: 0 8px 24px var(--shadow-color), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
-  padding: 14px 16px !important;
-  gap: 12px !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-[data-sonner-toast] [data-title] {
-  font-family: var(--font-display) !important;
-  font-weight: 700 !important;
-  font-size: 0.875rem !important; /* 14px */
-  line-height: 1.25rem !important;
-  color: var(--text) !important;
-  letter-spacing: -0.01em !important;
-}
-
-[data-sonner-toast] [data-description] {
-  font-family: var(--font-body) !important;
-  font-size: 0.75rem !important; /* 12px */
-  line-height: 1.125rem !important;
-  color: var(--text) !important;
-  opacity: 0.82 !important;
-  margin-top: 3px !important;
-}
-
-/* Icons */
-[data-sonner-toast] [data-icon] {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin-top: 1px !important;
-}
-
-/* Success Toasts */
-[data-sonner-toast][data-type="success"] {
-  border-color: var(--success) !important;
-  border-left: 3.5px solid var(--success) !important;
-}
-
-[data-sonner-toast][data-type="success"] [data-icon] svg {
-  color: var(--success) !important;
-}
-
-/* Error / Danger Toasts */
-[data-sonner-toast][data-type="error"] {
-  border-color: var(--danger) !important;
-  border-left: 3.5px solid var(--danger) !important;
-}
-
-[data-sonner-toast][data-type="error"] [data-icon] svg {
-  color: var(--danger) !important;
-}
-
-/* Info / Default Event Toasts */
-[data-sonner-toast][data-type="info"],
-[data-sonner-toast][data-type="default"],
-[data-sonner-toast]:not([data-type]) {
-  border-color: var(--sep-line) !important;
-  border-left: 3.5px solid var(--accent) !important;
-}
-
-[data-sonner-toast][data-type="info"] [data-icon] svg {
-  color: var(--accent) !important;
-}
-
-/* Loading Toasts */
-[data-sonner-toast][data-type="loading"] {
-  border-color: var(--sep-line) !important;
-  border-left: 3.5px solid var(--accent) !important;
-}
-
-[data-sonner-toast][data-type="loading"] [data-icon] svg {
-  color: var(--accent) !important;
-}
-
-/* Hide Close Button (x icon) */
-[data-sonner-toast] [data-close-button] {
-  display: none !important;
-}
-
-/* ==========================================================================
-   Syntax Highlighting — Field Journal Parchment & Ink Token Mapping
-   ========================================================================== */
-
-pre code.hljs,
-code.hljs {
   background: transparent !important;
-  color: var(--text) !important;
-  font-family: var(--font-mono) !important;
 }
 
 .hljs-keyword,
 .hljs-selector-tag,
-.hljs-built_in {
+.hljs-subst {
   color: var(--accent) !important;
   font-weight: 600;
 }
 
 .hljs-string,
+.hljs-title.class_,
+.hljs-section,
+.hljs-type,
+.hljs-symbol {
+  color: var(--sage-text) !important;
+  font-weight: 500;
+}
+
 .hljs-title,
 .hljs-section {
   color: var(--sage-text) !important;
@@ -267,20 +155,3 @@ code.hljs {
 .hljs-template-variable {
   color: var(--text) !important;
 }
-
-[data-theme="dark"] .hljs-comment,
-[data-theme="dark"] .hljs-quote {
-  color: #A39378 !important;
-}
-
-[data-theme="dark"] .hljs-number,
-[data-theme="dark"] .hljs-literal {
-  color: #E28854 !important;
-}
-
-[data-theme="dark"] .hljs-function,
-[data-theme="dark"] .hljs-params,
-[data-theme="dark"] .hljs-attr {
-  color: #DE9B4E !important;
-}
-
