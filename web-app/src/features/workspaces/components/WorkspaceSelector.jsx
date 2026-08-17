@@ -87,10 +87,10 @@ export function WorkspaceSelector({ className }) {
       if (!activeWorkspaceId || !allWorkspaces.some((w) => w.id === activeWorkspaceId)) {
         setActiveWorkspaceId(allWorkspaces[0].id);
       }
-    } else if (allWorkspaces.length === 0 && activeWorkspaceId) {
+    } else if (!isLoading && allWorkspaces.length === 0 && activeWorkspaceId) {
       setActiveWorkspaceId(null);
     }
-  }, [routeWorkspaceId, activeWorkspaceId, allWorkspaces, setActiveWorkspaceId]);
+  }, [routeWorkspaceId, activeWorkspaceId, allWorkspaces, isLoading, setActiveWorkspaceId]);
 
   const handleSelectWorkspace = (ws) => {
     setActiveWorkspaceId(ws.id);

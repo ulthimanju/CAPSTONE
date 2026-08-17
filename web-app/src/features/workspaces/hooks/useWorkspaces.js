@@ -1,15 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { workspaceApi } from '../api/workspaceApi';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { workspaceKeys } from './workspaceKeys';
 
-export const workspaceKeys = {
-  all: ['workspaces'],
-  lists: () => [...workspaceKeys.all, 'list'],
-  list: (filters) => [...workspaceKeys.lists(), filters],
-  archived: (filters) => [...workspaceKeys.all, 'archived', filters],
-  details: () => [...workspaceKeys.all, 'detail'],
-  detail: (id) => [...workspaceKeys.details(), id],
-};
+export { workspaceKeys };
 
 /**
  * Hook to fetch paginated workspaces for the current user.
@@ -58,7 +52,7 @@ export function useCreateWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (newWorkspace) => workspaceApi.createWorkspace(newWorkspace),
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       if (data?.id) {
         setActiveWorkspaceId(data.id);
       }
@@ -80,8 +74,10 @@ export function useUpdateWorkspaceMutation(workspaceId, options = {}) {
   return useMutation({
     mutationFn: (data) => workspaceApi.updateWorkspace(workspaceId, data),
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
+      if (data) {
+        queryClient.setQueryData(workspaceKeys.detail(workspaceId), data);
+      }
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -101,7 +97,9 @@ export function useArchiveWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (workspaceId) => workspaceApi.archiveWorkspace(workspaceId),
     onSuccess: (data, workspaceId, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.archived() });
       clearActiveWorkspace();
       options.onSuccess?.(data, workspaceId, context);
     },
@@ -121,7 +119,9 @@ export function useRestoreWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (workspaceId) => workspaceApi.restoreWorkspace(workspaceId),
     onSuccess: (data, workspaceId, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.archived() });
       options.onSuccess?.(data, workspaceId, context);
     },
     onError: (error, variables, context) => {
@@ -141,8 +141,9 @@ export function useDeleteWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (workspaceId) => workspaceApi.deleteWorkspace(workspaceId),
     onSuccess: (data, workspaceId, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
       queryClient.removeQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.archived() });
       clearActiveWorkspace();
       options.onSuccess?.(data, workspaceId, context);
     },

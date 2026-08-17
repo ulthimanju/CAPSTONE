@@ -98,9 +98,15 @@ class WorkspaceCacheManager:
         except Exception:
             pass
 
-    # Alias used by TransferOwnershipUseCase and other callers that prefer the explicit name
-    async def invalidate_workspace(self, workspace_id: uuid.UUID):
-        await self.invalidate(workspace_id)
+    async def invalidate_workspace(self, workspace_id: uuid.UUID | str | None, affected_user_ids: list[uuid.UUID | str] | None = None):
+        """Centralized invalidation for workspace entity, activities, and affected user workspace lists."""
+        if workspace_id:
+            ws_uuid = uuid.UUID(str(workspace_id)) if isinstance(workspace_id, str) else workspace_id
+            await self.invalidate(ws_uuid)
+            await self.invalidate_workspace_activity(ws_uuid)
+        for uid in affected_user_ids or []:
+            u_uuid = uuid.UUID(str(uid)) if isinstance(uid, str) else uid
+            await self.invalidate_user_workspaces(u_uuid)
 
 
     async def get_user_workspaces(self, user_id: uuid.UUID) -> list[Workspace] | None:

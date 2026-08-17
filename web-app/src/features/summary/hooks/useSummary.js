@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import summaryApi from '../api/summaryApi';
 import { useWorkspaceDocumentSSE } from '@/features/documents/hooks/useDocuments';
+import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 
 export const SUMMARY_QUERY_KEY = 'workspace-summary';
 
@@ -30,7 +31,7 @@ export function useGenerateSummaryMutation(workspaceId) {
     },
     onSuccess: () => {
       // Invalidate workspace details and summary
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       queryClient.invalidateQueries({ queryKey: [SUMMARY_QUERY_KEY, workspaceId] });
     },
   });

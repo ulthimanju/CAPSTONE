@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import learningPathApi from '../api/learningPathApi';
 import { useWorkspaceDocumentSSE } from '@/features/documents/hooks/useDocuments';
+import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 
 export const LEARNING_PATH_QUERY_KEY = 'workspace-learning-path';
 export const LEARNING_UNIT_QUERY_KEY = 'learning-unit-content';
@@ -71,7 +72,7 @@ export function useGenerateLearningPathMutation(workspaceId) {
     },
     onSuccess: () => {
       setGenerating(workspaceId, true);
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       queryClient.invalidateQueries({ queryKey: [LEARNING_PATH_QUERY_KEY, workspaceId] });
     },
     onError: () => {

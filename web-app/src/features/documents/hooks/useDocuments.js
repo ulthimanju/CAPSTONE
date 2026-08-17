@@ -1,14 +1,11 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { documentApi } from '../api/documentApi';
+import { documentKeys, DOCUMENT_QUERY_KEYS } from './documentKeys';
+import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 import { STORAGE_KEYS } from '@/config/constants';
 
-export const DOCUMENT_QUERY_KEYS = {
-  all: ['documents'],
-  workspaceList: (workspaceId) => ['documents', 'workspace', workspaceId],
-  detail: (documentId) => ['documents', 'detail', documentId],
-  parseResult: (documentId) => ['documents', 'parse-result', documentId],
-};
+export { documentKeys, DOCUMENT_QUERY_KEYS };
 
 /**
  * Hook to subscribe to workspace Server-Sent Events (SSE) for live document indexing and status updates.
@@ -33,24 +30,23 @@ export function useWorkspaceDocumentSSE(workspaceId) {
       const handleEvent = (event) => {
         try {
           const payload = event.data ? JSON.parse(event.data) : null;
-          // Invalidate and refetch workspace document queries to refresh status live
+          const docId = payload?.resource_id || payload?.document_id;
+
+          // Scoped document invalidations
           queryClient.invalidateQueries({
-            queryKey: DOCUMENT_QUERY_KEYS.all,
-          });
-          queryClient.refetchQueries({
-            queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
+            queryKey: documentKeys.workspaceList(workspaceId),
           });
 
-          if (payload?.resource_id || payload?.document_id) {
-            const docId = payload.resource_id || payload.document_id;
+          if (docId) {
             queryClient.invalidateQueries({
-              queryKey: DOCUMENT_QUERY_KEYS.detail(docId),
+              queryKey: documentKeys.detail(docId),
             });
             queryClient.invalidateQueries({
-              queryKey: DOCUMENT_QUERY_KEYS.parseResult(docId),
+              queryKey: documentKeys.parseResult(docId),
             });
           }
-          // Invalidate learning path and summary if related events arrive
+
+          // Invalidate learning path, summary, and workspace detail if related events arrive
           queryClient.invalidateQueries({
             queryKey: ['workspace-learning-path', workspaceId],
           });
@@ -58,27 +54,12 @@ export function useWorkspaceDocumentSSE(workspaceId) {
             queryKey: ['workspace-summary', workspaceId],
           });
           queryClient.invalidateQueries({
-            queryKey: ['workspaces', workspaceId],
-          });
-          queryClient.invalidateQueries({
-            queryKey: ['workspaces'],
-          });
-          queryClient.invalidateQueries({
-            queryKey: ['workspace-members'],
+            queryKey: workspaceKeys.detail(workspaceId),
           });
         } catch {
-          // Fallback invalidation on generic message
+          // Fallback scoped invalidation
           queryClient.invalidateQueries({
-            queryKey: DOCUMENT_QUERY_KEYS.all,
-          });
-          queryClient.refetchQueries({
-            queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
-          });
-          queryClient.invalidateQueries({
-            queryKey: ['workspace-learning-path', workspaceId],
-          });
-          queryClient.invalidateQueries({
-            queryKey: ['workspace-summary', workspaceId],
+            queryKey: documentKeys.workspaceList(workspaceId),
           });
         }
       };
@@ -117,7 +98,7 @@ export function useWorkspaceDocumentsQuery(workspaceId) {
   useWorkspaceDocumentSSE(workspaceId);
 
   return useQuery({
-    queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId),
+    queryKey: documentKeys.workspaceList(workspaceId),
     queryFn: () => documentApi.getWorkspaceDocuments(workspaceId),
     enabled: !!workspaceId,
     staleTime: 0, // Zero stale time ensures instant UI refresh upon completion
@@ -129,7 +110,7 @@ export function useWorkspaceDocumentsQuery(workspaceId) {
  */
 export function useDocumentQuery(documentId) {
   return useQuery({
-    queryKey: DOCUMENT_QUERY_KEYS.detail(documentId),
+    queryKey: documentKeys.detail(documentId),
     queryFn: () => documentApi.getDocumentById(documentId),
     enabled: !!documentId,
     staleTime: 1000 * 30,
@@ -141,7 +122,7 @@ export function useDocumentQuery(documentId) {
  */
 export function useDocumentParseResultQuery(documentId) {
   return useQuery({
-    queryKey: DOCUMENT_QUERY_KEYS.parseResult(documentId),
+    queryKey: documentKeys.parseResult(documentId),
     queryFn: () => documentApi.getDocumentParseResult(documentId),
     enabled: !!documentId,
     staleTime: 1000 * 60,
@@ -158,9 +139,8 @@ export function useUploadDocumentMutation(workspaceId, { onSuccess, onError } = 
     mutationFn: ({ file, onUploadProgress }) =>
       documentApi.uploadDocumentFile({ workspaceId, file, onUploadProgress }),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.all });
-      queryClient.refetchQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.workspaceList(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       onSuccess?.(data);
     },
     onError: (err) => {
@@ -177,10 +157,13 @@ export function useDeleteDocumentMutation(workspaceId, { onSuccess, onError } = 
 
   return useMutation({
     mutationFn: (documentId) => documentApi.deleteDocument(documentId),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.all });
-      queryClient.refetchQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceId] });
+    onSuccess: (data, documentId) => {
+      if (documentId) {
+        queryClient.removeQueries({ queryKey: documentKeys.detail(documentId) });
+        queryClient.removeQueries({ queryKey: documentKeys.parseResult(documentId) });
+      }
+      queryClient.invalidateQueries({ queryKey: documentKeys.workspaceList(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       onSuccess?.(data);
     },
     onError: (err) => {
@@ -198,9 +181,12 @@ export function useRenameDocumentMutation(workspaceId, { onSuccess, onError } = 
   return useMutation({
     mutationFn: ({ documentId, filename }) =>
       documentApi.renameDocument(documentId, filename),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.all });
-      queryClient.refetchQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
+    onSuccess: (data, variables) => {
+      const docId = data?.id || variables?.documentId;
+      if (data && docId) {
+        queryClient.setQueryData(documentKeys.detail(docId), data);
+      }
+      queryClient.invalidateQueries({ queryKey: documentKeys.workspaceList(workspaceId) });
       onSuccess?.(data);
     },
     onError: (err) => {
@@ -208,3 +194,5 @@ export function useRenameDocumentMutation(workspaceId, { onSuccess, onError } = 
     },
   });
 }
+
+export default useWorkspaceDocumentsQuery;

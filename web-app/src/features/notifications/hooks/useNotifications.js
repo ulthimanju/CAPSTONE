@@ -3,10 +3,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { notificationApi } from '../api/notificationApi';
 import { useAuthStore } from '@/store/authStore';
+import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 
 export const notificationKeys = {
   all: ['notifications'],
   list: (filters) => [...notificationKeys.all, 'list', filters],
+};
+
+const sseInvalidationMap = {
+  'workspace.updated': (id) => [workspaceKeys.detail(id), workspaceKeys.lists()],
+  'workspace.collaborator_joined': (id) => [workspaceKeys.members(id)],
+  'workspace.member_removed': (id) => [workspaceKeys.members(id)],
+  'workspace.member_role_updated': (id) => [workspaceKeys.members(id)],
+  'workspace.ownership.transferred': (id) => [workspaceKeys.detail(id), workspaceKeys.lists(), workspaceKeys.members(id)],
+  'workspace.archived': (id) => [workspaceKeys.detail(id), workspaceKeys.lists(), workspaceKeys.archived()],
+  'workspace.restored': (id) => [workspaceKeys.detail(id), workspaceKeys.lists(), workspaceKeys.archived()],
+  'workspace.deleted': (id) => [workspaceKeys.detail(id), workspaceKeys.lists(), workspaceKeys.archived()],
+  'WorkspaceArchived': (id) => [workspaceKeys.detail(id), workspaceKeys.lists(), workspaceKeys.archived()],
+  'WorkspaceRestored': (id) => [workspaceKeys.detail(id), workspaceKeys.lists(), workspaceKeys.archived()],
+  'MemberJoined': (id) => [workspaceKeys.members(id)],
 };
 
 /**
@@ -52,33 +67,43 @@ export function useNotificationSSE() {
             return;
           }
 
+          const currentUserId = useAuthStore.getState().user?.id || useAuthStore.getState().user?.sub;
+          const actorId = payload.actor_id || payload.metadata?.actor_id;
+          const isOriginatingActor = Boolean(actorId && currentUserId && String(actorId) === String(currentUserId));
+
           const wsId = payload.workspace_id || payload.metadata?.workspace_id;
           const docId = payload.document_id || payload.resource_id || payload.metadata?.document_id;
-          const eventType = (payload.event_type || payload.event_name || payload.type || '').toLowerCase();
+          const rawEventType = payload.event_type || payload.event_name || payload.type || '';
+          const eventType = rawEventType.toLowerCase();
 
-          // 1. Invalidate and immediately refetch notifications
+          // 1. Invalidate and immediately refetch notifications & pending invitations
           queryClient.invalidateQueries({ queryKey: notificationKeys.all });
           queryClient.refetchQueries({ queryKey: notificationKeys.all });
           queryClient.invalidateQueries({ queryKey: ['user-pending-invitations'] });
           queryClient.refetchQueries({ queryKey: ['user-pending-invitations'] });
 
-          // 2. Invalidate workspace lists and active workspace details
-          queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-
-          if (wsId) {
-            queryClient.invalidateQueries({ queryKey: ['workspaces', 'detail', wsId] });
-            queryClient.invalidateQueries({ queryKey: ['documents', 'workspace', wsId] });
-            queryClient.invalidateQueries({ queryKey: ['workspace-members', 'list', wsId] });
-            queryClient.invalidateQueries({ queryKey: ['workspace-members', 'invitations', wsId] });
-            queryClient.invalidateQueries({ queryKey: ['workspace-members', 'activities', wsId] });
-            queryClient.invalidateQueries({ queryKey: ['workspace-summary', wsId] });
-            queryClient.invalidateQueries({ queryKey: ['workspace-learning-path', wsId] });
+          // 2. Perform scoped workspace invalidation only if NOT originating actor
+          if (!isOriginatingActor) {
+            const getKeysToInvalidate = sseInvalidationMap[rawEventType] || sseInvalidationMap[eventType];
+            if (getKeysToInvalidate && wsId) {
+              const keys = getKeysToInvalidate(wsId);
+              keys.forEach((queryKey) => {
+                queryClient.invalidateQueries({ queryKey });
+              });
+            } else if (eventType.startsWith('workspace.')) {
+              console.warn(`[SSE] Unmapped workspace event received: ${rawEventType}`);
+            }
           }
 
           // 3. Invalidate specific document details if document event
           if (docId) {
             queryClient.invalidateQueries({ queryKey: ['documents', 'detail', docId] });
             queryClient.invalidateQueries({ queryKey: ['documents', 'parse-result', docId] });
+          }
+          if (wsId && (eventType.includes('document') || eventType.includes('summary') || eventType.includes('learning_path'))) {
+            queryClient.invalidateQueries({ queryKey: ['documents', 'workspace', wsId] });
+            queryClient.invalidateQueries({ queryKey: ['workspace-summary', wsId] });
+            queryClient.invalidateQueries({ queryKey: ['workspace-learning-path', wsId] });
           }
 
           // 4. Invalidate auth sessions if session-related event

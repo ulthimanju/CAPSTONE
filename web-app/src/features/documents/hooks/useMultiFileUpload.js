@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { documentApi } from '../api/documentApi';
 import { DOCUMENT_QUERY_KEYS } from './useDocuments';
+import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 import { getErrorMessage } from '@/lib/errorUtils';
 
 const ALLOWED_EXTENSIONS = [
@@ -66,9 +67,8 @@ export function useMultiFileUpload(workspaceId) {
       }
 
       // Synchronously invalidate and refetch workspace documents
-      queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.all });
-      queryClient.refetchQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
 
       if (successCount > 0) {
         toast.success(

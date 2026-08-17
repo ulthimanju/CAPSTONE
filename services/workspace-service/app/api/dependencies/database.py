@@ -29,11 +29,12 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
             await session.commit()
             cache = get_workspace_cache()
-            for ws_id in session.info.get("post_commit_invalidations", set()):
-                await cache.invalidate(ws_id)
-                await cache.invalidate_workspace_activity(ws_id)
-            for uid in session.info.get("post_commit_user_invalidations", set()):
-                await cache.invalidate_user_workspaces(uid)
+            ws_ids = session.info.get("post_commit_invalidations", set())
+            user_ids = session.info.get("post_commit_user_invalidations", set())
+            for ws_id in ws_ids:
+                await cache.invalidate_workspace(ws_id)
+            if user_ids:
+                await cache.invalidate_workspace(workspace_id=None, affected_user_ids=list(user_ids))
             for evt in session.info.get("post_commit_events", []):
                 try:
                     from shared.events import publish_workspace_event
