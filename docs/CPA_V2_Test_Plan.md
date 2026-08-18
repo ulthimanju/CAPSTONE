@@ -337,19 +337,34 @@
 
 ---
 
-## Category 7 — Performance / Load Tests
+## Category 7 — Performance, Load & Stress Tests
 
+### 7.1 Load Testing (Expected / Normal Peak Traffic)
 | Test | Target | Priority |
 |---|---|---|
 | 10 concurrent RAG chat queries → all 200 OK | 0 failures | P1 |
 | RAG chat p95 response time | < 30s | P1 |
 | Redis cache hit: same query twice → 2nd response < 1s | Cache speedup | P1 |
 | 5 simultaneous document uploads | All processed, no race | P1 |
-| 50 concurrent RAG queries | 0 crashes, avg < 45s | P2 |
-| API gateway under 100 req/sec | No 5xx | P2 |
-| Memory stable after 100 chat queries | No leak | P2 |
-| DB connection pool exhaustion under load | Graceful queuing | P2 |
-| RabbitMQ queue depth under heavy upload load | Consumer keeps up | P3 |
+| API gateway under 100 req/sec steady load | No 5xx, latency < 200ms | P2 |
+| RabbitMQ queue depth under normal load | Consumer keeps up (zero queue accumulation) | P3 |
+
+### 7.2 Stress Testing (Pushing System to Breaking Point)
+| Test | Stress Condition / Target | Priority |
+|---|---|---|
+| 50–100 concurrent RAG queries beyond LLM pool capacity | Fast HTTP 503 / 429 backpressure, no container crash | P1 |
+| 20 concurrent large PDF uploads (10MB+ each) | CPU/RAM spike handled, memory leak free, no OOM kill | P1 |
+| Database Connection Pool Exhaustion (exceeding `DATABASE_POOL_SIZE` + `MAX_OVERFLOW`) | Requests queue cleanly without dropping connections or crashing Uvicorn | P1 |
+| RabbitMQ message flood (1,000 ingest events in queue) | Consumers process sequentially via `prefetch_count=10` without crashing | P2 |
+| Redis memory saturation (fill Redis cache beyond maxmemory policy) | Eviction policy (`allkeys-lru`) triggers safely without service failure | P2 |
+| Microservice Chaos/Crash Resilience (kill `ai-service` or `redis` during peak load) | Fallbacks trigger gracefully, system self-heals upon container restart | P1 |
+
+### 7.3 Spike & Endurance/Soak Testing
+| Test | Scenario / Target | Priority |
+|---|---|---|
+| Sudden traffic spike: 0 → 150 req/sec in 5 seconds | Gateway throttles/queues cleanly, recovers to normal latency | P2 |
+| Soak/Endurance Test: 12-hour continuous steady traffic | Memory usage remains flat (0 memory leaks across FastAPI & Redis) | P2 |
+| Long-running connection stress (500 idle SSE connections open simultaneously) | Gateway event loop remains responsive | P2 |
 
 ---
 
