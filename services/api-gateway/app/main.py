@@ -26,14 +26,26 @@ from contextlib import asynccontextmanager
 
 settings = GatewaySettings()
 
-client = httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0))
+http_limits = httpx.Limits(
+    max_keepalive_connections=50,
+    max_connections=200,
+    keepalive_expiry=30.0,
+)
+
+client = httpx.AsyncClient(
+    limits=http_limits,
+    timeout=settings.get_httpx_timeout(read_override=60.0),
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global client
     if client.is_closed:
-        client = httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0))
+        client = httpx.AsyncClient(
+            limits=http_limits,
+            timeout=settings.get_httpx_timeout(read_override=60.0),
+        )
     app.state.client = client
     yield
     try:
