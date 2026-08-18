@@ -52,18 +52,66 @@ class TokenCounter:
         return max(1, len(text.strip()) // 4)
 
 
+class KeyPool:
+    def __init__(self, primary_key: str | None = None, alt_keys: list[str] | None = None):
+        raw_keys = []
+        if primary_key:
+            raw_keys.append(primary_key)
+        
+        # Load keys strictly from environment variables to comply with repository secret rules
+        env_keys_str = os.environ.get("GEMINI_API_KEYS") or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY", "")
+        for k in env_keys_str.split(","):
+            clean_k = k.strip()
+            if clean_k and clean_k not in raw_keys:
+                raw_keys.append(clean_k)
+                
+        if alt_keys:
+            for k in alt_keys:
+                clean_k = k.strip() if isinstance(k, str) else ""
+                if clean_k and clean_k not in raw_keys:
+                    raw_keys.append(clean_k)
+
+        self._keys = [k for k in raw_keys if k]
+        self._current_index = 0
+        self._lock = asyncio.Lock()
+        logger.info("Initialized Gemini KeyPool with %d keys.", len(self._keys))
+
+    def get_current_key(self) -> str:
+        if not self._keys:
+            raise RuntimeError("No Gemini API keys configured.")
+        return self._keys[self._current_index % len(self._keys)]
+
+    def rotate_key(self, reason: str = "Rate limit or quota hit") -> str:
+        prev_idx = self._current_index
+        self._current_index = (self._current_index + 1) % len(self._keys)
+        new_key = self._keys[self._current_index]
+        logger.warning(
+            "Rotated Gemini API Key [%d -> %d/%d] due to: %s. New active key: ...%s",
+            prev_idx + 1,
+            self._current_index + 1,
+            len(self._keys),
+            reason,
+            new_key[-6:],
+        )
+        return new_key
+
+    def total_keys(self) -> int:
+        return len(self._keys)
+
+
 class GeminiClient:
     def __init__(self, api_key: str | None = None):
-        self.api_key = api_key or settings.google_api_key or os.environ.get("GOOGLE_API_KEY", "")
-        self._client = genai.Client(api_key=self.api_key) if self.api_key else None
+        self.key_pool = KeyPool(primary_key=api_key or settings.google_api_key or os.environ.get("GEMINI_API_KEY", ""))
+        self._clients: dict[str, genai.Client] = {}
 
-    def _get_client(self) -> genai.Client:
-        if not self._client:
-            key = settings.google_api_key or os.environ.get("GOOGLE_API_KEY", "")
-            if not key:
-                raise RuntimeError("GOOGLE_API_KEY environment variable is not configured.")
-            self._client = genai.Client(api_key=key)
-        return self._client
+    @property
+    def api_key(self) -> str:
+        return self.key_pool.get_current_key()
+
+    def _get_client_for_key(self, key: str) -> genai.Client:
+        if key not in self._clients:
+            self._clients[key] = genai.Client(api_key=key)
+        return self._clients[key]
 
     async def generate_text(
         self,
@@ -76,13 +124,12 @@ class GeminiClient:
         max_tokens: int | None = None,
         response_mime_type: str | None = None,
         response_schema: Any | None = None,
-        retries: int = 3,
+        retries: int = 2,
         timeout_seconds: float = 30.0,
         **kwargs,
     ) -> dict[str, Any]:
         output_limit = max_tokens or max_output_tokens or 2048
         target_model = model or settings.gemini_default_model
-        client = self._get_client()
 
         config = types.GenerateContentConfig(
             temperature=temperature,
@@ -105,99 +152,106 @@ class GeminiClient:
                 fallback_models.append(m)
 
         effective_timeout = max(timeout_seconds, 90.0 if output_limit > 4000 else 45.0)
+        total_keys = self.key_pool.total_keys()
 
-        for curr_model in fallback_models:
-            @retry(
-                wait=wait_random_exponential(min=1.0, max=5.0),
-                stop=stop_after_attempt(retries),
-                retry=retry_if_exception(is_retryable_gemini_error),
-                reraise=True,
-            )
-            async def _execute_generate(m=curr_model):
-                loop = asyncio.get_running_loop()
+        # Iterate through available keys first if rate limited, then fall back across models
+        for key_attempt in range(total_keys):
+            active_key = self.key_pool.get_current_key()
+            client = self._get_client_for_key(active_key)
 
-                def _call():
-                    return client.models.generate_content(
-                        model=m,
-                        contents=prompt,
-                        config=config,
+            for curr_model in fallback_models:
+                try:
+                    loop = asyncio.get_running_loop()
+
+                    def _call(c=client, m=curr_model):
+                        return c.models.generate_content(
+                            model=m,
+                            contents=prompt,
+                            config=config,
+                        )
+
+                    response = await asyncio.wait_for(
+                        loop.run_in_executor(None, _call),
+                        timeout=effective_timeout,
                     )
 
-                return await asyncio.wait_for(
-                    loop.run_in_executor(None, _call),
-                    timeout=effective_timeout,
-                )
+                    latency_ms = int((time.time() - start_time) * 1000)
+                    out_text = response.text or ""
 
-            try:
-                response = await _execute_generate()
+                    input_tokens = TokenCounter.estimate_tokens(prompt)
+                    output_tokens = TokenCounter.estimate_tokens(out_text)
 
-                latency_ms = int((time.time() - start_time) * 1000)
-                out_text = response.text or ""
+                    if hasattr(response, "usage_metadata") and response.usage_metadata:
+                        input_tokens = getattr(response.usage_metadata, "prompt_token_count", input_tokens)
+                        output_tokens = getattr(response.usage_metadata, "candidates_token_count", output_tokens)
 
-                # Token usage parsing
-                input_tokens = TokenCounter.estimate_tokens(prompt)
-                output_tokens = TokenCounter.estimate_tokens(out_text)
+                    return {
+                        "text": out_text,
+                        "model": curr_model,
+                        "provider": AIProvider.GEMINI,
+                        "prompt_tokens": input_tokens,
+                        "completion_tokens": output_tokens,
+                        "total_tokens": input_tokens + output_tokens,
+                        "latency_ms": latency_ms,
+                    }
 
-                if hasattr(response, "usage_metadata") and response.usage_metadata:
-                    input_tokens = getattr(response.usage_metadata, "prompt_token_count", input_tokens)
-                    output_tokens = getattr(response.usage_metadata, "candidates_token_count", output_tokens)
+                except Exception as e:
+                    last_err = e
+                    err_str = str(e).lower()
+                    is_rate_limit = any(p in err_str for p in ["429", "resource_exhausted", "quota", "too many requests"])
+                    if is_rate_limit:
+                        self.key_pool.rotate_key(f"Rate limit encountered ({e})")
+                        break  # Break inner model loop to immediately retry with next key in pool
+                    else:
+                        logger.warning("Gemini generation attempt failed for model %s: %s", curr_model, e)
+                        continue
 
-                return {
-                    "text": out_text,
-                    "model": curr_model,
-                    "provider": AIProvider.GEMINI,
-                    "prompt_tokens": input_tokens,
-                    "completion_tokens": output_tokens,
-                    "total_tokens": input_tokens + output_tokens,
-                    "latency_ms": latency_ms,
-                }
-            except Exception as e:
-                last_err = e
-                logger.warning("Gemini generation attempt failed for model %s: %s", curr_model, e)
-                continue
-
-        raise RuntimeError(f"AI generation Failed: {last_err}")
+        raise RuntimeError(f"AI generation Failed across all {total_keys} keys and candidate models: {last_err}")
 
     async def embed_texts(
         self,
         texts: list[str],
         model: str | None = None,
-        retries: int = 3,
+        retries: int = 2,
         timeout_seconds: float = 30.0,
     ) -> list[list[float]]:
         raw_model = model or settings.gemini_embedding_model
         target_model = raw_model.replace("models/", "")
-        client = self._get_client()
+        total_keys = self.key_pool.total_keys()
+        last_err = None
 
-        @retry(
-            wait=wait_random_exponential(min=1.0, max=8.0),
-            stop=stop_after_attempt(retries),
-            retry=retry_if_exception(is_retryable_gemini_error),
-            reraise=True,
-        )
-        async def _execute_embed():
-            loop = asyncio.get_event_loop()
+        for key_attempt in range(total_keys):
+            active_key = self.key_pool.get_current_key()
+            client = self._get_client_for_key(active_key)
 
-            def _call():
-                res = client.models.embed_content(
-                    model=target_model,
-                    contents=texts if len(texts) > 1 else texts[0],
+            try:
+                loop = asyncio.get_event_loop()
+
+                def _call(c=client):
+                    res = c.models.embed_content(
+                        model=target_model,
+                        contents=texts if len(texts) > 1 else texts[0],
+                    )
+                    if hasattr(res, "embeddings") and res.embeddings:
+                        return [e.values for e in res.embeddings]
+                    elif hasattr(res, "embedding") and res.embedding:
+                        return [res.embedding.values]
+                    return []
+
+                return await asyncio.wait_for(
+                    loop.run_in_executor(None, _call),
+                    timeout=timeout_seconds,
                 )
-                if hasattr(res, "embeddings") and res.embeddings:
-                    return [e.values for e in res.embeddings]
-                elif hasattr(res, "embedding") and res.embedding:
-                    return [res.embedding.values]
-                return []
+            except Exception as e:
+                last_err = e
+                err_str = str(e).lower()
+                is_rate_limit = any(p in err_str for p in ["429", "resource_exhausted", "quota", "too many requests"])
+                if is_rate_limit:
+                    self.key_pool.rotate_key(f"Embedding rate limit ({e})")
+                else:
+                    logger.warning("Gemini embedding attempt failed: %s", e)
 
-            return await asyncio.wait_for(
-                loop.run_in_executor(None, _call),
-                timeout=timeout_seconds,
-            )
-
-        try:
-            return await _execute_embed()
-        except Exception as e:
-            raise RuntimeError(f"Gemini embedding failed after retries: {e}")
+        raise RuntimeError(f"Gemini embedding failed across all {total_keys} keys: {last_err}")
 
     async def stream_chat(
         self,
@@ -207,9 +261,9 @@ class GeminiClient:
         temperature: float = 0.7,
     ) -> AsyncGenerator[str, None]:
         target_model = model or settings.gemini_default_model
-        client = self._get_client()
+        active_key = self.key_pool.get_current_key()
+        client = self._get_client_for_key(active_key)
 
-        # Format conversation content
         contents = []
         for msg in messages:
             role = "user" if msg["role"] in ["user", "human"] else "model"
