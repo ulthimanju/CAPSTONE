@@ -55,16 +55,25 @@ class TokenCounter:
 class KeyPool:
     def __init__(self, primary_key: str | None = None, alt_keys: list[str] | None = None):
         raw_keys = []
-        if primary_key:
-            raw_keys.append(primary_key)
         
-        # Load keys strictly from environment variables to comply with repository secret rules
-        env_keys_str = os.environ.get("GEMINI_API_KEYS") or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY", "")
-        for k in env_keys_str.split(","):
-            clean_k = k.strip()
-            if clean_k and clean_k not in raw_keys:
-                raw_keys.append(clean_k)
-                
+        # 1. Load from GEMINI_API_KEYS (environment or settings)
+        env_pool_str = os.environ.get("GEMINI_API_KEYS") or getattr(settings, "gemini_api_keys", "")
+        if env_pool_str:
+            for k in env_pool_str.split(","):
+                clean_k = k.strip()
+                if clean_k and clean_k not in raw_keys:
+                    raw_keys.append(clean_k)
+
+        # 2. Add primary key if provided
+        if primary_key and primary_key.strip() and primary_key.strip() not in raw_keys:
+            raw_keys.append(primary_key.strip())
+
+        # 3. Add any additional single-key environment variables
+        for env_var in ["GEMINI_API_KEY", "GOOGLE_API_KEY"]:
+            val = os.environ.get(env_var, "").strip()
+            if val and val not in raw_keys:
+                raw_keys.append(val)
+
         if alt_keys:
             for k in alt_keys:
                 clean_k = k.strip() if isinstance(k, str) else ""
