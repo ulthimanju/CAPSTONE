@@ -5,7 +5,7 @@ class DocumentSettings(PlatformSettings):
     app_name: str = "document-service"
     database_url: str = "postgresql+asyncpg://postgres:postgrespassword@postgres:5432/document_db"
     jwt_secret: str = "change-me-in-production-secret-key-32-chars"
-    llama_cloud_api_key: str = "llx-gIokKNDQ364KbghDYKM5gLWcFchaZj83jVWXbMNazATNWevm"
+    llama_cloud_api_key: str = "llx-KPwzAXr9Q4xcXyKKsXptj5WVk4AHtrXy3WNVvXnRpimt5SXQ"
     document_cache_ttl: int = 300
 
     @property

@@ -25,7 +25,8 @@ class ParserClient(ABC):
 
 class LlamaParseClient(ParserClient):
     def __init__(self, api_key: str | None = None):
-        self.api_key = api_key or os.environ.get("LLAMA_CLOUD_API_KEY")
+        from app.config.settings import settings
+        self.api_key = api_key or getattr(settings, "llama_cloud_api_key", None) or os.environ.get("LLAMA_CLOUD_API_KEY")
 
     def supports(self, file_extension: str) -> bool:
         return file_extension.upper() in ["PDF", "DOCX", "PPTX", "TXT", "MD", "PNG", "JPG", "JPEG", "XLSX", "CSV", "WPS", "KEY"]
