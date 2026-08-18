@@ -122,30 +122,35 @@ class ParseDocumentUseCase:
                 doc.part_count = len(split_parts_meta)
                 await self.doc_repo.update(doc)
 
-                parsed_markdowns = []
-                for p_meta in split_parts_meta:
-                    part_id = generate_uuid()
-                    part_entity = DocumentPart(
-                        id=part_id,
-                        document_id=document_id,
-                        part_number=p_meta["part_number"],
-                        page_start=p_meta["page_start"],
-                        page_end=p_meta["page_end"],
-                        file_size_bytes=p_meta["file_size_bytes"],
-                        temporary_file_path=p_meta["temporary_file_path"],
-                        parse_status=ParseStatus.PARSING,
-                        markdown_content=None,
-                        created_at=now,
-                    )
-                    await self.part_repo.create(part_entity)
+                ocr_semaphore = asyncio.Semaphore(4)
 
-                    part_md = await self.llama_client.parse(p_meta["temporary_file_path"])
-                    parsed_markdowns.append(part_md)
+                async def _parse_part_bounded(p_meta):
+                    async with ocr_semaphore:
+                        part_id = generate_uuid()
+                        part_entity = DocumentPart(
+                            id=part_id,
+                            document_id=document_id,
+                            part_number=p_meta["part_number"],
+                            page_start=p_meta["page_start"],
+                            page_end=p_meta["page_end"],
+                            file_size_bytes=p_meta["file_size_bytes"],
+                            temporary_file_path=p_meta["temporary_file_path"],
+                            parse_status=ParseStatus.PARSING,
+                            markdown_content=None,
+                            created_at=now,
+                        )
+                        await self.part_repo.create(part_entity)
 
-                    part_entity.parse_status = ParseStatus.COMPLETED
-                    await self.part_repo.update(part_entity)
-                    if os.path.exists(p_meta["temporary_file_path"]):
-                        os.remove(p_meta["temporary_file_path"])
+                        part_md = await self.llama_client.parse(p_meta["temporary_file_path"])
+
+                        part_entity.parse_status = ParseStatus.COMPLETED
+                        await self.part_repo.update(part_entity)
+                        if os.path.exists(p_meta["temporary_file_path"]):
+                            os.remove(p_meta["temporary_file_path"])
+                        return part_md
+
+                tasks = [_parse_part_bounded(p_meta) for p_meta in split_parts_meta]
+                parsed_markdowns = await asyncio.gather(*tasks)
 
                 if temp_pdf_converted and os.path.exists(pdf_source_path) and pdf_source_path != temp_path:
                     os.remove(pdf_source_path)

@@ -4,7 +4,7 @@ os.environ["JWT_SECRET"] = "test-jwt-secret-minimum-32-chars-key!"
 import uuid
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
 from shared.security.jwt import JWTManager, JWTSettings
@@ -53,17 +53,31 @@ def mock_db_session():
         session.__aenter__.return_value = session
         mock_session_cls.return_value = session
 
-        # Mock workspace verification so tests run without a live workspace-service
+        # Mock workspace verification and Google OAuth token so tests run without external dependencies
         async def _mock_verify_workspace_access(*args, **kwargs):
             return {"id": workspace_id, "user_role": "EDITOR"}
 
+        mock_token_resp = MagicMock()
+        mock_token_resp.status_code = 200
+        mock_token_resp.json.return_value = {"access_token": "mock-google-token"}
+
+        mock_drive_resp = MagicMock()
+        mock_drive_resp.status_code = 200
+        mock_drive_resp.json.return_value = {
+            "id": "mock-drive-id-123",
+            "name": "document.pdf",
+            "webViewLink": "https://drive.google.com/file/d/mock-drive-id-123/view",
+        }
+
         with patch("app.api.routers.documents.verify_workspace_access", side_effect=_mock_verify_workspace_access):
             with patch("app.api.routers.documents.get_document_repository", return_value=repo):
-                with patch("app.api.routers.documents.UploadDocumentUseCase") as mock_uc:
-                    instance = AsyncMock()
-                    instance.execute.return_value = doc
-                    mock_uc.return_value = instance
-                    yield
+                with patch("httpx.AsyncClient.get", return_value=mock_token_resp):
+                    with patch("httpx.AsyncClient.post", return_value=mock_drive_resp):
+                        with patch("app.api.routers.documents.UploadDocumentUseCase") as mock_uc:
+                            instance = AsyncMock()
+                            instance.execute.return_value = doc
+                            mock_uc.return_value = instance
+                            yield
 
 
 

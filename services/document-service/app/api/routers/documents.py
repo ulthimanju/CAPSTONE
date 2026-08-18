@@ -128,10 +128,10 @@ async def upload_document_raw(
     max_bytes = max_mb * 1024 * 1024
     current_size = 0
 
-    # Stream file contents incrementally in 1MB chunks directly to disk while updating SHA-256 hash
+    # Stream file contents incrementally in 64KB chunks directly to disk while updating SHA-256 hash
     temp_upload = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}")
     try:
-        while chunk := await file.read(1024 * 1024):
+        while chunk := await file.read(64 * 1024):
             current_size += len(chunk)
             if current_size > max_bytes:
                 temp_upload.close()
