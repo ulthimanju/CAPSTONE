@@ -47,10 +47,14 @@ export const Button = React.forwardRef(
         {isLoading ? (
           <CircleNotch className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
         ) : (
-          leftIcon && <span className="shrink-0">{leftIcon}</span>
+          leftIcon && <span className="shrink-0 inline-flex items-center">{leftIcon}</span>
         )}
-        <span>{children}</span>
-        {!isLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
+        {typeof children === 'string' || typeof children === 'number' ? (
+          <span>{children}</span>
+        ) : (
+          <span className="inline-flex items-center gap-2">{children}</span>
+        )}
+        {!isLoading && rightIcon && <span className="shrink-0 inline-flex items-center">{rightIcon}</span>}
       </button>
     );
   }

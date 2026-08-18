@@ -122,10 +122,9 @@ export function SummaryTab() {
           <Button
             onClick={handleGenerate}
             disabled={generateMutation.isPending}
-            className="flex items-center gap-2"
+            leftIcon={<RegenerateIcon className="h-4 w-4" />}
           >
-            <RegenerateIcon className="h-4 w-4" />
-            <span>Generate Summary with Gemini</span>
+            Generate Summary with Gemini
           </Button>
         </div>
       </Card>
