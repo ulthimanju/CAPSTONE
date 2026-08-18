@@ -12,6 +12,7 @@ def _to_entity(m: UserModel) -> User:
     return User(
         id=m.id, email=m.email, name=m.name, picture_url=m.picture_url,
         role=m.role, created_at=m.created_at, updated_at=m.updated_at,
+        password_hash=getattr(m, "password_hash", None),
     )
 
 
@@ -49,8 +50,14 @@ class SQLAlchemyUserRepository(UserRepository):
         return _to_entity(m) if m else None
 
     async def create(self, user: User) -> User:
-        m = UserModel(id=user.id, email=user.email, name=user.name,
-                      picture_url=user.picture_url, role=user.role)
+        m = UserModel(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            picture_url=user.picture_url,
+            password_hash=user.password_hash,
+            role=user.role,
+        )
         self._db.add(m)
         await self._db.flush()
         await self._db.refresh(m)

@@ -234,92 +234,88 @@ async def upload_document_raw(
     except Exception as token_err:
         logger.warning(f"Error communicating with identity-service for Google token: {token_err}")
 
-    if not access_token:
-        await asyncio.to_thread(_remove_file, temp_path)
-        raise HTTPException(
-            status_code=401,
-            detail="Active Google account authentication is required to upload files to Google Drive. Please log in with Google to refresh credentials."
-        )
+    storage_provider = "GOOGLE_DRIVE"
+    gdrive_file_id = None
+    web_view_link = None
 
-    # Perform multipart upload directly to Google Drive
-    file_bytes = await asyncio.to_thread(_read_file_bytes, temp_path)
-    metadata = {"name": file.filename, "mimeType": file.content_type or "application/pdf"}
-    boundary = "----GoogleDriveBoundary7MA4YW"
-    body = (
-        f"--{boundary}\r\n"
-        "Content-Type: application/json; charset=UTF-8\r\n\r\n"
-        f"{json.dumps(metadata)}\r\n"
-        f"--{boundary}\r\n"
-        f"Content-Type: {file.content_type or 'application/pdf'}\r\n\r\n"
-    ).encode("utf-8") + file_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
+    if access_token:
+        # Perform multipart upload directly to Google Drive
+        file_bytes = await asyncio.to_thread(_read_file_bytes, temp_path)
+        metadata = {"name": file.filename, "mimeType": file.content_type or "application/pdf"}
+        boundary = "----GoogleDriveBoundary7MA4YW"
+        body = (
+            f"--{boundary}\r\n"
+            "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+            f"{json.dumps(metadata)}\r\n"
+            f"--{boundary}\r\n"
+            f"Content-Type: {file.content_type or 'application/pdf'}\r\n\r\n"
+        ).encode("utf-8") + file_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
 
-    async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
-        drive_res = await client.post(
-            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": f"multipart/related; boundary={boundary}"
-            },
-            content=body,
-        )
-
-        # If token was rejected by Google (401), trigger forced refresh and retry once
-        if drive_res.status_code == 401:
-            logger.info("Google Drive returned 401, requesting forced token refresh from identity-service...")
-            refresh_res = await client.get(
-                f"{identity_service_url}/api/v1/profile/google-token?force_refresh=true",
-                headers=req_headers
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
+            drive_res = await client.post(
+                "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": f"multipart/related; boundary={boundary}"
+                },
+                content=body,
             )
-            if refresh_res.status_code == 200:
-                access_token = refresh_res.json().get("access_token")
-                drive_res = await client.post(
-                    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
-                    headers={
-                        "Authorization": f"Bearer {access_token}",
-                        "Content-Type": f"multipart/related; boundary={boundary}"
-                    },
-                    content=body,
+
+            # If token was rejected by Google (401), trigger forced refresh and retry once
+            if drive_res.status_code == 401:
+                logger.info("Google Drive returned 401, requesting forced token refresh from identity-service...")
+                refresh_res = await client.get(
+                    f"{identity_service_url}/api/v1/profile/google-token?force_refresh=true",
+                    headers=req_headers
                 )
+                if refresh_res.status_code == 200:
+                    access_token = refresh_res.json().get("access_token")
+                    drive_res = await client.post(
+                        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
+                        headers={
+                            "Authorization": f"Bearer {access_token}",
+                            "Content-Type": f"multipart/related; boundary={boundary}"
+                        },
+                        content=body,
+                    )
 
-        if drive_res.status_code not in (200, 201):
-            await asyncio.to_thread(_remove_file, temp_path)
-            err_msg = drive_res.text
-            try:
-                err_json = drive_res.json()
-                err_msg = err_json.get("error", {}).get("message") or err_msg
-            except Exception:
-                pass
-            logger.error(f"Google Drive upload failed with status {drive_res.status_code}: {err_msg}")
-            raise HTTPException(
-                status_code=502,
-                detail=f"Google Drive upload failed: {err_msg}. Please check your Google permissions."
-            )
+            if drive_res.status_code in (200, 201):
+                drive_data = drive_res.json()
+                gdrive_file_id = drive_data["id"]
+                raw_link = drive_data.get("webViewLink") or f"https://drive.google.com/file/d/{gdrive_file_id}/preview?usp=drivesdk"
+                web_view_link = raw_link.replace("/edit", "/preview").replace("/view", "/preview")
 
-        drive_data = drive_res.json()
-        gdrive_file_id = drive_data["id"]
-        raw_link = drive_data.get("webViewLink") or f"https://drive.google.com/file/d/{gdrive_file_id}/preview?usp=drivesdk"
-        web_view_link = raw_link.replace("/edit", "/preview").replace("/view", "/preview")
+                # Set readOnly content restriction on Google Drive file
+                try:
+                    await client.patch(
+                        f"https://www.googleapis.com/drive/v3/files/{gdrive_file_id}",
+                        headers={"Authorization": f"Bearer {access_token}"},
+                        json={"contentRestrictions": [{"readOnly": True, "reason": "Protected view-only document in SYNAPSE"}]},
+                    )
+                except Exception as lock_err:
+                    logger.info(f"Could not set readOnly restriction on Google Drive: {lock_err}")
 
-        # Set readOnly content restriction on Google Drive file
-        try:
-            await client.patch(
-                f"https://www.googleapis.com/drive/v3/files/{gdrive_file_id}",
-                headers={"Authorization": f"Bearer {access_token}"},
-                json={"contentRestrictions": [{"readOnly": True, "reason": "Protected view-only document in SYNAPSE"}]},
-            )
-        except Exception as lock_err:
-            logger.info(f"Could not set readOnly restriction on Google Drive: {lock_err}")
+                logger.info(f"Successfully uploaded '{file.filename}' to Google Drive! File ID: {gdrive_file_id}, Link: {web_view_link}")
+            else:
+                logger.warning(f"Google Drive upload returned {drive_res.status_code}, falling back to LOCAL_STORAGE for test account...")
 
-        logger.info(f"Successfully uploaded '{file.filename}' to Google Drive! File ID: {gdrive_file_id}, Link: {web_view_link}")
+    if not gdrive_file_id:
+        # Seamless Local Storage Provider fallback (for Test Auth & Dev testing accounts)
+        storage_provider = "LOCAL"
+        local_storage_dir = os.path.join(tempfile.gettempdir(), "cpa_local_storage", str(workspace_id))
+        os.makedirs(local_storage_dir, exist_ok=True)
+        gdrive_file_id = f"local_{content_checksum[:16]}"
+        web_view_link = f"/api/v1/documents/local/{gdrive_file_id}/view"
+        logger.info(f"Using LOCAL storage provider for '{file.filename}' (Workspace: {workspace_id})")
 
     req = UploadDocumentRequest(
         workspace_id=workspace_id,
         original_filename=file.filename,
         mime_type=file.content_type or "application/pdf",
         file_size_bytes=current_size,
-        storage_provider="GOOGLE_DRIVE",
+        storage_provider=storage_provider,
         storage_file_id=gdrive_file_id,
-        storage_metadata_json={"web_view_link": web_view_link},
+        storage_metadata_json={"web_view_link": web_view_link, "storage_provider": storage_provider},
         checksum=content_checksum,
     )
 

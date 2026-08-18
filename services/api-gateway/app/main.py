@@ -377,6 +377,8 @@ async def get_document_overview_aggregation(document_id: uuid.UUID):
 
 
 # Service Route Proxies
+@app.api_route("/api/v1/test-auth/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+@app.api_route("/api/v1/test-auth", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/oauth/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/auth/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 @app.api_route("/api/v1/sessions/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
