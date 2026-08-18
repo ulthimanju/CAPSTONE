@@ -31,6 +31,9 @@ async def lifespan(app: FastAPI):
             )
         except Exception:
             pass
+    from app.consumers.workspace_events_consumer import start_workspace_events_consumer
+    consumer_task = await start_workspace_events_consumer()
     yield
+    consumer_task.cancel()
     await engine.dispose()
 

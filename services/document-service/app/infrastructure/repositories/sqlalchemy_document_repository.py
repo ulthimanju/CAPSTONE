@@ -298,6 +298,40 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
             return True
         return False
 
+    async def delete_by_workspace_id(self, workspace_id: UUID, hard_delete: bool = False) -> int:
+        from sqlalchemy import delete as sql_delete, update as sql_update, func
+        stmt = select(DocumentModel).where(DocumentModel.workspace_id == workspace_id)
+        result = await self.session.execute(stmt)
+        docs = result.scalars().all()
+        if not docs:
+            return 0
+
+        doc_count = len(docs)
+        if hard_delete:
+            del_stmt = sql_delete(DocumentModel).where(DocumentModel.workspace_id == workspace_id)
+            await self.session.execute(del_stmt)
+        else:
+            upd_stmt = (
+                sql_update(DocumentModel)
+                .where(DocumentModel.workspace_id == workspace_id)
+                .values(
+                    status=DocumentStatus.DELETED.value,
+                    lifecycle_status=LifecycleStatus.DELETED.value,
+                    is_deleted=True,
+                    deleted_at=func.now(),
+                    updated_at=func.now(),
+                )
+            )
+            await self.session.execute(upd_stmt)
+
+        await self.session.flush()
+        if "post_commit_invalidations" in self.session.info:
+            self.session.info["post_commit_invalidations"].add(workspace_id)
+        for doc in docs:
+            await self.cache.invalidate_document_status(doc.id)
+        await self.cache.invalidate_workspace_documents(workspace_id)
+        return doc_count
+
     async def get_by_checksum(self, workspace_id: UUID, uploaded_by: UUID, checksum: str) -> Document | None:
         stmt = (
             select(DocumentModel)

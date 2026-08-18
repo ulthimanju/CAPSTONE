@@ -60,6 +60,29 @@ class DeleteWorkspaceUseCase:
         except Exception:
             pass
 
+        # Dispatch RabbitMQ Domain Event for cross-service cascading deletion (document-service, rag-service)
+        try:
+            from shared.events.rabbitmq_publisher import publish_domain_event
+            from shared.events.schemas import DomainEvent
+            from app.config.settings import settings
+            del_event = DomainEvent(
+                event_type="workspace.deleted",
+                workspace_id=str(workspace_id),
+                user_id=str(user_id),
+                payload={
+                    "workspace_id": str(workspace_id),
+                    "workspace_name": ws_name,
+                    "deleted_by": str(user_id),
+                },
+            )
+            await publish_domain_event(
+                routing_key="cpa.workspace.deleted",
+                event=del_event,
+                rabbitmq_url=settings.rabbitmq_url,
+            )
+        except Exception:
+            pass
+
         res = await self.workspace_repo.delete(workspace_id)
         await self.cache.invalidate(workspace_id)
         await self.cache.invalidate_workspace_members(workspace_id)

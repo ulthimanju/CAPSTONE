@@ -36,5 +36,9 @@ class DocumentRepository(ABC):
         pass
 
     @abstractmethod
+    async def delete_by_workspace_id(self, workspace_id: UUID, hard_delete: bool = False) -> int:
+        pass
+
+    @abstractmethod
     async def get_by_checksum(self, workspace_id: UUID, uploaded_by: UUID, checksum: str) -> Document | None:
         pass
