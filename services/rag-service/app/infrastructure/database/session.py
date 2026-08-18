@@ -40,6 +40,16 @@ async def init_db():
         # This is idempotent and safe to run on every startup.
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
+        # Ensure HNSW vector index for sub-10ms cosine similarity search
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_doc_chunks_embedding_hnsw 
+                ON chunk_embeddings USING hnsw ((vector::halfvec(3072)) halfvec_cosine_ops) 
+                WITH (m = 16, ef_construction = 64);
+                """
+            )
+        )
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
