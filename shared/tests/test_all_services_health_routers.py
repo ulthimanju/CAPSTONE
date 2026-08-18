@@ -64,7 +64,6 @@ def test_document_health_router_live_and_ready():
     assert res_live.json()["status"] == "live"
 
     with patch.object(mod, "check_postgres", return_value=(True, "ok")), \
-         patch.object(mod, "check_mongo", return_value=(True, "ok")), \
          patch.object(mod, "check_rabbitmq", return_value=(True, "ok")):
         res_ready = client.get("/health/ready")
         assert res_ready.status_code == 200
