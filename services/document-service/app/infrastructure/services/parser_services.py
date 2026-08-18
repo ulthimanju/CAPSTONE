@@ -36,10 +36,10 @@ class LlamaParseClient(ParserClient):
             try:
                 from llama_parse import LlamaParse
                 parser = LlamaParse(api_key=self.api_key, result_type="markdown")
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 documents = await loop.run_in_executor(None, parser.load_data, file_path)
                 if documents:
-                    md_text = "\n\n".join(doc.text for doc in documents)
+                    md_text = "\n\n".join(doc.text for doc in documents if doc.text)
                     if md_text and md_text.strip():
                         return md_text
             except Exception as llama_err:
@@ -50,7 +50,7 @@ class LlamaParseClient(ParserClient):
                 from llama_cloud import LlamaCloud
                 client = LlamaCloud(api_key=self.api_key)
 
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
 
                 def _llama_cloud_parse():
                     file_obj = client.files.create(file=file_path, purpose="parse")
@@ -68,7 +68,32 @@ class LlamaParseClient(ParserClient):
             except Exception as cloud_err:
                 logger.warning(f"Secondary LlamaCloud API call warning: {cloud_err}")
 
-        raise RuntimeError("Llama parser quota exceeded")
+        # 3. Tertiary: Local PyMuPDF / Structured Text & Markdown Fallback (Guarantees zero downtime on quota exhaustion)
+        try:
+            loop = asyncio.get_running_loop()
+            def _extract_local_pdf():
+                if file_path.lower().endswith(".pdf"):
+                    doc = fitz.open(file_path)
+                    pages_md = []
+                    for idx, page in enumerate(doc, 1):
+                        txt = page.get_text("text")
+                        if txt and txt.strip():
+                            pages_md.append(f"## Page {idx}\n\n{txt.strip()}")
+                    doc.close()
+                    return "\n\n".join(pages_md)
+                elif file_path.lower().endswith((".txt", ".md", ".csv")):
+                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                        return f.read()
+                return ""
+
+            local_md = await loop.run_in_executor(None, _extract_local_pdf)
+            if local_md and local_md.strip():
+                logger.info(f"Successfully extracted text via local PyMuPDF fallback for {file_path}")
+                return local_md
+        except Exception as local_err:
+            logger.error(f"Local text extraction fallback error: {local_err}")
+
+        raise RuntimeError("Document parsing failed across all providers")
 
 
 class DocumentToPdfConverter:
