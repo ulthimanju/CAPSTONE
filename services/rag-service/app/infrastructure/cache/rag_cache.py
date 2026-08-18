@@ -86,47 +86,93 @@ class RAGCacheManager:
         except Exception:
             pass
 
+    def _get_query_key(self, workspace_id: uuid.UUID, query: str, top_k: int) -> str:
+        q_hash = self._hash_query(query)
+        return f"rag:query:{workspace_id}:{q_hash}:{top_k}"
+
+    async def get_search_results(
+        self, workspace_id: uuid.UUID, query: str, top_k: int
+    ) -> list[dict[str, Any]] | None:
+        if not self.redis:
+            return None
+        try:
+            key = self._get_query_key(workspace_id, query, top_k)
+            val = await self.redis.get(key)
+            if not val:
+                return None
+            return json.loads(val)
+        except Exception:
+            return None
+
+    async def set_search_results(
+        self,
+        workspace_id: uuid.UUID,
+        query: str,
+        top_k: int,
+        results: list[Any],
+        ttl: int = 300,
+    ):
+        if not self.redis:
+            return
+        try:
+            key = self._get_query_key(workspace_id, query, top_k)
+            serialized = []
+            for r in results:
+                if hasattr(r, "model_dump"):
+                    serialized.append(r.model_dump(mode="json"))
+                elif isinstance(r, dict):
+                    serialized.append(r)
+                else:
+                    serialized.append(dict(r))
+            await self.redis.setex(key, ttl, json.dumps(serialized))
+        except Exception:
+            pass
+
     async def invalidate_workspace_retrievals(self, workspace_id: uuid.UUID):
         if not self.redis:
             return
         try:
-            pattern = self._get_workspace_pattern(workspace_id)
-            keys = []
-            if hasattr(self.redis, "scan_iter") and callable(getattr(self.redis, "scan_iter")):
-                try:
-                    res = self.redis.scan_iter(match=pattern, count=100)
-                    if hasattr(res, "__aiter__"):
-                        async for key in res:
-                            keys.append(key)
-                    elif isinstance(res, (list, tuple)):
-                        keys = list(res)
-                except Exception:
-                    keys = []
+            patterns = [
+                f"rag_retrieval:{workspace_id}:*",
+                f"rag:query:{workspace_id}:*",
+            ]
+            for pattern in patterns:
+                keys = []
+                if hasattr(self.redis, "scan_iter") and callable(getattr(self.redis, "scan_iter")):
+                    try:
+                        res = self.redis.scan_iter(match=pattern, count=100)
+                        if hasattr(res, "__aiter__"):
+                            async for key in res:
+                                keys.append(key)
+                        elif isinstance(res, (list, tuple)):
+                            keys = list(res)
+                    except Exception:
+                        keys = []
 
-            if not keys and hasattr(self.redis, "scan") and callable(getattr(self.redis, "scan")):
-                try:
-                    cursor = "0"
-                    while True:
-                        res = await self.redis.scan(cursor=cursor, match=pattern, count=100)
-                        if isinstance(res, (tuple, list)) and len(res) == 2:
-                            cursor, matched_keys = res
-                            keys.extend(matched_keys)
-                            if str(cursor) == "0" or cursor == 0:
+                if not keys and hasattr(self.redis, "scan") and callable(getattr(self.redis, "scan")):
+                    try:
+                        cursor = "0"
+                        while True:
+                            res = await self.redis.scan(cursor=cursor, match=pattern, count=100)
+                            if isinstance(res, (tuple, list)) and len(res) == 2:
+                                cursor, matched_keys = res
+                                keys.extend(matched_keys)
+                                if str(cursor) == "0" or cursor == 0:
+                                    break
+                            else:
                                 break
-                        else:
-                            break
-                except Exception:
-                    keys = []
+                    except Exception:
+                        keys = []
 
-            if not keys and hasattr(self.redis, "keys") and callable(getattr(self.redis, "keys")):
-                try:
-                    res_keys = await self.redis.keys(pattern)
-                    if isinstance(res_keys, (list, tuple)):
-                        keys = list(res_keys)
-                except Exception:
-                    pass
+                if not keys and hasattr(self.redis, "keys") and callable(getattr(self.redis, "keys")):
+                    try:
+                        res_keys = await self.redis.keys(pattern)
+                        if isinstance(res_keys, (list, tuple)):
+                            keys = list(res_keys)
+                    except Exception:
+                        pass
 
-            if keys:
-                await self.redis.delete(*keys)
+                if keys:
+                    await self.redis.delete(*keys)
         except Exception:
             pass

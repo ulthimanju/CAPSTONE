@@ -68,9 +68,10 @@ class RAGChatOrchestrator:
         self,
         question: str,
         retrieved_chunks: Sequence[tuple[ChunkEmbeddingModel, float]],
+        min_relevance_threshold: float = 0.35,
     ) -> None:
         if not retrieved_chunks:
-            return
+            raise WorkspaceContextGuardrailError()
 
         valid_chunks = [
             (chunk, score)
@@ -79,10 +80,11 @@ class RAGChatOrchestrator:
         ]
 
         if not valid_chunks:
-            return
+            raise WorkspaceContextGuardrailError()
 
-        # Context is present and will be injected into prompt
-        return
+        max_score = max(score for _, score in valid_chunks)
+        if max_score < min_relevance_threshold:
+            raise WorkspaceContextGuardrailError()
 
     async def ask_question(
         self,

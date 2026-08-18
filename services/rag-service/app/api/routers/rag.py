@@ -93,6 +93,28 @@ async def semantic_search(
     session: AsyncSession = Depends(get_db_session),
 ):
     await verify_workspace_access(req.workspace_id, user_id, required_write=False, authorization=authorization)
+    
+    rag_cache = RAGCacheManager()
+    cached_results = await rag_cache.get_search_results(req.workspace_id, req.query, req.top_k)
+    if cached_results is not None:
+        results = [
+            SearchResultChunk(
+                chunk_id=uuid.UUID(r["chunk_id"]) if isinstance(r.get("chunk_id"), str) else r.get("chunk_id", uuid.uuid4()),
+                document_id=uuid.UUID(r["document_id"]) if isinstance(r.get("document_id"), str) else r.get("document_id", uuid.uuid4()),
+                document_name=r.get("document_name"),
+                chunk_index=r.get("chunk_index", 0),
+                content=r.get("content", ""),
+                similarity_score=float(r.get("similarity_score", 0.0)),
+            )
+            for r in cached_results
+        ]
+        return SemanticSearchResponse(
+            query=req.query,
+            workspace_id=req.workspace_id,
+            top_k=req.top_k,
+            results=results,
+        )
+
     try:
         query_vectors = await ai_client.get_embeddings([req.query])
         if not query_vectors:
@@ -119,6 +141,8 @@ async def semantic_search(
         )
         for chunk, score in retrieved
     ]
+
+    await rag_cache.set_search_results(req.workspace_id, req.query, req.top_k, results, ttl=300)
 
     return SemanticSearchResponse(
         query=req.query,
