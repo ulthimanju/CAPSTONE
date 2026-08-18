@@ -830,35 +830,124 @@
 
 ---
 
-## Final Total — All Categories
+## Category 23 — Mutation & Fault Injection Testing
 
-| Category | Tests Planned | Existing | Missing |
+> Verifies the effectiveness of existing unit test suites by deliberately modifying code logic (e.g., swapping `<` for `<=`, flipping boolean checks, deleting cache invalidations) and ensuring test suites catch the mutations (Target: >80% Mutation Score).
+
+| Test Area | Mutation Injected | Expected Test Result | Priority |
 |---|---|---|---|
-| Unit Tests | 55 | 44 ✅ | 11 ❌ |
-| OAuth Flow (cancel, CSRF, token lifecycle) | 32 | 0 | 32 ❌ |
-| Cross-Service (RabbitMQ + gRPC + SSE + HTTP) | 45 | 0 | 45 ❌ |
-| API / E2E (auth, workspace, upload, RAG, summary) | 35 | 0 | 35 ❌ |
-| Document Pipeline | 11 | 0 | 11 ❌ |
-| Security | 18 | 0 | 18 ❌ |
-| Performance / Load | 9 | 1 (manual) | 8 ❌ |
-| UI / UX | 20 | 0 | 20 ❌ |
-| Edge Cases | 26 | 0 | 26 ❌ |
-| Known Gaps (document behavior) | 12 | 0 | 12 ❌ |
-| Workspace Collaboration & Invitations | 28 | 0 | 28 ❌ |
-| Quiz, Flashcards & Learning Units | 22 | 0 | 22 ❌ |
-| Learning Path Generation | 10 | 0 | 10 ❌ |
-| Chat History | 8 | 0 | 8 ❌ |
-| Google Drive Integration | 14 | 0 | 14 ❌ |
-| Document Processing (all 5 phases) | 18 | 0 | 18 ❌ |
-| Aggregation & Dashboard Endpoints | 12 | 0 | 12 ❌ |
-| Health, Readiness & Observability | 10 | 0 | 10 ❌ |
-| Pagination & Filtering | 11 | 0 | 11 ❌ |
-| Notifications (MongoDB + Email + SSE) | 14 | 0 | 14 ❌ |
-| Configuration, Env & Startup | 10 | 0 | 10 ❌ |
-| No Rate Limiting (Gap) | 6 | 0 | 6 ❌ |
-| **TOTAL** | **426** | **45** | **381** |
+| RAG Similarity Guardrail | Flip threshold check `similarity >= 0.35` to `< 0.35` | Unit test fails immediately | P1 |
+| Optimistic Locking | Remove `version = version + 1` from member role update | Concurrency unit test catches dirty write | P1 |
+| Token Expiration | Change JWT expiration logic from `+ timedelta` to `- timedelta` | Auth unit test catches expired token | P1 |
+| Cache Invalidation | Comment out `cache.invalidate_workspace_documents()` | Integration test detects stale read | P2 |
+| Cascade Deletion | Comment out repository `delete_by_workspace_id` in consumer | Consumer test detects orphaned records | P1 |
 
 ---
 
-*Exhaustive test plan — full source audit of all 7 microservices, shared layer, docker-compose, and all API routers.*
+## Category 24 — Contract & API Schema Evolution Testing
+
+> Ensures backward compatibility between microservices and prevents breaking API changes across gateway and consumers.
+
+| Test | Validation Target | Priority |
+|---|---|---|
+| OpenAPI Spec Schema Drift | Validate exported OpenAPI schema against frontend Axios TypeScript/JS interfaces | P1 |
+| Protobuf / gRPC Backward Compatibility | Verify adding new optional fields to `.proto` files does not break running older clients | P1 |
+| RabbitMQ DomainEvent Envelope Schema | Validate all published JSON payloads strictly adhere to `DomainEvent` Pydantic model | P1 |
+| Deprecated Field Grace Period | Test that renaming or deprecating response fields returns backwards-compatible aliases | P2 |
+
+---
+
+## Category 25 — Database Migration, Rollback & Data Integrity
+
+> Tests database schema versioning, rollback safety, and cross-database transaction atomicity.
+
+| Test | Validation Target | Priority |
+|---|---|---|
+| Clean DB Seed from Scratch | All PostgreSQL DDL triggers, indexes, and tables initialize cleanly in fresh container | P1 |
+| Schema Migration Rollback | Test `alembic downgrade -1` cleanly rolls back without orphan columns or locks | P2 |
+| Foreign Key Cascade Integrity | Verify deleting user record in `identity_db` cascades to `sessions`, `refresh_tokens`, `oauth_identities` | P1 |
+| Multi-Database Isolation | Ensure document-service cannot execute cross-database queries directly without API/Event boundary | P2 |
+| PgVector Index Rebuild | Verify `REINDEX INDEX idx_doc_chunks_embedding_hnsw` executes without query interruption | P2 |
+
+---
+
+## Category 26 — Disaster Recovery, Backup & Restore Testing
+
+> Verifies backup integrity and data restoration procedures under catastrophic failure scenarios.
+
+| Test | Procedure / Target | Priority |
+|---|---|---|
+| PostgreSQL Backup & Restore | `pg_dumpall` backup restores completely to new container with zero data loss | P1 |
+| MongoDB Notification Snapshot | `mongodump` & `mongorestore` restores all historical user notifications | P2 |
+| Vector Index Reconstruction | Re-run embedding generator on raw document chunks to rebuild PgVector table from zero | P1 |
+| Storage Provider Recovery | Verify local storage files can be re-indexed after temporary volume remount | P2 |
+| Recovery Time Objective (RTO) | Complete cold restore of all databases & microservices under 10 minutes | P2 |
+
+---
+
+## Category 27 — Accessibility (a11y) & Cross-Browser Testing
+
+> Ensures compliance with WCAG 2.1 AA standards and seamless operation across diverse browser rendering engines.
+
+| Test | Tool / Requirement | Priority |
+|---|---|---|
+| Keyboard Navigation (Tab Index) | Complete login, workspace navigation, document upload, and chat using keyboard only | P1 |
+| Screen Reader Compatibility (ARIA) | Modals, citation badges, and chat message streams have proper `aria-live` and `role` tags | P2 |
+| Color Contrast & Theme Ratios | All text elements meet 4.5:1 minimum contrast ratio in both Light and Dark themes | P2 |
+| Cross-Browser Compatibility | UI tested and rendered pixel-perfect across Chrome, Firefox, Safari (WebKit), and MS Edge | P1 |
+| Mobile Viewport Touch Targets | All clickable buttons and icons meet 48x48px minimum touch target size on iOS/Android | P2 |
+
+---
+
+## Category 28 — Frontend State, Error Boundaries & Offline Resilience
+
+> Tests React client resilience against network drops, API latency, and unexpected runtime errors.
+
+| Test | Expected Client Behavior | Priority |
+|---|---|---|
+| React Error Boundary Catch | Runtime render crash inside Chat component shows friendly fallback UI, not blank white screen | P1 |
+| Network Offline Interruption | Display "Offline - Reconnecting" banner when browser loses internet connection | P1 |
+| SSE Auto-Reconnect | Re-establish EventSource connection with exponential backoff on network drop | P1 |
+| React Query Optimistic Updates | Optimistic deletion of document / workspace updates UI instantly, rolls back on API error | P2 |
+| LocalStorage Token Corruption | Tampered or malformed token in browser storage triggers clean redirect to `/login` | P1 |
+
+---
+
+## Final Master Total — All 28 Categories
+
+| # | Category | Tests Planned | Existing | Missing |
+|---|---|---|---|---|
+| 1 | Unit Tests (Core Logic) | 55 | 44 ✅ | 11 ❌ |
+| 2 | OAuth Flow (Cancel, CSRF, Token Lifecycle) | 32 | 0 | 32 ❌ |
+| 3 | Cross-Service (RabbitMQ + gRPC + SSE + HTTP) | 45 | 0 | 45 ❌ |
+| 4 | API / End-to-End User Flows | 35 | 0 | 35 ❌ |
+| 5 | Document Processing Pipeline | 11 | 0 | 11 ❌ |
+| 6 | Security & Access Control | 18 | 0 | 18 ❌ |
+| 7 | Performance, Load & Stress Tests | 15 | 1 (manual) | 14 ❌ |
+| 8 | UI / UX Frontend Tests | 20 | 0 | 20 ❌ |
+| 9 | Edge Cases & Boundary Conditions | 26 | 0 | 26 ❌ |
+| 10 | Known Architectural Gaps (Behavioral) | 12 | 0 | 12 ❌ |
+| 11 | Workspace Collaboration & Invitations | 28 | 0 | 28 ❌ |
+| 12 | Quiz, Flashcards & Learning Units | 22 | 0 | 22 ❌ |
+| 13 | Learning Path Generation | 10 | 0 | 10 ❌ |
+| 14 | Chat History Persistence | 8 | 0 | 8 ❌ |
+| 15 | Google Drive & Local Storage Integration | 14 | 0 | 14 ❌ |
+| 16 | Document Processing (All 5 Lifecycle Phases) | 18 | 0 | 18 ❌ |
+| 17 | Aggregation & Dashboard Endpoints | 12 | 0 | 12 ❌ |
+| 18 | Health, Readiness & Observability | 10 | 0 | 10 ❌ |
+| 19 | Pagination, Filtering & Sorting | 11 | 0 | 11 ❌ |
+| 20 | Notifications (MongoDB + Email + SSE) | 14 | 0 | 14 ❌ |
+| 21 | Configuration, Env & Cold Startup | 10 | 0 | 10 ❌ |
+| 22 | Rate Limiting & DoS Protection (Gap) | 6 | 0 | 6 ❌ |
+| 23 | Mutation & Fault Injection Testing | 5 | 0 | 5 ❌ |
+| 24 | Contract & API Schema Evolution | 4 | 0 | 4 ❌ |
+| 25 | Database Migration, Rollback & Integrity | 5 | 0 | 5 ❌ |
+| 26 | Disaster Recovery & Backup / Restore | 5 | 0 | 5 ❌ |
+| 27 | Accessibility (a11y) & Cross-Browser | 5 | 0 | 5 ❌ |
+| 28 | Frontend State & Offline Resilience | 5 | 0 | 5 ❌ |
+| **TOTAL** | **ALL 28 CATEGORIES** | **466** | **45** | **421** |
+
+---
+
+*Exhaustive test plan — full source audit of all 7 microservices, shared layer, docker-compose, frontend React SPA, and all API routers.*
 *CPA-V2 Capstone Project | CSE | Year 5 Semester 9 | 2026-08-18*
