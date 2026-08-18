@@ -53,7 +53,7 @@ class AIServiceClient:
             return data["vectors"]
 
     async def generate_text(self, prompt: str, system_instruction: Optional[str] = None) -> str:
-        # 1. Primary: High-speed Binary gRPC
+        # 1. Primary: High-speed Binary gRPC (fast-fail at 8s so HTTP fallback kicks in quickly)
         try:
             stub = self._get_grpc_stub()
             req = ai_service_pb2.GenerateTextRequest(
@@ -62,14 +62,14 @@ class AIServiceClient:
                 temperature=0.2,
                 max_tokens=2048,
             )
-            resp = await stub.GenerateText(req, timeout=60.0)
+            resp = await stub.GenerateText(req, timeout=8.0)
             if resp and resp.text:
                 return resp.text
         except Exception as e:
             logger.warning(f"gRPC GenerateText failed ({e}), falling back to HTTP")
 
-        # 2. Secondary: HTTP REST Fallback
-        long_timeout = get_default_httpx_timeout(connect=5.0, read=90.0, write=60.0, pool=5.0)
+        # 2. Secondary: HTTP REST Fallback (generous 120s read timeout for long LLM generations)
+        long_timeout = get_default_httpx_timeout(connect=5.0, read=120.0, write=60.0, pool=5.0)
         async with httpx.AsyncClient(timeout=long_timeout) as client:
             resp = await client.post(
                 f"{self.base_url}/api/v1/ai/generate",

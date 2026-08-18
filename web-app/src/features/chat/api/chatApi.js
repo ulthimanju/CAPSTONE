@@ -18,12 +18,21 @@ export async function saveWorkspaceChat(workspaceId, messages) {
 
 /**
  * Send a question to RAG chat endpoint and receive answer with source citations.
+ *
+ * Per-request timeout of 120s: the RAG pipeline involves embedding the query via
+ * gRPC, pgvector similarity search, and LLM generation — this can take 20-60s.
+ * The global axios timeout of 30s would fire before the backend responds, so we
+ * override it here specifically for this endpoint.
  */
 export async function sendRAGChatMessage(workspaceId, question, topK = 5) {
-  const res = await api.post('/api/v1/rag/chat', {
-    workspace_id: workspaceId,
-    question,
-    top_k: topK,
-  });
+  const res = await api.post(
+    '/api/v1/rag/chat',
+    {
+      workspace_id: workspaceId,
+      question,
+      top_k: topK,
+    },
+    { timeout: 120000 }
+  );
   return res.data;
 }
