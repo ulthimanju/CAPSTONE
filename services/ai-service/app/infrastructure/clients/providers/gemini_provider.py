@@ -73,18 +73,21 @@ class GeminiClient:
         temperature: float = 0.7,
         top_p: float = 0.95,
         max_output_tokens: int = 2048,
+        max_tokens: int | None = None,
         response_mime_type: str | None = None,
         response_schema: Any | None = None,
         retries: int = 3,
-        timeout_seconds: float = 60.0,
+        timeout_seconds: float = 30.0,
+        **kwargs,
     ) -> dict[str, Any]:
+        output_limit = max_tokens or max_output_tokens or 2048
         target_model = model or settings.gemini_default_model
         client = self._get_client()
 
         config = types.GenerateContentConfig(
             temperature=temperature,
             top_p=top_p,
-            max_output_tokens=max_output_tokens,
+            max_output_tokens=output_limit,
             system_instruction=system_instruction,
         )
         if response_mime_type:
@@ -95,7 +98,12 @@ class GeminiClient:
         start_time = time.time()
         last_err = None
 
-        fallback_models = [target_model, "gemini-flash-latest", "gemini-flash-lite-latest"]
+        candidate_models = [target_model, "gemini-3.6-flash", "gemini-flash-latest", "gemini-flash-lite-latest"]
+        fallback_models = []
+        for m in candidate_models:
+            if m and m not in fallback_models:
+                fallback_models.append(m)
+
         for curr_model in fallback_models:
             @retry(
                 wait=wait_random_exponential(min=1.0, max=10.0),
@@ -104,7 +112,7 @@ class GeminiClient:
                 reraise=True,
             )
             async def _execute_generate(m=curr_model):
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
 
                 def _call():
                     return client.models.generate_content(

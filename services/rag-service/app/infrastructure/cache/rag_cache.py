@@ -128,6 +128,40 @@ class RAGCacheManager:
         except Exception:
             pass
 
+    def _get_chat_key(self, workspace_id: uuid.UUID, question: str, top_k: int) -> str:
+        q_hash = self._hash_query(question)
+        return f"rag:chat:{workspace_id}:{q_hash}:{top_k}"
+
+    async def get_chat_response(
+        self, workspace_id: uuid.UUID, question: str, top_k: int
+    ) -> dict[str, Any] | None:
+        if not self.redis:
+            return None
+        try:
+            key = self._get_chat_key(workspace_id, question, top_k)
+            val = await self.redis.get(key)
+            if not val:
+                return None
+            return json.loads(val)
+        except Exception:
+            return None
+
+    async def set_chat_response(
+        self,
+        workspace_id: uuid.UUID,
+        question: str,
+        top_k: int,
+        response_data: dict[str, Any],
+        ttl: int = 300,
+    ):
+        if not self.redis:
+            return
+        try:
+            key = self._get_chat_key(workspace_id, question, top_k)
+            await self.redis.setex(key, ttl, json.dumps(response_data))
+        except Exception:
+            pass
+
     async def invalidate_workspace_retrievals(self, workspace_id: uuid.UUID):
         if not self.redis:
             return
@@ -135,6 +169,7 @@ class RAGCacheManager:
             patterns = [
                 f"rag_retrieval:{workspace_id}:*",
                 f"rag:query:{workspace_id}:*",
+                f"rag:chat:{workspace_id}:*",
             ]
             for pattern in patterns:
                 keys = []

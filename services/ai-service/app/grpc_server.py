@@ -36,13 +36,14 @@ class AIGrpcServicer(ai_service_pb2_grpc.AIServiceServicer):
         context: grpc.aio.ServicerContext,
     ) -> ai_service_pb2.GenerateTextResponse:
         try:
-            text = await self.provider.generate_text(
+            res = await self.provider.generate_text(
                 prompt=request.prompt,
                 system_instruction=request.system_instruction or None,
                 temperature=request.temperature or 0.2,
-                max_tokens=request.max_tokens or 2048,
+                max_output_tokens=request.max_tokens or 2048,
             )
-            return ai_service_pb2.GenerateTextResponse(text=text, total_tokens=len(text) // 4)
+            text_out = res["text"] if isinstance(res, dict) else str(res)
+            return ai_service_pb2.GenerateTextResponse(text=text_out, total_tokens=len(text_out) // 4)
         except Exception as e:
             logger.exception(f"gRPC GenerateText failed: {e}")
             await context.abort(grpc.StatusCode.INTERNAL, str(e))

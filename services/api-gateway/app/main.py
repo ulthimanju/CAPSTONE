@@ -88,7 +88,7 @@ from shared.middleware.error_handler import register_global_exception_handlers
 from fastapi.middleware.gzip import GZipMiddleware
 
 app.add_middleware(GZipMiddleware, minimum_size=1024)
-app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=60.0)
+app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=180.0)
 register_global_exception_handlers(app)
 
 
@@ -202,10 +202,11 @@ async def proxy_request(service_url: str, request: Request):
 
     content = await request.body()
     is_streaming = "stream" in request.url.path or "events" in request.url.path
+    is_ai_or_rag = any(kw in request.url.path for kw in ("ai", "rag", "summary", "learning-path"))
     req_timeout = (
         httpx.Timeout(connect=10.0, read=None, write=30.0, pool=None)
         if is_streaming
-        else settings.get_httpx_timeout(read_override=60.0)
+        else settings.get_httpx_timeout(read_override=180.0 if is_ai_or_rag else 60.0)
     )
 
     req = client.build_request(

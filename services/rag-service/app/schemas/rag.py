@@ -23,12 +23,12 @@ class SemanticSearchRequest(BaseModel):
 
 
 class SearchResultChunk(BaseModel):
-    chunk_id: uuid.UUID
-    document_id: uuid.UUID
-    document_name: str | None
-    chunk_index: int
+    chunk_id: uuid.UUID | None = None
+    document_id: uuid.UUID | None = None
+    document_name: str | None = None
+    chunk_index: int = 0
     content: str
-    similarity_score: float
+    similarity_score: float = 0.0
 
 
 class SemanticSearchResponse(BaseModel):
@@ -46,11 +46,11 @@ class RAGChatRequest(BaseModel):
 
 
 class RAGCitation(BaseModel):
-    document_id: uuid.UUID
+    document_id: uuid.UUID | None = None
     document_name: str | None = None
     chunk_index: int | None = None
     snippet: str
-    similarity_score: float
+    similarity_score: float = 0.0
 
 
 class RAGChatResponse(BaseModel):

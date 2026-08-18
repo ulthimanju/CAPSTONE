@@ -26,6 +26,7 @@ from app.schemas.rag import (
 
 router = APIRouter(prefix="/api/v1/rag", tags=["RAG Gateway"])
 ai_client = AIServiceClient()
+rag_cache = RAGCacheManager()
 
 
 @router.post("/embeddings/generate", response_model=ChunkEmbeddingStatusResponse)
@@ -160,6 +161,12 @@ async def rag_chat(
     session: AsyncSession = Depends(get_db_session),
 ):
     await verify_workspace_access(req.workspace_id, user_id, required_write=False, authorization=authorization)
+
+    # 1. Fast Redis cache lookup
+    cached = await rag_cache.get_chat_response(req.workspace_id, req.question, req.top_k)
+    if cached:
+        return RAGChatResponse(**cached)
+
     vector_repo = VectorRepository(session)
     orchestrator = RAGChatOrchestrator(vector_repo=vector_repo, ai_client=ai_client)
 
@@ -170,11 +177,13 @@ async def rag_chat(
             top_k=req.top_k,
             return_sources=True,
         )
-        return RAGChatResponse(
-            question=req.question,
-            answer=answer,
-            citations=citations,
-        )
+        res_data = {
+            "question": req.question,
+            "answer": answer,
+            "citations": citations,
+        }
+        await rag_cache.set_chat_response(req.workspace_id, req.question, req.top_k, res_data, ttl=300)
+        return RAGChatResponse(**res_data)
     except WorkspaceContextGuardrailError as e:
         raise HTTPException(
             status_code=422,

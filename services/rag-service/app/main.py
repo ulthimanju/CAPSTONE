@@ -27,7 +27,7 @@ from shared.middleware.error_handler import register_global_exception_handlers
 app = FastAPI(title="RAG Service", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(RequestSizeLimitMiddleware)
-app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=60.0)
+app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=180.0)
 register_global_exception_handlers(app)
 
 from app.api.routers.health import router as health_router
