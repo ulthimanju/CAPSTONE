@@ -98,15 +98,17 @@ class GeminiClient:
         start_time = time.time()
         last_err = None
 
-        candidate_models = [target_model, "gemini-3.6-flash", "gemini-flash-latest", "gemini-flash-lite-latest"]
+        candidate_models = [target_model, "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
         fallback_models = []
         for m in candidate_models:
             if m and m not in fallback_models:
                 fallback_models.append(m)
 
+        effective_timeout = max(timeout_seconds, 90.0 if output_limit > 4000 else 45.0)
+
         for curr_model in fallback_models:
             @retry(
-                wait=wait_random_exponential(min=1.0, max=10.0),
+                wait=wait_random_exponential(min=1.0, max=5.0),
                 stop=stop_after_attempt(retries),
                 retry=retry_if_exception(is_retryable_gemini_error),
                 reraise=True,
@@ -123,7 +125,7 @@ class GeminiClient:
 
                 return await asyncio.wait_for(
                     loop.run_in_executor(None, _call),
-                    timeout=timeout_seconds,
+                    timeout=effective_timeout,
                 )
 
             try:
@@ -152,9 +154,7 @@ class GeminiClient:
             except Exception as e:
                 last_err = e
                 logger.warning("Gemini generation attempt failed for model %s: %s", curr_model, e)
-                if "503" in str(e) or "UNAVAILABLE" in str(e):
-                    # Switch immediately to next fallback model on 503 high demand spike
-                    continue
+                continue
 
         raise RuntimeError(f"AI generation Failed: {last_err}")
 
