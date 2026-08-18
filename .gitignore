@@ -90,6 +90,7 @@ redis_data/
 
 # Temporary & Scratch Files
 scratch/
+test_documents/
 tmp/
 temp/
 *.log
