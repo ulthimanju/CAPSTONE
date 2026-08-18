@@ -44,6 +44,7 @@ class WorkspaceMemberModel(Base):
     __tablename__ = "workspace_members"
     __table_args__ = (
         UniqueConstraint("workspace_id", "user_id", name="uq_workspace_user"),
+        Index("idx_workspace_members_ws_user_role", "workspace_id", "user_id", "role"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -62,6 +63,7 @@ class WorkspaceInvitationModel(Base):
     __table_args__ = (
         Index("idx_ws_invitation_status", "workspace_id", "invited_user_id", "status"),
         Index("idx_ws_invitation_email", "invited_email", "status"),
+        Index("idx_workspace_invitations_email_status_exp", "invited_email", "status", "expires_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

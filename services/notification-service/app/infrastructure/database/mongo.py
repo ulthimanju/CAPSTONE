@@ -409,10 +409,20 @@ async def init_mongo_indices() -> None:
         col = db["notifications"]
         await col.create_index([("user_id", 1), ("created_at", -1)])
         await col.create_index([("recipient_id", 1), ("created_at", -1)])
+        await col.create_index([("workspace_id", 1), ("created_at", -1)])
         await col.create_index("workspace_id")
         await col.create_index("id", unique=True)
         await col.create_index([("event_id", 1), ("user_id", 1)], sparse=True)
-        logger.info("MongoDB notification indices initialized successfully.")
+
+        # Compound index for workspace activity audit logs
+        act_col = db["activity_logs"]
+        await act_col.create_index([("workspace_id", 1), ("created_at", -1)])
+
+        # Compound index for document text chunks
+        chunk_col = db["document_chunks"]
+        await chunk_col.create_index([("document_id", 1), ("chunk_index", 1)])
+
+        logger.info("MongoDB compound indices initialized successfully.")
     except Exception as exc:
         logger.warning(f"Could not initialize MongoDB indices: {exc}")
 
