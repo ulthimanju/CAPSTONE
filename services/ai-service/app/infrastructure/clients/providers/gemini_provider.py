@@ -16,6 +16,33 @@ from app.config.settings import settings
 from app.constants.enums import AIProvider, ModelType
 
 
+import logging
+from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception
+
+logger = logging.getLogger("cpa.ai_service.gemini")
+
+
+def is_retryable_gemini_error(exc: BaseException) -> bool:
+    """Identify transient errors (429 Rate Limits, 503 Unavailable, Quota limits, Timeouts)."""
+    err_str = str(exc).lower()
+    retryable_patterns = [
+        "429",
+        "resource_exhausted",
+        "resourceexhausted",
+        "too many requests",
+        "quota",
+        "rate limit",
+        "503",
+        "unavailable",
+        "timeout",
+        "deadline",
+        "connection reset",
+        "broken pipe",
+        "remotedisconnected",
+    ]
+    return any(p in err_str for p in retryable_patterns)
+
+
 class TokenCounter:
     @staticmethod
     def estimate_tokens(text: str) -> int:
@@ -70,47 +97,56 @@ class GeminiClient:
 
         fallback_models = [target_model, "gemini-flash-latest", "gemini-flash-lite-latest"]
         for curr_model in fallback_models:
-            for attempt in range(1, retries + 1):
-                try:
-                    loop = asyncio.get_event_loop()
+            @retry(
+                wait=wait_random_exponential(min=1.0, max=10.0),
+                stop=stop_after_attempt(retries),
+                retry=retry_if_exception(is_retryable_gemini_error),
+                reraise=True,
+            )
+            async def _execute_generate(m=curr_model):
+                loop = asyncio.get_event_loop()
 
-                    def _call(m=curr_model):
-                        return client.models.generate_content(
-                            model=m,
-                            contents=prompt,
-                            config=config,
-                        )
-
-                    response = await asyncio.wait_for(
-                        loop.run_in_executor(None, _call),
-                        timeout=timeout_seconds,
+                def _call():
+                    return client.models.generate_content(
+                        model=m,
+                        contents=prompt,
+                        config=config,
                     )
 
-                    latency_ms = int((time.time() - start_time) * 1000)
-                    out_text = response.text or ""
-                    
-                    # Token usage parsing
-                    input_tokens = TokenCounter.estimate_tokens(prompt)
-                    output_tokens = TokenCounter.estimate_tokens(out_text)
+                return await asyncio.wait_for(
+                    loop.run_in_executor(None, _call),
+                    timeout=timeout_seconds,
+                )
 
-                    if hasattr(response, "usage_metadata") and response.usage_metadata:
-                        input_tokens = getattr(response.usage_metadata, "prompt_token_count", input_tokens)
-                        output_tokens = getattr(response.usage_metadata, "candidates_token_count", output_tokens)
+            try:
+                response = await _execute_generate()
 
-                    return {
-                        "text": out_text,
-                        "model": curr_model,
-                        "provider": AIProvider.GEMINI,
-                        "prompt_tokens": input_tokens,
-                        "completion_tokens": output_tokens,
-                        "total_tokens": input_tokens + output_tokens,
-                        "latency_ms": latency_ms,
-                    }
-                except Exception as e:
-                    last_err = e
-                    if "503" in str(e) or "UNAVAILABLE" in str(e):
-                        # Switch immediately to fallback model on 503 high demand spike
-                        break
+                latency_ms = int((time.time() - start_time) * 1000)
+                out_text = response.text or ""
+
+                # Token usage parsing
+                input_tokens = TokenCounter.estimate_tokens(prompt)
+                output_tokens = TokenCounter.estimate_tokens(out_text)
+
+                if hasattr(response, "usage_metadata") and response.usage_metadata:
+                    input_tokens = getattr(response.usage_metadata, "prompt_token_count", input_tokens)
+                    output_tokens = getattr(response.usage_metadata, "candidates_token_count", output_tokens)
+
+                return {
+                    "text": out_text,
+                    "model": curr_model,
+                    "provider": AIProvider.GEMINI,
+                    "prompt_tokens": input_tokens,
+                    "completion_tokens": output_tokens,
+                    "total_tokens": input_tokens + output_tokens,
+                    "latency_ms": latency_ms,
+                }
+            except Exception as e:
+                last_err = e
+                logger.warning("Gemini generation attempt failed for model %s: %s", curr_model, e)
+                if "503" in str(e) or "UNAVAILABLE" in str(e):
+                    # Switch immediately to next fallback model on 503 high demand spike
+                    continue
 
         raise RuntimeError(f"AI generation Failed: {last_err}")
 
@@ -125,34 +161,35 @@ class GeminiClient:
         target_model = raw_model.replace("models/", "")
         client = self._get_client()
 
+        @retry(
+            wait=wait_random_exponential(min=1.0, max=8.0),
+            stop=stop_after_attempt(retries),
+            retry=retry_if_exception(is_retryable_gemini_error),
+            reraise=True,
+        )
+        async def _execute_embed():
+            loop = asyncio.get_event_loop()
 
-
-        for attempt in range(1, retries + 1):
-            try:
-                loop = asyncio.get_event_loop()
-
-                def _call():
-                    res = client.models.embed_content(
-                        model=target_model,
-                        contents=texts if len(texts) > 1 else texts[0],
-                    )
-                    if hasattr(res, "embeddings") and res.embeddings:
-                        return [e.values for e in res.embeddings]
-                    elif hasattr(res, "embedding") and res.embedding:
-                        return [res.embedding.values]
-                    return []
-
-                vectors = await asyncio.wait_for(
-                    loop.run_in_executor(None, _call),
-                    timeout=timeout_seconds,
+            def _call():
+                res = client.models.embed_content(
+                    model=target_model,
+                    contents=texts if len(texts) > 1 else texts[0],
                 )
-                return vectors
+                if hasattr(res, "embeddings") and res.embeddings:
+                    return [e.values for e in res.embeddings]
+                elif hasattr(res, "embedding") and res.embedding:
+                    return [res.embedding.values]
+                return []
 
-            except Exception as e:
-                if attempt < retries:
-                    await asyncio.sleep(0.5 * (2 ** (attempt - 1)))
-                else:
-                    raise RuntimeError(f"Gemini embedding failed after {retries} attempts: {e}")
+            return await asyncio.wait_for(
+                loop.run_in_executor(None, _call),
+                timeout=timeout_seconds,
+            )
+
+        try:
+            return await _execute_embed()
+        except Exception as e:
+            raise RuntimeError(f"Gemini embedding failed after retries: {e}")
 
     async def stream_chat(
         self,
