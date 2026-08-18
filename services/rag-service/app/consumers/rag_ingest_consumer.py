@@ -128,6 +128,10 @@ async def start_rag_ingest_consumer() -> asyncio.Task:
                     routing_key=ROUTING_KEY,
                 )
 
+                await primary_queue.bind(main_exchange, routing_key="cpa.rag.ingest")
+                await primary_queue.bind(main_exchange, routing_key="document.rag.ingest")
+                await primary_queue.bind(main_exchange, routing_key="cpa.rag.#")
+
                 logger.info(f"RAG ingest consumer listening on queue '{QUEUE_NAME}' for routing '{ROUTING_KEY}'")
 
                 async with primary_queue.iterator() as queue_iter:
