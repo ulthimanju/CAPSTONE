@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, Response, HTTPException, Header, Depends, 
 from fastapi.responses import StreamingResponse
 from shared.config import PlatformSettings
 from shared.security import verify_user_identity
+from shared.security.jwt import JWTManager, JWTSettings
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -187,18 +188,69 @@ async def services_status():
     return {"gateway": "healthy", "services": results}
 
 
+UNTRUSTED_IDENTITY_HEADERS = {
+    "x-user-id",
+    "x-user-email",
+    "x-user-role",
+    "x-authenticated-user",
+    "x-consumer-custom-id",
+    "x-consumer-username",
+    "x-authenticated-scope",
+}
+
+
+def sanitize_and_prepare_headers(request: Request, req_id: str) -> dict[str, str]:
+    """
+    Security Gate:
+    1. Explicitly strips any client-supplied identity/role headers to prevent spoofing attacks.
+    2. Validates incoming Authorization Bearer JWT against jwt_secret.
+    3. Injects cryptographically authenticated identity headers (X-User-ID, X-User-Role) downstream.
+    """
+    headers = {
+        k: v for k, v in request.headers.items()
+        if k.lower() not in UNTRUSTED_IDENTITY_HEADERS and k.lower() != "host"
+    }
+
+    headers["X-Request-ID"] = req_id
+    headers["X-Correlation-ID"] = req_id
+
+    auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.removeprefix("Bearer ").strip()
+        try:
+            jwt_manager = JWTManager(
+                JWTSettings(
+                    secret_key=settings.jwt_secret,
+                    algorithm=settings.jwt_algorithm,
+                    issuer=settings.jwt_issuer,
+                )
+            )
+            claims = jwt_manager.get_claims(token)
+            if claims and claims.sub:
+                headers["X-User-ID"] = str(claims.sub)
+                if hasattr(claims, "email") and claims.email:
+                    headers["X-User-Email"] = str(claims.email)
+                if hasattr(claims, "role") and claims.role:
+                    headers["X-User-Role"] = str(claims.role)
+        except Exception:
+            pass
+
+    return headers
+
+
 # Phase 3: Service Routing Proxy
 async def proxy_request(service_url: str, request: Request):
     target_url = f"{service_url}{request.url.path}"
     if request.url.query:
         target_url += f"?{request.url.query}"
 
-    headers = dict(request.headers)
-    headers.pop("host", None)
-
-    req_id = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID") or request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
-    headers["X-Request-ID"] = req_id
-    headers["X-Correlation-ID"] = req_id
+    req_id = (
+        getattr(request.state, "request_id", None)
+        or request.headers.get("X-Request-ID")
+        or request.headers.get("X-Correlation-ID")
+        or str(uuid.uuid4())
+    )
+    headers = sanitize_and_prepare_headers(request, req_id)
 
     content = await request.body()
     is_streaming = "stream" in request.url.path or "events" in request.url.path
@@ -397,11 +449,13 @@ async def proxy_learning_path_generation(request: Request, workspace_id: str):
     target_url = f"{settings.service_ai_url}/api/v1/ai/workspaces/{workspace_id}/learning-path"
     if request.url.query:
         target_url += f"?{request.url.query}"
-    headers = dict(request.headers)
-    headers.pop("host", None)
-    req_id = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID") or str(uuid.uuid4())
-    headers["X-Request-ID"] = req_id
-    headers["X-Correlation-ID"] = req_id
+    req_id = (
+        getattr(request.state, "request_id", None)
+        or request.headers.get("X-Request-ID")
+        or request.headers.get("X-Correlation-ID")
+        or str(uuid.uuid4())
+    )
+    headers = sanitize_and_prepare_headers(request, req_id)
     content = await request.body()
     req = client.build_request(
         method=request.method,
