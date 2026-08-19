@@ -12,6 +12,15 @@ export function renderWithProviders(ui, { route = '/', queryClient, ...renderOpt
       },
     });
 
+  if (!route.startsWith('/auth/callback') && !client.getQueryData(['auth', 'profile'])) {
+    client.setQueryData(['auth', 'profile'], {
+      id: 'e4b3c2a1-0000-4000-8000-000000000001',
+      email: 'test.user@synapse.local',
+      full_name: 'Test Student',
+      role: 'STUDENT',
+    });
+  }
+
   function Wrapper({ children }) {
     return (
       <QueryClientProvider client={client}>

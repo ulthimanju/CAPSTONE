@@ -38,7 +38,7 @@ import {
   useWorkspaceActivitiesQuery,
   useWorkspaceMemberSSE,
 } from '../../hooks/useMembers';
-import { useAuthStore } from '@/store/authStore';
+import { useCurrentUser } from '@/features/auth/hooks/useAuth';
 import { ROUTES } from '@/config/constants';
 import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
@@ -59,7 +59,7 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [showActivities, setShowActivities] = useState(false);
 
-  const currentUser = useAuthStore((state) => state.user);
+  const { user: currentUser } = useCurrentUser();
 
   const {
     data: members = [],

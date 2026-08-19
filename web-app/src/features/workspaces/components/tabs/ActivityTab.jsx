@@ -23,11 +23,11 @@ import {
   LogsIcon,
 } from '@/components/ui';
 import { useWorkspaceActivitiesQuery } from '../../hooks/useMembers';
-import { useAuthStore } from '@/store/authStore';
+import { useCurrentUser } from '@/features/auth/hooks/useAuth';
 import { cn } from '@/lib/cn';
 
 export function ActivityTab({ workspaceId, members = [] }) {
-  const currentUser = useAuthStore((state) => state.user);
+  const { user: currentUser } = useCurrentUser();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');

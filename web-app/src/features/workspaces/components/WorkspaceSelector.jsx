@@ -21,7 +21,7 @@ import { CodeBoldIcon, BookLinearIcon, PlusIcon } from '@/components/ui';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
 import { useWorkspacesQuery, useWorkspaceQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useAuthStore } from '@/store/authStore';
+import { useCurrentUser } from '@/features/auth/hooks/useAuth';
 import { cn } from '@/lib/cn';
 
 export function WorkspaceSelector({ className }) {
@@ -35,7 +35,7 @@ export function WorkspaceSelector({ className }) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'OWNED' | 'COLLABORATED'
 
-  const user = useAuthStore((state) => state.user);
+  const { user } = useCurrentUser();
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
 

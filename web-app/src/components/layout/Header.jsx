@@ -17,7 +17,7 @@ import {
   useGenerateUnitContentMutation,
   useLearningPathStore,
 } from '@/features/learning-path/hooks/useLearningPath';
-import { useAuthStore } from '@/store/authStore';
+import { useCurrentUser } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ export function Header({ title, children, className }) {
   const location = useLocation();
   const toggleMobileSidebar = useUIStore((state) => state.toggleMobileSidebar);
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
-  const currentUser = useAuthStore((state) => state.user);
+  const { user: currentUser } = useCurrentUser();
   const fileInputRef = useRef(null);
 
   const { data: workspace } = useWorkspaceQuery(activeWorkspaceId);

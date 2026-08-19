@@ -128,6 +128,6 @@ describe('AuthCallbackPage Component', () => {
       expect(screen.getByText('Workspaces Screen')).toBeInTheDocument();
     });
 
-    expect(useAuthStore.getState().user?.name).toBe('Test Student');
+    expect(authApi.getProfile).toHaveBeenCalled();
   });
 });

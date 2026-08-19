@@ -9,17 +9,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/DropdownMenu';
-import { useAuthStore } from '@/store/authStore';
-import { useLogout, useGoogleDriveStatusQuery } from '@/features/auth/hooks/useAuth';
+import { useLogout, useGoogleDriveStatusQuery, useCurrentUser } from '@/features/auth/hooks/useAuth';
 import { cn } from '@/lib/cn';
 
 export function UserProfileMenu({ className }) {
-  const user = useAuthStore((state) => state.user);
+  const { user } = useCurrentUser();
   const logout = useLogout();
   const navigate = useNavigate();
   const { data: driveStatus } = useGoogleDriveStatusQuery();
 
-  if (!user) return null;
+  const displayName = user?.full_name || user?.name || user?.email || 'User Profile';
+  const displayAvatar = user?.avatar_url || user?.picture_url;
 
   return (
     <DropdownMenu>
@@ -33,13 +33,13 @@ export function UserProfileMenu({ className }) {
           aria-label="Open user profile menu"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <Avatar src={user.picture_url} name={user.name} size="sm" />
+            <Avatar src={displayAvatar} name={displayName} size="sm" />
             <div className="flex flex-col min-w-0">
               <span className="font-display text-xs font-semibold text-text truncate">
-                {user.name}
+                {displayName}
               </span>
               <span className="font-mono text-[11px] text-text/70 truncate">
-                {user.email}
+                {user?.email || 'Authenticated'}
               </span>
             </div>
           </div>
@@ -51,14 +51,14 @@ export function UserProfileMenu({ className }) {
         {/* User Identity Details */}
         <div className="px-3 py-2">
           <p className="font-display text-sm font-semibold text-text truncate">
-            {user.name}
+            {displayName}
           </p>
           <p className="font-mono text-xs text-text/70 truncate">
-            {user.email}
+            {user?.email || ''}
           </p>
           <div className="mt-2 inline-flex items-center gap-1 rounded-ui border border-sep-line bg-sand px-2 py-0.5 font-mono text-[10px] text-text">
             <Shield className="h-3 w-3 text-accent" aria-hidden="true" />
-            <span>Role: {user.role || 'Student'}</span>
+            <span>Role: {user?.role || 'Student'}</span>
           </div>
         </div>
 

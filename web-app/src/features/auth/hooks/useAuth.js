@@ -14,23 +14,27 @@ export const AUTH_QUERY_KEYS = {
 
 /**
  * Query hook for current authenticated user profile.
+ * Acts as the authoritative server state for user identity.
  */
 export function useProfileQuery(options = {}) {
   const token = useAuthStore((state) => state.token);
-  const setUser = useAuthStore((state) => state.setUser);
 
   return useQuery({
     queryKey: AUTH_QUERY_KEYS.PROFILE,
-    queryFn: async () => {
-      const profile = await authApi.getProfile();
-      setUser(profile);
-      return profile;
-    },
-    enabled: !!token,
+    queryFn: () => authApi.getProfile(),
+    enabled: Boolean(token),
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
     ...options,
   });
+}
+
+/**
+ * Convenience hook returning the current authoritative user profile.
+ */
+export function useCurrentUser() {
+  const { data: user, isLoading, isError, error, refetch } = useProfileQuery();
+  return { user: user || null, isLoading, isError, error, refetch };
 }
 
 /**
@@ -42,7 +46,7 @@ export function useSessionsQuery(options = {}) {
   return useQuery({
     queryKey: AUTH_QUERY_KEYS.SESSIONS,
     queryFn: () => authApi.getSessions(),
-    enabled: !!token,
+    enabled: Boolean(token),
     staleTime: 30 * 1000, // 30 seconds
     ...options,
   });
@@ -127,7 +131,7 @@ export function useGoogleDriveStatusQuery(options = {}) {
   return useQuery({
     queryKey: AUTH_QUERY_KEYS.GOOGLE_DRIVE,
     queryFn: () => authApi.checkGoogleDriveStatus(),
-    enabled: !!token,
+    enabled: Boolean(token),
     staleTime: 10 * 60 * 1000,
     ...options,
   });
@@ -135,6 +139,7 @@ export function useGoogleDriveStatusQuery(options = {}) {
 
 /**
  * Hook providing a structured logout function.
+ * Invalidates and wipes all query caches and credential tokens.
  */
 export function useLogout() {
   const queryClient = useQueryClient();
@@ -142,8 +147,8 @@ export function useLogout() {
   const navigate = useNavigate();
 
   return () => {
-    clearAuth();
-    queryClient.clear();
+    queryClient.clear(); // purge all server-cached queries
+    clearAuth(); // purge access token and active workspace ID
     toast.info('Signed out successfully.');
     navigate(ROUTES.LOGIN, { replace: true });
   };
