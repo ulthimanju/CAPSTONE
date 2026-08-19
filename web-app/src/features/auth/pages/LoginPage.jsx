@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
-import { FileText, Lightbulb, Share, Shield } from '@/components/ui/icons';
-import { useAuthStore } from '@/store/authStore';
+import { FileText, Lightbulb, Share, Shield, CircleNotch } from '@/components/ui/icons';
+import { useAuthStatus, AUTH_STATUS } from '../hooks/useAuth';
 import { authApi } from '../api/authApi';
 import { ROUTES } from '@/config/constants';
 
@@ -46,11 +46,23 @@ function SynapseDocBadge({ className = 'h-11 w-11' }) {
 
 export function LoginPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { status } = useAuthStatus();
   const location = useLocation();
 
-  // If already authenticated, redirect to destination
-  if (isAuthenticated) {
+  // If initial profile verification is in flight, show quiet loading indicator
+  if (status === AUTH_STATUS.UNKNOWN) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-bg font-body text-text">
+        <div className="flex items-center gap-2 font-mono text-xs text-text/60">
+          <CircleNotch className="h-4 w-4 animate-spin text-accent" aria-hidden="true" />
+          <span>Verifying existing session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // If already confirmed authenticated, redirect to destination
+  if (status === AUTH_STATUS.AUTHENTICATED) {
     const destination = location.state?.from?.pathname || ROUTES.WORKSPACES;
     return <Navigate to={destination} replace />;
   }

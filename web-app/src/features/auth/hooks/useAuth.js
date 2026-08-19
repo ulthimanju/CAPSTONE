@@ -12,6 +12,12 @@ export const AUTH_QUERY_KEYS = {
   SESSIONS: ['auth', 'sessions'],
 };
 
+export const AUTH_STATUS = {
+  UNKNOWN: 'UNKNOWN', // Initializing or validating credentials with backend
+  AUTHENTICATED: 'AUTHENTICATED', // Confirmed valid session with loaded profile
+  UNAUTHENTICATED: 'UNAUTHENTICATED', // No token, or revoked/expired token
+};
+
 /**
  * Query hook for current authenticated user profile.
  * Acts as the authoritative server state for user identity.
@@ -24,7 +30,7 @@ export function useProfileQuery(options = {}) {
     queryFn: () => authApi.getProfile(),
     enabled: Boolean(token),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
+    retry: false, // Do not loop if 401
     ...options,
   });
 }
@@ -35,6 +41,51 @@ export function useProfileQuery(options = {}) {
 export function useCurrentUser() {
   const { data: user, isLoading, isError, error, refetch } = useProfileQuery();
   return { user: user || null, isLoading, isError, error, refetch };
+}
+
+/**
+ * Tri-state authentication status hook for robust route guarding and UI lifecycle.
+ * Prevents false positives from stale tokens and prevents premature bounces.
+ */
+export function useAuthStatus() {
+  const token = useAuthStore((state) => state.token);
+  const { data: user, isLoading, isError } = useProfileQuery({
+    enabled: Boolean(token),
+  });
+
+  if (!token) {
+    return {
+      status: AUTH_STATUS.UNAUTHENTICATED,
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+    };
+  }
+
+  if (isLoading) {
+    return {
+      status: AUTH_STATUS.UNKNOWN,
+      user: null,
+      isLoading: true,
+      isAuthenticated: false,
+    };
+  }
+
+  if (isError || !user) {
+    return {
+      status: AUTH_STATUS.UNAUTHENTICATED,
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+    };
+  }
+
+  return {
+    status: AUTH_STATUS.AUTHENTICATED,
+    user,
+    isLoading: false,
+    isAuthenticated: true,
+  };
 }
 
 /**
