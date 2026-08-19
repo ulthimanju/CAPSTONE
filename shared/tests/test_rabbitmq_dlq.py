@@ -21,7 +21,7 @@ async def test_setup_rabbitmq_queues_with_dlx_configures_queue_arguments():
 
     main_ex, prim_q, dead_q = await setup_rabbitmq_queues_with_dlx(
         channel=channel,
-        queue_name="cpa.document.processing",
+        queue_name="synapse.document.processing",
         routing_key="document.created",
     )
 
@@ -31,7 +31,7 @@ async def test_setup_rabbitmq_queues_with_dlx_configures_queue_arguments():
     # Verify primary queue arguments specify x-dead-letter-exchange and x-dead-letter-routing-key
     declare_args = channel.declare_queue.call_args_list[1][1]
     assert declare_args["arguments"]["x-dead-letter-exchange"] == DLX_EXCHANGE_NAME
-    assert declare_args["arguments"]["x-dead-letter-routing-key"] == "dlq.cpa.document.processing"
+    assert declare_args["arguments"]["x-dead-letter-routing-key"] == "dlq.synapse.document.processing"
 
 
 @pytest.mark.asyncio

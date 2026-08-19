@@ -1,6 +1,6 @@
 import os
 
-BASE_URL = os.getenv("CPA_BASE_URL", "http://localhost:8000")
+BASE_URL = os.getenv("SYNAPSE_BASE_URL", "http://localhost:8000")
 API_V1_PREFIX = "/api/v1"
 
 SERVICE_PORTS = {

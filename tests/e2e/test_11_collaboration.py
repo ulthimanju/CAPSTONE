@@ -25,7 +25,7 @@ def test_collaboration_full_lifecycle(client: ApiClient, owner_token: str, colla
     s_atk_inv, _, _ = client.json_request("POST", f"/api/v1/workspaces/{ws_id}/collaborators", token=attacker_token, body={"email": auth_context["users"]["Collab2"], "role": "EDITOR"})
     reporter.record("TC-COLLAB-242", CAT, "Non-member attempts to invite collaborator -> 403", "P1", "403 Forbidden", f"HTTP {s_atk_inv}", "PASSED" if s_atk_inv in (403, 404) else "FAILED")
 
-    s_ghost, _, _ = client.json_request("POST", f"/api/v1/workspaces/{ws_id}/collaborators", token=owner_token, body={"email": f"ghost.{uuid.uuid4().hex[:6]}@none.cpa", "role": "EDITOR"})
+    s_ghost, _, _ = client.json_request("POST", f"/api/v1/workspaces/{ws_id}/collaborators", token=owner_token, body={"email": f"ghost.{uuid.uuid4().hex[:6]}@none.synapse", "role": "EDITOR"})
     reporter.record("TC-COLLAB-243", CAT, "Invite non-existent email -> 404 User not found", "P2", "404 Not Found", f"HTTP {s_ghost}", "PASSED" if s_ghost in (404, 422) else "FAILED")
 
     if inv_id:

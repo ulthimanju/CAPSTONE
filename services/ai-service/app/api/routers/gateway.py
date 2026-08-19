@@ -165,7 +165,7 @@ async def _publish_summary_event(
             user_id=user_id,
             payload=payload,
         )
-        published = await publish_domain_event("cpa.notifications.ai", event)
+        published = await publish_domain_event("synapse.notifications.ai", event)
         if not published:
             async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
                 await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
@@ -607,7 +607,7 @@ async def _publish_learning_path_event(
             user_id=user_id,
             payload=payload,
         )
-        published = await publish_domain_event("cpa.notifications.ai", event)
+        published = await publish_domain_event("synapse.notifications.ai", event)
         if not published:
             async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
                 await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
@@ -758,7 +758,7 @@ async def _publish_unit_generation_event(
             user_id=user_id,
             payload=payload,
         )
-        published = await publish_domain_event("cpa.notifications.ai", event)
+        published = await publish_domain_event("synapse.notifications.ai", event)
         if not published:
             async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
                 await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)

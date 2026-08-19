@@ -13,8 +13,8 @@ from shared.events.idempotency import is_event_processed, mark_event_processed
 
 logger = logging.getLogger(__name__)
 
-QUEUE_NAME = "cpa.notifications.queue"
-ROUTING_KEY = "cpa.notifications.#"
+QUEUE_NAME = "synapse.notifications.queue"
+ROUTING_KEY = "synapse.notifications.#"
 
 
 async def process_notification_event(data: dict) -> None:
@@ -73,7 +73,7 @@ async def process_notification_event(data: dict) -> None:
 
 async def start_notification_consumer() -> asyncio.Task:
     """
-    Background worker that connects to RabbitMQ and consumes cpa.notifications.# messages.
+    Background worker that connects to RabbitMQ and consumes synapse.notifications.# messages.
     """
     async def _consume_loop():
         while True:

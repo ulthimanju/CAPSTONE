@@ -14,10 +14,10 @@ def client() -> ApiClient:
 def auth_context(client: ApiClient) -> Dict[str, Any]:
     sfx = uuid.uuid4().hex[:6]
     accounts = {
-        "Owner": f"owner.{sfx}@cpa.local",
-        "Collab1": f"collab1.{sfx}@cpa.local",
-        "Collab2": f"collab2.{sfx}@cpa.local",
-        "Attacker": f"attacker.{sfx}@cpa.local",
+        "Owner": f"owner.{sfx}@synapse.local",
+        "Collab1": f"collab1.{sfx}@synapse.local",
+        "Collab2": f"collab2.{sfx}@synapse.local",
+        "Attacker": f"attacker.{sfx}@synapse.local",
     }
     data = {"suffix": sfx, "users": {}, "tokens": {}, "user_ids": {}}
 

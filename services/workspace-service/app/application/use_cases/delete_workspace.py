@@ -76,7 +76,7 @@ class DeleteWorkspaceUseCase:
                 },
             )
             await publish_domain_event(
-                routing_key="cpa.workspace.deleted",
+                routing_key="synapse.workspace.deleted",
                 event=del_event,
                 rabbitmq_url=settings.rabbitmq_url,
             )

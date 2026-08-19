@@ -21,18 +21,18 @@ class PlatformSettings(BaseSettings):
     jwt_secret: str = "change-me-in-production-secret-key-minimum-32-chars!!"
     jwt_algorithm: str = "HS256"
     jwt_issuer: str = "identity-service"
-    jwt_audience: str = "cpa-services"
+    jwt_audience: str = "synapse-services"
     jwt_access_expire_minutes: int = 30
     jwt_refresh_expire_days: int = 30
 
     # Redis Config
     redis_url: str = "redis://redis:6379"
     redis_db: int = 0
-    redis_prefix: str = "cpa"
+    redis_prefix: str = "synapse"
 
     # RabbitMQ Config
     rabbitmq_url: str = "amqp://rabbit:rabbitpassword@rabbitmq:5672/"
-    rabbitmq_exchange: str = "cpa.events"
+    rabbitmq_exchange: str = "synapse.events"
     rabbitmq_prefetch: int = 10
 
     # HTTP Config

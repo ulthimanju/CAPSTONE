@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 
 
 def test_sha256_checksum_computation_and_matching():
-    file_content_1 = b"Sample document contents for Synapse capstone platform"
-    file_content_2 = b"Sample document contents for Synapse capstone platform"
+    file_content_1 = b"Sample document contents for Synapse synapse platform"
+    file_content_2 = b"Sample document contents for Synapse synapse platform"
     file_content_diff = b"Different document content altogether"
 
     hash_1 = hashlib.sha256(file_content_1).hexdigest()

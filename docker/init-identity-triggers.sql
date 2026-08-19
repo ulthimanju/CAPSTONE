@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────
--- CPA-V2 PostgreSQL Database-Level Session Auto-Revocation
+-- SYNAPSE PostgreSQL Database-Level Session Auto-Revocation
 -- Enforces 1-hour idle timeout & auto-revocation in PostgreSQL
 -- ─────────────────────────────────────────────────────────────
 

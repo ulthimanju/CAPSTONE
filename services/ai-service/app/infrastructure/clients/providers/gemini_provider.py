@@ -19,7 +19,7 @@ from app.constants.enums import AIProvider, ModelType
 import logging
 from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception
 
-logger = logging.getLogger("cpa.ai_service.gemini")
+logger = logging.getLogger("synapse.ai_service.gemini")
 
 
 def is_retryable_gemini_error(exc: BaseException) -> bool:

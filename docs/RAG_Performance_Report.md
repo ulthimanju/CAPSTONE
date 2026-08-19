@@ -1,5 +1,5 @@
 # RAG Performance Evaluation Report
-**Project:** CPA-V2 — AI-Powered Study Assistant (Capstone Project)  
+**Project:** SYNAPSE — AI-Powered Study Assistant (Synapse Project)  
 **Team Specialization:** CSE | Year 5 | Semester 9  
 **Test Date:** 2026-08-18  
 **Tested By:** Developer (manju@gmail.com)  
@@ -145,4 +145,4 @@
 
 ---
 
-*Report generated: 2026-08-18 | CPA-V2 Capstone Project | CSE Dept.*
+*Report generated: 2026-08-18 | SYNAPSE Synapse Project | CSE Dept.*

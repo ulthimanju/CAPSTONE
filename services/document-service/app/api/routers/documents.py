@@ -302,7 +302,7 @@ async def upload_document_raw(
     if not gdrive_file_id:
         # Seamless Local Storage Provider fallback (for Test Auth & Dev testing accounts)
         storage_provider = "LOCAL"
-        local_storage_dir = os.path.join(tempfile.gettempdir(), "cpa_local_storage", str(workspace_id))
+        local_storage_dir = os.path.join(tempfile.gettempdir(), "synapse_local_storage", str(workspace_id))
         os.makedirs(local_storage_dir, exist_ok=True)
         gdrive_file_id = f"local_{content_checksum[:16]}"
         web_view_link = f"/api/v1/documents/local/{gdrive_file_id}/view"

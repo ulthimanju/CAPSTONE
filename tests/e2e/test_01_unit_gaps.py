@@ -18,7 +18,7 @@ def test_register_duplicate_email(client: ApiClient, auth_context):
     assert passed
 
 def test_register_weak_password(client: ApiClient):
-    s, d, _ = client.json_request("POST", "/api/v1/test-auth/register", body={"email": f"weak.{uuid.uuid4().hex[:6]}@cpa.local", "password": "abc", "full_name": "W"})
+    s, d, _ = client.json_request("POST", "/api/v1/test-auth/register", body={"email": f"weak.{uuid.uuid4().hex[:6]}@synapse.local", "password": "abc", "full_name": "W"})
     passed = s == 422
     reporter.record("TC-UNIT-011", CAT, "Register weak password (<8 chars) -> 422 validation", "P1", "422 Validation Error", f"HTTP {s}", "PASSED" if passed else "FAILED")
     assert passed

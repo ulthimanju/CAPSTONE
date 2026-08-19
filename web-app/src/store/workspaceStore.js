@@ -15,7 +15,7 @@ export const useWorkspaceStore = create(
       },
     }),
     {
-      name: 'cpa_active_workspace',
+      name: 'synapse_active_workspace',
     }
   )
 );

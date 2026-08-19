@@ -23,7 +23,7 @@ def test_workspace_deleted_rabbitmq_cascade(client: ApiClient, owner_token: str)
     reporter.record("TC-CROSS-062", CAT, "Upload document to cascade workspace -> 201", "P1", "201 Created", f"HTTP {us}", "PASSED" if us in (200, 201) else "FAILED")
 
     ds, _, _ = client.json_request("DELETE", f"/api/v1/workspaces/{ws_id}", token=owner_token)
-    reporter.record("TC-CROSS-063", CAT, "DELETE workspace -> 204 (cpa.workspace.deleted published)", "P1", "204 No Content", f"HTTP {ds}", "PASSED" if ds in (200, 204) else "FAILED")
+    reporter.record("TC-CROSS-063", CAT, "DELETE workspace -> 204 (synapse.workspace.deleted published)", "P1", "204 No Content", f"HTTP {ds}", "PASSED" if ds in (200, 204) else "FAILED")
 
     time.sleep(4)
     qs, qd, _ = client.json_request("GET", f"/api/v1/documents?workspace_id={ws_id}", token=owner_token)
@@ -57,7 +57,7 @@ def test_grpc_user_lookup_on_invite(client: ApiClient, owner_token: str, auth_co
     passed = s_inv in (200, 201)
     reporter.record("TC-CROSS-080", CAT, "Invite member -> gRPC GetUserByEmail user lookup", "P1", "201 Invitation created", f"HTTP {s_inv}", "PASSED" if passed else "FAILED")
 
-    s_ghost, _, _ = client.json_request("POST", f"/api/v1/workspaces/{ws_id}/collaborators", token=owner_token, body={"email": f"ghost.{uuid.uuid4().hex[:6]}@nowhere.cpa", "role": "EDITOR"})
+    s_ghost, _, _ = client.json_request("POST", f"/api/v1/workspaces/{ws_id}/collaborators", token=owner_token, body={"email": f"ghost.{uuid.uuid4().hex[:6]}@nowhere.synapse", "role": "EDITOR"})
     passed_ghost = s_ghost in (404, 422)
     reporter.record("TC-CROSS-081", CAT, "Invite non-existent email -> 404 (lookup fails)", "P1", "404 Not Found", f"HTTP {s_ghost}", "PASSED" if passed_ghost else "FAILED")
 

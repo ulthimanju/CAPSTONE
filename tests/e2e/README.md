@@ -1,7 +1,7 @@
-# CPA-V2 Modular Live Test Suite
+# SYNAPSE Modular Live Test Suite
 
 ## Overview
-This directory contains the modular, category-by-category live runtime test suite for **CPA-V2**.
+This directory contains the modular, category-by-category live runtime test suite for **SYNAPSE**.
 It tests all 28 categories from docs/CPA_V2_Test_Plan.md plus multi-format document ingestion (.pdf, .docx, .pptx, .csv, .xlsx, .png, .jpg).
 
 ## Architecture

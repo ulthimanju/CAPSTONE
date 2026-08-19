@@ -74,7 +74,7 @@ class InviteMemberUseCase:
                         if lookup_res.status_code == 404:
                             raise HTTPException(
                                 status_code=404,
-                                detail=f"No registered account found with email '{target_email}'. The user must first sign in to CPA before being invited."
+                                detail=f"No registered account found with email '{target_email}'. The user must first sign in to Synapse before being invited."
                             )
                         elif lookup_res.status_code == 200:
                             user_info = lookup_res.json()

@@ -1,4 +1,4 @@
-FROM cpa-python-base:latest
+FROM synapse-python-base:latest
 
 WORKDIR /app
 

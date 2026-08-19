@@ -42,7 +42,7 @@ export const useAuthStore = create((set) => ({
         const parsed = JSON.parse(prevUser);
         if (parsed.id !== user.id || parsed.email !== user.email) {
           useWorkspaceStore.getState().clearActiveWorkspace();
-          localStorage.removeItem('cpa_active_workspace');
+          localStorage.removeItem('synapse_active_workspace');
         }
       } catch {}
     }
@@ -57,7 +57,7 @@ export const useAuthStore = create((set) => ({
   clearAuth: () => {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
-    localStorage.removeItem('cpa_active_workspace');
+    localStorage.removeItem('synapse_active_workspace');
     useWorkspaceStore.getState().clearActiveWorkspace();
     set({ token: null, user: null, isAuthenticated: false });
   },

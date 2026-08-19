@@ -1,5 +1,5 @@
-# CPA-V2 — Exhaustive Test Plan
-**Project:** AI-Powered Study Assistant (Capstone)
+# SYNAPSE — Exhaustive Test Plan
+**Project:** AI-Powered Study Assistant (Synapse)
 **Specialization:** CSE | Year 5 | Semester 9
 **Date:** 2026-08-18
 **Source:** Full audit of all 7 microservices + shared layer
@@ -47,7 +47,7 @@
 | Create workspace empty name → 422 | Input validation | P1 |
 | Create workspace name > 255 chars → 422 | Boundary | P2 |
 | Only owner can delete workspace → non-owner gets 403 | Authorization | P1 |
-| Workspace deletion publishes `cpa.workspace.deleted` event | Event contract | P1 |
+| Workspace deletion publishes `synapse.workspace.deleted` event | Event contract | P1 |
 | Workspace deletion with RabbitMQ down → workspace deleted but event lost (document behavior) | Failure mode | P1 |
 | Notification publish failure silently swallowed → workspace still deleted | Resilience | P2 |
 
@@ -131,7 +131,7 @@
 ### 3.1 RabbitMQ: Workspace Deleted → Document Cascade
 | Test | Expected | Priority |
 |---|---|---|
-| Delete workspace → `cpa.workspace.deleted` event published to `cpa.events` exchange | Event present in queue | P1 |
+| Delete workspace → `synapse.workspace.deleted` event published to `synapse.events` exchange | Event present in queue | P1 |
 | Document-service consumer receives event → all workspace documents hard-deleted | DB verification | P1 |
 | Consumer receives event with valid workspace_id → Redis cache `workspace_documents:{ws_id}` deleted | Cache cleared | P1 |
 | Consumer receives duplicate event (same event_id) → idempotency check skips re-processing | Redis idempotency | P1 |
@@ -139,25 +139,25 @@
 | Consumer receives event with invalid UUID `workspace_id` → logged, not DLQ'd | Silent drop | P2 |
 | RabbitMQ is down when workspace deleted → workspace DB row deleted but documents NOT deleted (orphan) | Known failure mode to document | P1 |
 | RabbitMQ recovers after downtime → queued event replayed and documents deleted | Durability | P1 |
-| Consumer crashes mid-processing → message rejected to `cpa.dlq` | DLQ routing | P2 |
+| Consumer crashes mid-processing → message rejected to `synapse.dlq` | DLQ routing | P2 |
 
 ### 3.2 RabbitMQ: Chunk Generated → RAG Indexed
 | Test | Expected | Priority |
 |---|---|---|
-| Chunking completes → `cpa.rag.ingest` event published | Event in queue | P1 |
+| Chunking completes → `synapse.rag.ingest` event published | Event in queue | P1 |
 | RAG ingest consumer receives event → embeddings created in `rag_db.chunk_embeddings` | DB verification | P1 |
 | Ingest event with duplicate event_id → Redis idempotency skips re-embedding | Redis check | P1 |
 | Ingest event missing `chunks` field → ACKed and logged (lost, not DLQ'd) | Silent drop | P2 |
 | Ingest event missing `document_id` → same | Silent drop | P2 |
 | RabbitMQ publish fails AND HTTP fallback to `rag-service/embeddings/generate` fails → document marked READY_FOR_RAG but never indexed | Known gap to document | P1 |
 | HTTP fallback triggered when RabbitMQ returns `False` → `POST /api/v1/rag/embeddings/generate` called | Fallback verification | P1 |
-| RAG ingest consumer crashes → message goes to `cpa.dlq` | DLQ | P2 |
+| RAG ingest consumer crashes → message goes to `synapse.dlq` | DLQ | P2 |
 
 ### 3.3 RabbitMQ: Notifications
 | Test | Expected | Priority |
 |---|---|---|
-| Workspace deleted → `cpa.notifications.workspace` event published | Notification in queue | P1 |
-| RAG indexing completed → `cpa.notifications.document` event published | Notification in queue | P1 |
+| Workspace deleted → `synapse.notifications.workspace` event published | Notification in queue | P1 |
+| RAG indexing completed → `synapse.notifications.document` event published | Notification in queue | P1 |
 | Notification consumer receives event → persisted in MongoDB | MongoDB record | P1 |
 | Notification consumer receives duplicate event → idempotency skips duplicate | Redis idempotency | P1 |
 | `POST /api/v1/notifications/events` (unauthenticated) → notification injected | Security gap — document that this endpoint has no auth | P1 |
@@ -419,7 +419,7 @@
 | ai-service restarts mid-request | gRPC exception → HTTP fallback | P1 |
 | identity-service restarts → workspace invite → gRPC stale channel | Fallback to HTTP | P2 |
 | rag_ingest_consumer loses connection to RabbitMQ | 5s retry loop, reconnects | P1 |
-| Dead Letter Queue (`cpa.dlq`) receives message | Message inspectable, not lost | P2 |
+| Dead Letter Queue (`synapse.dlq`) receives message | Message inspectable, not lost | P2 |
 | LlamaParse API quota exhausted | Document FAILED with quota error | P1 |
 | Gemini API 429 quota exhausted for all models | RAG chat returns 503 or last-resort error | P1 |
 | Workspace deletion event silently lost (RabbitMQ down) → documents orphaned | Known gap — document, then implement retry | P1 |
@@ -950,4 +950,4 @@
 ---
 
 *Exhaustive test plan — full source audit of all 7 microservices, shared layer, docker-compose, frontend React SPA, and all API routers.*
-*CPA-V2 Capstone Project | CSE | Year 5 Semester 9 | 2026-08-18*
+*SYNAPSE Synapse Project | CSE | Year 5 Semester 9 | 2026-08-18*

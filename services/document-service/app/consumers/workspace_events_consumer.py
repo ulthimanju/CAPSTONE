@@ -12,8 +12,8 @@ from shared.events.idempotency import is_event_processed, mark_event_processed
 
 logger = logging.getLogger(__name__)
 
-QUEUE_NAME = "cpa.document.workspace.events.queue"
-ROUTING_KEY = "cpa.workspace.#"
+QUEUE_NAME = "synapse.document.workspace.events.queue"
+ROUTING_KEY = "synapse.workspace.#"
 
 
 async def process_workspace_event(data: dict) -> None:
@@ -40,7 +40,7 @@ async def process_workspace_event(data: dict) -> None:
         logger.error(f"Invalid workspace_id format in event: {ws_id_raw}")
         return
 
-    if event_type in ("workspace.deleted", "WorkspaceDeleted", "cpa.workspace.deleted"):
+    if event_type in ("workspace.deleted", "WorkspaceDeleted", "synapse.workspace.deleted"):
         logger.info(f"Received workspace.deleted event for workspace {ws_id}. Cascading document deletions...")
         async with AsyncSessionLocal() as session:
             doc_repo = SQLAlchemyDocumentRepository(session)
@@ -72,8 +72,8 @@ async def start_workspace_events_consumer() -> asyncio.Task:
                     routing_key=ROUTING_KEY,
                 )
 
-                # Also bind explicitly to cpa.workspace.deleted if needed
-                await primary_queue.bind(main_exchange, routing_key="cpa.workspace.deleted")
+                # Also bind explicitly to synapse.workspace.deleted if needed
+                await primary_queue.bind(main_exchange, routing_key="synapse.workspace.deleted")
                 await primary_queue.bind(main_exchange, routing_key="workspace.deleted")
 
                 logger.info(f"Document workspace events consumer listening on queue '{QUEUE_NAME}' for '{ROUTING_KEY}'")

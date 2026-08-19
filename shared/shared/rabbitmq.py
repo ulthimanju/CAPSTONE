@@ -4,9 +4,9 @@ import aio_pika
 
 logger = logging.getLogger(__name__)
 
-DLX_EXCHANGE_NAME = "cpa.dlx"
-DLQ_QUEUE_NAME = "cpa.dlq"
-MAIN_EXCHANGE_NAME = "cpa.events"
+DLX_EXCHANGE_NAME = "synapse.dlx"
+DLQ_QUEUE_NAME = "synapse.dlq"
+MAIN_EXCHANGE_NAME = "synapse.events"
 
 
 async def setup_rabbitmq_queues_with_dlx(

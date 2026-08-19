@@ -16,8 +16,8 @@ from shared.events.publisher import publish_workspace_event
 
 logger = logging.getLogger(__name__)
 
-QUEUE_NAME = "cpa.rag.ingest.queue"
-ROUTING_KEY = "cpa.rag.ingest.#"
+QUEUE_NAME = "synapse.rag.ingest.queue"
+ROUTING_KEY = "synapse.rag.ingest.#"
 ai_client = AIServiceClient()
 
 
@@ -104,7 +104,7 @@ async def process_rag_ingest_event(data: dict) -> None:
             "metadata": {"document_id": str(doc_id), "status": "READY_FOR_RAG"},
         }
     )
-    await publish_domain_event("cpa.notifications.document", notif_event)
+    await publish_domain_event("synapse.notifications.document", notif_event)
 
     await mark_event_processed(event_id_str, redis_url=settings.redis_url)
     logger.info(f"RAG ingestion completed for document '{doc_name}' ({doc_id}) in workspace {ws_id}")
@@ -112,7 +112,7 @@ async def process_rag_ingest_event(data: dict) -> None:
 
 async def start_rag_ingest_consumer() -> asyncio.Task:
     """
-    Background worker that connects to RabbitMQ and consumes cpa.rag.ingest.# messages.
+    Background worker that connects to RabbitMQ and consumes synapse.rag.ingest.# messages.
     """
     async def _consume_loop():
         while True:
@@ -128,9 +128,9 @@ async def start_rag_ingest_consumer() -> asyncio.Task:
                     routing_key=ROUTING_KEY,
                 )
 
-                await primary_queue.bind(main_exchange, routing_key="cpa.rag.ingest")
+                await primary_queue.bind(main_exchange, routing_key="synapse.rag.ingest")
                 await primary_queue.bind(main_exchange, routing_key="document.rag.ingest")
-                await primary_queue.bind(main_exchange, routing_key="cpa.rag.#")
+                await primary_queue.bind(main_exchange, routing_key="synapse.rag.#")
 
                 logger.info(f"RAG ingest consumer listening on queue '{QUEUE_NAME}' for routing '{ROUTING_KEY}'")
 

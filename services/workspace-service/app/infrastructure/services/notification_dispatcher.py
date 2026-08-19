@@ -79,7 +79,7 @@ async def dispatch_workspace_notification(
                     "metadata": meta,
                 }
             )
-            success = await publish_domain_event("cpa.notifications.workspace", event)
+            success = await publish_domain_event("synapse.notifications.workspace", event)
             if not success:
                 # Fallback to direct HTTP if RabbitMQ is unreachable
                 async with httpx.AsyncClient(timeout=3.0) as client:

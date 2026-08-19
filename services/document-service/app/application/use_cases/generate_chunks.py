@@ -202,7 +202,7 @@ class GenerateChunksUseCase:
                         ]
                     }
                 )
-                published = await publish_domain_event("cpa.rag.ingest", rag_event)
+                published = await publish_domain_event("synapse.rag.ingest", rag_event)
                 if not published:
                     # Fallback to direct HTTP if RabbitMQ is not reachable
                     async with httpx.AsyncClient(timeout=30.0) as fb_client:
