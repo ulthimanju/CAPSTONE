@@ -1,7 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies.auth import get_current_user_id
+from app.api.dependencies.auth import get_current_user_id, get_current_session_context
 from app.api.dependencies.database import get_session_repository, get_unit_of_work
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.unit_of_work import UnitOfWorkInterface
@@ -23,20 +23,27 @@ async def list_sessions(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
-    user_id: UUID = Depends(get_current_user_id),
+    auth_ctx: tuple[UUID, UUID | None] = Depends(get_current_session_context),
     session_repo: SessionRepository = Depends(get_session_repository),
     uow: UnitOfWorkInterface = Depends(get_unit_of_work),
 ):
+    user_id, session_id = auth_ctx
     use_case = SessionUseCase(session_repo, uow)
-    await use_case.revoke_all_sessions(user_id)
+    if session_id:
+        # Invalidate the specific active session and its associated refresh-token chain
+        await use_case.revoke_session(session_id, user_id=user_id)
+    else:
+        # Fallback to revoking all sessions
+        await use_case.revoke_all_sessions(user_id)
 
 
 @router.post("/logout-all", status_code=status.HTTP_204_NO_CONTENT)
 async def logout_all(
-    user_id: UUID = Depends(get_current_user_id),
+    auth_ctx: tuple[UUID, UUID | None] = Depends(get_current_session_context),
     session_repo: SessionRepository = Depends(get_session_repository),
     uow: UnitOfWorkInterface = Depends(get_unit_of_work),
 ):
+    user_id, _ = auth_ctx
     use_case = SessionUseCase(session_repo, uow)
     await use_case.revoke_all_sessions(user_id)
 
