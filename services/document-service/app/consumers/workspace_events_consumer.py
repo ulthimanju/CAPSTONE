@@ -80,7 +80,7 @@ async def start_workspace_events_consumer() -> asyncio.Task:
 
                 async with primary_queue.iterator() as queue_iter:
                     async for message in queue_iter:
-                        async with message.process(requeue=False, reject_on_exception=True):
+                        async with message.process(requeue=False):
                             try:
                                 body = json.loads(message.body.decode("utf-8"))
                                 await process_workspace_event(body)

@@ -93,7 +93,7 @@ async def start_notification_consumer() -> asyncio.Task:
 
                 async with primary_queue.iterator() as queue_iter:
                     async for message in queue_iter:
-                        async with message.process(requeue=False, reject_on_exception=True):
+                        async with message.process(requeue=False):
                             try:
                                 body = json.loads(message.body.decode("utf-8"))
                                 await process_notification_event(body)
