@@ -303,6 +303,39 @@ class ParseDocumentUseCase:
                 doc.chunk_completed_at = done_now
                 doc.status = DocumentStatus.READY_FOR_RAG
                 await self.doc_repo.update(doc)
+
+                # Publish durable RAG ingestion business event to RabbitMQ topic exchange
+                try:
+                    from shared.events import DomainEvent, publish_domain_event
+                    rag_service_url = os.environ.get("RAG_SERVICE_URL", "http://rag-service:8000")
+                    rag_event = DomainEvent(
+                        event_type="document.rag.ingest",
+                        workspace_id=str(doc.workspace_id),
+                        user_id=str(doc.uploaded_by),
+                        payload={
+                            "workspace_id": str(doc.workspace_id),
+                            "document_id": str(doc.id),
+                            "document_name": doc.original_filename,
+                            "chunks": [
+                                {
+                                    "chunk_id": str(c.id),
+                                    "chunk_index": c.chunk_index,
+                                    "content": c.content,
+                                }
+                                for c in created_chunks
+                            ]
+                        }
+                    )
+                    published = await publish_domain_event("synapse.rag.ingest", rag_event)
+                    if not published:
+                        import httpx
+                        async with httpx.AsyncClient(timeout=30.0) as fb_client:
+                            await fb_client.post(
+                                f"{rag_service_url}/api/v1/rag/embeddings/generate",
+                                json=rag_event.payload,
+                            )
+                except Exception as rag_pub_err:
+                    logger.warning(f"RAG ingest event trigger warning: {rag_pub_err}", extra={"document_id": str(document_id)})
             except Exception as chunk_err:
                 logger.warning(f"Auto-chunking warning: {chunk_err}", extra={"document_id": str(document_id)})
 

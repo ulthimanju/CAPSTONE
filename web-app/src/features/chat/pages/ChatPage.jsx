@@ -9,6 +9,7 @@ import {
   Check,
 } from '@/components/ui/icons';
 import { Button } from '@/components/ui/Button';
+import { CitationBadge } from '../components/CitationBadge';
 import {
   useWorkspaceChatQuery,
   useSaveWorkspaceChatMutation,
@@ -81,11 +82,31 @@ export function ChatPage() {
             id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1),
             role: 'assistant',
             content: data.answer,
+            citations: data.citations || [],
             timestamp: new Date().toISOString(),
           };
           const updated = [...newMessages, assistantMessage];
           setMessages(updated);
           saveChatMutation.mutate(updated);
+        },
+        onError: (err) => {
+          const errMsg =
+            err?.response?.data?.detail ||
+            err?.response?.data?.error?.message ||
+            err?.message ||
+            'Failed to get a response from your AI tutor.';
+
+          const assistantErrorMessage = {
+            id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1),
+            role: 'assistant',
+            content: errMsg,
+            isError: true,
+            timestamp: new Date().toISOString(),
+          };
+          const updated = [...newMessages, assistantErrorMessage];
+          setMessages(updated);
+          saveChatMutation.mutate(updated);
+          toast.error(errMsg);
         },
       }
     );
@@ -175,6 +196,19 @@ export function ChatPage() {
                     <div className="text-sm font-sans leading-relaxed text-text">
                       <MarkdownRenderer content={msg.content} />
                     </div>
+
+                    {msg.citations && msg.citations.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-sep-line/60">
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-text/50 font-semibold mb-1">
+                          Grounded Sources ({msg.citations.length})
+                        </p>
+                        <div className="flex flex-wrap items-center">
+                          {msg.citations.map((citation, citIdx) => (
+                            <CitationBadge key={citIdx} citation={citation} index={citIdx} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-text/60 border-t border-sep-line/60 pt-1.5">
                       <button

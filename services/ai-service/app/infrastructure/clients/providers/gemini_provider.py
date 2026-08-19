@@ -191,8 +191,15 @@ class GeminiClient:
                     output_tokens = TokenCounter.estimate_tokens(out_text)
 
                     if hasattr(response, "usage_metadata") and response.usage_metadata:
-                        input_tokens = getattr(response.usage_metadata, "prompt_token_count", input_tokens)
-                        output_tokens = getattr(response.usage_metadata, "candidates_token_count", output_tokens)
+                        ptc = getattr(response.usage_metadata, "prompt_token_count", None)
+                        ctc = getattr(response.usage_metadata, "candidates_token_count", None)
+                        if ptc is not None:
+                            input_tokens = ptc
+                        if ctc is not None:
+                            output_tokens = ctc
+
+                    input_tokens = int(input_tokens or 0)
+                    output_tokens = int(output_tokens or 0)
 
                     return {
                         "text": out_text,
