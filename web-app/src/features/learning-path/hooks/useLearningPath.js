@@ -123,7 +123,7 @@ export function useGenerateUnitContentMutation(workspaceId, unitTitle) {
     },
     onSuccess: (data, variables) => {
       const title = variables?.unit_title || unitTitle;
-      setGeneratingUnit(workspaceId, title, false);
+      setGeneratingUnit(workspaceId, title, true);
       queryClient.invalidateQueries({
         queryKey: learningPathKeys.unit(workspaceId, title),
       });

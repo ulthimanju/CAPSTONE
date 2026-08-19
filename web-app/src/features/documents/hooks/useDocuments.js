@@ -48,6 +48,17 @@ export function useWorkspaceDocumentSSE(workspaceId) {
           }
 
           // Invalidate learning path, summary, and workspace detail if related events arrive
+          const targetUnit = payload?.unit_title || payload?.payload?.unit_title;
+          if (targetUnit) {
+            queryClient.invalidateQueries({
+              queryKey: learningPathKeys.unit(workspaceId, targetUnit),
+            });
+          } else {
+            queryClient.invalidateQueries({
+              queryKey: ['learning-path-unit', workspaceId],
+            });
+          }
+
           queryClient.invalidateQueries({
             queryKey: learningPathKeys.path(workspaceId),
           });

@@ -169,6 +169,17 @@ async def _publish_summary_event(
         if not published:
             async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
                 await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+
+        # Real-time SSE to Redis for browser instant updates
+        try:
+            from shared.events.publisher import publish_workspace_event
+            await publish_workspace_event(
+                workspace_id=workspace_id,
+                event_type="SummaryGeneration",
+                payload=payload,
+            )
+        except Exception:
+            pass
     except Exception as evt_err:
         logger.warning(f"Notice: Failed to publish SummaryGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
@@ -600,6 +611,17 @@ async def _publish_learning_path_event(
         if not published:
             async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
                 await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+
+        # Real-time SSE to Redis for browser instant updates
+        try:
+            from shared.events.publisher import publish_workspace_event
+            await publish_workspace_event(
+                workspace_id=workspace_id,
+                event_type="LearningPathGeneration",
+                payload=payload,
+            )
+        except Exception:
+            pass
     except Exception as evt_err:
         logger.warning(f"Notice: Failed to publish LearningPathGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
 
@@ -740,6 +762,17 @@ async def _publish_unit_generation_event(
         if not published:
             async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
                 await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
+
+        # Real-time SSE to Redis for browser instant updates
+        try:
+            from shared.events.publisher import publish_workspace_event
+            await publish_workspace_event(
+                workspace_id=workspace_id,
+                event_type="LearningUnitGeneration",
+                payload=payload,
+            )
+        except Exception:
+            pass
     except Exception as evt_err:
         logger.warning(f"Notice: Failed to publish LearningUnitGeneration event: {evt_err}", extra={"workspace_id": workspace_id, "unit_title": unit_title})
 
@@ -748,38 +781,13 @@ from app.domain.prompts.unit_content_prompt_builder import UnitContentPromptBuil
 from app.schemas.gateway import UnitContentResponse, GenerateUnitContentRequest
 
 
-@router.post("/workspaces/{workspace_id}/units/generate", response_model=UnitContentResponse)
-async def generate_unit_content(
-    workspace_id: str,
+async def _process_unit_content_generation(
+    ws_id: str,
     req: GenerateUnitContentRequest,
-    request: Request,
-    authorization: str | None = Header(None),
-    x_user_id: str | None = Header(default=None),
+    auth_val: str | None,
+    user_id_val: str,
 ):
     try:
-        ws_id = str(uuid.UUID(workspace_id))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid workspace_id UUID format.")
-
-    user_id_val = request.headers.get("x-user-id") or x_user_id or "00000000-0000-0000-0000-000000000000"
-    auth_val = request.headers.get("authorization") or authorization
-
-    if not auth_val:
-        from shared.security.jwt import JWTManager, JWTSettings
-        jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
-        internal_token = jwt_mgr.create_access_token(
-            user_id=str(user_id_val),
-            email="internal@synapse.edu",
-            role="ADMIN",
-            session_id=str(uuid.uuid4()),
-            expire_minutes=60,
-        )
-        auth_val = f"Bearer {internal_token}"
-
-    try:
-        await _publish_unit_generation_event(ws_id, req.unit_title, "QUEUED", user_id=user_id_val)
-        await _publish_unit_generation_event(ws_id, req.unit_title, "STARTED", user_id=user_id_val)
-
         # 1. Retrieve RAG Context (~1K tokens) from rag-service
         rag_url = settings.rag_service_url.rstrip("/")
         search_query = f"{req.unit_title} {' '.join(req.tags)}"
@@ -920,12 +928,50 @@ Generate a unified learning bundle containing:
         # 6. Publish COMPLETED event
         await _publish_unit_generation_event(ws_id, req.unit_title, "COMPLETED", user_id=user_id_val)
 
-        return unit_validated
-
     except Exception as e:
-        await _publish_unit_generation_event(ws_id, req.unit_title, "FAILED", user_id=x_user_id, error=str(e))
+        await _publish_unit_generation_event(ws_id, req.unit_title, "FAILED", user_id=user_id_val, error=str(e))
         logger.exception("Error generating unit content", extra={"workspace_id": ws_id, "unit_title": req.unit_title})
-        raise HTTPException(status_code=500, detail=f"Failed to generate unit content: {str(e)}")
+
+
+@router.post("/workspaces/{workspace_id}/units/generate", status_code=status.HTTP_202_ACCEPTED)
+async def generate_unit_content(
+    workspace_id: str,
+    req: GenerateUnitContentRequest,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    authorization: str | None = Header(None),
+    x_user_id: str | None = Header(default=None),
+):
+    try:
+        ws_id = str(uuid.UUID(workspace_id))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid workspace_id UUID format.")
+
+    user_id_val = request.headers.get("x-user-id") or x_user_id or "00000000-0000-0000-0000-000000000000"
+    auth_val = request.headers.get("authorization") or authorization
+
+    if not auth_val:
+        from shared.security.jwt import JWTManager, JWTSettings
+        jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
+        internal_token = jwt_mgr.create_access_token(
+            user_id=str(user_id_val),
+            email="internal@synapse.edu",
+            role="ADMIN",
+            session_id=str(uuid.uuid4()),
+            expire_minutes=60,
+        )
+        auth_val = f"Bearer {internal_token}"
+
+    await _publish_unit_generation_event(ws_id, req.unit_title, "QUEUED", user_id=user_id_val)
+    await _publish_unit_generation_event(ws_id, req.unit_title, "STARTED", user_id=user_id_val)
+    background_tasks.add_task(_process_unit_content_generation, ws_id, req, auth_val, user_id_val)
+
+    return {
+        "status": "accepted",
+        "workspace_id": ws_id,
+        "unit_title": req.unit_title,
+        "message": f"Unit content synthesis started for '{req.unit_title}'",
+    }
 
 
 from fastapi.responses import StreamingResponse
