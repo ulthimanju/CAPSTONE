@@ -38,7 +38,12 @@ async def get_google_token(
     identity = await oauth_repo.get_by_user_id(str(user_id), provider="google")
 
     if not identity or (not identity.access_token and not identity.refresh_token):
-        raise HTTPException(status_code=404, detail="No Google OAuth credentials found for user")
+        return {
+            "linked": False,
+            "scopes": [],
+            "expires_at": None,
+            "status": "unlinked",
+        }
 
     now = datetime.now(timezone.utc)
     is_expired = False
@@ -59,15 +64,17 @@ async def get_google_token(
                 logger.info(f"Google OAuth token successfully refreshed for user {user_id}")
         except Exception as e:
             logger.warning(f"Google token refresh attempt warning for user {user_id}: {e}")
-            if not identity.access_token:
-                raise HTTPException(status_code=401, detail=f"Google OAuth token refresh failed: {e}")
 
     if not identity.access_token:
-        raise HTTPException(status_code=404, detail="No valid Google OAuth access token available")
+        return {
+            "linked": False,
+            "scopes": [],
+            "expires_at": None,
+            "status": "expired",
+        }
 
     return {
         "linked": True,
-        "provider": "google",
         "scopes": [
             "openid",
             "email",
