@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.infrastructure.database.models import UserModel
 from app.infrastructure.database.session import AsyncSessionLocal
 from shared.grpc import identity_service_pb2, identity_service_pb2_grpc
+from shared.grpc.auth_interceptor import ServiceAuthServerInterceptor
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +66,9 @@ class IdentityGrpcServicer(identity_service_pb2_grpc.IdentityServiceServicer):
 
 
 async def start_identity_grpc_server(port: int = 50051) -> grpc.aio.Server:
-    server = grpc.aio.server()
+    server = grpc.aio.server(interceptors=[ServiceAuthServerInterceptor()])
     identity_service_pb2_grpc.add_IdentityServiceServicer_to_server(IdentityGrpcServicer(), server)
     server.add_insecure_port(f"0.0.0.0:{port}")
     await server.start()
-    logger.info(f"Identity gRPC server started on 0.0.0.0:{port}")
+    logger.info(f"Identity gRPC server started on 0.0.0.0:{port} with ServiceAuthServerInterceptor")
     return server

@@ -3,6 +3,7 @@ import os
 from typing import Dict, List, Optional
 import grpc
 from shared.grpc import identity_service_pb2, identity_service_pb2_grpc
+from shared.grpc.auth_interceptor import get_service_auth_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +28,14 @@ class IdentityGrpcClient:
 
     async def get_users_batch(self, user_ids: List[str]) -> Dict[str, dict]:
         """
-        Batch resolves user details by ID over gRPC. Returns {user_id: {"id": ..., "name": ..., "email": ...}}
+        Batch resolves user details by ID over authenticated gRPC. Returns {user_id: {"id": ..., "name": ..., "email": ...}}
         """
         if not user_ids:
             return {}
         try:
             stub = self._get_stub()
             req = identity_service_pb2.BatchUserRequest(user_ids=user_ids)
-            resp = await stub.GetUsersBatch(req, timeout=3.0)
+            resp = await stub.GetUsersBatch(req, timeout=3.0, metadata=get_service_auth_metadata())
             return {
                 u.id: {
                     "id": u.id,
@@ -51,14 +52,14 @@ class IdentityGrpcClient:
 
     async def get_user_by_email(self, email: str) -> Optional[dict]:
         """
-        Looks up user by email over gRPC. Returns dict or None.
+        Looks up user by email over authenticated gRPC. Returns dict or None.
         """
         if not email:
             return None
         try:
             stub = self._get_stub()
             req = identity_service_pb2.UserByEmailRequest(email=email)
-            resp = await stub.GetUserByEmail(req, timeout=3.0)
+            resp = await stub.GetUserByEmail(req, timeout=3.0, metadata=get_service_auth_metadata())
             if resp.found and resp.user:
                 return {
                     "id": resp.user.id,
