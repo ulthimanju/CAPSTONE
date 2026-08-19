@@ -1,6 +1,7 @@
 import json
 import secrets
 import hashlib
+import time
 from typing import Any
 import redis.asyncio as aioredis
 from app.config.settings import settings
@@ -21,12 +22,12 @@ def get_redis_client():
 
 class OAuthExchangeManager:
     """
-    Manages short-lived single-use authorization exchange codes.
+    Manages short-lived, single-use authorization exchange codes.
     Implements RFC 6819 / OAuth 2.0 Security Best Current Practice to prevent
     access-token leakage via browser history, proxy logs, and Referer headers.
     """
 
-    # In-memory fallback if Redis is temporarily unreachable
+    # In-memory fallback with strict TTL enforcement
     _memory_cache: dict[str, dict[str, Any]] = {}
 
     def __init__(self, redis_client: Any = None):
@@ -49,6 +50,7 @@ class OAuthExchangeManager:
             "access_token": access_token,
             "refresh_token": refresh_token,
             "user_id": user_id,
+            "expires_at": time.time() + ttl_seconds,
         }
 
         stored_in_redis = False
@@ -77,9 +79,18 @@ class OAuthExchangeManager:
                 # Atomic GET and DELETE prevents race conditions and replay attacks
                 val = await self.redis.getdel(key)
                 if val:
-                    return json.loads(val)
+                    data = json.loads(val)
+                    if time.time() > data.get("expires_at", float("inf")):
+                        return None
+                    return data
             except Exception:
                 pass
 
-        # Check memory fallback
-        return self._memory_cache.pop(code_hash, None)
+        # Check memory fallback with atomic pop and TTL validation
+        entry = self._memory_cache.pop(code_hash, None)
+        if entry:
+            if time.time() > entry.get("expires_at", float("inf")):
+                return None
+            return entry
+
+        return None
