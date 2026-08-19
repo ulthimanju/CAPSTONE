@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 import * as Sentry from '@sentry/react';
 
 import App from './App';
+import { queryClient } from '@/lib/queryClient';
 import { ErrorBoundaryFallback } from '@/components/common/ErrorBoundaryFallback';
 import './index.css';
 import 'katex/dist/katex.min.css';
@@ -19,16 +20,6 @@ if (sentryDsn) {
     tracesSampleRate: 1.0,
   });
 }
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000,
-    },
-  },
-});
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

@@ -11,6 +11,7 @@ import { AuthCallbackPage } from '@/features/auth/pages/AuthCallbackPage';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/features/auth/api/authApi';
 import { userResponseSchema } from '@/features/auth/schemas/authSchemas';
+import { queryClient } from '@/lib/queryClient';
 import { renderWithProviders } from './utils';
 
 describe('UI Primitives (Just-In-Time)', () => {
@@ -163,4 +164,22 @@ describe('AuthCallbackPage Component', () => {
       expect(screen.getByText('Workspaces Screen')).toBeInTheDocument();
     });
   });
+
+  it('isolates and purges query cache when switching accounts via setToken', () => {
+    // Token for User A
+    const tokenA = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLWFhYS0xMTEifQ.signature';
+    // Token for User B
+    const tokenB = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLWJiYi0yMjIifQ.signature';
+
+    useAuthStore.getState().setToken(tokenA);
+    queryClient.setQueryData(['auth', 'profile'], { id: 'user-aaa-111', name: 'User A' });
+    expect(queryClient.getQueryData(['auth', 'profile'])).toEqual({ id: 'user-aaa-111', name: 'User A' });
+
+    // Switch to User B
+    useAuthStore.getState().setToken(tokenB);
+
+    // Cache for User A must be purged completely
+    expect(queryClient.getQueryData(['auth', 'profile'])).toBeUndefined();
+  });
 });
+
