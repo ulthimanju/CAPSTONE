@@ -14,17 +14,22 @@ class SessionUseCase:
         return await self.session_repo.list_by_user(user_id)
 
     async def revoke_session(self, session_id: UUID, user_id: UUID | None = None) -> None:
-        if user_id:
-            session = await self.session_repo.get_by_id(session_id)
-            if not session:
-                raise SessionNotFoundError("Session not found")
-            if session.user_id != user_id:
-                raise SessionAccessDeniedError("Cannot revoke another user's session")
-
         if self.uow:
             async with self.uow:
+                if user_id:
+                    session = await self.session_repo.get_by_id(session_id)
+                    if not session:
+                        raise SessionNotFoundError("Session not found")
+                    if session.user_id != user_id:
+                        raise SessionAccessDeniedError("Cannot revoke another user's session")
                 await self.session_repo.delete(session_id)
         else:
+            if user_id:
+                session = await self.session_repo.get_by_id(session_id)
+                if not session:
+                    raise SessionNotFoundError("Session not found")
+                if session.user_id != user_id:
+                    raise SessionAccessDeniedError("Cannot revoke another user's session")
             await self.session_repo.delete(session_id)
 
     async def revoke_all_sessions(self, user_id: UUID) -> None:

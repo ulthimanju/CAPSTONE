@@ -13,7 +13,8 @@ class SQLAlchemyUnitOfWork(UnitOfWorkInterface):
         self._tx: AsyncTransaction | None = None
 
     async def __aenter__(self):
-        self._tx = await self._db.begin()
+        if not self._db.in_transaction():
+            self._tx = await self._db.begin()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
