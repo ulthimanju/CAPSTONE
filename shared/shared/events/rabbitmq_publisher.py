@@ -33,30 +33,49 @@ async def publish_domain_event(
     routing_key: str,
     event: DomainEvent,
     rabbitmq_url: Optional[str] = None,
+    max_retries: int = 3,
+    initial_backoff_seconds: float = 0.5,
 ) -> bool:
     """
-    Publishes a durable domain event to the topic exchange with publisher confirmation.
+    Publishes a durable domain event to the topic exchange with publisher confirmation and retry backoff.
     """
-    try:
-        exchange = await get_rabbitmq_exchange(rabbitmq_url)
-        message_body = event.model_dump_json().encode("utf-8")
-        
-        message = aio_pika.Message(
-            body=message_body,
-            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-            content_type="application/json",
-            correlation_id=event.correlation_id,
-            message_id=event.event_id,
-            headers={
-                "x-event-type": event.event_type,
-                "x-workspace-id": event.workspace_id or "",
-                "x-user-id": event.user_id or "",
-            },
-        )
-        
-        await exchange.publish(message, routing_key=routing_key)
-        logger.info(f"RabbitMQ event '{event.event_type}' published to '{routing_key}' [ID: {event.event_id}]")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to publish RabbitMQ event to '{routing_key}': {e}", exc_info=True)
-        return False
+    global _global_connection, _global_channel, _global_exchange
+    last_error: Optional[Exception] = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            exchange = await get_rabbitmq_exchange(rabbitmq_url)
+            message_body = event.model_dump_json().encode("utf-8")
+            
+            message = aio_pika.Message(
+                body=message_body,
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                content_type="application/json",
+                correlation_id=event.correlation_id,
+                message_id=event.event_id,
+                headers={
+                    "x-event-type": event.event_type,
+                    "x-workspace-id": event.workspace_id or "",
+                    "x-user-id": event.user_id or "",
+                },
+            )
+            
+            await exchange.publish(message, routing_key=routing_key)
+            logger.info(f"RabbitMQ event '{event.event_type}' published to '{routing_key}' [ID: {event.event_id}] (attempt {attempt}/{max_retries})")
+            return True
+        except Exception as e:
+            last_error = e
+            logger.warning(f"RabbitMQ publish attempt {attempt}/{max_retries} failed for '{routing_key}': {e}. Re-establishing connection...")
+            _global_exchange = None
+            _global_channel = None
+            _global_connection = None
+            if attempt < max_retries:
+                import asyncio
+                await asyncio.sleep(initial_backoff_seconds * (2 ** (attempt - 1)))
+
+    logger.error(
+        f"[CRITICAL_CASCADE_EVENT_FAILURE] Failed to publish RabbitMQ event to '{routing_key}' after {max_retries} attempts: {last_error}",
+        exc_info=True,
+    )
+    return False
+

@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import HTTPException
@@ -6,9 +7,9 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.entities.workspace_activity import WorkspaceActivity
 from app.constants.enums import ActivityType
 from app.utils.ids import generate_uuid
-
-
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+
+logger = logging.getLogger(__name__)
 
 
 class DeleteWorkspaceUseCase:
@@ -57,8 +58,8 @@ class DeleteWorkspaceUseCase:
                 metadata={"action": "DELETE", "workspace_name": ws_name, "user_email": user_email},
                 recipient_ids=[user_id],
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(f"Failed to dispatch workspace deletion notification for workspace {workspace_id}: {exc}")
 
         # Dispatch RabbitMQ Domain Event for cross-service cascading deletion (document-service, rag-service)
         try:
@@ -75,13 +76,22 @@ class DeleteWorkspaceUseCase:
                     "deleted_by": str(user_id),
                 },
             )
-            await publish_domain_event(
+            published = await publish_domain_event(
                 routing_key="synapse.workspace.deleted",
                 event=del_event,
                 rabbitmq_url=settings.rabbitmq_url,
+                max_retries=3,
             )
-        except Exception:
-            pass
+            if not published:
+                logger.error(
+                    f"[CRITICAL_CASCADE_ALERT] Workspace {workspace_id} deleted in DB but RabbitMQ event 'synapse.workspace.deleted' "
+                    "could not be published after retries. Direct cache invalidations will proceed."
+                )
+        except Exception as exc:
+            logger.error(
+                f"[CRITICAL_CASCADE_ALERT] Unexpected error during workspace deletion event dispatch for workspace {workspace_id}: {exc}",
+                exc_info=True,
+            )
 
         res = await self.workspace_repo.delete(workspace_id)
         await self.cache.invalidate(workspace_id)
