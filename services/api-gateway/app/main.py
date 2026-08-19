@@ -72,11 +72,15 @@ app.add_middleware(
 
 def get_current_user_id(
     authorization: str | None = Header(None),
-    x_user_id: str | None = Header(None),
 ) -> uuid.UUID:
+    """
+    Gateway Ingress Authentication:
+    Derives user identity exclusively from cryptographically verified Bearer JWT.
+    Client-controlled X-User-Id headers are completely ignored and stripped at ingress.
+    """
     return verify_user_identity(
         authorization=authorization,
-        x_user_id=x_user_id,
+        x_user_id=None,
         jwt_secret=settings.jwt_secret,
         jwt_algorithm=settings.jwt_algorithm,
         jwt_issuer=settings.jwt_issuer,
