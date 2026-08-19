@@ -74,9 +74,13 @@ export const authApi = {
   },
 
   /**
-   * Revokes all user sessions.
+   * Revokes all user sessions, or all other sessions if currentSessionId is provided.
    */
-  revokeAllSessions: async () => {
+  revokeAllSessions: async (currentSessionId) => {
+    if (currentSessionId) {
+      const response = await apiClient.post(`/api/v1/sessions/revoke-others?current_session_id=${currentSessionId}`);
+      return response.data;
+    }
     const response = await apiClient.post('/api/v1/sessions/logout-all');
     return response.data;
   },

@@ -142,7 +142,19 @@ export function useRevokeAllSessionsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => authApi.revokeAllSessions(),
+    mutationFn: () => {
+      const token = useAuthStore.getState().token;
+      let currentSessionId = null;
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          currentSessionId = payload.session_id || payload.sid || payload.jti;
+        } catch {
+          // ignore decode error
+        }
+      }
+      return authApi.revokeAllSessions(currentSessionId);
+    },
     onSuccess: () => {
       const token = useAuthStore.getState().token;
       let currentSessionId = null;

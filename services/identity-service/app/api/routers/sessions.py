@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies.auth import get_current_user_id
 from app.api.dependencies.database import get_session_repository, get_unit_of_work
@@ -39,6 +39,17 @@ async def logout_all(
 ):
     use_case = SessionUseCase(session_repo, uow)
     await use_case.revoke_all_sessions(user_id)
+
+
+@router.post("/revoke-others", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_other_sessions(
+    current_session_id: UUID = Query(...),
+    user_id: UUID = Depends(get_current_user_id),
+    session_repo: SessionRepository = Depends(get_session_repository),
+    uow: UnitOfWorkInterface = Depends(get_unit_of_work),
+):
+    use_case = SessionUseCase(session_repo, uow)
+    await use_case.revoke_other_sessions(user_id, current_session_id)
 
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)

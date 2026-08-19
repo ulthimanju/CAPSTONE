@@ -64,3 +64,11 @@ class SQLAlchemySessionRepository(SessionRepository):
 
     async def delete_all_for_user(self, user_id: UUID) -> None:
         await self._db.execute(delete(SessionModel).where(SessionModel.user_id == user_id))
+
+    async def delete_others_for_user(self, user_id: UUID, current_session_id: UUID) -> None:
+        await self._db.execute(
+            delete(SessionModel).where(
+                SessionModel.user_id == user_id,
+                SessionModel.id != current_session_id,
+            )
+        )

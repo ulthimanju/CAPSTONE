@@ -38,3 +38,10 @@ class SessionUseCase:
                 await self.session_repo.delete_all_for_user(user_id)
         else:
             await self.session_repo.delete_all_for_user(user_id)
+
+    async def revoke_other_sessions(self, user_id: UUID, current_session_id: UUID) -> None:
+        if self.uow:
+            async with self.uow:
+                await self.session_repo.delete_others_for_user(user_id, current_session_id)
+        else:
+            await self.session_repo.delete_others_for_user(user_id, current_session_id)

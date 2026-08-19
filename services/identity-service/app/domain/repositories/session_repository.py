@@ -18,3 +18,6 @@ class SessionRepository(ABC):
 
     @abstractmethod
     async def delete_all_for_user(self, user_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def delete_others_for_user(self, user_id: UUID, current_session_id: UUID) -> None: ...
