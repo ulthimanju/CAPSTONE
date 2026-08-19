@@ -19,6 +19,13 @@
 *.7z
 services.zip
 
+# Large Media & Video Binaries
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
 # Python
 __pycache__/
 *.py[cod]
