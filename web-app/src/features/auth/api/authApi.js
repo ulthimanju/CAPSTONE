@@ -10,6 +10,15 @@ export const authApi = {
   getGoogleLoginUrl: () => `${API_BASE}/api/v1/oauth/google/login`,
 
   /**
+   * Exchanges a short-lived single-use authorization code for a JWT access token.
+   * Keeps access tokens completely out of URL query parameters and browser history.
+   */
+  exchangeOAuthCode: async (code) => {
+    const response = await apiClient.post('/api/v1/oauth/google/exchange', { code });
+    return response.data;
+  },
+
+  /**
    * Fetches current authenticated user profile and validates schema at runtime.
    */
   getProfile: async () => {

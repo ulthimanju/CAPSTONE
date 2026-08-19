@@ -18,8 +18,9 @@ from app.constants.enums import Role
 @pytest.mark.asyncio
 async def test_uow_automatic_transaction_lifecycle_success():
     mock_db = AsyncMock()
+    mock_db.in_transaction = MagicMock(return_value=False)
     mock_tx = AsyncMock()
-    mock_db.begin.return_value = mock_tx
+    mock_db.begin = AsyncMock(return_value=mock_tx)
 
     uow = SQLAlchemyUnitOfWork(mock_db)
 
@@ -35,8 +36,9 @@ async def test_uow_automatic_transaction_lifecycle_success():
 @pytest.mark.asyncio
 async def test_uow_automatic_transaction_lifecycle_rollback():
     mock_db = AsyncMock()
+    mock_db.in_transaction = MagicMock(return_value=False)
     mock_tx = AsyncMock()
-    mock_db.begin.return_value = mock_tx
+    mock_db.begin = AsyncMock(return_value=mock_tx)
 
     uow = SQLAlchemyUnitOfWork(mock_db)
 
@@ -59,8 +61,9 @@ async def test_oauth_usecase_with_uow_atomicity():
     refresh_repo = AsyncMock()
 
     mock_db = AsyncMock()
+    mock_db.in_transaction = MagicMock(return_value=False)
     mock_tx = AsyncMock()
-    mock_db.begin.return_value = mock_tx
+    mock_db.begin = AsyncMock(return_value=mock_tx)
 
     uow = SQLAlchemyUnitOfWork(mock_db)
 

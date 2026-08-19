@@ -1,3 +1,4 @@
+import inspect
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncTransaction
 from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 
@@ -13,7 +14,15 @@ class SQLAlchemyUnitOfWork(UnitOfWorkInterface):
         self._tx: AsyncTransaction | None = None
 
     async def __aenter__(self):
-        if not self._db.in_transaction():
+        in_tx = False
+        if hasattr(self._db, "in_transaction") and callable(self._db.in_transaction):
+            res = self._db.in_transaction()
+            if inspect.iscoroutine(res):
+                in_tx = await res
+            else:
+                in_tx = bool(res)
+
+        if not in_tx:
             self._tx = await self._db.begin()
         return self
 

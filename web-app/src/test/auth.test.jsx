@@ -130,4 +130,37 @@ describe('AuthCallbackPage Component', () => {
 
     expect(authApi.getProfile).toHaveBeenCalled();
   });
+
+  it('exchanges single-use authorization code for JWT and scrubs URL bar', async () => {
+    const mockProfile = {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      email: 'student@example.com',
+      name: 'Test Student',
+      role: 'student',
+      created_at: '2026-08-15T00:00:00Z',
+      updated_at: '2026-08-15T00:00:00Z',
+    };
+
+    vi.spyOn(authApi, 'exchangeOAuthCode').mockResolvedValue({
+      access_token: 'exchanged-secure-jwt-token',
+    });
+    vi.spyOn(authApi, 'getProfile').mockResolvedValue(mockProfile);
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/workspaces" element={<div>Workspaces Screen</div>} />
+      </Routes>,
+      { route: '/auth/callback?code=secure_auth_code_xyz123' }
+    );
+
+    await waitFor(() => {
+      expect(authApi.exchangeOAuthCode).toHaveBeenCalledWith('secure_auth_code_xyz123');
+    });
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().token).toBe('exchanged-secure-jwt-token');
+      expect(screen.getByText('Workspaces Screen')).toBeInTheDocument();
+    });
+  });
 });

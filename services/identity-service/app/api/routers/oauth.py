@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Request, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse, JSONResponse
+from pydantic import BaseModel, Field
 
 from app.api.dependencies.database import (
     get_user_repository,
@@ -16,9 +17,20 @@ from app.domain.repositories.refresh_token_repository import RefreshTokenReposit
 from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.use_cases.oauth_login import OAuthUseCase
+from app.infrastructure.cache.oauth_exchange import OAuthExchangeManager
 from app.config.settings import settings
 
 router = APIRouter(prefix="/oauth/google", tags=["OAuth"])
+exchange_manager = OAuthExchangeManager()
+
+
+class OAuthExchangeRequest(BaseModel):
+    code: str = Field(..., min_length=10, description="Single-use authorization exchange code")
+
+
+class OAuthExchangeResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 
 @router.get("/login")
@@ -48,7 +60,15 @@ async def google_callback(
         user_agent=request.headers.get("user-agent"),
     )
 
-    redirect_url = f"{settings.frontend_url}/auth/callback?token={result.access_token}"
+    # Generate short-lived single-use exchange code to keep JWT out of URL history & logs
+    exchange_code = await exchange_manager.create_exchange_code(
+        access_token=result.access_token,
+        refresh_token=result.refresh_token,
+        user_id=str(result.user.id),
+        ttl_seconds=60,
+    )
+
+    redirect_url = f"{settings.frontend_url}/auth/callback?code={exchange_code}"
     response = RedirectResponse(url=redirect_url)
     response.set_cookie(
         key="refresh_token",
@@ -59,4 +79,38 @@ async def google_callback(
         path="/",
         max_age=settings.refresh_token_expire_days * 86400,
     )
+    return response
+
+
+@router.post("/exchange", response_model=OAuthExchangeResponse)
+async def exchange_code(
+    body: OAuthExchangeRequest,
+):
+    """
+    Atomically consumes a single-use exchange code and returns the JWT in the response body.
+    Protects Bearer access tokens from URL leaking via browser history, proxy logs, and Referer headers.
+    """
+    payload = await exchange_manager.consume_exchange_code(body.code)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid, expired, or already consumed authorization code.",
+        )
+
+    response = JSONResponse(
+        content={
+            "access_token": payload["access_token"],
+            "token_type": "bearer",
+        }
+    )
+    if payload.get("refresh_token"):
+        response.set_cookie(
+            key="refresh_token",
+            value=payload["refresh_token"],
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            path="/",
+            max_age=settings.refresh_token_expire_days * 86400,
+        )
     return response
