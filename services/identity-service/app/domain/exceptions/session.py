@@ -4,3 +4,8 @@ class SessionNotFoundError(Exception):
 
 class SessionExpiredError(Exception):
     pass
+
+
+class SessionAccessDeniedError(Exception):
+    pass
+

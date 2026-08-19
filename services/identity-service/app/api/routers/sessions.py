@@ -6,6 +6,7 @@ from app.api.dependencies.database import get_session_repository, get_unit_of_wo
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 from app.application.use_cases.revoke_session import SessionUseCase
+from app.domain.exceptions.session import SessionNotFoundError, SessionAccessDeniedError
 from app.schemas.auth import SessionResponse
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
@@ -48,4 +49,15 @@ async def revoke_session(
     uow: UnitOfWorkInterface = Depends(get_unit_of_work),
 ):
     use_case = SessionUseCase(session_repo, uow)
-    await use_case.revoke_session(session_id)
+    try:
+        await use_case.revoke_session(session_id, user_id=user_id)
+    except SessionNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    except SessionAccessDeniedError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to revoke this session"
+        )

@@ -65,14 +65,15 @@ def test_tampered_jwt_signature(client: ApiClient, owner_token: str):
 
 def test_delete_other_user_session_gap(client: ApiClient, owner_token: str, attacker_token: str):
     s_sess, d_sess, _ = client.json_request("GET", "/api/v1/sessions", token=owner_token)
-    sess_list = d_sess.get("sessions", []) if isinstance(d_sess, dict) else []
+    sess_list = d_sess if isinstance(d_sess, list) else d_sess.get("sessions", []) if isinstance(d_sess, dict) else []
     if sess_list:
         owner_sid = sess_list[0].get("id")
         s, d, _ = client.json_request("DELETE", f"/api/v1/sessions/{owner_sid}", token=attacker_token)
-        is_gap = s in (200, 204)
-        reporter.record("TC-UNIT-018", CAT, "DELETE other user session -> should 403 (Known Gap)", "P1", "403 Forbidden (Gap: missing owner check)", f"HTTP {s}", "GAP" if is_gap else "PASSED", bug_id="BUG-001")
+        passed = s == 403
+        reporter.record("TC-UNIT-018", CAT, "DELETE other user session -> 403 Forbidden (ownership enforced)", "P1", "403 Forbidden", f"HTTP {s}", "PASSED" if passed else "FAILED", bug_id="" if passed else "BUG-001")
+        assert passed
     else:
-        reporter.record("TC-UNIT-018", CAT, "DELETE other user session -> should 403 (Known Gap)", "P1", "403 Forbidden", "No session ID available", "GAP", bug_id="BUG-001")
+        reporter.record("TC-UNIT-018", CAT, "DELETE other user session -> 403 Forbidden", "P1", "403 Forbidden", "No active session in list", "FAILED")
 
 def test_create_workspace_empty_name(client: ApiClient, owner_token: str):
     s, d, _ = client.json_request("POST", "/api/v1/workspaces", token=owner_token, body={"name": "", "visibility": "PRIVATE", "domain_type": "TECHNICAL"})

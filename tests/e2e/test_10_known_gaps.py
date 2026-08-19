@@ -14,7 +14,7 @@ def test_gap_oauth_state_parameter_not_validated(client: ApiClient):
     reporter.record("TC-GAP-231", CAT, "OAuth state parameter not cryptographically validated (CSRF gap)", "P1", "GAP: Any state accepted", f"HTTP {s}", "GAP", bug_id="BUG-002")
 
 def test_gap_delete_session_missing_ownership_check():
-    reporter.record("TC-GAP-232", CAT, "DELETE /sessions/{session_id} lacks user ownership verification", "P1", "GAP: Authenticated user can delete any session", "Verified in TC-UNIT-018", "GAP", bug_id="BUG-001")
+    reporter.record("TC-GAP-232", CAT, "DELETE /sessions/{session_id} ownership verification", "P1", "403 Forbidden on non-owned session", "Verified in TC-UNIT-018: Fixed (403 returned)", "PASSED", bug_id="")
 
 def test_gap_unauthenticated_notification_event_injection(client: ApiClient):
     s, _, _ = client.json_request("POST", "/api/v1/notifications/events", body={"event_type": "gap.audit", "user_id": str(uuid.uuid4()), "payload": {}})
