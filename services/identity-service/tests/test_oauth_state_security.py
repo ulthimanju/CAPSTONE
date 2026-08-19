@@ -106,3 +106,29 @@ async def test_oauth_login_redirect_sets_httponly_samesite_secure_cookie(oauth_c
     # 4. Max-age check (5 minutes = 300s)
     assert "max-age=300" in cookie_header
 
+
+@pytest.mark.asyncio
+async def test_oauth_callback_cancellation_redirects_to_login():
+    from unittest.mock import MagicMock, AsyncMock
+    from starlette.datastructures import QueryParams
+    from app.api.routers.oauth import google_callback
+    from app.config.settings import settings
+
+    mock_request = MagicMock()
+    mock_request.query_params = QueryParams("error=access_denied&state=some_state")
+
+    response = await google_callback(
+        request=mock_request,
+        user_repo=AsyncMock(),
+        oauth_repo=AsyncMock(),
+        session_repo=AsyncMock(),
+        refresh_repo=AsyncMock(),
+        oauth_client=AsyncMock(),
+        uow=AsyncMock(),
+    )
+
+    assert response.status_code in (302, 307)
+    assert response.headers.get("location") == f"{settings.frontend_url}/login"
+
+
+

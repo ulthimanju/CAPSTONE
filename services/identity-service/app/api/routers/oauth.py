@@ -17,6 +17,7 @@ from app.domain.repositories.refresh_token_repository import RefreshTokenReposit
 from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 from app.application.interfaces.oauth_client import OAuthClientInterface
 from app.application.use_cases.oauth_login import OAuthUseCase
+from app.domain.exceptions.oauth import GoogleOAuthError
 from app.infrastructure.cache.oauth_exchange import OAuthExchangeManager
 from app.config.settings import settings
 
@@ -52,13 +53,24 @@ async def google_callback(
     oauth_client: OAuthClientInterface = Depends(get_oauth_client),
     uow: UnitOfWorkInterface = Depends(get_unit_of_work),
 ):
+    error = request.query_params.get("error")
+    if error:
+        # If user cancels or denies authorization at Google login/consent screen,
+        # redirect back to login/auth page rather than raising an unhandled JSON error.
+        return RedirectResponse(url=f"{settings.frontend_url}/login")
+
     use_case = OAuthUseCase(user_repo, oauth_repo, session_repo, oauth_client, uow, refresh_repo)
-    result = await use_case.authenticate_google_user(
-        request=request,
-        device=request.headers.get("user-agent"),
-        ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
-    )
+    try:
+        result = await use_case.authenticate_google_user(
+            request=request,
+            device=request.headers.get("user-agent"),
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except GoogleOAuthError as exc:
+        if "access_denied" in str(exc).lower() or "denied" in str(exc).lower():
+            return RedirectResponse(url=f"{settings.frontend_url}/login")
+        raise
 
     # Generate short-lived single-use exchange code to keep JWT out of URL history & logs
     exchange_code = await exchange_manager.create_exchange_code(
