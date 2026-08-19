@@ -43,7 +43,19 @@ def upload_file(ws_id, filepath, token):
         data = f.read()
     fname = os.path.basename(filepath)
     ext = os.path.splitext(fname)[1].lower()
-    mime_map = {'.pdf': 'application/pdf', '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation', '.exe': 'application/octet-stream'}
+    mime_map = {
+        '.pdf': 'application/pdf',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.doc': 'application/msword',
+        '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.csv': 'text/csv',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.tiff': 'image/tiff',
+        '.exe': 'application/octet-stream'
+    }
     mime = mime_map.get(ext, 'application/octet-stream')
     bnd = f'----CPABnd{uuid.uuid4().hex[:8]}'
     body = (f'--{bnd}\r\nContent-Disposition: form-data; name="workspace_id"\r\n\r\n{ws_id}\r\n'
@@ -570,8 +582,8 @@ if main_ws and pdf_path:
         s, d, _ = jreq('GET', f'/api/v1/documents/{new_doc}/status', token=tok('Owner'))
         record('TC-16-05', C16, 'Phase 5: GET /documents/{id}/status cached -> Redis 60s TTL', 'P1', '200', f'HTTP {s}', 'PASSED' if s in (200,404) else 'FAILED')
 
-# ==================== REAL DOCUMENT INGESTION: All 7 test_documents folders ====================
-print('\n--- REAL DOCUMENT INGESTION: 7 test_documents folders ---')
+# ==================== REAL DOCUMENT INGESTION: All file types across 7 test_documents folders ====================
+print('\n--- REAL DOCUMENT INGESTION: All file types across test_documents folders ---')
 C_DOCS = 'Document Ingestion - test_documents Workspaces'
 ws_folder_map = [
     ('Computer Network', 'Computer Network'),
@@ -582,23 +594,36 @@ ws_folder_map = [
     ('Software Engineering', 'Software Eng'),
     ('System Design', 'System Design'),
 ]
+supported_exts = {'.pdf', '.docx', '.pptx', '.csv', '.xlsx', '.png', '.jpg', '.jpeg', '.tiff'}
 ingested_ws = {}
 for folder, ws_name in ws_folder_map:
-    s, d, _ = jreq('POST', '/api/v1/workspaces', token=tok('Owner'), body={'name': f'{ws_name}-{sfx}', 'visibility': 'PRIVATE', 'domain_type': 'TECHNICAL'})
+    safe_name = ws_name.replace('&', 'and').replace(' ', '_')
+    s, d, _ = jreq('POST', '/api/v1/workspaces', token=tok('Owner'), body={'name': f'{safe_name}-{sfx}', 'visibility': 'PRIVATE', 'domain_type': 'TECHNICAL'})
     ws_id = d.get('id') if s in (200,201) else None
-    record(f'TC-INGEST-WS-{ws_name.replace(" ","_")}', C_DOCS, f"Create workspace '{ws_name}'", 'P1', '201', f'HTTP {s}', 'PASSED' if s in (200,201) else 'FAILED')
+    record(f'TC-INGEST-WS-{safe_name}', C_DOCS, f"Create workspace '{ws_name}'", 'P1', '201', f'HTTP {s}', 'PASSED' if s in (200,201) else 'FAILED')
     if ws_id:
         ingested_ws[folder] = ws_id
         fp = os.path.join(DOCS_ROOT, folder)
         if os.path.isdir(fp):
-            pdfs = sorted([f for f in glob.glob(os.path.join(fp, '*.pdf')) if os.path.getsize(f) < 30*1024*1024])
-            if pdfs:
-                us, ud, _ = upload_file(ws_id, pdfs[0], tok('Owner'))
-                doc_id = ud.get('id') if us in (200,201) else None
-                sz_kb = os.path.getsize(pdfs[0])//1024
-                record(f'TC-INGEST-DOC-{ws_name.replace(" ","_")}', C_DOCS, f"Ingest '{os.path.basename(pdfs[0])}' ({sz_kb}KB) into '{ws_name}'", 'P1', '201', f'HTTP {us}, doc_id={str(doc_id)[:8] if doc_id else "N/A"}', 'PASSED' if us in (200,201) else 'FAILED')
+            # Collect all files of any supported format (skipping files >=40MB for the boundary test)
+            files = [
+                os.path.join(fp, f) for f in sorted(os.listdir(fp))
+                if os.path.splitext(f)[1].lower() in supported_exts and os.path.getsize(os.path.join(fp, f)) < 40*1024*1024
+            ]
+            if files:
+                for idx, file_path in enumerate(files, 1):
+                    fname = os.path.basename(file_path)
+                    sz_kb = os.path.getsize(file_path)//1024
+                    ext = os.path.splitext(fname)[1].lower()
+                    us, ud, _ = upload_file(ws_id, file_path, tok('Owner'))
+                    doc_id = ud.get('id') if us in (200,201) else None
+                    status_val = "PASSED" if us in (200,201) else "FAILED"
+                    tid = f'TC-INGEST-{safe_name}-{ext[1:].upper()}-{idx:02d}'
+                    record(tid, C_DOCS, f"Ingest '{fname}' ({sz_kb}KB, {ext}) into '{ws_name}'", 'P1', '201', f'HTTP {us}, doc_id={str(doc_id)[:8] if doc_id else "N/A"}', status_val)
             else:
-                record(f'TC-INGEST-DOC-{ws_name.replace(" ","_")}', C_DOCS, f"No eligible PDF (<30MB) in '{folder}'", 'P1', 'PDF', 'No PDF found', 'FAILED')
+                record(f'TC-INGEST-{safe_name}-EMPTY', C_DOCS, f"No supported files in '{folder}'", 'P1', 'File present', 'No supported files found', 'FAILED')
+
+# Oversized boundary test (DSA Resource.pdf ~101MB)
 dsa_big = os.path.join(DOCS_ROOT, 'DSA', 'DSA Resource.pdf')
 if 'DSA' in ingested_ws and os.path.exists(dsa_big) and os.path.getsize(dsa_big) > 40*1024*1024:
     us, ud, _ = upload_file(ingested_ws['DSA'], dsa_big, tok('Owner'))
