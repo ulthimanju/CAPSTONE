@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any
 
 
@@ -10,6 +9,7 @@ class JWTClaims:
     role: str
     session_id: str
     iss: str = "identity-service"
+    aud: str | None = None
     iat: int | None = None
     exp: int | None = None
 
@@ -21,6 +21,8 @@ class JWTClaims:
             "session_id": self.session_id,
             "iss": self.iss,
         }
+        if self.aud is not None:
+            data["aud"] = self.aud
         if self.iat is not None:
             data["iat"] = self.iat
         if self.exp is not None:

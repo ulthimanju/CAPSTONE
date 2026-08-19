@@ -34,6 +34,7 @@ class JWTManager:
             role=role,
             session_id=str(session_id),
             iss=self.settings.issuer,
+            aud=self.settings.audience,
             iat=int(now.timestamp()),
             exp=int(expire.timestamp()),
         )
@@ -50,7 +51,7 @@ class JWTManager:
         # Explicitly whitelist EXACTLY the configured algorithm in list format
         allowed_algorithms = [self.settings.algorithm] if isinstance(self.settings.algorithm, str) else list(self.settings.algorithm)
 
-        # Enforce strict verification of signature, expiration, issued-at, not-before, issuer
+        # Enforce strict verification of signature, expiration, issued-at, not-before, issuer, audience
         options = {
             "verify_signature": True,
             "verify_exp": True,
@@ -84,6 +85,7 @@ class JWTManager:
             role=payload.get("role", "user"),
             session_id=payload.get("session_id", ""),
             iss=payload.get("iss", self.settings.issuer),
+            aud=payload.get("aud", self.settings.audience),
             iat=payload.get("iat"),
             exp=payload.get("exp"),
         )
