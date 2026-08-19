@@ -2,6 +2,7 @@ FROM synapse-python-base:latest
 
 WORKDIR /app
 
+COPY shared/ /app/shared/
 COPY services/api-gateway/app/ /app/app/
 
 USER appuser
