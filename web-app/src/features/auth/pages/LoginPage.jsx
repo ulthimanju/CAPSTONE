@@ -4,6 +4,7 @@ import { FileText, Lightbulb, Share, Shield, CircleNotch } from '@/components/ui
 import { useAuthStatus, AUTH_STATUS } from '../hooks/useAuth';
 import { authApi } from '../api/authApi';
 import { ROUTES } from '@/config/constants';
+import { getSafeInternalRedirect } from '@/lib/navigation';
 
 function GoogleIcon({ className = 'h-5 w-5 shrink-0' }) {
   return (
@@ -63,7 +64,7 @@ export function LoginPage() {
 
   // If already confirmed authenticated, redirect to destination
   if (status === AUTH_STATUS.AUTHENTICATED) {
-    const destination = location.state?.from?.pathname || ROUTES.WORKSPACES;
+    const destination = getSafeInternalRedirect(location.state?.from, ROUTES.WORKSPACES);
     return <Navigate to={destination} replace />;
   }
 
