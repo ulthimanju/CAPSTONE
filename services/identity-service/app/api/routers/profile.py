@@ -66,9 +66,16 @@ async def get_google_token(
         raise HTTPException(status_code=404, detail="No valid Google OAuth access token available")
 
     return {
-        "access_token": identity.access_token,
-        "refresh_token": identity.refresh_token,
+        "linked": True,
+        "provider": "google",
+        "scopes": [
+            "openid",
+            "email",
+            "profile",
+            "https://www.googleapis.com/auth/drive.file",
+        ],
         "expires_at": identity.expires_at.isoformat() if identity.expires_at else None,
+        "status": "active",
     }
 
 

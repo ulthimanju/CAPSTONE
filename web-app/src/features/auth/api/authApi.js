@@ -37,7 +37,12 @@ export const authApi = {
   checkGoogleDriveStatus: async () => {
     try {
       const response = await apiClient.get('/api/v1/profile/google-token');
-      return { isLinked: !!response.data?.access_token, data: response.data };
+      const isLinked = Boolean(
+        response.data?.linked ||
+        response.data?.status === 'active' ||
+        response.data?.access_token
+      );
+      return { isLinked, data: response.data };
     } catch {
       return { isLinked: false, data: null };
     }
