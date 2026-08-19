@@ -7,9 +7,10 @@ import {
   CheckCircle,
 } from '@/components/ui/icons';
 import { Card, Button, Badge, BookLinearIcon, RegenerateIcon } from '@/components/ui';
-import { useWorkspaceSummaryQuery, useGenerateSummaryMutation } from '../hooks/useSummary';
+import { useWorkspaceSummaryQuery, useGenerateSummaryMutation, useSummaryStore } from '../hooks/useSummary';
 import { MermaidDiagram } from '../components/MermaidDiagram';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
+import { toast } from 'sonner';
 import hljs from 'highlight.js';
 
 function SectionCodeCard({ snippet, language, explanation }) {
@@ -70,6 +71,9 @@ export function SummaryTab() {
   const { workspaceId } = useParams();
   const { data: summaryData, isLoading } = useWorkspaceSummaryQuery(workspaceId);
   const generateMutation = useGenerateSummaryMutation(workspaceId);
+  const isGenerating = useSummaryStore((state) =>
+    Boolean(state.generatingWorkspaces[workspaceId])
+  );
 
   const summary = summaryData?.summary;
   const hasSummary = Boolean(
@@ -77,10 +81,19 @@ export function SummaryTab() {
   );
 
   const handleGenerate = () => {
-    generateMutation.mutate();
+    if (!workspaceId || generateMutation.isPending || isGenerating) return;
+
+    generateMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success('Workspace summary generation started with Gemini 2.5 Flash.');
+      },
+      onError: (err) => {
+        toast.error(err?.message || 'Failed to start summary generation.');
+      },
+    });
   };
 
-  if (isLoading) {
+  if (isLoading && !hasSummary && !isGenerating) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -91,19 +104,32 @@ export function SummaryTab() {
     );
   }
 
-  if (generateMutation.isPending) {
+  if (isGenerating && !hasSummary) {
     return (
-      <Card className="flex flex-col items-center justify-center p-12 text-center border-accent/30 bg-accent/5">
-        <div className="relative mb-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent">
-            <Sparkle className="h-7 w-7 animate-pulse" />
-          </div>
-          <CircleNotch className="absolute -bottom-1 -right-1 h-5 w-5 animate-spin text-accent" />
+      <Card className="flex flex-col items-center justify-center p-8 sm:p-12 text-center border border-accent/40 bg-surface-raised/80 shadow-sm animate-pulse-subtle">
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-sand text-accent mb-4 shadow-sm border border-sep-line">
+          <CircleNotch className="h-8 w-8 animate-spin text-accent" />
+          <Sparkle className="absolute h-4 w-4 text-accent/80" />
         </div>
-        <h3 className="font-display text-lg font-bold text-text">Synthesizing with Gemini 2.5 Flash</h3>
-        <p className="mt-2 max-w-md text-sm text-text/70 font-sans">
-          Gemini is analyzing all uploaded workspace documents, extracting key concepts, Buildings comparison tables, and generating architecture diagrams. This may take 15–30 seconds.
+
+        <div className="flex items-center gap-2">
+          <h3 className="font-display text-lg font-bold text-text">
+            Synthesizing Summary with Gemini 2.5 Flash
+          </h3>
+          <span className="flex h-2 w-2 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+          </span>
+        </div>
+
+        <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/75 leading-relaxed">
+          Gemini is analyzing all uploaded workspace documents, extracting core concepts, building comparative analysis tables, and generating architectural Mermaid diagrams. This typically takes 15–30 seconds.
         </p>
+
+        <div className="mt-6 flex items-center gap-2 rounded-ui bg-sand/80 px-3.5 py-1.5 font-mono text-[11px] text-text/70 border border-sep-line">
+          <Sparkle className="h-3.5 w-3.5 text-accent animate-pulse" />
+          <span>Listening to real-time platform event stream...</span>
+        </div>
       </Card>
     );
   }
@@ -121,10 +147,16 @@ export function SummaryTab() {
         <div className="mt-6">
           <Button
             onClick={handleGenerate}
-            disabled={generateMutation.isPending}
-            leftIcon={<RegenerateIcon className="h-4 w-4" />}
+            disabled={generateMutation.isPending || isGenerating}
+            leftIcon={
+              isGenerating ? (
+                <CircleNotch className="h-4 w-4 animate-spin text-accent" />
+              ) : (
+                <RegenerateIcon className="h-4 w-4" />
+              )
+            }
           >
-            Generate Summary with Gemini
+            {isGenerating ? 'Generating Summary...' : 'Generate Summary with Gemini'}
           </Button>
         </div>
       </Card>
@@ -133,6 +165,26 @@ export function SummaryTab() {
 
   return (
     <div className="space-y-6">
+      {/* Regeneration Live Banner (if regeneration is in progress) */}
+      {isGenerating && (
+        <Card className="flex items-center justify-between p-4 border border-accent/40 bg-accent/5 shadow-xs">
+          <div className="flex items-center gap-3">
+            <CircleNotch className="h-5 w-5 animate-spin text-accent" />
+            <div>
+              <h4 className="font-display text-sm font-bold text-text">
+                Regenerating Workspace Summary...
+              </h4>
+              <p className="font-body text-xs text-text/70">
+                Gemini 2.5 Flash is re-synthesizing all documents. Updated sections and diagrams will refresh automatically upon completion.
+              </p>
+            </div>
+          </div>
+          <Badge variant="outline" className="font-mono text-[10px] text-accent border-accent/30 bg-accent/10">
+            In Progress
+          </Badge>
+        </Card>
+      )}
+
       {/* Overview Card */}
       {summary.overview && (
         <Card className="border-accent/20 bg-surface p-6 shadow-sm">
@@ -141,9 +193,27 @@ export function SummaryTab() {
               <BookLinearIcon className="h-5 w-5" />
               <h2 className="font-display text-base font-bold text-text">Executive Synthesis</h2>
             </div>
-            <Badge variant="outline" className="font-mono text-[11px] text-accent border-accent/30 bg-accent/5">
-              Gemini 2.5 Flash
-            </Badge>
+            <div className="flex items-center gap-2.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerate}
+                disabled={isGenerating || generateMutation.isPending}
+                leftIcon={
+                  isGenerating ? (
+                    <CircleNotch className="h-3.5 w-3.5 animate-spin text-accent" />
+                  ) : (
+                    <RegenerateIcon className="h-3.5 w-3.5" />
+                  )
+                }
+                className="font-mono text-xs"
+              >
+                {isGenerating ? 'Synthesizing...' : 'Regenerate'}
+              </Button>
+              <Badge variant="outline" className="font-mono text-[11px] text-accent border-accent/30 bg-accent/5">
+                Gemini 2.5 Flash
+              </Badge>
+            </div>
           </div>
           <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans">
             <MarkdownRenderer content={summary.overview} />
