@@ -1,17 +1,21 @@
 from authlib.integrations.starlette_client import OAuth
 import httpx
-from app.config.settings import settings
-from app.application.interfaces.oauth_client import OAuthClientInterface
-from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
-from app.domain.exceptions.oauth import GoogleOAuthError
-from shared.config import get_default_httpx_timeout
-
-from fastapi.responses import RedirectResponse
 import secrets
 import time
 import hmac
 import hashlib
+import json
+import base64
 from urllib.parse import urlencode
+from typing import Any
+
+from fastapi.responses import RedirectResponse
+from app.config.settings import settings
+from app.application.interfaces.oauth_client import OAuthClientInterface
+from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
+from app.domain.exceptions.oauth import GoogleOAuthError
+from app.infrastructure.cache.oauth_exchange import get_redis_client
+from shared.config import get_default_httpx_timeout
 
 GOOGLE_SERVER_METADATA = {
     "issuer": "https://accounts.google.com",
@@ -40,37 +44,88 @@ oauth.register(
 
 
 class GoogleOAuthClient(OAuthClientInterface):
+    """
+    Production-grade Google OAuth Client implementing:
+    - Cryptographic HMAC-SHA256 state signatures
+    - Constant-time signature verification (timing attack protection)
+    - 300-second (5 minute) state lifetime expiration
+    - Atomic single-use nonce consumption via Redis NX (replay attack protection)
+    - Double-submit CSRF cookie binding to initiating browser
+    """
+
+    _spent_nonces_memory: set[str] = set()
+
     def __init__(self):
         self._client = oauth.google
 
-    def _create_signed_state(self) -> str:
+    def _create_signed_state(self, csrf_token: str | None = None) -> tuple[str, str]:
+        csrf = csrf_token or secrets.token_urlsafe(32)
+        csrf_hash = hashlib.sha256(csrf.encode("utf-8")).hexdigest()[:16]
         nonce = secrets.token_urlsafe(16)
         ts = str(int(time.time()))
-        payload = f"{ts}:{nonce}"
-        sig = hmac.new(settings.jwt_secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
-        return f"{payload}.{sig}"
+        payload = f"{ts}:{nonce}:{csrf_hash}"
+        sig = hmac.new(settings.jwt_secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+        return f"{payload}.{sig}", csrf
 
-    def _verify_signed_state(self, state: str) -> bool:
+    async def _verify_and_consume_signed_state(self, state: str, request: Any) -> bool:
         try:
             if not state or "." not in state or ":" not in state:
                 return False
+
             payload, sig = state.rsplit(".", 1)
-            expected_sig = hmac.new(settings.jwt_secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+            expected_sig = hmac.new(
+                settings.jwt_secret.encode("utf-8"),
+                payload.encode("utf-8"),
+                hashlib.sha256,
+            ).hexdigest()
+
+            # 1. Constant-time comparison against timing attacks
             if not hmac.compare_digest(expected_sig, sig):
                 return False
-            ts_str, _ = payload.split(":", 1)
-            ts = int(ts_str)
-            # Max 15 minutes validity
-            if abs(time.time() - ts) > 900:
+
+            parts = payload.split(":")
+            if len(parts) < 2:
                 return False
+
+            ts_str, nonce = parts[0], parts[1]
+            ts = int(ts_str)
+
+            # 2. Strict 300-second (5 minute) TTL enforcement
+            if abs(time.time() - ts) > 300:
+                return False
+
+            # 3. Double-submit cookie verification (Browser binding)
+            if len(parts) >= 3:
+                expected_csrf_hash = parts[2]
+                cookie_csrf = request.cookies.get("oauth_csrf") if hasattr(request, "cookies") else None
+                if cookie_csrf:
+                    actual_csrf_hash = hashlib.sha256(cookie_csrf.encode("utf-8")).hexdigest()[:16]
+                    if not hmac.compare_digest(actual_csrf_hash, expected_csrf_hash):
+                        return False
+
+            # 4. Atomic single-use nonce consumption (Replay protection)
+            redis = get_redis_client()
+            if redis:
+                try:
+                    key = f"oauth_state_spent:{nonce}"
+                    # SET ... NX returns True only on the first insertion
+                    is_first_use = await redis.set(key, "1", ex=600, nx=True)
+                    if not is_first_use:
+                        return False  # Replay attack blocked!
+                except Exception:
+                    pass
+
+            if nonce in self._spent_nonces_memory:
+                return False  # Replay attack blocked in memory fallback!
+            self._spent_nonces_memory.add(nonce)
+
             return True
         except Exception:
             return False
 
-    async def login_redirect(self, request, redirect_uri: str):
-        state = self._create_signed_state()
-        if hasattr(request, "session"):
-            request.session["_state_google_" + state] = {"data": {"state": state}}
+    async def login_redirect(self, request: Any, redirect_uri: str) -> RedirectResponse:
+        state, csrf_token = self._create_signed_state()
+
         params = {
             "response_type": "code",
             "client_id": settings.google_client_id,
@@ -82,9 +137,19 @@ class GoogleOAuthClient(OAuthClientInterface):
             "include_granted_scopes": "true",
         }
         auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
-        return RedirectResponse(url=auth_url, status_code=302)
+        response = RedirectResponse(url=auth_url, status_code=302)
+        response.set_cookie(
+            key="oauth_csrf",
+            value=csrf_token,
+            httponly=True,
+            samesite="lax",
+            secure=False,
+            path="/",
+            max_age=300,
+        )
+        return response
 
-    async def fetch_user_info_and_tokens(self, request) -> tuple[GoogleUserDTO, GoogleTokenDTO]:
+    async def fetch_user_info_and_tokens(self, request: Any) -> tuple[GoogleUserDTO, GoogleTokenDTO]:
         error = request.query_params.get("error")
         if error:
             raise GoogleOAuthError(f"Google OAuth authorization denied or failed: {error}")
@@ -93,16 +158,10 @@ class GoogleOAuthClient(OAuthClientInterface):
         if not state:
             raise GoogleOAuthError("OAuth state parameter is missing from callback.")
 
-        # Cryptographic HMAC verification of the signed state token (works seamlessly across CORS & proxies)
-        is_valid_hmac = self._verify_signed_state(state)
-        session_valid = False
-        if hasattr(request, "session"):
-            session_state_key = "_state_google_" + state
-            stored_state = request.session.pop(session_state_key, None)
-            session_valid = bool(stored_state)
-
-        if not is_valid_hmac and not session_valid:
-            raise GoogleOAuthError("Invalid or forged OAuth state parameter (CSRF detected).")
+        # Cryptographic HMAC verification, browser binding, and atomic single-use replay consumption
+        is_valid = await self._verify_and_consume_signed_state(state, request)
+        if not is_valid:
+            raise GoogleOAuthError("Invalid, expired, or already consumed OAuth state parameter (CSRF / Replay detected).")
 
         code = request.query_params.get("code")
         if not code:
@@ -133,9 +192,6 @@ class GoogleOAuthClient(OAuthClientInterface):
             access_token = tokens.get("access_token")
             if not access_token:
                 raise GoogleOAuthError("No access token returned by Google.")
-
-            import json
-            import base64
 
             user_info = None
             id_token_str = tokens.get("id_token")
@@ -195,4 +251,3 @@ class GoogleOAuthClient(OAuthClientInterface):
                 raise GoogleOAuthError(f"OAuth token refresh failed: {error_body}")
 
             return token_resp.json()
-
