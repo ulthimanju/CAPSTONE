@@ -138,12 +138,17 @@ class GoogleOAuthClient(OAuthClientInterface):
         }
         auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
         response = RedirectResponse(url=auth_url, status_code=302)
+        is_secure = (
+            getattr(settings, "cookie_secure", False)
+            or settings.app_env.lower() in ("prod", "production")
+            or (hasattr(request, "url") and str(request.url.scheme).lower() == "https")
+        )
         response.set_cookie(
             key="oauth_csrf",
             value=csrf_token,
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=is_secure,
             path="/",
             max_age=300,
         )

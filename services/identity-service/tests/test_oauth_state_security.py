@@ -81,3 +81,28 @@ async def test_browser_csrf_cookie_mismatch_rejected(oauth_client):
     # Attempt verification from different browser / session
     is_valid = await oauth_client._verify_and_consume_signed_state(state, mock_request)
     assert is_valid is False
+
+
+@pytest.mark.asyncio
+async def test_oauth_login_redirect_sets_httponly_samesite_secure_cookie(oauth_client):
+    from unittest.mock import MagicMock
+    from starlette.datastructures import URL
+
+    mock_request = MagicMock()
+    mock_request.url = URL("https://app.synapse.local/api/v1/oauth/google/login")
+
+    response = await oauth_client.login_redirect(mock_request, "https://app.synapse.local/api/v1/oauth/google/callback")
+
+    assert response.status_code == 302
+    assert "oauth_csrf=" in response.headers.get("set-cookie", "")
+
+    cookie_header = response.headers.get("set-cookie", "").lower()
+    # 1. HttpOnly flag check (XSS protection)
+    assert "httponly" in cookie_header
+    # 2. SameSite=lax check (Allows top-level OAuth callback redirect, blocks cross-site CSRF)
+    assert "samesite=lax" in cookie_header
+    # 3. Secure flag check for HTTPS
+    assert "secure" in cookie_header
+    # 4. Max-age check (5 minutes = 300s)
+    assert "max-age=300" in cookie_header
+
