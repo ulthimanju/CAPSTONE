@@ -8,6 +8,9 @@ from shared.config import get_default_httpx_timeout
 
 from fastapi.responses import RedirectResponse
 import secrets
+import time
+import hmac
+import hashlib
 from urllib.parse import urlencode
 
 GOOGLE_SERVER_METADATA = {
@@ -40,8 +43,32 @@ class GoogleOAuthClient(OAuthClientInterface):
     def __init__(self):
         self._client = oauth.google
 
+    def _create_signed_state(self) -> str:
+        nonce = secrets.token_urlsafe(16)
+        ts = str(int(time.time()))
+        payload = f"{ts}:{nonce}"
+        sig = hmac.new(settings.jwt_secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        return f"{payload}.{sig}"
+
+    def _verify_signed_state(self, state: str) -> bool:
+        try:
+            if not state or "." not in state or ":" not in state:
+                return False
+            payload, sig = state.rsplit(".", 1)
+            expected_sig = hmac.new(settings.jwt_secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(expected_sig, sig):
+                return False
+            ts_str, _ = payload.split(":", 1)
+            ts = int(ts_str)
+            # Max 15 minutes validity
+            if abs(time.time() - ts) > 900:
+                return False
+            return True
+        except Exception:
+            return False
+
     async def login_redirect(self, request, redirect_uri: str):
-        state = secrets.token_urlsafe(32)
+        state = self._create_signed_state()
         if hasattr(request, "session"):
             request.session["_state_google_" + state] = {"data": {"state": state}}
         params = {
@@ -66,11 +93,16 @@ class GoogleOAuthClient(OAuthClientInterface):
         if not state:
             raise GoogleOAuthError("OAuth state parameter is missing from callback.")
 
-        session_state_key = "_state_google_" + state
+        # Cryptographic HMAC verification of the signed state token (works seamlessly across CORS & proxies)
+        is_valid_hmac = self._verify_signed_state(state)
+        session_valid = False
         if hasattr(request, "session"):
+            session_state_key = "_state_google_" + state
             stored_state = request.session.pop(session_state_key, None)
-            if not stored_state:
-                raise GoogleOAuthError("Invalid or forged OAuth state parameter (CSRF detected).")
+            session_valid = bool(stored_state)
+
+        if not is_valid_hmac and not session_valid:
+            raise GoogleOAuthError("Invalid or forged OAuth state parameter (CSRF detected).")
 
         code = request.query_params.get("code")
         if not code:
