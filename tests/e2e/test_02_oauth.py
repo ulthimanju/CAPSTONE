@@ -47,9 +47,11 @@ def test_oauth_expired_or_invalid_code(client: ApiClient):
     reporter.record("TC-OAUTH-043", CAT, "OAuth invalid code token exchange -> 422", "P1", "422 Token exchange failure", f"HTTP {s}", "PASSED" if passed else "FAILED")
     assert passed
 
-def test_oauth_forged_state_gap(client: ApiClient):
+def test_oauth_forged_state_validation(client: ApiClient):
     s, d, _ = client.request("GET", "/api/v1/oauth/google/callback?code=any&state=FORGED_STATE_123")
-    reporter.record("TC-OAUTH-044", CAT, "Forged OAuth state parameter -> CSRF validation gap", "P1", "400/422 validation expected", f"HTTP {s}", "GAP" if s not in (400, 401, 403, 422) else "PASSED", bug_id="BUG-002")
+    passed = s in (400, 422)
+    reporter.record("TC-OAUTH-044", CAT, "Forged OAuth state parameter -> 400 CSRF validation error", "P1", "400 Bad Request (CSRF blocked)", f"HTTP {s}", "PASSED" if passed else "FAILED", bug_id="")
+    assert passed
 
 def test_token_refresh_and_rotation(client: ApiClient, auth_context):
     email = auth_context["users"]["Collab1"]

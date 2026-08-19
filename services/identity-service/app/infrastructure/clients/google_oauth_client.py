@@ -58,6 +58,20 @@ class GoogleOAuthClient(OAuthClientInterface):
         return RedirectResponse(url=auth_url, status_code=302)
 
     async def fetch_user_info_and_tokens(self, request) -> tuple[GoogleUserDTO, GoogleTokenDTO]:
+        error = request.query_params.get("error")
+        if error:
+            raise GoogleOAuthError(f"Google OAuth authorization denied or failed: {error}")
+
+        state = request.query_params.get("state")
+        if not state:
+            raise GoogleOAuthError("OAuth state parameter is missing from callback.")
+
+        session_state_key = "_state_google_" + state
+        if hasattr(request, "session"):
+            stored_state = request.session.pop(session_state_key, None)
+            if not stored_state:
+                raise GoogleOAuthError("Invalid or forged OAuth state parameter (CSRF detected).")
+
         code = request.query_params.get("code")
         if not code:
             raise GoogleOAuthError("Authorization code is missing from Google callback.")

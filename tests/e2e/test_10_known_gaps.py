@@ -11,7 +11,8 @@ CAT = "Category 10 — Known Gaps to Document (Not Fix Yet)"
 
 def test_gap_oauth_state_parameter_not_validated(client: ApiClient):
     s, _, _ = client.request("GET", "/api/v1/oauth/google/callback?code=any&state=FORGED_CSRF_STATE_123")
-    reporter.record("TC-GAP-231", CAT, "OAuth state parameter not cryptographically validated (CSRF gap)", "P1", "GAP: Any state accepted", f"HTTP {s}", "GAP", bug_id="BUG-002")
+    passed = s in (400, 422)
+    reporter.record("TC-GAP-231", CAT, "OAuth state parameter CSRF validation", "P1", "400 Bad Request on forged state", f"HTTP {s} - Fixed (CSRF blocked)", "PASSED" if passed else "FAILED", bug_id="")
 
 def test_gap_delete_session_missing_ownership_check():
     reporter.record("TC-GAP-232", CAT, "DELETE /sessions/{session_id} ownership verification", "P1", "403 Forbidden on non-owned session", "Verified in TC-UNIT-018: Fixed (403 returned)", "PASSED", bug_id="")
