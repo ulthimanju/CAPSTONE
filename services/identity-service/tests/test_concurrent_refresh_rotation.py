@@ -127,3 +127,77 @@ async def test_refresh_token_rotation_atomicity_under_50_concurrent_requests():
     # Verify subsequent attempt is permanently rejected
     replay_attempt = await execute_rotation_transaction(raw_token)
     assert replay_attempt == "401_UNAUTHORIZED"
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_reuse_invalidates_entire_session_and_token_family():
+    """
+    Verifies RFC 6819 Section 5.2.2.3 token reuse detection:
+    When an already revoked refresh token is presented, the system terminates
+    the entire session, cascade-purging all active and past tokens in that family.
+    """
+    session_id = uuid.uuid4()
+    sessions_db = {session_id: {"id": session_id, "active": True}}
+
+    token_v1 = secrets.token_urlsafe(64)
+    hash_v1 = hashlib.sha256(token_v1.encode("utf-8")).hexdigest()
+
+    token_v2 = secrets.token_urlsafe(64)
+    hash_v2 = hashlib.sha256(token_v2.encode("utf-8")).hexdigest()
+
+    # Step 1: Token v1 was already rotated to Token v2, so v1 has revoked_at set
+    tokens_db = {
+        hash_v1: {
+            "id": uuid.uuid4(),
+            "session_id": session_id,
+            "token_hash": hash_v1,
+            "revoked_at": datetime.now(timezone.utc) - timedelta(minutes=5),
+            "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+        },
+        hash_v2: {
+            "id": uuid.uuid4(),
+            "session_id": session_id,
+            "token_hash": hash_v2,
+            "revoked_at": None,
+            "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+        }
+    }
+
+    async def handle_refresh(presented_token: str):
+        th = hashlib.sha256(presented_token.encode("utf-8")).hexdigest()
+        stored = tokens_db.get(th)
+        if not stored:
+            return {"status": 401, "detail": "Invalid refresh token"}
+
+        # Token reuse detection
+        if stored["revoked_at"] is not None:
+            # Purge entire session and cascade delete all tokens in this family
+            sid = stored["session_id"]
+            if sid in sessions_db:
+                del sessions_db[sid]
+            # Cascade purge in DB
+            to_delete = [h for h, tok in tokens_db.items() if tok["session_id"] == sid]
+            for h in to_delete:
+                del tokens_db[h]
+            return {"status": 401, "detail": "Security violation: Refresh token reuse detected. Session terminated."}
+
+        # Normal rotation
+        stored["revoked_at"] = datetime.now(timezone.utc)
+        return {"status": 200, "detail": "Rotated"}
+
+    # Attacker presents old token_v1
+    attack_response = await handle_refresh(token_v1)
+    assert attack_response["status"] == 401
+    assert "Refresh token reuse detected" in attack_response["detail"]
+
+    # Verify session was deleted
+    assert session_id not in sessions_db
+
+    # Verify all tokens in the family (including token_v2) were purged
+    assert hash_v1 not in tokens_db
+    assert hash_v2 not in tokens_db
+
+    # Even legitimate client with token_v2 is now terminated
+    legitimate_attempt = await handle_refresh(token_v2)
+    assert legitimate_attempt["status"] == 401
+

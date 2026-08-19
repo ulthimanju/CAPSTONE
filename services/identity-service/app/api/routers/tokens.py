@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+import logging
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Cookie, HTTPException, status
 from app.config.settings import settings
@@ -16,6 +17,7 @@ from app.api.dependencies.database import (
 )
 
 router = APIRouter(prefix="/tokens", tags=["Tokens"])
+logger = logging.getLogger(__name__)
 jwt_settings = JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
 jwt_manager = JWTManager(jwt_settings)
 
@@ -39,8 +41,22 @@ async def refresh_token(
     async with uow:
         # 2. Lock & fetch RefreshToken row with FOR UPDATE to prevent concurrent race conditions
         stored_token = await refresh_repo.get_by_hash_for_update(presented_hash)
-        if not stored_token or stored_token.revoked_at is not None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or revoked refresh token")
+        if not stored_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+        # REUSE DETECTION (RFC 6819 Section 5.2.2.3):
+        # If an already revoked refresh token is presented, it indicates token theft or replay.
+        # Immediately terminate the entire session and cascade-purge all tokens in this family.
+        if stored_token.revoked_at is not None:
+            logger.warning(
+                f"Refresh token reuse attack detected for session {stored_token.session_id}! "
+                f"Invalidating session and entire token family."
+            )
+            await session_repo.delete(stored_token.session_id)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Security violation: Refresh token reuse detected. Session terminated.",
+            )
 
         now = datetime.now(timezone.utc)
         if stored_token.expires_at < now:
