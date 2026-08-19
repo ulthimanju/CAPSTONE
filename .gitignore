@@ -99,6 +99,10 @@ temp/
 *.swp
 *.swo
 
+# Agent & AI Tooling Directories
+.agents/
+**/.agents/
+
 # IDE & Editor Settings (PyCharm, VSCode)
 .idea/
 .vscode/
