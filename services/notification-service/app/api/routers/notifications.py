@@ -44,14 +44,17 @@ async def stream_notifications(user_id: uuid.UUID = Depends(get_current_user_id)
 
 
 @router.post("/events")
-async def publish_platform_event(event: PlatformEvent):
+async def publish_platform_event(
+    event: PlatformEvent,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+):
     # Enforce notification event idempotency and persist in MongoDB
     is_new, item = await notification_store.add_event_notification_async(event)
     if not is_new:
         return {"status": "skipped_duplicate", "event_id": str(event.event_id)}
 
     # Stream real-time event to connected SSE clients
-    channel_id = str(event.recipient_id or event.user_id) if (event.recipient_id or event.user_id) else "global"
+    channel_id = str(event.recipient_id or event.user_id or user_id)
     await sse_manager.broadcast_event(event, channel_id=channel_id)
 
     # Send real email notification for workspace invitations if target email is present

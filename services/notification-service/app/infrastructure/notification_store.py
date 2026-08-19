@@ -1,7 +1,7 @@
 import uuid
 import logging
 from datetime import datetime, timezone
-from typing import List, Tuple
+from typing import List, Tuple, Any
 from app.schemas.notification import NotificationItem, PlatformEvent
 from app.constants.enums import NotificationStatus, NotificationType, NotificationPriority
 from app.infrastructure.database.mongo import get_mongo_db
@@ -244,6 +244,66 @@ class NotificationStore:
                 if item.user_id == user_id or item.recipient_id == user_id:
                     item.status = NotificationStatus.READ
             return len(self._memory_items)
+
+    async def cleanup_expired_processed_events(self, retention_days: int = 30, session: Any = None) -> int:
+        from datetime import timedelta
+        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        if session:
+            from sqlalchemy import delete
+            from app.infrastructure.database.models import ProcessedNotificationEventModel
+            stmt = delete(ProcessedNotificationEventModel).where(ProcessedNotificationEventModel.processed_at < cutoff)
+            res = await session.execute(stmt)
+            return res.rowcount if hasattr(res, "rowcount") else 0
+        try:
+            db = get_mongo_db()
+            col = db["notifications"]
+            res = await col.delete_many({"created_at": {"$lt": cutoff}})
+            return getattr(res, "deleted_count", 0)
+        except Exception:
+            return 0
+
+    async def update_notification_status_with_version(
+        self, notification_id: uuid.UUID, new_status: NotificationStatus, expected_version: int, session: Any = None
+    ) -> bool:
+        from fastapi import HTTPException
+        if session:
+            from sqlalchemy import update
+            from app.infrastructure.database.models import NotificationHistoryModel
+            stmt = (
+                update(NotificationHistoryModel)
+                .where(
+                    NotificationHistoryModel.id == notification_id,
+                    NotificationHistoryModel.version == expected_version,
+                )
+                .values(
+                    status=new_status.value if hasattr(new_status, "value") else str(new_status),
+                    version=expected_version + 1,
+                )
+            )
+            res = await session.execute(stmt)
+            if getattr(res, "rowcount", 0) == 0:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Notification was modified by another process (optimistic locking conflict).",
+                )
+            return True
+        try:
+            db = get_mongo_db()
+            col = db["notifications"]
+            res = await col.update_one(
+                {"id": str(notification_id), "version": expected_version},
+                {"$set": {"status": new_status.value if hasattr(new_status, "value") else str(new_status)}, "$inc": {"version": 1}},
+            )
+            if getattr(res, "modified_count", 0) == 0:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Notification was modified by another process (optimistic locking conflict).",
+                )
+            return True
+        except HTTPException:
+            raise
+        except Exception:
+            return False
 
     def add_event_notification(self, event: PlatformEvent) -> Tuple[bool, NotificationItem | None]:
         """
