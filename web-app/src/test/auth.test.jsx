@@ -165,21 +165,51 @@ describe('AuthCallbackPage Component', () => {
     });
   });
 
-  it('isolates and purges query cache when switching accounts via setToken', () => {
+  it('isolates and purges all user-scoped query caches when switching accounts via setToken', () => {
     // Token for User A
     const tokenA = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLWFhYS0xMTEifQ.signature';
     // Token for User B
     const tokenB = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLWJiYi0yMjIifQ.signature';
 
     useAuthStore.getState().setToken(tokenA);
+
+    // Populate all user-scoped caches for User A
     queryClient.setQueryData(['auth', 'profile'], { id: 'user-aaa-111', name: 'User A' });
-    expect(queryClient.getQueryData(['auth', 'profile'])).toEqual({ id: 'user-aaa-111', name: 'User A' });
+    queryClient.setQueryData(['auth', 'sessions'], [{ id: 'sess-aaa', device: 'Chrome' }]);
+    queryClient.setQueryData(['auth', 'google-drive'], { linked: true, status: 'active' });
+    queryClient.setQueryData(['workspaces'], [{ id: 'ws-aaa', name: 'User A Workspace' }]);
+    queryClient.setQueryData(['workspaces', 'detail', 'ws-aaa'], { id: 'ws-aaa', owner_id: 'user-aaa-111' });
+    queryClient.setQueryData(['documents', 'ws-aaa'], [{ id: 'doc-aaa', title: 'Private Notes' }]);
+    queryClient.setQueryData(['chat', 'history', 'ws-aaa'], [{ id: 'msg-1', content: 'Secret Query' }]);
+    queryClient.setQueryData(['learning-path', 'ws-aaa'], { units: [{ id: 'unit-1', title: 'DSA' }] });
+    queryClient.setQueryData(['notifications'], { unread_count: 5, items: [] });
+    queryClient.setQueryData(['invitations'], [{ id: 'inv-1', status: 'PENDING' }]);
+    queryClient.setQueryData(['summary', 'ws-aaa'], { summary: 'Confidential document summary' });
+
+    // Verify all caches populated for User A
+    expect(queryClient.getQueryData(['auth', 'profile'])).toBeDefined();
+    expect(queryClient.getQueryData(['workspaces'])).toBeDefined();
+    expect(queryClient.getQueryData(['documents', 'ws-aaa'])).toBeDefined();
+    expect(queryClient.getQueryData(['chat', 'history', 'ws-aaa'])).toBeDefined();
+    expect(queryClient.getQueryData(['notifications'])).toBeDefined();
+    expect(queryClient.getQueryData(['summary', 'ws-aaa'])).toBeDefined();
 
     // Switch to User B
     useAuthStore.getState().setToken(tokenB);
 
-    // Cache for User A must be purged completely
+    // Assert that ALL user-scoped caches are wiped clean
     expect(queryClient.getQueryData(['auth', 'profile'])).toBeUndefined();
+    expect(queryClient.getQueryData(['auth', 'sessions'])).toBeUndefined();
+    expect(queryClient.getQueryData(['auth', 'google-drive'])).toBeUndefined();
+    expect(queryClient.getQueryData(['workspaces'])).toBeUndefined();
+    expect(queryClient.getQueryData(['workspaces', 'detail', 'ws-aaa'])).toBeUndefined();
+    expect(queryClient.getQueryData(['documents', 'ws-aaa'])).toBeUndefined();
+    expect(queryClient.getQueryData(['chat', 'history', 'ws-aaa'])).toBeUndefined();
+    expect(queryClient.getQueryData(['learning-path', 'ws-aaa'])).toBeUndefined();
+    expect(queryClient.getQueryData(['notifications'])).toBeUndefined();
+    expect(queryClient.getQueryData(['invitations'])).toBeUndefined();
+    expect(queryClient.getQueryData(['summary', 'ws-aaa'])).toBeUndefined();
   });
 });
+
 
