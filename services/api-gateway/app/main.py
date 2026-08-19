@@ -90,10 +90,19 @@ def get_current_user_id(
 from shared.logging.correlation_id import _request_id_ctx, get_tracing_headers
 from shared.middleware.request_timeout import RequestTimeoutMiddleware
 from shared.middleware.error_handler import register_global_exception_handlers
+from shared.middleware.rate_limit import RateLimitMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=180.0)
+app.add_middleware(
+    RateLimitMiddleware,
+    redis_url=getattr(settings, "redis_url", "redis://redis:6379/0"),
+    auth_limit=10,
+    auth_window_seconds=60,
+    general_limit=120,
+    general_window_seconds=60,
+)
 register_global_exception_handlers(app)
 
 
