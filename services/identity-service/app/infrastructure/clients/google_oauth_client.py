@@ -59,13 +59,11 @@ class GoogleOAuthClient(OAuthClientInterface):
         self._client = oauth.google
 
     def _create_signed_state(self, csrf_token: str | None = None) -> tuple[str, str]:
-        csrf = csrf_token or secrets.token_urlsafe(32)
-        csrf_hash = hashlib.sha256(csrf.encode("utf-8")).hexdigest()[:16]
         nonce = secrets.token_urlsafe(16)
         ts = str(int(time.time()))
-        payload = f"{ts}:{nonce}:{csrf_hash}"
+        payload = f"{ts}:{nonce}"
         sig = hmac.new(settings.jwt_secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
-        return f"{payload}.{sig}", csrf
+        return f"{payload}.{sig}", nonce
 
     async def _verify_and_consume_signed_state(self, state: str, request: Any) -> bool:
         try:
@@ -79,7 +77,7 @@ class GoogleOAuthClient(OAuthClientInterface):
                 hashlib.sha256,
             ).hexdigest()
 
-            # 1. Constant-time comparison against timing attacks
+            # 1. Constant-time HMAC comparison (Protects against tampering / forgery)
             if not hmac.compare_digest(expected_sig, sig):
                 return False
 
@@ -90,26 +88,17 @@ class GoogleOAuthClient(OAuthClientInterface):
             ts_str, nonce = parts[0], parts[1]
             ts = int(ts_str)
 
-            # 2. Strict 300-second (5 minute) TTL enforcement
-            if abs(time.time() - ts) > 300:
+            # 2. Strict 900-second (15 minute) TTL enforcement
+            if abs(time.time() - ts) > 900:
                 return False
 
-            # 3. Double-submit cookie verification (Browser binding)
-            if len(parts) >= 3:
-                expected_csrf_hash = parts[2]
-                cookie_csrf = request.cookies.get("oauth_csrf") if hasattr(request, "cookies") else None
-                if cookie_csrf:
-                    actual_csrf_hash = hashlib.sha256(cookie_csrf.encode("utf-8")).hexdigest()[:16]
-                    if not hmac.compare_digest(actual_csrf_hash, expected_csrf_hash):
-                        return False
-
-            # 4. Atomic single-use nonce consumption (Replay protection)
+            # 3. Atomic single-use nonce consumption (Replay protection)
             redis = get_redis_client()
             if redis:
                 try:
                     key = f"oauth_state_spent:{nonce}"
                     # SET ... NX returns True only on the first insertion
-                    is_first_use = await redis.set(key, "1", ex=600, nx=True)
+                    is_first_use = await redis.set(key, "1", ex=900, nx=True)
                     if not is_first_use:
                         return False  # Replay attack blocked!
                 except Exception:

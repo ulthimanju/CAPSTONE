@@ -288,12 +288,15 @@ async def proxy_request(service_url: str, request: Request):
         res_headers["Cache-Control"] = "no-cache, no-transform"
         res_headers["X-Accel-Buffering"] = "no"
 
-    return StreamingResponse(
+    response = StreamingResponse(
         res.aiter_raw(),
         status_code=res.status_code,
         headers=res_headers,
         background=None,
     )
+    for cookie in res.headers.get_list("set-cookie"):
+        response.headers.append("set-cookie", cookie)
+    return response
 
 
 # Centralized SSE Event Stream Endpoint
