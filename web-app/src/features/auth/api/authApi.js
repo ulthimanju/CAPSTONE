@@ -38,9 +38,7 @@ export const authApi = {
     try {
       const response = await apiClient.get('/api/v1/profile/google-token');
       const isLinked = Boolean(
-        response.data?.linked ||
-        response.data?.status === 'active' ||
-        response.data?.access_token
+        response.data?.linked === true && response.data?.status === 'active'
       );
       return { isLinked, data: response.data };
     } catch {

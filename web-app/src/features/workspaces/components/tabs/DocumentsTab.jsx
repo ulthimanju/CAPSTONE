@@ -4,6 +4,7 @@ import { FileText, Upload, CircleNotch, WarningCircle } from '@/components/ui/ic
 import { Card, Button, RegenerateIcon } from '@/components/ui';
 import { useWorkspaceDocumentsQuery } from '@/features/documents/hooks/useDocuments';
 import { useMultiFileUpload } from '@/features/documents/hooks/useMultiFileUpload';
+import { useGoogleDriveStatusQuery } from '@/features/auth/hooks/useAuth';
 import { DocumentListTable } from '@/features/documents/components/DocumentListTable';
 import { getErrorMessage } from '@/lib/errorUtils';
 
@@ -19,6 +20,9 @@ export function DocumentsTab({ workspace: propWorkspace }) {
     error,
     refetch,
   } = useWorkspaceDocumentsQuery(workspace?.id);
+
+  const { data: driveStatusData } = useGoogleDriveStatusQuery();
+  const isDriveLinked = Boolean(driveStatusData?.isLinked);
 
   const { uploadFiles, isUploading } = useMultiFileUpload(workspace?.id);
 
@@ -104,14 +108,27 @@ export function DocumentsTab({ workspace: propWorkspace }) {
           <p className="mt-1 max-w-sm font-body text-xs text-text/70 leading-relaxed">
             Upload PDF textbooks, lecture slides (PPTX), Word documents, or spreadsheets to initialize AI MagnifyingGlass and study units.
           </p>
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            isLoading={isUploading}
-            leftIcon={<Upload className="h-4 w-4" />}
-            className="mt-5 text-xs"
-          >
-            {isUploading ? 'Uploading...' : 'Upload First Documents'}
-          </Button>
+          <div className="relative inline-block group" title={!isDriveLinked ? 'Connect Drive to Upload' : undefined}>
+            <Button
+              onClick={() => {
+                if (isDriveLinked) {
+                  fileInputRef.current?.click();
+                }
+              }}
+              disabled={!isDriveLinked || isUploading}
+              isLoading={isUploading}
+              leftIcon={<Upload className="h-4 w-4" />}
+              className="mt-5 text-xs"
+            >
+              {isUploading ? 'Uploading...' : 'Upload First Documents'}
+            </Button>
+            {!isDriveLinked && (
+              <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 whitespace-nowrap rounded-md bg-stone-900 px-2.5 py-1 text-[11px] font-medium text-white shadow-lg z-50 border border-stone-700/50 animate-in fade-in duration-150">
+                <span>Connect Drive to Upload</span>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-stone-900" />
+              </div>
+            )}
+          </div>
         </Card>
       )}
     </div>

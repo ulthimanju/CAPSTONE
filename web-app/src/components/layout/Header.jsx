@@ -17,7 +17,7 @@ import {
   useGenerateUnitContentMutation,
   useLearningPathStore,
 } from '@/features/learning-path/hooks/useLearningPath';
-import { useCurrentUser } from '@/features/auth/hooks/useAuth';
+import { useCurrentUser, useGoogleDriveStatusQuery } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
@@ -27,6 +27,8 @@ export function Header({ title, children, className }) {
   const toggleMobileSidebar = useUIStore((state) => state.toggleMobileSidebar);
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const { user: currentUser } = useCurrentUser();
+  const { data: driveStatusData } = useGoogleDriveStatusQuery();
+  const isDriveLinked = Boolean(driveStatusData?.isLinked);
   const fileInputRef = useRef(null);
 
   const { data: workspace } = useWorkspaceQuery(activeWorkspaceId);
@@ -270,14 +272,28 @@ export function Header({ title, children, className }) {
               onChange={handleFileChange}
             />
 
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              isLoading={isUploading}
-              leftIcon={<Upload className="h-4 w-4" />}
-              className="text-xs py-1.5 px-3"
-            >
-              {isUploading ? 'Uploading...' : 'Upload Documents'}
-            </Button>
+            {/* Upload Documents Button with Drive Connection Guard */}
+            <div className="relative inline-block group" title={!isDriveLinked ? 'Connect Drive to Upload' : undefined}>
+              <Button
+                onClick={() => {
+                  if (isDriveLinked) {
+                    fileInputRef.current?.click();
+                  }
+                }}
+                disabled={!isDriveLinked || isUploading}
+                isLoading={isUploading}
+                leftIcon={<Upload className="h-4 w-4" />}
+                className="text-xs py-1.5 px-3"
+              >
+                {isUploading ? 'Uploading...' : 'Upload Documents'}
+              </Button>
+              {!isDriveLinked && (
+                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 whitespace-nowrap rounded-md bg-stone-900 px-2.5 py-1 text-[11px] font-medium text-white shadow-lg z-50 border border-stone-700/50 animate-in fade-in duration-150">
+                  <span>Connect Drive to Upload</span>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-stone-900" />
+                </div>
+              )}
+            </div>
           </>
         )}
         {children}
