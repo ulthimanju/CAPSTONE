@@ -61,8 +61,8 @@ export function useMultiFileUpload(workspaceId) {
           });
           successCount += 1;
         } catch (err) {
-          const msg = getErrorMessage(err, `Failed to upload ${file.name}`);
-          toast.error(msg);
+          const msg = getErrorMessage(err, `Failed to upload "${file.name}" to Google Drive.`);
+          toast.error(msg, { duration: 6000 });
         }
       }
 
@@ -70,18 +70,23 @@ export function useMultiFileUpload(workspaceId) {
       queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
 
-      if (successCount > 0) {
+      if (successCount === validUploadTasks.length) {
         toast.success(
           successCount === 1
-            ? 'Document uploaded successfully'
-            : `${successCount} documents uploaded successfully`,
+            ? 'Document uploaded to Google Drive successfully'
+            : `${successCount} documents uploaded to Google Drive successfully`,
+          { id: toastId }
+        );
+      } else if (successCount > 0) {
+        toast.warning(
+          `${successCount} of ${validUploadTasks.length} documents uploaded to Google Drive.`,
           { id: toastId }
         );
       } else {
         toast.dismiss(toastId);
       }
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Upload failed. Please try again.'), { id: toastId });
+      toast.error(getErrorMessage(err, 'Upload failed. Please try again.'), { id: toastId, duration: 6000 });
     } finally {
       setIsUploading(false);
     }
