@@ -87,13 +87,16 @@ export function LoginPage() {
 
       {/* Top Header: Brand & Tagline */}
       <header className="relative z-10 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-text">
-            SYNAPSE
-          </h1>
-          <p className="font-mono text-[10px] sm:text-xs tracking-widest text-text/60 uppercase mt-0.5">
-            UNDERSTAND. CONNECT. REMEMBER.
-          </p>
+        <div className="flex items-center gap-3">
+          <img src="/logo.svg" alt="SYNAPSE Logo" className="h-10 w-10 object-contain shrink-0" />
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-text">
+              SYNAPSE
+            </h1>
+            <p className="font-mono text-[10px] sm:text-xs tracking-widest text-text/60 uppercase mt-0.5">
+              UNDERSTAND. CONNECT. REMEMBER.
+            </p>
+          </div>
         </div>
       </header>
 
@@ -181,7 +184,7 @@ export function LoginPage() {
           <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-sep-line bg-surface-raised p-8 sm:p-12 text-center">
             {/* Top Centered Doc Icon */}
             <div className="mb-6 flex justify-center">
-              <SynapseDocBadge className="h-12 w-12 sm:h-14 sm:w-14" />
+              <img src="/logo.svg" alt="SYNAPSE Logo" className="h-16 w-16 object-contain" />
             </div>
 
             {/* Card Heading */}
