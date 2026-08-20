@@ -209,7 +209,7 @@ async def upload_document_raw(
             logger.info(f"Idempotent upload match for '{file.filename}' (checksum: {content_checksum[:8]}...). Returning existing document record {existing.id}.")
             return DocumentResponse.model_validate(existing)
 
-    # Retrieve and verify Google OAuth token from identity-service
+    # Retrieve and verify Google OAuth token from identity-service using explicit user_id
     import httpx
     identity_service_url = os.environ.get("IDENTITY_SERVICE_URL", "http://identity-service:8000")
     access_token = None
@@ -218,7 +218,7 @@ async def upload_document_raw(
     try:
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             token_res = await client.get(
-                f"{identity_service_url}/api/v1/profile/google-token",
+                f"{identity_service_url}/api/v1/users/{user_id}/google-token",
                 headers=req_headers
             )
             if token_res.status_code == 200:
@@ -226,7 +226,7 @@ async def upload_document_raw(
             elif token_res.status_code == 401 or token_res.status_code == 404:
                 # Attempt forced refresh if initial lookup failed
                 refresh_res = await client.get(
-                    f"{identity_service_url}/api/v1/profile/google-token?force_refresh=true",
+                    f"{identity_service_url}/api/v1/users/{user_id}/google-token?force_refresh=true",
                     headers=req_headers
                 )
                 if refresh_res.status_code == 200:
@@ -265,7 +265,7 @@ async def upload_document_raw(
             if drive_res.status_code == 401:
                 logger.info("Google Drive returned 401, requesting forced token refresh from identity-service...")
                 refresh_res = await client.get(
-                    f"{identity_service_url}/api/v1/profile/google-token?force_refresh=true",
+                    f"{identity_service_url}/api/v1/users/{user_id}/google-token?force_refresh=true",
                     headers=req_headers
                 )
                 if refresh_res.status_code == 200:

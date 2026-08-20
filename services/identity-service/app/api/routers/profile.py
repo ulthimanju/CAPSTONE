@@ -40,6 +40,7 @@ async def get_google_token(
     if not identity or (not identity.access_token and not identity.refresh_token):
         return {
             "linked": False,
+            "access_token": None,
             "scopes": [],
             "expires_at": None,
             "status": "unlinked",
@@ -68,6 +69,7 @@ async def get_google_token(
     if not identity.access_token:
         return {
             "linked": False,
+            "access_token": None,
             "scopes": [],
             "expires_at": None,
             "status": "expired",
@@ -75,6 +77,7 @@ async def get_google_token(
 
     return {
         "linked": True,
+        "access_token": identity.access_token,
         "scopes": [
             "openid",
             "email",
