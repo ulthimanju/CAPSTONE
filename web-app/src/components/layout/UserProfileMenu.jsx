@@ -65,15 +65,23 @@ export function UserProfileMenu({ className }) {
         <DropdownMenuSeparator />
 
         {/* Google Drive Status Indicator */}
-        <DropdownMenuLabel className="flex items-center justify-between font-mono text-xs">
+        <div className="flex items-center justify-between px-2 py-1.5 font-mono text-xs">
           <span className="flex items-center gap-1.5 text-text/80">
             <GoogleDriveIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             Google Drive:
           </span>
-          <span className={driveStatus?.isLinked ? 'text-success font-semibold' : 'text-text/60'}>
-            {driveStatus?.isLinked ? 'Linked' : 'Not Linked'}
-          </span>
-        </DropdownMenuLabel>
+          {driveStatus?.isLinked ? (
+            <span className="text-success font-semibold">Linked</span>
+          ) : (
+            <a
+              href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/oauth/google/login`}
+              className="text-accent font-semibold hover:underline text-[11px] bg-sand px-1.5 py-0.5 rounded"
+              title="Click to grant Google Drive permissions"
+            >
+              Connect
+            </a>
+          )}
+        </div>
 
         <DropdownMenuSeparator />
 

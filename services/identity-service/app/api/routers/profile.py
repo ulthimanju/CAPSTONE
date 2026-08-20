@@ -75,15 +75,40 @@ async def get_google_token(
             "status": "expired",
         }
 
+    # Inspect Google tokeninfo to verify active granted scopes
+    granted_scopes = await oauth_client.get_token_scopes(identity.access_token)
+    
+    # If token was rejected/expired on Google side, attempt refresh once
+    if not granted_scopes and identity.refresh_token:
+        try:
+            tokens = await oauth_client.refresh_access_token(identity.refresh_token)
+            new_access_token = tokens.get("access_token")
+            expires_in = tokens.get("expires_in", 3600)
+            if new_access_token:
+                identity.access_token = new_access_token
+                identity.expires_at = now + timedelta(seconds=expires_in)
+                await oauth_repo.update(identity)
+                granted_scopes = await oauth_client.get_token_scopes(identity.access_token)
+        except Exception as e:
+            logger.warning(f"Secondary Google token refresh attempt warning for user {user_id}: {e}")
+
+    # Check for drive scope (e.g. https://www.googleapis.com/auth/drive.file or drive)
+    has_drive_scope = any("drive" in s.lower() for s in granted_scopes)
+
+    if not has_drive_scope:
+        logger.info(f"User {user_id} authenticated with Google but did NOT grant Google Drive permission. Granted scopes: {granted_scopes}")
+        return {
+            "linked": False,
+            "access_token": None,
+            "scopes": granted_scopes,
+            "expires_at": identity.expires_at.isoformat() if identity.expires_at else None,
+            "status": "insufficient_scope",
+        }
+
     return {
         "linked": True,
         "access_token": identity.access_token,
-        "scopes": [
-            "openid",
-            "email",
-            "profile",
-            "https://www.googleapis.com/auth/drive.file",
-        ],
+        "scopes": granted_scopes,
         "expires_at": identity.expires_at.isoformat() if identity.expires_at else None,
         "status": "active",
     }

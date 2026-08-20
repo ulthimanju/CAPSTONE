@@ -256,3 +256,18 @@ class GoogleOAuthClient(OAuthClientInterface):
                 raise GoogleOAuthError(f"OAuth token refresh failed: {error_body}")
 
             return token_resp.json()
+
+    async def get_token_scopes(self, access_token: str) -> list[str]:
+        """
+        Queries Google tokeninfo endpoint to verify active granted scopes.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=get_default_httpx_timeout(connect=5.0, read=10.0, write=5.0, pool=5.0)) as http_client:
+                res = await http_client.get(f"https://oauth2.googleapis.com/tokeninfo?access_token={access_token}")
+                if res.status_code == 200:
+                    data = res.json()
+                    scope_str = data.get("scope", "")
+                    return scope_str.split()
+        except Exception as e:
+            logger.warning(f"Failed to query Google tokeninfo: {e}")
+        return []
