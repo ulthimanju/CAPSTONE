@@ -53,8 +53,24 @@ class RAGCitation(BaseModel):
     similarity_score: float = 0.0
 
 
+class RAGSection(BaseModel):
+    id: str = "sec-1"
+    title: str
+    content: str
+    diagram: str | None = None
+    diagram_type: str = "none"
+    diagram_caption: str | None = None
+    code_snippet: str | None = None
+    code_language: str | None = None
+    code_explanation: str | None = None
+
+
+class RAGStructuredAnswer(BaseModel):
+    sections: list[RAGSection] = []
+
+
 class RAGChatResponse(BaseModel):
     question: str
-    answer: str
+    answer: RAGStructuredAnswer
     citations: list[RAGCitation] = []
 

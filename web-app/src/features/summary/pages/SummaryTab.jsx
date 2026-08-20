@@ -13,7 +13,7 @@ import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
 import { toast } from 'sonner';
 import hljs from 'highlight.js';
 
-function SectionCodeCard({ snippet, language, explanation }) {
+export function SectionCodeCard({ snippet, language, explanation }) {
   const [copied, setCopied] = React.useState(false);
 
   const highlightedHtml = React.useMemo(() => {

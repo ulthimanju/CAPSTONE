@@ -15,7 +15,45 @@ import {
   useSendRAGMessageMutation,
 } from '../hooks/useChat';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
+import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
+import { SectionCodeCard } from '@/features/summary/pages/SummaryTab';
 import { toast } from 'sonner';
+
+function getStructuredSections(content) {
+  if (!content) return null;
+  if (typeof content === 'object' && Array.isArray(content.sections)) {
+    return content.sections;
+  }
+  if (typeof content === 'string') {
+    const trimmed = content.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && Array.isArray(parsed.sections)) {
+          return parsed.sections;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return null;
+}
+
+function getCopyableText(content) {
+  if (typeof content === 'string') return content;
+  if (typeof content === 'object' && Array.isArray(content.sections)) {
+    return content.sections
+      .map((sec) => {
+        const parts = [sec.title ? `## ${sec.title}` : '', sec.content || ''];
+        if (sec.diagram) parts.push(`\`\`\`mermaid\n${sec.diagram}\n\`\`\``);
+        if (sec.code_snippet) parts.push(`\`\`\`${sec.code_language || ''}\n${sec.code_snippet}\n\`\`\``);
+        return parts.filter(Boolean).join('\n\n');
+      })
+      .join('\n\n---\n\n');
+  }
+  return String(content || '');
+}
 
 function formatMessageDate(timestamp) {
   const date = new Date(timestamp);
@@ -125,8 +163,9 @@ export function ChatPage() {
     toast.success('Chat history cleared');
   };
 
-  const handleCopy = (text, idx) => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = (content, idx) => {
+    const textToCopy = getCopyableText(content);
+    navigator.clipboard.writeText(textToCopy);
     setCopiedIndex(idx);
     toast.success('Copied to clipboard');
     setTimeout(() => setCopiedIndex(null), 2000);
@@ -192,9 +231,53 @@ export function ChatPage() {
                 ) : (
                   /* Assistant Bubble (Left - Sand/Parchment) */
                   <div className="relative group max-w-[85%] sm:max-w-[75%] rounded-md bg-sand border border-sep-line p-3.5 text-text shadow-xs">
-                    <div className="text-sm font-sans leading-relaxed text-text">
-                      <MarkdownRenderer content={msg.content} />
-                    </div>
+                    {(() => {
+                      const sections = getStructuredSections(msg.content);
+                      if (sections && sections.length > 0) {
+                        return (
+                          <div className="space-y-4">
+                            {sections.map((section, secIdx) => (
+                              <div key={section.id || secIdx} className="space-y-2.5">
+                                {section.title && (
+                                  <h4 className="font-display text-sm font-bold text-text border-b border-sep-line/60 pb-1 flex items-center gap-2">
+                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface font-mono text-[11px] font-bold text-accent border border-sep-line">
+                                      {secIdx + 1}
+                                    </span>
+                                    <span>{section.title}</span>
+                                  </h4>
+                                )}
+
+                                {section.content && (
+                                  <div className="text-sm font-sans leading-relaxed text-text">
+                                    <MarkdownRenderer content={section.content} />
+                                  </div>
+                                )}
+
+                                {section.diagram && section.diagram_type !== 'none' && (
+                                  <div className="mt-2.5">
+                                    <MermaidDiagram chart={section.diagram} caption={section.diagram_caption} />
+                                  </div>
+                                )}
+
+                                {section.code_snippet && (
+                                  <SectionCodeCard
+                                    snippet={section.code_snippet}
+                                    language={section.code_language}
+                                    explanation={section.code_explanation}
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="text-sm font-sans leading-relaxed text-text">
+                          <MarkdownRenderer content={typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)} />
+                        </div>
+                      );
+                    })()}
 
                     <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-text/60 border-t border-sep-line/60 pt-1.5">
                       <button

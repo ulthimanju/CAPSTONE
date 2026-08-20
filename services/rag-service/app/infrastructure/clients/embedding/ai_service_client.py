@@ -53,16 +53,16 @@ class AIServiceClient:
             return data["vectors"]
 
     async def generate_text(self, prompt: str, system_instruction: Optional[str] = None) -> str:
-        # 1. Primary: High-speed Binary gRPC (fast-fail at 8s so HTTP fallback kicks in quickly)
+        # 1. Primary: High-speed Binary gRPC
         try:
             stub = self._get_grpc_stub()
             req = ai_service_pb2.GenerateTextRequest(
                 prompt=prompt,
                 system_instruction=system_instruction or "",
                 temperature=0.2,
-                max_tokens=2048,
+                max_tokens=4096,
             )
-            resp = await stub.GenerateText(req, timeout=8.0)
+            resp = await stub.GenerateText(req, timeout=30.0)
             if resp and resp.text:
                 return resp.text
         except Exception as e:
@@ -73,7 +73,12 @@ class AIServiceClient:
         async with httpx.AsyncClient(timeout=long_timeout) as client:
             resp = await client.post(
                 f"{self.base_url}/api/v1/ai/generate",
-                json={"prompt": prompt, "system_instruction": system_instruction},
+                json={
+                    "prompt": prompt,
+                    "system_instruction": system_instruction,
+                    "max_output_tokens": 4096,
+                    "response_mime_type": "application/json",
+                },
             )
             resp.raise_for_status()
             data = resp.json()
