@@ -52,9 +52,12 @@ export function Sidebar({ header, footer, children, className }) {
       {/* Sidebar Header / Brand */}
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-sep-line px-4 sm:px-6">
         {header || (
-          <span className="font-display text-lg font-bold tracking-tight text-text">
-            SYNAPSE
-          </span>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.svg" alt="SYNAPSE Logo" className="h-6 w-6 object-contain" />
+            <span className="font-display text-lg font-bold tracking-tight text-text">
+              SYNAPSE
+            </span>
+          </div>
         )}
         <button
           type="button"
