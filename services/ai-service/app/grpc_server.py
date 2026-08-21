@@ -48,6 +48,34 @@ class AIGrpcServicer(ai_service_pb2_grpc.AIServiceServicer):
             logger.exception(f"gRPC GenerateText failed: {e}")
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
 
+    async def GenerateTextStream(
+        self,
+        request: ai_service_pb2.GenerateTextRequest,
+        context: grpc.aio.ServicerContext,
+    ):
+        try:
+            accumulated_chars = 0
+            async for chunk_text in self.provider.stream_text(
+                prompt=request.prompt,
+                system_instruction=request.system_instruction or None,
+                temperature=request.temperature or 0.2,
+                max_output_tokens=request.max_tokens or 4096,
+            ):
+                accumulated_chars += len(chunk_text)
+                yield ai_service_pb2.GenerateTextChunk(
+                    text_chunk=chunk_text,
+                    is_finished=False,
+                    total_tokens=accumulated_chars // 4,
+                )
+            yield ai_service_pb2.GenerateTextChunk(
+                text_chunk="",
+                is_finished=True,
+                total_tokens=accumulated_chars // 4,
+            )
+        except Exception as e:
+            logger.exception(f"gRPC GenerateTextStream failed: {e}")
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+
 
 async def start_ai_grpc_server(port: int = 50051) -> grpc.aio.Server:
     server = grpc.aio.server()

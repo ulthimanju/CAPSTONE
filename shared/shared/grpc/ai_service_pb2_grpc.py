@@ -47,6 +47,11 @@ class AIServiceStub:
                 request_serializer=ai__service__pb2.GenerateTextRequest.SerializeToString,
                 response_deserializer=ai__service__pb2.GenerateTextResponse.FromString,
                 _registered_method=True)
+        self.GenerateTextStream = channel.unary_stream(
+                '/ai.AIService/GenerateTextStream',
+                request_serializer=ai__service__pb2.GenerateTextRequest.SerializeToString,
+                response_deserializer=ai__service__pb2.GenerateTextChunk.FromString,
+                _registered_method=True)
 
 
 class AIServiceServicer:
@@ -64,6 +69,12 @@ class AIServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GenerateTextStream(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AIServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -76,6 +87,11 @@ def add_AIServiceServicer_to_server(servicer, server):
                     servicer.GenerateText,
                     request_deserializer=ai__service__pb2.GenerateTextRequest.FromString,
                     response_serializer=ai__service__pb2.GenerateTextResponse.SerializeToString,
+            ),
+            'GenerateTextStream': grpc.unary_stream_rpc_method_handler(
+                    servicer.GenerateTextStream,
+                    request_deserializer=ai__service__pb2.GenerateTextRequest.FromString,
+                    response_serializer=ai__service__pb2.GenerateTextChunk.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -132,6 +148,33 @@ class AIService:
             '/ai.AIService/GenerateText',
             ai__service__pb2.GenerateTextRequest.SerializeToString,
             ai__service__pb2.GenerateTextResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GenerateTextStream(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/ai.AIService/GenerateTextStream',
+            ai__service__pb2.GenerateTextRequest.SerializeToString,
+            ai__service__pb2.GenerateTextChunk.FromString,
             options,
             channel_credentials,
             insecure,

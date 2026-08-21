@@ -299,3 +299,31 @@ class GeminiClient:
         for chunk in response_stream:
             if chunk.text:
                 yield chunk.text
+
+    async def stream_text(
+        self,
+        prompt: str,
+        system_instruction: str | None = None,
+        model: str | None = None,
+        temperature: float = 0.7,
+        max_output_tokens: int = 4096,
+    ) -> AsyncGenerator[str, None]:
+        target_model = model or settings.gemini_default_model
+        active_key = self.key_pool.get_current_key()
+        client = self._get_client_for_key(active_key)
+
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            system_instruction=system_instruction,
+        )
+
+        response_stream = client.models.generate_content_stream(
+            model=target_model,
+            contents=prompt,
+            config=config,
+        )
+
+        for chunk in response_stream:
+            if chunk.text:
+                yield chunk.text

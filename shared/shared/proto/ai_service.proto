@@ -26,7 +26,14 @@ message GenerateTextResponse {
   int32 total_tokens = 2;
 }
 
+message GenerateTextChunk {
+  string text_chunk = 1;
+  bool is_finished = 2;
+  int32 total_tokens = 3;
+}
+
 service AIService {
   rpc GetEmbeddings(EmbeddingRequest) returns (EmbeddingResponse);
   rpc GenerateText(GenerateTextRequest) returns (GenerateTextResponse);
+  rpc GenerateTextStream(GenerateTextRequest) returns (stream GenerateTextChunk);
 }

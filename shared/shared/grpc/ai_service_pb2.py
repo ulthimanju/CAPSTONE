@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\x02\x61i\"\x1d\n\x0b\x46loatVector\x12\x0e\n\x06values\x18\x01 \x03(\x02\"!\n\x10\x45mbeddingRequest\x12\r\n\x05texts\x18\x01 \x03(\t\"8\n\x11\x45mbeddingResponse\x12#\n\nembeddings\x18\x01 \x03(\x0b\x32\x0f.ai.FloatVector\"j\n\x13GenerateTextRequest\x12\x0e\n\x06prompt\x18\x01 \x01(\t\x12\x1a\n\x12system_instruction\x18\x02 \x01(\t\x12\x13\n\x0btemperature\x18\x03 \x01(\x02\x12\x12\n\nmax_tokens\x18\x04 \x01(\x05\":\n\x14GenerateTextResponse\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x14\n\x0ctotal_tokens\x18\x02 \x01(\x05\x32\x8c\x01\n\tAIService\x12<\n\rGetEmbeddings\x12\x14.ai.EmbeddingRequest\x1a\x15.ai.EmbeddingResponse\x12\x41\n\x0cGenerateText\x12\x17.ai.GenerateTextRequest\x1a\x18.ai.GenerateTextResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\x02\x61i\"\x1d\n\x0b\x46loatVector\x12\x0e\n\x06values\x18\x01 \x03(\x02\"!\n\x10\x45mbeddingRequest\x12\r\n\x05texts\x18\x01 \x03(\t\"8\n\x11\x45mbeddingResponse\x12#\n\nembeddings\x18\x01 \x03(\x0b\x32\x0f.ai.FloatVector\"j\n\x13GenerateTextRequest\x12\x0e\n\x06prompt\x18\x01 \x01(\t\x12\x1a\n\x12system_instruction\x18\x02 \x01(\t\x12\x13\n\x0btemperature\x18\x03 \x01(\x02\x12\x12\n\nmax_tokens\x18\x04 \x01(\x05\":\n\x14GenerateTextResponse\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x14\n\x0ctotal_tokens\x18\x02 \x01(\x05\"R\n\x11GenerateTextChunk\x12\x12\n\ntext_chunk\x18\x01 \x01(\t\x12\x13\n\x0bis_finished\x18\x02 \x01(\x08\x12\x14\n\x0ctotal_tokens\x18\x03 \x01(\x05\x32\xd4\x01\n\tAIService\x12<\n\rGetEmbeddings\x12\x14.ai.EmbeddingRequest\x1a\x15.ai.EmbeddingResponse\x12\x41\n\x0cGenerateText\x12\x17.ai.GenerateTextRequest\x1a\x18.ai.GenerateTextResponse\x12\x46\n\x12GenerateTextStream\x12\x17.ai.GenerateTextRequest\x1a\x15.ai.GenerateTextChunk0\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -41,6 +41,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GENERATETEXTREQUEST']._serialized_end=254
   _globals['_GENERATETEXTRESPONSE']._serialized_start=256
   _globals['_GENERATETEXTRESPONSE']._serialized_end=314
-  _globals['_AISERVICE']._serialized_start=317
-  _globals['_AISERVICE']._serialized_end=457
+  _globals['_GENERATETEXTCHUNK']._serialized_start=316
+  _globals['_GENERATETEXTCHUNK']._serialized_end=398
+  _globals['_AISERVICE']._serialized_start=401
+  _globals['_AISERVICE']._serialized_end=613
 # @@protoc_insertion_point(module_scope)

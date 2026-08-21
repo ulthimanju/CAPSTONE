@@ -51,12 +51,16 @@ async def publish_domain_event(
                 body=message_body,
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
                 content_type="application/json",
-                correlation_id=event.correlation_id,
+                correlation_id=event.job_id or event.correlation_id,
                 message_id=event.event_id,
                 headers={
                     "x-event-type": event.event_type,
                     "x-workspace-id": event.workspace_id or "",
                     "x-user-id": event.user_id or "",
+                    "x-producer": event.producer,
+                    "x-schema-version": event.schema_version,
+                    "x-job-id": event.job_id or "",
+                    "x-correlation-id": event.correlation_id or event.job_id or "",
                 },
             )
             

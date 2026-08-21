@@ -1,6 +1,8 @@
+import json
 import logging
 import uuid
 from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -195,6 +197,47 @@ async def rag_chat(
             status_code=500,
             detail="Unable to process the RAG request.",
         )
+
+
+@router.post("/chat/stream")
+async def rag_chat_stream(
+    req: RAGChatRequest,
+    authorization: str | None = Header(None),
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_db_session),
+):
+    await verify_workspace_access(req.workspace_id, user_id, required_write=False, authorization=authorization)
+
+    vector_repo = VectorRepository(session)
+    orchestrator = RAGChatOrchestrator(vector_repo=vector_repo, ai_client=ai_client)
+
+    async def _event_generator():
+        try:
+            async for sse_event in orchestrator.stream_question(
+                workspace_id=req.workspace_id,
+                question=req.question,
+                top_k=req.top_k,
+            ):
+                event_name = sse_event["event"]
+                event_data = json.dumps(sse_event["data"], default=str)
+                yield f"event: {event_name}\ndata: {event_data}\n\n"
+        except WorkspaceContextGuardrailError as e:
+            err_data = json.dumps({"error": str(e), "code": "GUARDRAIL_VIOLATION"})
+            yield f"event: error\ndata: {err_data}\n\n"
+        except Exception as e:
+            logger.exception("Error in RAG SSE chat stream")
+            err_data = json.dumps({"error": "Failed to stream RAG response.", "detail": str(e)})
+            yield f"event: error\ndata: {err_data}\n\n"
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.delete("/documents/{document_id}")

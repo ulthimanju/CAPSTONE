@@ -230,4 +230,93 @@ class RAGChatOrchestrator:
 
         return structured_answer
 
+    async def stream_question(
+        self,
+        workspace_id: uuid.UUID,
+        question: str,
+        top_k: int = 5,
+    ):
+        """
+        Streams RAG responses: yields citations event, streaming text chunks, and final completed payload.
+        """
+        # Step 1: Retrieval
+        retrieved_chunks = await self.rag_cache.get_retrieved_chunks(workspace_id, question, top_k)
+        if retrieved_chunks is None:
+            query_vectors = await self.ai_client.get_embeddings([question])
+            if not query_vectors:
+                raise RuntimeError("Failed to generate embedding vector for user question.")
+            query_vector = query_vectors[0]
+
+            retrieved_chunks = await self.vector_repo.similarity_search(
+                workspace_id=workspace_id,
+                query_vector=query_vector,
+                top_k=top_k,
+            )
+            await self.rag_cache.set_retrieved_chunks(workspace_id, question, top_k, retrieved_chunks)
+
+        # Step 2: Guardrail check
+        self._validate_workspace_context(
+            question=question,
+            retrieved_chunks=retrieved_chunks,
+        )
+
+        citations = [
+            {
+                "document_id": str(chunk.document_id),
+                "document_name": chunk.document_name,
+                "chunk_index": chunk.chunk_index,
+                "snippet": chunk.chunk_content[:280] + ("..." if len(chunk.chunk_content) > 280 else ""),
+                "similarity_score": round(float(score), 4),
+            }
+            for chunk, score in retrieved_chunks
+            if chunk.chunk_content
+        ]
+
+        yield {"event": "citations", "data": {"citations": citations}}
+
+        # Step 3: Streaming prompt preparation
+        context_str = ContextBuilder.build_rag_prompt_context(
+            retrieved_chunks=retrieved_chunks,
+        )
+
+        rag_sys_instruction = (
+            "You are a workspace-grounded academic assistant and expert tutor. "
+            "Answer questions clearly, thoroughly, and accurately based on the provided workspace context.\n\n"
+            "# Strict Output Format Constraints\n"
+            "1. Output MUST be a single valid JSON object starting with { and ending with }. No preambles, greetings, or explanations outside the JSON.\n"
+            "2. Output Schema:\n"
+            "{\n"
+            '  "sections": [\n'
+            "    {\n"
+            '      "id": "sec-1",\n'
+            '      "title": "string (clear descriptive section title)",\n'
+            '      "content": "string (pure markdown prose with headings, bullet points, comparative tables, and KaTeX math ($ formula $ or $$ formula $$) ONLY - NEVER embed code blocks or Mermaid syntax inside content)",\n'
+            '      "diagram": "string or null (clean Mermaid diagram code e.g. flowchart TD, sequenceDiagram, or classDiagram, or null)",\n'
+            '      "diagram_type": "string (\'flowchart\' | \'sequence\' | \'classDiagram\' | \'none\')",\n'
+            '      "diagram_caption": "string or null (1 sentence explaining the diagram, or null)",\n'
+            '      "code_snippet": "string or null (raw code string without markdown backticks, or null)",\n'
+            '      "code_language": "string or null (e.g. \'python\', \'sql\', \'cpp\', \'javascript\', or null)",\n'
+            '      "code_explanation": "string or null (1-2 sentence explanation of the code, or null)"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        )
+
+        prompt = (
+            f"Context Information:\n{context_str}\n\n"
+            f"User Question: {question}\n\n"
+            "Generate the structured JSON response:"
+        )
+
+        accumulated_text = ""
+        async for chunk in self.ai_client.generate_text_stream(
+            prompt=prompt,
+            system_instruction=rag_sys_instruction,
+        ):
+            accumulated_text += chunk
+            yield {"event": "chunk", "data": {"chunk": chunk}}
+
+        structured_answer = _parse_structured_rag_answer(accumulated_text)
+        yield {"event": "completed", "data": {"answer": structured_answer, "citations": citations}}
+
 

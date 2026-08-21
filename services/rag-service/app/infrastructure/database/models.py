@@ -30,3 +30,24 @@ class ChunkEmbeddingModel(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     status = Column(String(50), nullable=False, default="COMPLETED")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class OutboxEventModel(Base):
+    __tablename__ = "outbox_events"
+    __table_args__ = (
+        Index("idx_outbox_status_created", "status", "created_at"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_id = Column(String(100), nullable=False, unique=True, index=True)
+    event_type = Column(String(100), nullable=False, index=True)
+    job_id = Column(String(100), nullable=True, index=True)
+    workspace_id = Column(String(100), nullable=True, index=True)
+    producer = Column(String(100), nullable=False, default="rag-service")
+    schema_version = Column(Integer, nullable=False, default=1)
+    routing_key = Column(String(255), nullable=False)
+    payload_json = Column(Text, nullable=False)
+    status = Column(String(50), nullable=False, default="PENDING")  # PENDING, PUBLISHED, FAILED
+    retry_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    published_at = Column(DateTime(timezone=True), nullable=True)

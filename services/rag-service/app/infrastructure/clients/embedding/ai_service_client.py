@@ -84,6 +84,27 @@ class AIServiceClient:
             data = resp.json()
             return data["text"]
 
+    async def generate_text_stream(self, prompt: str, system_instruction: Optional[str] = None):
+        """
+        gRPC Server Streaming client yielding text chunks as they are generated.
+        """
+        try:
+            stub = self._get_grpc_stub()
+            req = ai_service_pb2.GenerateTextRequest(
+                prompt=prompt,
+                system_instruction=system_instruction or "",
+                temperature=0.2,
+                max_tokens=4096,
+            )
+            stream = stub.GenerateTextStream(req)
+            async for chunk in stream:
+                if chunk.text_chunk:
+                    yield chunk.text_chunk
+        except Exception as e:
+            logger.warning(f"gRPC GenerateTextStream failed ({e}), falling back to standard text generation")
+            full_text = await self.generate_text(prompt, system_instruction)
+            yield full_text
+
     async def close(self):
         if self._channel is not None:
             await self._channel.close()
