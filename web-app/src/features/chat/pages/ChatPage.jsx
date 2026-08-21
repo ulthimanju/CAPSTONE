@@ -265,22 +265,25 @@ export function ChatPage() {
                             {/* Structured Sections */}
                             {payload.sections && payload.sections.length > 0 && (
                               <div className="space-y-3.5">
-                                {payload.sections.map((section, secIdx) => (
-                                  <div key={section.id || secIdx} className="space-y-2.5 rounded-ui bg-surface/40 border border-sep-line/50 p-3">
-                                    {section.title && (
-                                      <h4 className="font-display text-sm font-bold text-text border-b border-sep-line/60 pb-1.5 flex items-center gap-2">
-                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface font-mono text-[11px] font-bold text-accent border border-sep-line">
-                                          {secIdx + 1}
-                                        </span>
-                                        <span>{section.title}</span>
-                                      </h4>
-                                    )}
+                                {payload.sections.map((section, secIdx) => {
+                                  const hasTitle = Boolean(section.title && section.title.trim() && section.title.toLowerCase() !== 'response');
+                                  const showCardWrapper = hasTitle || payload.sections.length > 1;
+                                  return (
+                                    <div key={section.id || secIdx} className={showCardWrapper ? "space-y-2.5 rounded-ui bg-surface/40 border border-sep-line/50 p-3" : "space-y-2.5"}>
+                                      {hasTitle && (
+                                        <h4 className="font-display text-sm font-bold text-text border-b border-sep-line/60 pb-1.5 flex items-center gap-2">
+                                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface font-mono text-[11px] font-bold text-accent border border-sep-line">
+                                            {secIdx + 1}
+                                          </span>
+                                          <span>{section.title}</span>
+                                        </h4>
+                                      )}
 
-                                    {section.content && (
-                                      <div className="text-sm font-sans leading-relaxed text-text">
-                                        <MarkdownRenderer content={section.content} />
-                                      </div>
-                                    )}
+                                      {section.content && (
+                                        <div className="text-sm font-sans leading-relaxed text-text">
+                                          <MarkdownRenderer content={section.content} />
+                                        </div>
+                                      )}
 
                                     {section.diagram && section.diagram_type !== 'none' && (
                                       <div className="mt-2.5">
@@ -308,8 +311,9 @@ export function ChatPage() {
                                       </div>
                                     )}
                                   </div>
-                                ))}
-                              </div>
+                                );
+                              })}
+                            </div>
                             )}
 
                             {/* Summary-Level Key Takeaways */}

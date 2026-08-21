@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 import re
 import uuid
@@ -14,82 +14,51 @@ logger = logging.getLogger(__name__)
 
 def _parse_structured_rag_answer(raw_text: str, default_code_language: str | None = None) -> dict:
     clean = raw_text.strip()
-    if clean.startswith("```"):
+    if clean.startswith("```json"):
         clean = re.sub(r"^```(?:json)?\s*", "", clean)
         clean = re.sub(r"\s*```$", "", clean)
         clean = clean.strip()
 
     fallback_lang = default_code_language.lower() if default_code_language else None
 
-    # Candidate 1: direct parse
-    # Candidate 2: escape single backslashes for invalid escape chars in LaTeX (e.g. \text -> \\text, \times -> \\times)
-    candidates = [
-        clean,
-        re.sub(r'(?<!\\)\\(?![/u"bfnrt\\])', r'\\\\', clean),
-    ]
+    # If it's a valid JSON structured response
+    if clean.startswith("{") and clean.endswith("}") and '"sections"' in clean:
+        candidates = [
+            clean,
+            re.sub(r'(?<!\\)\\(?![/u"bfnrt\\])', r'\\\\', clean),
+        ]
+        for cand in candidates:
+            try:
+                data = json.loads(cand)
+                if isinstance(data, dict) and "sections" in data and isinstance(data["sections"], list):
+                    normalized_sections = []
+                    for idx, sec in enumerate(data["sections"]):
+                        if isinstance(sec, dict):
+                            code_snip = sec.get("code_snippet") if sec.get("code_snippet") else None
+                            code_lang = sec.get("code_language") if sec.get("code_language") else (fallback_lang if code_snip else None)
+                            normalized_sections.append({
+                                "id": str(sec.get("id") or f"sec-{idx+1}"),
+                                "title": str(sec.get("title") or "").strip(),
+                                "content": str(sec.get("content") or ""),
+                                "diagram": sec.get("diagram") if sec.get("diagram") else None,
+                                "diagram_type": str(sec.get("diagram_type") or "none"),
+                                "diagram_caption": sec.get("diagram_caption") if sec.get("diagram_caption") else None,
+                                "code_snippet": code_snip,
+                                "code_language": str(code_lang) if code_lang else None,
+                                "code_explanation": sec.get("code_explanation") if sec.get("code_explanation") else None,
+                            })
+                    if normalized_sections:
+                        return {"sections": normalized_sections}
+            except Exception:
+                pass
 
-    for cand in candidates:
-        try:
-            data = json.loads(cand)
-            if isinstance(data, dict) and "sections" in data and isinstance(data["sections"], list):
-                normalized_sections = []
-                for idx, sec in enumerate(data["sections"]):
-                    if isinstance(sec, dict):
-                        code_snip = sec.get("code_snippet") if sec.get("code_snippet") else None
-                        code_lang = sec.get("code_language") if sec.get("code_language") else (fallback_lang if code_snip else None)
-                        normalized_sections.append({
-                            "id": str(sec.get("id") or f"sec-{idx+1}"),
-                            "title": str(sec.get("title") or "Key Concept"),
-                            "content": str(sec.get("content") or ""),
-                            "diagram": sec.get("diagram") if sec.get("diagram") else None,
-                            "diagram_type": str(sec.get("diagram_type") or "none"),
-                            "diagram_caption": sec.get("diagram_caption") if sec.get("diagram_caption") else None,
-                            "code_snippet": code_snip,
-                            "code_language": str(code_lang) if code_lang else None,
-                            "code_explanation": sec.get("code_explanation") if sec.get("code_explanation") else None,
-                        })
-                if normalized_sections:
-                    return {"sections": normalized_sections}
-        except Exception:
-            pass
-
-    # Regex extraction fallback for unclosed or damaged JSON strings
-    if '"sections"' in clean:
-        try:
-            content_blocks = re.findall(r'"title":\s*"([^"]*)".*?"content":\s*"([\s\S]*?)"(?:\s*,\s*"diagram"|\s*,\s*"code_snippet"|\s*\})', clean)
-            if content_blocks:
-                extracted = []
-                for idx, (t, c) in enumerate(content_blocks):
-                    clean_c = c.replace('\\n', '\n').replace('\\t', '\t').replace('\\"', '"')
-                    extracted.append({
-                        "id": f"sec-{idx+1}",
-                        "title": t or "Key Concept",
-                        "content": clean_c,
-                        "diagram": None,
-                        "diagram_type": "none",
-                        "diagram_caption": None,
-                        "code_snippet": None,
-                        "code_language": None,
-                        "code_explanation": None,
-                    })
-                if extracted:
-                    return {"sections": extracted}
-        except Exception:
-            pass
-
-    # Fallback to single section wrapping pure content (cleaned if it was a raw json string)
-    fallback_content = raw_text
-    if fallback_content.strip().startswith('{') and '"content":' in fallback_content:
-        match = re.search(r'"content":\s*"([\s\S]*?)"(?:\s*,\s*"diagram"|\s*,\s*"code_snippet"|\s*\})', fallback_content)
-        if match:
-            fallback_content = match.group(1).replace('\\n', '\n').replace('\\t', '\t').replace('\\"', '"')
-
+    # Pure Markdown response delivered dynamically
     return {
         "sections": [
             {
                 "id": "sec-1",
-                "title": "Response",
-                "content": fallback_content,
+                "title": "",
+                "content": raw_text.strip(),
                 "diagram": None,
                 "diagram_type": "none",
                 "diagram_caption": None,
@@ -107,42 +76,22 @@ def build_rag_system_instruction(workspace_code_language: str | None = None) -> 
     lang_directive = ""
     if clean_lang:
         lang_directive = (
-            f"- **Primary Programming Language Enforcement**:\n"
-            f"  All implementation code, algorithmic procedures, data structure definitions, and code snippets in the `code_snippet` field MUST be strictly written in `{clean_lang}` (with `code_language` set to `\"{clean_lang.lower()}\"`), unless the question explicitly asks for a domain-specific language (e.g. SQL for queries). Use idiomatic `{clean_lang}` syntax, conventions, and standard libraries.\n\n"
+            f"- When writing code snippets or implementation logic, strictly use `{clean_lang}` syntax and idioms unless requested otherwise.\n"
         )
 
-    code_lang_desc = (
-        f"string or null (strictly written in \'{clean_lang}\' with code_language set to \'{clean_lang.lower()}\')"
-        if clean_lang
-        else "string or null (specify the appropriate programming language e.g. \'python\', \'java\', \'cpp\', \'c\', \'javascript\', \'sql\', or null)"
-    )
-
     return (
-        "You are a workspace-grounded academic assistant and expert tutor. "
-        "Answer questions clearly, thoroughly, and accurately based on the provided workspace context.\n\n"
+        "You are a precise, workspace-grounded AI academic tutor.\n"
+        "Your objective is to answer the user's question directly, accurately, and dynamically using ONLY the provided workspace context.\n\n"
+        "# Core Directives:\n"
+        "1. **Direct & Focused**: Answer only what the user asked. Do NOT dump tangential textbook chapters or unwanted filler.\n"
+        "2. **Dynamic Format Calibration**:\n"
+        "   - For quick definitions or factual questions: Deliver a concise 1-2 paragraph explanation with core terms and KaTeX formulas ($ formula $ or $$ formula $$) where applicable.\n"
+        "   - For comparisons / trade-offs: Use a compact Markdown comparison table.\n"
+        "   - For code / query questions: Provide clean, idiomatic code inside markdown code fences with a brief explanation.\n"
+        "   - For multi-step workflows: You may include a Mermaid diagram (```mermaid ... ```) if visualizing the process adds clear clarity.\n"
         f"{lang_directive}"
-        "# Strict Output Format Constraints\n"
-        "1. Output MUST be a single valid JSON object starting with { and ending with }. No preambles, greetings, or explanations outside the JSON.\n"
-        "2. Output Schema:\n"
-        "{\n"
-        '  "sections": [\n'
-        "    {\n"
-        '      "id": "sec-1",\n'
-        '      "title": "string (clear descriptive section title)",\n'
-        '      "content": "string (pure markdown prose with headings, bullet points, comparative tables, and KaTeX math ($ formula $ or $$ formula $$) ONLY - NEVER embed code blocks or Mermaid syntax inside content)",\n'
-        '      "diagram": "string or null (clean Mermaid diagram code e.g. flowchart TD, sequenceDiagram, or classDiagram, or null)",\n'
-        '      "diagram_type": "string (\'flowchart\' | \'sequence\' | \'classDiagram\' | \'none\')",\n'
-        '      "diagram_caption": "string or null (1 sentence explaining the diagram, or null)",\n'
-        '      "code_snippet": "string or null (raw code string without markdown backticks, or null)",\n'
-        f'      "code_language": "{code_lang_desc}",\n'
-        '      "code_explanation": "string or null (1-2 sentence explanation of the code, or null)"\n'
-        "    }\n"
-        "  ]\n"
-        "}\n\n"
-        "3. NEVER place code snippets or diagram syntax in the `content` field. "
-        "All implementation or query code MUST reside in `code_snippet`. "
-        "All diagrams MUST reside in `diagram`. "
-        "If a section does not need code or diagrams, set those fields to null and diagram_type to \"none\"."
+        "3. **Truthfulness & Grounding**: Base every explanation directly on the provided context passages. If the context does not contain the answer, politely state that the uploaded documents do not cover it.\n"
+        "4. Respond in clean, natural, formatted Markdown."
     )
 
 
@@ -164,21 +113,36 @@ class ContextBuilder:
     def build_rag_prompt_context(
         retrieved_chunks: Sequence[tuple[ChunkEmbeddingModel, float]],
         max_tokens: int = 4000,
+        relevance_cutoff: float = 0.45,
     ) -> str:
         if not retrieved_chunks:
             return "No relevant context found in the workspace documents."
+
+        # Dynamic Relevance Filtering: Keep only high-confidence chunks
+        max_score = max((score for _, score in retrieved_chunks), default=0.0)
+        dynamic_threshold = max(relevance_cutoff, max_score * 0.70)
+
+        filtered_chunks = [
+            (chunk, score)
+            for chunk, score in retrieved_chunks
+            if score >= dynamic_threshold and chunk.chunk_content and chunk.chunk_content.strip()
+        ]
+
+        if not filtered_chunks:
+            filtered_chunks = list(retrieved_chunks[:2])
 
         context_parts: list[str] = []
         accumulated_chars = 0
         char_limit = max_tokens * 4
 
-        for chunk, _score in retrieved_chunks:
+        for chunk, score in filtered_chunks:
             snippet = chunk.chunk_content.strip()
-
             if not snippet:
                 continue
 
-            entry = f"{snippet}\n"
+            doc_name = getattr(chunk, "document_name", None) or getattr(chunk, "title", "Document")
+            idx = getattr(chunk, "chunk_index", 0)
+            entry = f"### [Source: {doc_name} | Chunk #{idx} (Score: {score:.2f})]\n{snippet}\n"
 
             if accumulated_chars + len(entry) > char_limit:
                 break
@@ -233,7 +197,7 @@ class RAGChatOrchestrator:
         return_sources: bool = False,
         workspace_code_language: str | None = None,
     ) -> str | tuple[str, list[dict]]:
-        # Step 1 & 2: Check RAG Retrieval Cache (bypasses embedding + pgvector on hit)
+        # Step 1 & 2: Check RAG Retrieval Cache
         retrieved_chunks = await self.rag_cache.get_retrieved_chunks(workspace_id, question, top_k)
         if retrieved_chunks is None:
             query_vector = await self.ai_client.get_query_embedding(question, model="voyage-4-lite")
@@ -253,7 +217,7 @@ class RAGChatOrchestrator:
             retrieved_chunks=retrieved_chunks,
         )
 
-        # Step 4: Build workspace context
+        # Step 4: Build dynamic filtered context
         context_str = ContextBuilder.build_rag_prompt_context(
             retrieved_chunks=retrieved_chunks,
         )
@@ -262,9 +226,9 @@ class RAGChatOrchestrator:
         rag_sys_instruction = build_rag_system_instruction(workspace_code_language)
 
         prompt = (
-            f"Context Information:\n{context_str}\n\n"
+            f"--- GROUNDED WORKSPACE CONTEXT ---\n{context_str}\n\n"
             f"User Question: {question}\n\n"
-            "Generate the structured JSON response:"
+            "Provide a focused, document-grounded response:"
         )
 
         # Step 6: Gemini synthesis
@@ -301,7 +265,6 @@ class RAGChatOrchestrator:
         """
         Streams RAG responses: yields citations event, streaming text chunks, and final completed payload.
         """
-        # Step 1: Retrieval
         retrieved_chunks = await self.rag_cache.get_retrieved_chunks(workspace_id, question, top_k)
         if retrieved_chunks is None:
             query_vector = await self.ai_client.get_query_embedding(question, model="voyage-4-lite")
@@ -315,7 +278,6 @@ class RAGChatOrchestrator:
             )
             await self.rag_cache.set_retrieved_chunks(workspace_id, question, top_k, retrieved_chunks)
 
-        # Step 2: Guardrail check
         self._validate_workspace_context(
             question=question,
             retrieved_chunks=retrieved_chunks,
@@ -333,30 +295,28 @@ class RAGChatOrchestrator:
             if chunk.chunk_content
         ]
 
-        yield {"event": "citations", "data": {"citations": citations}}
+        # 1. First event: citations metadata
+        yield f"event: citations\ndata: {json.dumps(citations)}\n\n"
 
-        # Step 3: Streaming prompt preparation
         context_str = ContextBuilder.build_rag_prompt_context(
             retrieved_chunks=retrieved_chunks,
         )
-
         rag_sys_instruction = build_rag_system_instruction(workspace_code_language)
-
         prompt = (
-            f"Context Information:\n{context_str}\n\n"
+            f"--- GROUNDED WORKSPACE CONTEXT ---\n{context_str}\n\n"
             f"User Question: {question}\n\n"
-            "Generate the structured JSON response:"
+            "Provide a focused, document-grounded response:"
         )
 
         accumulated_text = ""
+        # 2. Text tokens streaming
         async for chunk in self.ai_client.generate_text_stream(
             prompt=prompt,
             system_instruction=rag_sys_instruction,
         ):
             accumulated_text += chunk
-            yield {"event": "chunk", "data": {"chunk": chunk}}
+            yield f"data: {chunk}\n\n"
 
-        structured_answer = _parse_structured_rag_answer(accumulated_text, default_code_language=workspace_code_language)
-        yield {"event": "completed", "data": {"answer": structured_answer, "citations": citations}}
-
-
+        # 3. Final event: parsed payload
+        final_payload = _parse_structured_rag_answer(accumulated_text, default_code_language=workspace_code_language)
+        yield f"event: done\ndata: {json.dumps(final_payload)}\n\n"
