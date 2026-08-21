@@ -312,7 +312,8 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
         )
 
         sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction(
-            workspace_code_language=ws_meta.get("workspace_code_language")
+            workspace_code_language=ws_meta.get("workspace_code_language"),
+            domain_type=ws_meta.get("domain_type"),
         )
 
         ws_summary = await ai_generator.generate_structured(
