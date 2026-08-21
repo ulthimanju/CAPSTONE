@@ -50,7 +50,7 @@ export function LearningUnitContentPage() {
       { unit_title: decodedUnitTitle },
       {
         onSuccess: () => {
-          toast.success(`Unit content synthesis started with Gemini 2.5 Flash.`);
+          toast.success(`Unit content synthesis started with Gemini.`);
         },
         onError: (err) => {
           toast.error(err?.message || 'Failed to generate unit content.');
@@ -176,7 +176,7 @@ export function LearningUnitContentPage() {
             </div>
 
             <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/75 leading-relaxed">
-              Gemini 2.5 Flash is extracting relevant document context, drafting conceptual summaries, generating architecture diagrams, flashcards, quiz questions, and curated practice problems.
+              Gemini is extracting relevant document context, drafting conceptual summaries, generating architecture diagrams, flashcards, quiz questions, and curated practice problems.
             </p>
 
             <div className="mt-6 flex items-center gap-2 rounded-ui bg-surface-raised px-3.5 py-1.5 font-mono text-[11px] text-text/70 border border-sep-line">

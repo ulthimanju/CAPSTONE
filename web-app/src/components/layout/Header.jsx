@@ -94,7 +94,7 @@ export function Header({ title, children, className }) {
     if (activeWorkspaceId) {
       generateSummaryMutation.mutate(undefined, {
         onSuccess: () => {
-          toast.success('Workspace summary generation started with Gemini 2.5 Flash.');
+          toast.success('Workspace summary generation started with Gemini.');
         },
       });
     }
@@ -104,7 +104,7 @@ export function Header({ title, children, className }) {
     if (activeWorkspaceId) {
       generateLearningPathMutation.mutate(undefined, {
         onSuccess: () => {
-          toast.success('Learning path generation started with Gemini 2.5 Flash.');
+          toast.success('Learning path generation started with Gemini.');
         },
       });
     }
@@ -116,7 +116,7 @@ export function Header({ title, children, className }) {
         { unit_title: unitTitleParam },
         {
           onSuccess: () => {
-            toast.success('Unit content synthesis started with Gemini 2.5 Flash.');
+            toast.success('Unit content synthesis started with Gemini.');
           },
           onError: (err) => {
             toast.error(err?.message || 'Failed to regenerate unit content.');
@@ -196,8 +196,8 @@ export function Header({ title, children, className }) {
                 className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
                 title={
                   isSummaryGenerated
-                    ? 'Regenerate complete workspace summary with Gemini 2.5 Flash'
-                    : 'Generate complete workspace summary with Gemini 2.5 Flash'
+                    ? 'Regenerate complete workspace summary with Gemini'
+                    : 'Generate complete workspace summary with Gemini'
                 }
               >
                 {generateSummaryMutation.isPending || isGeneratingSummary
@@ -218,8 +218,8 @@ export function Header({ title, children, className }) {
                 className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
                 title={
                   hasLearningPath
-                    ? 'Regenerate complete learning path curriculum with Gemini 2.5 Flash'
-                    : 'Generate complete learning path curriculum with Gemini 2.5 Flash'
+                    ? 'Regenerate complete learning path curriculum with Gemini'
+                    : 'Generate complete learning path curriculum with Gemini'
                 }
               >
                 {generateLearningPathMutation.isPending || isGeneratingPath
@@ -238,7 +238,7 @@ export function Header({ title, children, className }) {
                 isLoading={generateUnitMutation.isPending || isGeneratingUnit}
                 leftIcon={<Sparkle className="h-4 w-4 text-accent" />}
                 className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
-                title="Regenerate this unit's complete study bundle with Gemini 2.5 Flash"
+                title="Regenerate this unit's complete study bundle with Gemini"
               >
                 {generateUnitMutation.isPending || isGeneratingUnit
                   ? 'Synthesizing...'

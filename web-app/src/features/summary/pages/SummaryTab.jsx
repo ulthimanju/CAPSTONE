@@ -83,7 +83,7 @@ export function SummaryTab() {
 
     generateMutation.mutate(undefined, {
       onSuccess: () => {
-        toast.success('Workspace summary generation started with Gemini 2.5 Flash.');
+        toast.success('Workspace summary generation started with Gemini.');
       },
       onError: (err) => {
         toast.error(err?.message || 'Failed to start summary generation.');
@@ -112,7 +112,7 @@ export function SummaryTab() {
 
         <div className="flex items-center gap-2">
           <h3 className="font-display text-lg font-bold text-text">
-            Synthesizing Summary with Gemini 2.5 Flash
+            Synthesizing Summary with Gemini
           </h3>
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
@@ -173,7 +173,7 @@ export function SummaryTab() {
                 Regenerating Workspace Summary...
               </h4>
               <p className="font-body text-xs text-text/70">
-                Gemini 2.5 Flash is re-synthesizing all documents. Updated sections and diagrams will refresh automatically upon completion.
+                Gemini is re-synthesizing all documents. Updated sections and diagrams will refresh automatically upon completion.
               </p>
             </div>
           </div>

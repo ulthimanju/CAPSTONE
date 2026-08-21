@@ -10,7 +10,7 @@ export const learningPathApi = {
   },
 
   /**
-   * Triggers Gemini 2.5 Flash workspace learning path curriculum generation via ai-service.
+   * Triggers Gemini workspace learning path curriculum generation via ai-service.
    */
   generateWorkspaceLearningPath: async (workspaceId) => {
     const response = await apiClient.post(`/api/v1/workspaces/${workspaceId}/learning-path`);
@@ -28,7 +28,7 @@ export const learningPathApi = {
   },
 
   /**
-   * Triggers Gemini 2.5 Flash single-pass unit content generation via ai-service.
+   * Triggers Gemini single-pass unit content generation via ai-service.
    */
   generateLearningUnitContent: async (workspaceId, payload) => {
     const response = await apiClient.post(`/api/v1/ai/workspaces/${workspaceId}/units/generate`, payload);

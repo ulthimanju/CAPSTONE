@@ -10,7 +10,7 @@ export const summaryApi = {
   },
 
   /**
-   * Triggers Gemini 2.5 Flash workspace summary generation via ai-service.
+   * Triggers Gemini workspace summary generation via ai-service.
    */
   generateWorkspaceSummary: async (workspaceId) => {
     const response = await apiClient.post(`/api/v1/ai/workspaces/${workspaceId}/summary`);

@@ -37,7 +37,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
 
     generateMutation.mutate(undefined, {
       onSuccess: () => {
-        toast.success('Learning path synthesis started with Gemini 2.5 Flash.');
+        toast.success('Learning path synthesis started with Gemini.');
       },
       onError: (err) => {
         toast.error(err?.message || 'Failed to start learning path generation.');
@@ -81,7 +81,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
           </div>
 
           <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/75 leading-relaxed">
-            Gemini 2.5 Flash is analyzing your document hierarchy, outline structure, and topic prerequisites. The sequenced milestones will automatically appear below.
+            Gemini is analyzing your document hierarchy, outline structure, and topic prerequisites. The sequenced milestones will automatically appear below.
           </p>
 
           <div className="mt-6 flex items-center gap-2 rounded-ui bg-sand/80 px-3.5 py-1.5 font-mono text-[11px] text-text/70 border border-sep-line">
