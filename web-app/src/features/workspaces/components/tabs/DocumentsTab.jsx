@@ -123,9 +123,9 @@ export function DocumentsTab({ workspace: propWorkspace }) {
               {isUploading ? 'Uploading...' : 'Upload First Documents'}
             </Button>
             {!isDriveLinked && (
-              <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 whitespace-nowrap rounded-md bg-stone-900 px-2.5 py-1 text-[11px] font-medium text-white shadow-lg z-50 border border-stone-700/50 animate-in fade-in duration-150">
+              <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 whitespace-nowrap rounded-ui bg-sand px-2.5 py-1 text-[11px] font-medium text-text shadow-xs z-50 border border-sep-line animate-in fade-in duration-150">
                 <span>Connect Drive to Upload</span>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-stone-900" />
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-sand" />
               </div>
             )}
           </div>

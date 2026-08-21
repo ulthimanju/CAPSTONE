@@ -7,7 +7,7 @@ export function Badge({ children, variant = 'default', className, ...props }) {
     technical: 'bg-sand text-text font-mono border border-sep-line',
     nonTechnical: 'bg-surface-raised text-text/80 border border-sep-line',
     role: 'bg-accent/10 text-accent font-mono border border-accent/25',
-    success: 'bg-[#A3B598]/25 text-[#404E35] border-[#7A8B6F]/30 font-mono font-semibold',
+    success: 'bg-sage-light/25 text-sage-text border-sage/30 font-mono font-semibold',
     warning: 'bg-accent/15 text-accent border-accent/30 font-mono font-semibold',
     danger: 'bg-danger-tint text-danger border-danger/30 font-mono font-semibold',
     outline: 'bg-transparent text-text/80 border border-sep-line font-mono',

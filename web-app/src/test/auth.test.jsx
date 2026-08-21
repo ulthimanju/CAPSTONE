@@ -23,7 +23,7 @@ describe('UI Primitives (Just-In-Time)', () => {
 
     const button = screen.getByRole('button', { name: 'Click Me' });
     expect(button).toBeInTheDocument();
-    expect(button).toHaveClass('bg-accent');
+    expect(button).toHaveClass('bg-gradient-rust');
 
     fireEvent.click(button);
     expect(handleClick).toHaveBeenCalledTimes(1);

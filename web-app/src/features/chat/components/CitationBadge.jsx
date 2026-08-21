@@ -37,7 +37,7 @@ export function CitationBadge({ citation, index }) {
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
           {/* Popover Card */}
-          <div className="absolute left-0 top-full z-50 mt-1.5 w-80 sm:w-96 rounded-ui border border-sep-line bg-surface p-3.5 shadow-lg animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute left-0 top-full z-50 mt-1.5 w-80 sm:w-96 rounded-ui border border-sep-line bg-surface p-3.5 shadow-xs animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-sep-line pb-2 mb-2">
               <div className="flex items-center gap-1.5 text-accent font-display text-xs font-bold truncate">
                 <FileText className="h-3.5 w-3.5 shrink-0" />
@@ -48,7 +48,7 @@ export function CitationBadge({ citation, index }) {
               </Badge>
             </div>
 
-            <div className="text-xs font-sans text-text/80 leading-relaxed max-h-48 overflow-y-auto bg-sand/30 p-2.5 rounded-sm border border-sep-line/40 italic">
+            <div className="text-xs font-sans text-text/80 leading-relaxed max-h-48 overflow-y-auto bg-sand/30 p-2.5 rounded-ui border border-sep-line/40 italic">
               &ldquo;{citation.snippet || 'Referenced document passage.'}&rdquo;
             </div>
 

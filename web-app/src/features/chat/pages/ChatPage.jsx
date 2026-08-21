@@ -166,17 +166,17 @@ export function ChatPage() {
               >
                 {isUser ? (
                   /* User Bubble (Right - Rust Gradient) */
-                  <div className="relative group max-w-[80%] sm:max-w-[70%] rounded-md bg-gradient-to-br from-[#E08850] to-[#C1622D] border border-accent/40 p-3.5 text-white shadow-xs">
-                    <p className="text-sm font-sans leading-relaxed text-white whitespace-pre-wrap">
+                  <div className="relative group max-w-[80%] sm:max-w-[70%] rounded-ui bg-gradient-rust border border-accent/40 p-3.5 text-on-accent shadow-xs">
+                    <p className="text-sm font-sans leading-relaxed text-on-accent whitespace-pre-wrap">
                       {msg.content}
                     </p>
-                    <div className="mt-1 text-right font-mono text-[10px] text-white/80">
+                    <div className="mt-1 text-right font-mono text-[10px] text-on-accent/80">
                       {timeStr}
                     </div>
                   </div>
                 ) : (
                   /* Assistant Bubble (Left - Sand/Parchment) */
-                  <div className="relative group max-w-[85%] sm:max-w-[75%] rounded-md bg-sand border border-sep-line p-3.5 text-text shadow-xs">
+                  <div className="relative group max-w-[85%] sm:max-w-[75%] rounded-ui bg-sand border border-sep-line p-3.5 text-text shadow-xs">
                     {(() => {
                       const sections = getStructuredSections(msg.content);
                       if (sections && sections.length > 0) {
@@ -255,7 +255,7 @@ export function ChatPage() {
 
         {isRAGPending && (
           <div className="flex justify-start">
-            <div className="max-w-[75%] rounded-md bg-sand border border-sep-line p-3.5 shadow-xs flex items-center gap-3">
+            <div className="max-w-[75%] rounded-ui bg-sand border border-sep-line p-3.5 shadow-xs flex items-center gap-3">
               <CircleNotch className="h-4 w-4 animate-spin text-accent" />
               <span className="font-mono text-xs text-text/70">
                 Analyzing documents & synthesizing response...
@@ -283,12 +283,12 @@ export function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             disabled={isRAGPending}
-            className="flex-1 rounded-md border border-sep-line bg-bg px-4 py-2.5 font-sans text-xs sm:text-sm text-text placeholder:text-text/40 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-50 shadow-inner-xs transition-colors"
+            className="flex-1 rounded-ui border border-sep-line bg-bg px-4 py-2.5 font-sans text-xs sm:text-sm text-text placeholder:text-text/40 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-50 shadow-none transition-colors"
           />
           <button
             type="submit"
             disabled={!input.trim() || isRAGPending}
-            className="flex items-center justify-center rounded-md bg-gradient-to-br from-[#E08850] to-[#C1622D] hover:from-[#E89860] hover:to-[#C96C35] px-6 py-2.5 font-sans text-xs sm:text-sm font-medium text-white shadow-theme transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            className="flex items-center justify-center rounded-ui bg-gradient-rust hover:bg-gradient-rust-hover px-6 py-2.5 font-sans text-xs sm:text-sm font-medium text-on-accent transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-none"
           >
             {isRAGPending ? (
               <CircleNotch className="h-4 w-4 animate-spin" />

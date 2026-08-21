@@ -22,13 +22,8 @@ export function UnitProblemsView({ problems = [] }) {
     return 'outline';
   };
 
-  const getPlatformStyle = (platform = '') => {
-    const p = platform.toLowerCase();
-    if (p.includes('leetcode')) return 'bg-[#FFA116]/10 text-[#FFA116] border-[#FFA116]/30';
-    if (p.includes('hackerrank')) return 'bg-[#00EA64]/10 text-[#008539] border-[#00EA64]/30';
-    if (p.includes('geeks')) return 'bg-[#2F8D46]/10 text-[#2F8D46] border-[#2F8D46]/30';
-    if (p.includes('codeforces')) return 'bg-[#1F8ACB]/10 text-[#1F8ACB] border-[#1F8ACB]/30';
-    return 'bg-sand text-text border-sep-line';
+  const getPlatformStyle = () => {
+    return 'bg-sand text-text font-mono border-sep-line';
   };
 
   return (
@@ -113,7 +108,7 @@ export function UnitProblemsView({ problems = [] }) {
                 href={problem.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-ui bg-accent px-3.5 py-1.5 font-sans text-xs font-semibold text-white shadow-xs hover:bg-accent/90 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-ui bg-accent px-3.5 py-1.5 font-sans text-xs font-semibold text-on-accent shadow-xs hover:bg-accent/90 transition-colors"
               >
                 <span>Solve on {problem.platform}</span>
                 <ArrowSquareOut className="h-3.5 w-3.5" />

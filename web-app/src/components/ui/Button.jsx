@@ -3,10 +3,10 @@ import { CircleNotch } from '@/components/ui/icons';
 import { cn } from '@/lib/cn';
 
 const variantStyles = {
-  primary: 'bg-accent bg-gradient-to-br from-[#E08850] to-[#C1622D] text-on-accent hover:from-[#E89860] hover:to-[#C96C35] active:scale-[0.99] focus-visible:ring-accent',
-  secondary: 'bg-gradient-to-br from-[#A3B598] to-[#7A8B6F] text-white hover:from-[#B0C1A6] hover:to-[#87997C] active:scale-[0.99] focus-visible:ring-sage',
+  primary: 'bg-accent bg-gradient-rust text-on-accent hover:bg-gradient-rust-hover active:scale-[0.99] focus-visible:ring-accent',
+  secondary: 'bg-sage bg-gradient-sage text-on-accent hover:bg-gradient-sage-hover active:scale-[0.99] focus-visible:ring-sage',
   outline: 'border border-sep-line bg-surface-raised text-text hover:bg-surface-hover hover:text-text focus-visible:ring-accent',
-  danger: 'border border-danger/40 bg-danger-tint text-danger hover:bg-danger hover:text-white active:bg-danger/90 focus-visible:ring-danger',
+  danger: 'border border-danger/40 bg-danger-tint text-danger hover:bg-danger hover:text-on-accent active:bg-danger/90 focus-visible:ring-danger',
   ghost: 'text-text/70 hover:bg-surface-hover hover:text-text focus-visible:ring-accent',
 };
 

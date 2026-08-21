@@ -101,7 +101,7 @@ export function UnitFlashcardsView({ flashcards = [] }) {
       >
         <Card
           className={cn(
-            'min-h-[320px] p-8 flex flex-col justify-between transition-all duration-300 shadow-md border-sep-line',
+            'min-h-[320px] p-8 flex flex-col justify-between transition-all duration-300 shadow-xs border-sep-line',
             isFlipped
               ? 'bg-sand/60 border-accent/40'
               : 'bg-surface hover:border-accent/50'

@@ -182,11 +182,11 @@ export function UnitQuizView({ workspaceId, unitTitle, quiz = [] }) {
                           className={cn(
                             'flex h-6 w-6 items-center justify-center rounded-full font-mono text-xs font-bold border',
                             isSelected && !isSubmitted
-                              ? 'bg-accent text-white border-accent'
+                              ? 'bg-accent text-on-accent border-accent'
                               : isCorrect
-                              ? 'bg-sage text-white border-sage'
+                              ? 'bg-sage text-on-accent border-sage'
                               : isWrong
-                              ? 'bg-danger text-white border-danger'
+                              ? 'bg-danger text-on-accent border-danger'
                               : 'bg-sand text-text/70 border-sep-line'
                           )}
                         >
