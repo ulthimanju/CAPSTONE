@@ -133,7 +133,7 @@ describe('AI Tutor RAG Chat Component', () => {
     );
 
     // 3. Loading state is visible
-    expect(screen.getByText(/Analyzing documents & synthesizing response.../i)).toBeInTheDocument();
+    expect(screen.getByText(/Synthesizing response/i)).toBeInTheDocument();
 
     // 4. Resolve the RAG response
     resolveRAG({

@@ -340,7 +340,7 @@ export function ChatPage() {
 
                       if (!msg.content || (typeof msg.content === 'string' && !msg.content.trim())) {
                         return (
-                          <div className="flex items-center gap-2 py-1 text-text/70 text-xs font-mono">
+                          <div className="flex items-center gap-2.5 py-1 text-text/70 text-xs font-mono">
                             <CircleNotch className="h-4 w-4 animate-spin text-accent" />
                             <span>Synthesizing response...</span>
                           </div>
@@ -354,43 +354,34 @@ export function ChatPage() {
                       );
                     })()}
 
-                    <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-text/60 border-t border-sep-line/60 pt-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(msg.content, index)}
-                        className="flex items-center gap-1 hover:text-accent transition-colors"
-                        title="Copy answer"
-                      >
-                        {copiedIndex === index ? (
-                          <>
-                            <Check className="h-3 w-3 text-success" />
-                            <span className="text-success">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3" />
-                            <span>Copy</span>
-                          </>
-                        )}
-                      </button>
-                      <span>{timeStr}</span>
-                    </div>
+                    {Boolean(msg.content && (typeof msg.content !== 'string' || msg.content.trim())) && (
+                      <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-text/60 border-t border-sep-line/60 pt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(msg.content, index)}
+                          className="flex items-center gap-1 hover:text-accent transition-colors"
+                          title="Copy answer"
+                        >
+                          {copiedIndex === index ? (
+                            <>
+                              <Check className="h-3 w-3 text-success" />
+                              <span className="text-success">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                        <span>{timeStr}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             );
           })
-        )}
-
-        {isRAGPending && (
-          <div className="flex justify-start">
-            <div className="max-w-[75%] rounded-ui bg-sand border border-sep-line p-3.5 shadow-xs flex items-center gap-3">
-              <CircleNotch className="h-4 w-4 animate-spin text-accent" />
-              <span className="font-mono text-xs text-text/70">
-                Analyzing documents & synthesizing response...
-              </span>
-            </div>
-          </div>
         )}
 
         <div ref={messagesEndRef} />
