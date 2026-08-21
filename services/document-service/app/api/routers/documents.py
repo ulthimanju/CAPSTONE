@@ -258,25 +258,13 @@ async def upload_document_raw(
         f"Content-Type: {file.content_type or 'application/pdf'}\r\n\r\n"
     ).encode("utf-8") + file_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
 
-    async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
-        drive_res = await client.post(
-            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": f"multipart/related; boundary={boundary}"
-            },
-            content=body,
-        )
+    drive_timeout = httpx.Timeout(connect=20.0, read=120.0, write=120.0, pool=10.0)
+    gdrive_file_id = None
+    web_view_link = None
 
-        # If token was rejected by Google (401), trigger forced refresh and retry once
-        if drive_res.status_code == 401:
-            logger.info("Google Drive returned 401, requesting forced token refresh from identity-service...")
-            refresh_res = await client.get(
-                f"{identity_service_url}/api/v1/users/{user_id}/google-token?force_refresh=true",
-                headers=req_headers
-            )
-            if refresh_res.status_code == 200:
-                access_token = refresh_res.json().get("access_token")
+    for attempt in range(1, 3):
+        try:
+            async with httpx.AsyncClient(timeout=drive_timeout) as client:
                 drive_res = await client.post(
                     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
                     headers={
@@ -286,37 +274,68 @@ async def upload_document_raw(
                     content=body,
                 )
 
-        if drive_res.status_code not in (200, 201):
-            await asyncio.to_thread(_remove_file, temp_path)
-            err_msg = f"Failed to upload '{file.filename}' to Google Drive (HTTP {drive_res.status_code})."
-            try:
-                drive_err_json = drive_res.json()
-                if "error" in drive_err_json and "message" in drive_err_json["error"]:
-                    err_msg = f"Google Drive error: {drive_err_json['error']['message']}"
-            except Exception:
-                pass
-            logger.error(f"Google Drive upload failed for user {user_id}: {err_msg}")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=err_msg,
-            )
+                # If token was rejected by Google (401), trigger forced refresh and retry once
+                if drive_res.status_code == 401:
+                    logger.info("Google Drive returned 401, requesting forced token refresh from identity-service...")
+                    refresh_res = await client.get(
+                        f"{identity_service_url}/api/v1/users/{user_id}/google-token?force_refresh=true",
+                        headers=req_headers
+                    )
+                    if refresh_res.status_code == 200:
+                        access_token = refresh_res.json().get("access_token")
+                        drive_res = await client.post(
+                            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
+                            headers={
+                                "Authorization": f"Bearer {access_token}",
+                                "Content-Type": f"multipart/related; boundary={boundary}"
+                            },
+                            content=body,
+                        )
 
-        drive_data = drive_res.json()
-        gdrive_file_id = drive_data.get("id")
-        raw_link = drive_data.get("webViewLink") or f"https://drive.google.com/file/d/{gdrive_file_id}/preview?usp=drivesdk"
-        web_view_link = raw_link.replace("/edit", "/preview").replace("/view", "/preview")
+                if drive_res.status_code in (200, 201):
+                    drive_data = drive_res.json()
+                    gdrive_file_id = drive_data.get("id")
+                    raw_link = drive_data.get("webViewLink") or f"https://drive.google.com/file/d/{gdrive_file_id}/preview?usp=drivesdk"
+                    web_view_link = raw_link.replace("/edit", "/preview").replace("/view", "/preview")
 
-        # Set readOnly content restriction on Google Drive file
-        try:
-            await client.patch(
-                f"https://www.googleapis.com/drive/v3/files/{gdrive_file_id}",
-                headers={"Authorization": f"Bearer {access_token}"},
-                json={"contentRestrictions": [{"readOnly": True, "reason": "Protected view-only document in SYNAPSE"}]},
-            )
-        except Exception as lock_err:
-            logger.info(f"Could not set readOnly restriction on Google Drive: {lock_err}")
+                    # Set readOnly content restriction on Google Drive file
+                    try:
+                        await client.patch(
+                            f"https://www.googleapis.com/drive/v3/files/{gdrive_file_id}",
+                            headers={"Authorization": f"Bearer {access_token}"},
+                            json={"contentRestrictions": [{"readOnly": True, "reason": "Protected view-only document in SYNAPSE"}]},
+                        )
+                    except Exception as lock_err:
+                        logger.info(f"Could not set readOnly restriction on Google Drive: {lock_err}")
 
-        logger.info(f"Successfully uploaded '{file.filename}' to Google Drive! File ID: {gdrive_file_id}, Link: {web_view_link}")
+                    logger.info(f"Successfully uploaded '{file.filename}' to Google Drive! File ID: {gdrive_file_id}, Link: {web_view_link}")
+                    break
+                else:
+                    err_msg = f"Failed to upload '{file.filename}' to Google Drive (HTTP {drive_res.status_code})."
+                    try:
+                        drive_err_json = drive_res.json()
+                        if "error" in drive_err_json and "message" in drive_err_json["error"]:
+                            err_msg = f"Google Drive error: {drive_err_json['error']['message']}"
+                    except Exception:
+                        pass
+                    logger.warning(f"Google Drive upload attempt {attempt} failed for user {user_id}: {err_msg}")
+                    if attempt == 2:
+                        await asyncio.to_thread(_remove_file, temp_path)
+                        raise HTTPException(
+                            status_code=status.HTTP_502_BAD_GATEWAY,
+                            detail=err_msg,
+                        )
+        except HTTPException:
+            raise
+        except Exception as conn_err:
+            logger.warning(f"Google Drive connection attempt {attempt} failed: {conn_err}")
+            if attempt == 2:
+                await asyncio.to_thread(_remove_file, temp_path)
+                raise HTTPException(
+                    status_code=status.HTTP_504_GATEWAY_TIMEOUT if isinstance(conn_err, httpx.TimeoutException) else status.HTTP_502_BAD_GATEWAY,
+                    detail=f"Google Drive connection failed for '{file.filename}': {conn_err}",
+                )
+            await asyncio.sleep(1.0)
 
     if not gdrive_file_id:
         await asyncio.to_thread(_remove_file, temp_path)

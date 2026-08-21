@@ -67,9 +67,30 @@ class LlamaParseClient(ParserClient):
                 if md_content and md_content.strip():
                     return md_content
             except Exception as cloud_err:
-                logger.warning(f"Secondary LlamaCloud API call warning: {cloud_err}")
+        # 3. Fallback: High-speed local PyMuPDF extraction
+        try:
+            loop = asyncio.get_running_loop()
 
-        raise RuntimeError("Llama parser quota exceeded")
+            def _local_fitz_parse():
+                import fitz
+                doc = fitz.open(file_path)
+                pages_text = []
+                for page_num in range(len(doc)):
+                    page = doc[page_num]
+                    text = page.get_text("text")
+                    if text.strip():
+                        pages_text.append(f"## Page {page_num + 1}\n\n{text.strip()}")
+                doc.close()
+                return "\n\n".join(pages_text)
+
+            local_text = await loop.run_in_executor(None, _local_fitz_parse)
+            if local_text and local_text.strip():
+                logger.info(f"Successfully extracted text via local PyMuPDF fallback for {file_path}")
+                return local_text
+        except Exception as fitz_err:
+            logger.warning(f"Local PyMuPDF extraction failed for {file_path}: {fitz_err}")
+
+        raise RuntimeError("Llama parser quota exceeded and local extraction failed")
 
 
 class DocumentToPdfConverter:
