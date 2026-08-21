@@ -42,6 +42,7 @@ class RAGChatRequest(BaseModel):
     workspace_id: uuid.UUID
     question: str = Field(..., min_length=1)
     top_k: int = Field(default=10, ge=1, le=20)
+    workspace_code_language: str | None = None
 
 
 

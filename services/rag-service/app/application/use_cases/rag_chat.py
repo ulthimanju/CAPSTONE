@@ -12,12 +12,14 @@ from app.infrastructure.cache.rag_cache import RAGCacheManager
 logger = logging.getLogger(__name__)
 
 
-def _parse_structured_rag_answer(raw_text: str) -> dict:
+def _parse_structured_rag_answer(raw_text: str, default_code_language: str | None = None) -> dict:
     clean = raw_text.strip()
     if clean.startswith("```"):
         clean = re.sub(r"^```(?:json)?\s*", "", clean)
         clean = re.sub(r"\s*```$", "", clean)
         clean = clean.strip()
+
+    fallback_lang = default_code_language.lower() if default_code_language else None
 
     # Try direct JSON parse
     try:
@@ -26,6 +28,8 @@ def _parse_structured_rag_answer(raw_text: str) -> dict:
             normalized_sections = []
             for idx, sec in enumerate(data["sections"]):
                 if isinstance(sec, dict):
+                    code_snip = sec.get("code_snippet") if sec.get("code_snippet") else None
+                    code_lang = sec.get("code_language") if sec.get("code_language") else (fallback_lang if code_snip else None)
                     normalized_sections.append({
                         "id": str(sec.get("id") or f"sec-{idx+1}"),
                         "title": str(sec.get("title") or "Key Concept"),
@@ -33,8 +37,8 @@ def _parse_structured_rag_answer(raw_text: str) -> dict:
                         "diagram": sec.get("diagram") if sec.get("diagram") else None,
                         "diagram_type": str(sec.get("diagram_type") or "none"),
                         "diagram_caption": sec.get("diagram_caption") if sec.get("diagram_caption") else None,
-                        "code_snippet": sec.get("code_snippet") if sec.get("code_snippet") else None,
-                        "code_language": sec.get("code_language") if sec.get("code_language") else None,
+                        "code_snippet": code_snip,
+                        "code_language": str(code_lang) if code_lang else None,
                         "code_explanation": sec.get("code_explanation") if sec.get("code_explanation") else None,
                     })
             if normalized_sections:
@@ -58,6 +62,51 @@ def _parse_structured_rag_answer(raw_text: str) -> dict:
             }
         ]
     }
+
+
+def build_rag_system_instruction(workspace_code_language: str | None = None) -> str:
+    clean_lang = workspace_code_language.strip() if workspace_code_language and workspace_code_language.strip() else None
+
+    lang_directive = ""
+    if clean_lang:
+        lang_directive = (
+            f"- **Primary Programming Language Enforcement**:\n"
+            f"  All implementation code, algorithmic procedures, data structure definitions, and code snippets in the `code_snippet` field MUST be strictly written in `{clean_lang}` (with `code_language` set to `\"{clean_lang.lower()}\"`), unless the question explicitly asks for a domain-specific language (e.g. SQL for queries). Use idiomatic `{clean_lang}` syntax, conventions, and standard libraries.\n\n"
+        )
+
+    code_lang_desc = (
+        f"string or null (strictly written in \'{clean_lang}\' with code_language set to \'{clean_lang.lower()}\')"
+        if clean_lang
+        else "string or null (specify the appropriate programming language e.g. \'python\', \'java\', \'cpp\', \'c\', \'javascript\', \'sql\', or null)"
+    )
+
+    return (
+        "You are a workspace-grounded academic assistant and expert tutor. "
+        "Answer questions clearly, thoroughly, and accurately based on the provided workspace context.\n\n"
+        f"{lang_directive}"
+        "# Strict Output Format Constraints\n"
+        "1. Output MUST be a single valid JSON object starting with { and ending with }. No preambles, greetings, or explanations outside the JSON.\n"
+        "2. Output Schema:\n"
+        "{\n"
+        '  "sections": [\n'
+        "    {\n"
+        '      "id": "sec-1",\n'
+        '      "title": "string (clear descriptive section title)",\n'
+        '      "content": "string (pure markdown prose with headings, bullet points, comparative tables, and KaTeX math ($ formula $ or $$ formula $$) ONLY - NEVER embed code blocks or Mermaid syntax inside content)",\n'
+        '      "diagram": "string or null (clean Mermaid diagram code e.g. flowchart TD, sequenceDiagram, or classDiagram, or null)",\n'
+        '      "diagram_type": "string (\'flowchart\' | \'sequence\' | \'classDiagram\' | \'none\')",\n'
+        '      "diagram_caption": "string or null (1 sentence explaining the diagram, or null)",\n'
+        '      "code_snippet": "string or null (raw code string without markdown backticks, or null)",\n'
+        f'      "code_language": "{code_lang_desc}",\n'
+        '      "code_explanation": "string or null (1-2 sentence explanation of the code, or null)"\n'
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "3. NEVER place code snippets or diagram syntax in the `content` field. "
+        "All implementation or query code MUST reside in `code_snippet`. "
+        "All diagrams MUST reside in `diagram`. "
+        "If a section does not need code or diagrams, set those fields to null and diagram_type to \"none\"."
+    )
 
 
 class WorkspaceContextGuardrailError(Exception):
@@ -145,6 +194,7 @@ class RAGChatOrchestrator:
         question: str,
         top_k: int = 5,
         return_sources: bool = False,
+        workspace_code_language: str | None = None,
     ) -> str | tuple[str, list[dict]]:
         # Step 1 & 2: Check RAG Retrieval Cache (bypasses embedding + pgvector on hit)
         retrieved_chunks = await self.rag_cache.get_retrieved_chunks(workspace_id, question, top_k)
@@ -172,33 +222,8 @@ class RAGChatOrchestrator:
             retrieved_chunks=retrieved_chunks,
         )
 
-        # Step 5: Workspace-grounded educational instruction
-        rag_sys_instruction = (
-            "You are a workspace-grounded academic assistant and expert tutor. "
-            "Answer questions clearly, thoroughly, and accurately based on the provided workspace context.\n\n"
-            "# Strict Output Format Constraints\n"
-            "1. Output MUST be a single valid JSON object starting with { and ending with }. No preambles, greetings, or explanations outside the JSON.\n"
-            "2. Output Schema:\n"
-            "{\n"
-            '  "sections": [\n'
-            "    {\n"
-            '      "id": "sec-1",\n'
-            '      "title": "string (clear descriptive section title)",\n'
-            '      "content": "string (pure markdown prose with headings, bullet points, comparative tables, and KaTeX math ($ formula $ or $$ formula $$) ONLY - NEVER embed code blocks or Mermaid syntax inside content)",\n'
-            '      "diagram": "string or null (clean Mermaid diagram code e.g. flowchart TD, sequenceDiagram, or classDiagram, or null)",\n'
-            '      "diagram_type": "string (\'flowchart\' | \'sequence\' | \'classDiagram\' | \'none\')",\n'
-            '      "diagram_caption": "string or null (1 sentence explaining the diagram, or null)",\n'
-            '      "code_snippet": "string or null (raw code string without markdown backticks, or null)",\n'
-            '      "code_language": "string or null (e.g. \'python\', \'sql\', \'cpp\', \'javascript\', or null)",\n'
-            '      "code_explanation": "string or null (1-2 sentence explanation of the code, or null)"\n'
-            "    }\n"
-            "  ]\n"
-            "}\n\n"
-            "3. NEVER place code snippets or diagram syntax in the `content` field. "
-            "All implementation or query code MUST reside in `code_snippet`. "
-            "All diagrams MUST reside in `diagram`. "
-            "If a section does not need code or diagrams, set those fields to null and diagram_type to \"none\"."
-        )
+        # Step 5: Dynamic Workspace-grounded educational instruction
+        rag_sys_instruction = build_rag_system_instruction(workspace_code_language)
 
         prompt = (
             f"Context Information:\n{context_str}\n\n"
@@ -212,7 +237,7 @@ class RAGChatOrchestrator:
             system_instruction=rag_sys_instruction,
         )
 
-        structured_answer = _parse_structured_rag_answer(raw_answer)
+        structured_answer = _parse_structured_rag_answer(raw_answer, default_code_language=workspace_code_language)
 
         if return_sources:
             citations = [
@@ -235,6 +260,7 @@ class RAGChatOrchestrator:
         workspace_id: uuid.UUID,
         question: str,
         top_k: int = 5,
+        workspace_code_language: str | None = None,
     ):
         """
         Streams RAG responses: yields citations event, streaming text chunks, and final completed payload.
@@ -279,28 +305,7 @@ class RAGChatOrchestrator:
             retrieved_chunks=retrieved_chunks,
         )
 
-        rag_sys_instruction = (
-            "You are a workspace-grounded academic assistant and expert tutor. "
-            "Answer questions clearly, thoroughly, and accurately based on the provided workspace context.\n\n"
-            "# Strict Output Format Constraints\n"
-            "1. Output MUST be a single valid JSON object starting with { and ending with }. No preambles, greetings, or explanations outside the JSON.\n"
-            "2. Output Schema:\n"
-            "{\n"
-            '  "sections": [\n'
-            "    {\n"
-            '      "id": "sec-1",\n'
-            '      "title": "string (clear descriptive section title)",\n'
-            '      "content": "string (pure markdown prose with headings, bullet points, comparative tables, and KaTeX math ($ formula $ or $$ formula $$) ONLY - NEVER embed code blocks or Mermaid syntax inside content)",\n'
-            '      "diagram": "string or null (clean Mermaid diagram code e.g. flowchart TD, sequenceDiagram, or classDiagram, or null)",\n'
-            '      "diagram_type": "string (\'flowchart\' | \'sequence\' | \'classDiagram\' | \'none\')",\n'
-            '      "diagram_caption": "string or null (1 sentence explaining the diagram, or null)",\n'
-            '      "code_snippet": "string or null (raw code string without markdown backticks, or null)",\n'
-            '      "code_language": "string or null (e.g. \'python\', \'sql\', \'cpp\', \'javascript\', or null)",\n'
-            '      "code_explanation": "string or null (1-2 sentence explanation of the code, or null)"\n'
-            "    }\n"
-            "  ]\n"
-            "}\n"
-        )
+        rag_sys_instruction = build_rag_system_instruction(workspace_code_language)
 
         prompt = (
             f"Context Information:\n{context_str}\n\n"
@@ -316,7 +321,7 @@ class RAGChatOrchestrator:
             accumulated_text += chunk
             yield {"event": "chunk", "data": {"chunk": chunk}}
 
-        structured_answer = _parse_structured_rag_answer(accumulated_text)
+        structured_answer = _parse_structured_rag_answer(accumulated_text, default_code_language=workspace_code_language)
         yield {"event": "completed", "data": {"answer": structured_answer, "citations": citations}}
 
 

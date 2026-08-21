@@ -11,6 +11,7 @@ import {
   useSendRAGMessageMutation,
   useIsRAGPending,
 } from '../hooks/useChat';
+import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
 import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
 import { SectionCodeCard } from '@/features/summary/pages/SummaryTab';
@@ -77,6 +78,7 @@ export function ChatPage() {
   const messagesEndRef = useRef(null);
 
   const { data: chatData, isLoading: isChatLoading } = useWorkspaceChatQuery(workspaceId);
+  const { data: workspace } = useWorkspaceQuery(workspaceId);
   const sendMutation = useSendRAGMessageMutation(workspaceId);
   const isRAGPending = useIsRAGPending(workspaceId) || sendMutation.isPending;
 
@@ -93,7 +95,11 @@ export function ChatPage() {
     if (!question || isRAGPending) return;
 
     setInput('');
-    sendMutation.mutate({ question, topK: 5 });
+    sendMutation.mutate({
+      question,
+      topK: 5,
+      workspaceCodeLanguage: workspace?.workspace_code_language || null,
+    });
   };
 
   const handleKeyDown = (e) => {

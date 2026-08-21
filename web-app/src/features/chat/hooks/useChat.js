@@ -78,7 +78,7 @@ export function useSendRAGMessageMutation(workspaceId) {
 
   return useMutation({
     mutationKey: ['workspace-rag-chat', workspaceId],
-    mutationFn: async ({ question, topK = 5 }) => {
+    mutationFn: async ({ question, topK = 5, workspaceCodeLanguage = null }) => {
       const userMessage = {
         id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
         role: 'user',
@@ -102,7 +102,7 @@ export function useSendRAGMessageMutation(workspaceId) {
         console.warn('Failed to persist user message immediately:', err);
       }
 
-      const data = await sendRAGChatMessage(workspaceId, question, topK);
+      const data = await sendRAGChatMessage(workspaceId, question, topK, workspaceCodeLanguage);
       return { data, userMessage };
     },
     onSuccess: ({ data }) => {

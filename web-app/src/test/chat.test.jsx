@@ -14,6 +14,10 @@ vi.mock('@/features/chat/api/chatApi', () => ({
   sendRAGChatMessage: vi.fn(),
 }));
 
+vi.mock('@/features/workspaces/hooks/useWorkspaces', () => ({
+  useWorkspaceQuery: vi.fn(() => ({ data: { id: 'ws-1', workspace_code_language: 'Java' } })),
+}));
+
 function renderWithClient(ui, initialEntries = ['/workspaces/ws-1/chat']) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -88,7 +92,7 @@ describe('AI Tutor RAG Chat Component', () => {
     await user.click(sendBtn);
 
     await waitFor(() => {
-      expect(chatApi.sendRAGChatMessage).toHaveBeenCalledWith('ws-1', 'Explain paging', 5);
+      expect(chatApi.sendRAGChatMessage).toHaveBeenCalledWith('ws-1', 'Explain paging', 5, 'Java');
     });
 
     expect(await screen.findByText(/Paging is a memory management scheme/i)).toBeInTheDocument();
