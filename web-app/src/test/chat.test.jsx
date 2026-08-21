@@ -94,6 +94,72 @@ describe('AI Tutor RAG Chat Component', () => {
     expect(await screen.findByText(/Paging is a memory management scheme/i)).toBeInTheDocument();
   });
 
+  it('immediately displays the submitted query and persists it while assistant response is in-flight', async () => {
+    const user = userEvent.setup();
+    let resolveRAG;
+    const ragPromise = new Promise((resolve) => {
+      resolveRAG = resolve;
+    });
+
+    chatApi.fetchWorkspaceChat.mockResolvedValue({ messages: [] });
+    chatApi.sendRAGChatMessage.mockReturnValue(ragPromise);
+    chatApi.saveWorkspaceChat.mockResolvedValue({ status: 'ok' });
+
+    renderWithClient(<ChatPage />);
+
+    const inputElem = await screen.findByPlaceholderText(/Type a message/i);
+    await user.type(inputElem, 'What is virtual memory?');
+
+    const sendBtn = screen.getByRole('button', { name: /Send/i });
+    await user.click(sendBtn);
+
+    // 1. User message is immediately visible in UI
+    expect(screen.getByText('What is virtual memory?')).toBeInTheDocument();
+
+    // 2. Immediate persistence call was dispatched with the user message
+    expect(chatApi.saveWorkspaceChat).toHaveBeenCalledWith(
+      'ws-1',
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: 'user',
+          content: 'What is virtual memory?',
+        }),
+      ])
+    );
+
+    // 3. Loading state is visible
+    expect(screen.getByText(/Analyzing documents & synthesizing response.../i)).toBeInTheDocument();
+
+    // 4. Resolve the RAG response
+    resolveRAG({
+      question: 'What is virtual memory?',
+      answer: 'Virtual memory is a memory management capability of an OS.',
+    });
+
+    expect(await screen.findByText(/Virtual memory is a memory management capability/i)).toBeInTheDocument();
+    expect(screen.getByText('What is virtual memory?')).toBeInTheDocument();
+  });
+
+  it('handles RAG errors gracefully by keeping user query and showing error message', async () => {
+    const user = userEvent.setup();
+    chatApi.fetchWorkspaceChat.mockResolvedValue({ messages: [] });
+    chatApi.sendRAGChatMessage.mockRejectedValue(new Error('Vector index unavailable'));
+    chatApi.saveWorkspaceChat.mockResolvedValue({ status: 'ok' });
+
+    renderWithClient(<ChatPage />);
+
+    const inputElem = await screen.findByPlaceholderText(/Type a message/i);
+    await user.type(inputElem, 'What is deadlock?');
+
+    const sendBtn = screen.getByRole('button', { name: /Send/i });
+    await user.click(sendBtn);
+
+    expect(screen.getByText('What is deadlock?')).toBeInTheDocument();
+
+    expect(await screen.findByText('Vector index unavailable')).toBeInTheDocument();
+    expect(screen.getByText('What is deadlock?')).toBeInTheDocument();
+  });
+
   it('renders currency dollar amounts cleanly without KaTeX math corruption', () => {
     const input = "If a product's price increases from **$50** to **$60**:\n\n$$\\text{Difference} = 60 - 50 = 10$$";
     const processed = preprocessMarkdownForMath(input);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, CaretDown, ArrowSquareOut } from '@/components/ui/icons';
+import { FileText, CaretDown } from '@/components/ui/icons';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/cn';
 
@@ -49,7 +49,7 @@ export function CitationBadge({ citation, index }) {
             </div>
 
             <div className="text-xs font-sans text-text/80 leading-relaxed max-h-48 overflow-y-auto bg-sand/30 p-2.5 rounded-sm border border-sep-line/40 italic">
-              "{citation.snippet || 'Referenced document passage.'}"
+              &ldquo;{citation.snippet || 'Referenced document passage.'}&rdquo;
             </div>
 
             <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-text/50 pt-1">

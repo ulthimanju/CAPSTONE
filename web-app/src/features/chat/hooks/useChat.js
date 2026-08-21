@@ -14,6 +14,7 @@ export function useWorkspaceChatQuery(workspaceId) {
     queryFn: () => fetchWorkspaceChat(workspaceId),
     enabled: Boolean(workspaceId),
     staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -29,14 +30,25 @@ export function useSaveWorkspaceChatMutation(workspaceId) {
 
   return useMutation({
     mutationFn: (messages) => saveWorkspaceChat(workspaceId, messages),
+    onMutate: async (messages) => {
+      await queryClient.cancelQueries({ queryKey: chatKeys.workspace(workspaceId) });
+      const previousChat = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+        messages: Array.isArray(messages) ? messages : [],
+      });
+      return { previousChat };
+    },
+    onError: (err, _messages, context) => {
+      console.error('Failed to save chat history:', err);
+      if (context?.previousChat) {
+        queryClient.setQueryData(chatKeys.workspace(workspaceId), context.previousChat);
+      }
+    },
     onSuccess: (_, messages) => {
       // Instant zero-read cache synchronization
       queryClient.setQueryData(chatKeys.workspace(workspaceId), {
         messages: Array.isArray(messages) ? messages : [],
       });
-    },
-    onError: (err) => {
-      console.error('Failed to save chat history:', err);
     },
   });
 }
@@ -45,12 +57,12 @@ export function useSaveWorkspaceChatMutation(workspaceId) {
  * Hook to send user questions to the AI Tutor RAG endpoint.
  * 
  * Note on Cache Architecture:
- * This is a stateless LLM inference call. Responses are streamed/received
- * directly in the active ChatPage component state, which subsequently triggers
- * useSaveWorkspaceChatMutation to persist the updated thread.
+ * This is a stateless LLM inference call. Responses are received
+ * and saved directly into the persistent workspace chat thread.
  */
 export function useSendRAGMessageMutation(workspaceId) {
   return useMutation({
+    mutationKey: ['workspace-rag-chat', workspaceId],
     mutationFn: ({ question, topK = 5 }) => sendRAGChatMessage(workspaceId, question, topK),
     onError: (err) => {
       const errorMsg =

@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Send,
   Sparkle,
-  ArrowCounterClockwise,
   CircleNotch,
   Copy,
   Check,
 } from '@/components/ui/icons';
-import { Button } from '@/components/ui/Button';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useWorkspaceChatQuery,
   useSaveWorkspaceChatMutation,
   useSendRAGMessageMutation,
+  chatKeys,
 } from '../hooks/useChat';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
 import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
@@ -75,8 +74,8 @@ function formatMessageTime(timestamp) {
 
 export function ChatPage() {
   const { workspaceId } = useParams();
+  const queryClient = useQueryClient();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const messagesEndRef = useRef(null);
 
@@ -84,11 +83,7 @@ export function ChatPage() {
   const saveChatMutation = useSaveWorkspaceChatMutation(workspaceId);
   const sendMutation = useSendRAGMessageMutation(workspaceId);
 
-  useEffect(() => {
-    if (chatData?.messages) {
-      setMessages(chatData.messages);
-    }
-  }, [chatData]);
+  const messages = useMemo(() => (Array.isArray(chatData?.messages) ? chatData.messages : []), [chatData?.messages]);
 
   useEffect(() => {
     if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
@@ -107,9 +102,18 @@ export function ChatPage() {
       timestamp: new Date().toISOString(),
     };
 
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const currentCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+    const prevMessages = Array.isArray(currentCached?.messages) ? currentCached.messages : messages;
+    const newMessages = [...prevMessages, userMessage];
+
+    // Optimistically update the query cache immediately so query is never lost across tab switches
+    queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+      messages: newMessages,
+    });
     setInput('');
+
+    // Persist user message to the backend immediately
+    saveChatMutation.mutate(newMessages);
 
     sendMutation.mutate(
       { question, topK: 5 },
@@ -122,8 +126,12 @@ export function ChatPage() {
             citations: data.citations || [],
             timestamp: new Date().toISOString(),
           };
-          const updated = [...newMessages, assistantMessage];
-          setMessages(updated);
+          const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+          const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : newMessages;
+          const updated = [...baseMessages, assistantMessage];
+          queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+            messages: updated,
+          });
           saveChatMutation.mutate(updated);
         },
         onError: (err) => {
@@ -140,8 +148,12 @@ export function ChatPage() {
             isError: true,
             timestamp: new Date().toISOString(),
           };
-          const updated = [...newMessages, assistantErrorMessage];
-          setMessages(updated);
+          const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+          const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : newMessages;
+          const updated = [...baseMessages, assistantErrorMessage];
+          queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+            messages: updated,
+          });
           saveChatMutation.mutate(updated);
           toast.error(errMsg);
         },
@@ -154,13 +166,6 @@ export function ChatPage() {
       e.preventDefault();
       handleSend();
     }
-  };
-
-  const handleClearHistory = () => {
-    if (messages.length === 0) return;
-    setMessages([]);
-    saveChatMutation.mutate([]);
-    toast.success('Chat history cleared');
   };
 
   const handleCopy = (content, idx) => {
