@@ -12,6 +12,7 @@ vi.mock('@/features/chat/api/chatApi', () => ({
   fetchWorkspaceChat: vi.fn(),
   saveWorkspaceChat: vi.fn(),
   sendRAGChatMessage: vi.fn(),
+  sendRAGChatMessageStream: vi.fn(),
 }));
 
 vi.mock('@/features/workspaces/hooks/useWorkspaces', () => ({

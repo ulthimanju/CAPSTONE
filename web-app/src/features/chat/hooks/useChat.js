@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { fetchWorkspaceChat, saveWorkspaceChat, sendRAGChatMessage } from '../api/chatApi';
+import { fetchWorkspaceChat, saveWorkspaceChat, sendRAGChatMessage, sendRAGChatMessageStream } from '../api/chatApi';
 import { chatKeys } from './chatKeys';
 
 export { chatKeys };
@@ -65,13 +65,7 @@ export function useIsRAGPending(workspaceId) {
 }
 
 /**
- * Hook to send user questions to the AI Tutor RAG endpoint.
- * 
- * Resilient Cache & Persistence Architecture:
- * - Immediately adds user message to TanStack Query cache.
- * - Immediately persists user message to backend DB.
- * - Upon resolution, appends assistant answer and persists, even if the user
- *   navigated to another workspace tab while waiting for generation.
+ * Hook to send user questions to the AI Tutor RAG endpoint with real-time SSE streaming.
  */
 export function useSendRAGMessageMutation(workspaceId) {
   const queryClient = useQueryClient();
@@ -86,13 +80,23 @@ export function useSendRAGMessageMutation(workspaceId) {
         timestamp: new Date().toISOString(),
       };
 
+      const assistantMsgId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1);
+      const assistantPlaceholder = {
+        id: assistantMsgId,
+        role: 'assistant',
+        content: '',
+        citations: [],
+        timestamp: new Date().toISOString(),
+        isStreaming: true,
+      };
+
       const cached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
       const prevMessages = Array.isArray(cached?.messages) ? cached.messages : [];
       const updatedWithUser = [...prevMessages, userMessage];
 
-      // Optimistically update query cache immediately
+      // Optimistically update query cache immediately with user message and streaming placeholder
       queryClient.setQueryData(chatKeys.workspace(workspaceId), {
-        messages: updatedWithUser,
+        messages: [...updatedWithUser, assistantPlaceholder],
       });
 
       // Persist user message to the backend immediately
@@ -102,12 +106,55 @@ export function useSendRAGMessageMutation(workspaceId) {
         console.warn('Failed to persist user message immediately:', err);
       }
 
-      const data = await sendRAGChatMessage(workspaceId, question, topK, workspaceCodeLanguage, domainType);
-      return { data, userMessage };
+      let receivedCitations = [];
+      let data = null;
+
+      try {
+        if (typeof sendRAGChatMessageStream === 'function') {
+          const streamResult = await sendRAGChatMessageStream({
+            workspaceId,
+            question,
+            topK,
+            workspaceCodeLanguage,
+            domainType,
+            onCitations: (cites) => {
+              receivedCitations = cites;
+            },
+            onChunk: (_chunk, accumulated) => {
+              queryClient.setQueryData(chatKeys.workspace(workspaceId), (old) => {
+                const msgs = Array.isArray(old?.messages) ? [...old.messages] : [];
+                const targetIdx = msgs.findIndex((m) => m.id === assistantMsgId);
+                if (targetIdx !== -1) {
+                  msgs[targetIdx] = {
+                    ...msgs[targetIdx],
+                    content: accumulated,
+                    citations: receivedCitations,
+                  };
+                }
+                return { messages: msgs };
+              });
+            },
+          });
+          if (streamResult && (streamResult.answer || streamResult.data)) {
+            data = streamResult.data || streamResult;
+          }
+        }
+      } catch (streamErr) {
+        console.warn('Streaming failed, attempting fallback to standard generation:', streamErr);
+      }
+
+      if (!data) {
+        const fallbackData = domainType
+          ? await sendRAGChatMessage(workspaceId, question, topK, workspaceCodeLanguage, domainType)
+          : await sendRAGChatMessage(workspaceId, question, topK, workspaceCodeLanguage);
+        data = fallbackData;
+      }
+
+      return { data, userMessage, assistantMsgId };
     },
-    onSuccess: ({ data }) => {
+    onSuccess: ({ data, assistantMsgId }) => {
       const assistantMessage = {
-        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1),
+        id: assistantMsgId || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1)),
         role: 'assistant',
         content: data.answer,
         citations: data.citations || [],
@@ -116,7 +163,8 @@ export function useSendRAGMessageMutation(workspaceId) {
 
       const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
       const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : [];
-      const updated = [...baseMessages, assistantMessage];
+      const filtered = baseMessages.filter((m) => m.id !== assistantMsgId && !m.isStreaming);
+      const updated = [...filtered, assistantMessage];
 
       queryClient.setQueryData(chatKeys.workspace(workspaceId), {
         messages: updated,
@@ -143,7 +191,8 @@ export function useSendRAGMessageMutation(workspaceId) {
 
       const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
       const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : [];
-      const updated = [...baseMessages, assistantErrorMessage];
+      const filtered = baseMessages.filter((m) => !m.isStreaming);
+      const updated = [...filtered, assistantErrorMessage];
 
       queryClient.setQueryData(chatKeys.workspace(workspaceId), {
         messages: updated,

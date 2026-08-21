@@ -154,7 +154,15 @@ class GeminiClient:
         start_time = time.time()
         last_err = None
 
-        candidate_models = [target_model, "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+        candidate_models = [
+            target_model,
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-2.5-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash",
+            "gemini-3.6-flash",
+        ]
         fallback_models = []
         for m in candidate_models:
             if m and m not in fallback_models:
@@ -222,7 +230,7 @@ class GeminiClient:
                         logger.warning("Gemini generation attempt failed for model %s: %s", curr_model, e)
                         continue
 
-        raise RuntimeError(f"AI generation Failed across all {total_keys} keys and candidate models: {last_err}")
+        raise RuntimeError(f"All Gemini requests failed across {total_keys} keys and models {fallback_models}: {last_err}")
 
     async def embed_texts(
         self,
@@ -233,6 +241,52 @@ class GeminiClient:
     ) -> list[list[float]]:
         raw_model = model or settings.gemini_embedding_model
         target_model = raw_model.replace("models/", "")
+        total_keys = self.key_pool.total_keys()
+        last_err = None
+
+        for key_attempt in range(total_keys):
+            active_key = self.key_pool.get_current_key()
+            client = self._get_client_for_key(active_key)
+
+            try:
+                loop = asyncio.get_event_loop()
+
+                def _call(c=client):
+                    res = c.models.embed_content(
+                        model=target_model,
+                        contents=texts if len(texts) > 1 else texts[0],
+                    )
+                    if hasattr(res, "embeddings") and res.embeddings:
+                        return [e.values for e in res.embeddings]
+                    elif hasattr(res, "embedding") and res.embedding:
+                        return [res.embedding.values]
+                    return []
+
+                return await asyncio.wait_for(
+                    loop.run_in_executor(None, _call),
+                    timeout=timeout_seconds,
+                )
+            except Exception as e:
+                last_err = e
+                err_str = str(e).lower()
+                is_rate_limit = any(p in err_str for p in ["429", "resource_exhausted", "quota", "too many requests"])
+                if is_rate_limit:
+                    self.key_pool.rotate_key(f"Embedding rate limit ({e})")
+                else:
+                    logger.warning("Gemini embedding attempt failed: %s", e)
+
+        raise RuntimeError(f"Gemini embedding failed across all {total_keys} keys: {last_err}")
+
+    async def generate_embedding(
+        self,
+        texts: list[str],
+        model: str | None = None,
+        timeout_seconds: float = 30.0,
+    ) -> list[list[float]]:
+        if not texts:
+            return []
+
+        target_model = model or settings.gemini_embedding_model
         total_keys = self.key_pool.total_keys()
         last_err = None
 
@@ -306,11 +360,22 @@ class GeminiClient:
         system_instruction: str | None = None,
         model: str | None = None,
         temperature: float = 0.7,
-        max_output_tokens: int = 4096,
+        max_output_tokens: int = 2048,
     ) -> AsyncGenerator[str, None]:
         target_model = model or settings.gemini_default_model
-        active_key = self.key_pool.get_current_key()
-        client = self._get_client_for_key(active_key)
+        candidate_models = [
+            target_model,
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-2.5-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash",
+            "gemini-3.6-flash",
+        ]
+        fallback_models = []
+        for m in candidate_models:
+            if m and m not in fallback_models:
+                fallback_models.append(m)
 
         config = types.GenerateContentConfig(
             temperature=temperature,
@@ -318,12 +383,31 @@ class GeminiClient:
             system_instruction=system_instruction,
         )
 
-        response_stream = client.models.generate_content_stream(
-            model=target_model,
-            contents=prompt,
-            config=config,
-        )
+        total_keys = self.key_pool.total_keys()
+        for key_attempt in range(total_keys):
+            active_key = self.key_pool.get_current_key()
+            client = self._get_client_for_key(active_key)
 
-        for chunk in response_stream:
-            if chunk.text:
-                yield chunk.text
+            for curr_model in fallback_models:
+                try:
+                    response_stream = client.models.generate_content_stream(
+                        model=curr_model,
+                        contents=prompt,
+                        config=config,
+                    )
+                    streamed_any = False
+                    for chunk in response_stream:
+                        if chunk.text:
+                            streamed_any = True
+                            yield chunk.text
+                    if streamed_any:
+                        return
+                except Exception as e:
+                    err_str = str(e).lower()
+                    is_rate_limit = any(p in err_str for p in ["429", "resource_exhausted", "quota", "too many requests"])
+                    if is_rate_limit:
+                        self.key_pool.rotate_key(f"Stream rate limit on {curr_model} ({e})")
+                        break
+                    else:
+                        logger.warning("Stream failed on model %s: %s", curr_model, e)
+                        continue

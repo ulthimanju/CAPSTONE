@@ -44,3 +44,104 @@ export async function sendRAGChatMessage(workspaceId, question, topK = 5, worksp
   );
   return res.data;
 }
+
+/**
+ * Streams tokens from the RAG chat SSE endpoint in real time.
+ */
+export async function sendRAGChatMessageStream({
+  workspaceId,
+  question,
+  topK = 5,
+  workspaceCodeLanguage = null,
+  domainType = null,
+  onCitations,
+  onChunk,
+}) {
+  const payload = {
+    workspace_id: workspaceId,
+    question,
+    top_k: topK,
+  };
+  if (workspaceCodeLanguage) {
+    payload.workspace_code_language = workspaceCodeLanguage;
+  }
+  if (domainType) {
+    payload.domain_type = domainType;
+  }
+
+  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch('/api/v1/rag/chat/stream', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let errDetail = 'Failed to stream response from AI Tutor.';
+    try {
+      const errJson = await response.json();
+      errDetail = errJson.detail || errJson.error || errDetail;
+    } catch {}
+    throw new Error(errDetail);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let fullText = '';
+  let citations = [];
+  let finalPayload = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n\n');
+    buffer = lines.pop() || '';
+
+    for (const block of lines) {
+      if (!block.trim()) continue;
+      const eventMatch = /^event:\s*(\w+)/m.exec(block);
+      const dataMatch = /^data:\s*([\s\S]+)$/m.exec(block);
+
+      const eventType = eventMatch ? eventMatch[1] : 'message';
+      const rawData = dataMatch ? dataMatch[1] : '';
+
+      if (eventType === 'citations') {
+        try {
+          citations = JSON.parse(rawData);
+          if (onCitations) onCitations(citations);
+        } catch {}
+      } else if (eventType === 'done') {
+        try {
+          finalPayload = JSON.parse(rawData);
+        } catch {
+          finalPayload = { sections: [{ id: 'sec-1', title: '', content: fullText }] };
+        }
+      } else if (eventType === 'error') {
+        try {
+          const errObj = JSON.parse(rawData);
+          throw new Error(errObj.error || errObj.detail || 'Streaming error');
+        } catch (e) {
+          throw new Error(rawData || e.message);
+        }
+      } else {
+        fullText += rawData;
+        if (onChunk) onChunk(rawData, fullText);
+      }
+    }
+  }
+
+  return {
+    answer: finalPayload || { sections: [{ id: 'sec-1', title: '', content: fullText }] },
+    citations,
+  };
+}

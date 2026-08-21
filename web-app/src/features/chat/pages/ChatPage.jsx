@@ -338,6 +338,15 @@ export function ChatPage() {
                         );
                       }
 
+                      if (!msg.content || (typeof msg.content === 'string' && !msg.content.trim())) {
+                        return (
+                          <div className="flex items-center gap-2 py-1 text-text/70 text-xs font-mono">
+                            <CircleNotch className="h-4 w-4 animate-spin text-accent" />
+                            <span>Synthesizing response...</span>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div className="text-sm font-sans leading-relaxed text-text">
                           <MarkdownRenderer content={typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)} />
