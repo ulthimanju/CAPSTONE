@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { List, Upload, Sparkle, ArrowCounterClockwise, UserPlus, ArrowLeft } from '@/components/ui/icons';
+import { List, Upload, Sparkle, Trash, ArrowLeft } from '@/components/ui/icons';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
@@ -254,7 +254,7 @@ export function Header({ title, children, className }) {
                 variant="outline"
                 onClick={handleClearChat}
                 isLoading={saveChatMutation.isPending}
-                leftIcon={<ArrowCounterClockwise className="h-4 w-4 text-text/70" />}
+                leftIcon={<Trash className="h-4 w-4 text-text/70" />}
                 className="text-xs py-1.5 px-3 border-sep-line hover:border-danger/40 hover:text-danger"
                 title="Clear workspace Clarify Doubts chat history"
               >
