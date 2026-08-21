@@ -5,7 +5,10 @@ import {
   CircleNotch,
   Copy,
   Check,
+  Lightbulb,
+  CheckCircle,
 } from '@/components/ui/icons';
+import { BookLinearIcon } from '@/components/ui';
 import {
   useWorkspaceChatQuery,
   useSendRAGMessageMutation,
@@ -17,18 +20,18 @@ import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
 import { SectionCodeCard } from '@/features/summary/pages/SummaryTab';
 import { toast } from 'sonner';
 
-function getStructuredSections(content) {
+function getStructuredPayload(content) {
   if (!content) return null;
-  if (typeof content === 'object' && Array.isArray(content.sections)) {
-    return content.sections;
+  if (typeof content === 'object' && (Array.isArray(content.sections) || content.overview || Array.isArray(content.key_takeaways))) {
+    return content;
   }
   if (typeof content === 'string') {
     const trimmed = content.trim();
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       try {
         const parsed = JSON.parse(trimmed);
-        if (parsed && Array.isArray(parsed.sections)) {
-          return parsed.sections;
+        if (parsed && (Array.isArray(parsed.sections) || parsed.overview || Array.isArray(parsed.key_takeaways))) {
+          return parsed;
         }
       } catch {
         // ignore
@@ -40,15 +43,22 @@ function getStructuredSections(content) {
 
 function getCopyableText(content) {
   if (typeof content === 'string') return content;
-  if (typeof content === 'object' && Array.isArray(content.sections)) {
-    return content.sections
-      .map((sec) => {
-        const parts = [sec.title ? `## ${sec.title}` : '', sec.content || ''];
+  if (typeof content === 'object') {
+    const parts = [];
+    if (content.overview) parts.push(content.overview);
+    if (Array.isArray(content.sections)) {
+      content.sections.forEach((sec) => {
+        if (sec.title) parts.push(`## ${sec.title}`);
+        if (sec.content) parts.push(sec.content);
         if (sec.diagram) parts.push(`\`\`\`mermaid\n${sec.diagram}\n\`\`\``);
         if (sec.code_snippet) parts.push(`\`\`\`${sec.code_language || ''}\n${sec.code_snippet}\n\`\`\``);
-        return parts.filter(Boolean).join('\n\n');
-      })
-      .join('\n\n---\n\n');
+        if (sec.key_takeaways) parts.push(`> **Key Takeaway:** ${sec.key_takeaways}`);
+      });
+    }
+    if (Array.isArray(content.key_takeaways)) {
+      parts.push('### Key Takeaways:\n' + content.key_takeaways.map((t) => `- ${t}`).join('\n'));
+    }
+    return parts.filter(Boolean).join('\n\n');
   }
   return String(content || '');
 }
@@ -178,42 +188,90 @@ export function ChatPage() {
                   /* Assistant Bubble (Left - Sand/Parchment) */
                   <div className="relative group max-w-[85%] sm:max-w-[75%] rounded-ui bg-sand border border-sep-line p-3.5 text-text shadow-xs">
                     {(() => {
-                      const sections = getStructuredSections(msg.content);
-                      if (sections && sections.length > 0) {
+                      const payload = getStructuredPayload(msg.content);
+                      if (payload && (payload.overview || (payload.sections && payload.sections.length > 0) || (payload.key_takeaways && payload.key_takeaways.length > 0))) {
                         return (
                           <div className="space-y-4">
-                            {sections.map((section, secIdx) => (
-                              <div key={section.id || secIdx} className="space-y-2.5">
-                                {section.title && (
-                                  <h4 className="font-display text-sm font-bold text-text border-b border-sep-line/60 pb-1 flex items-center gap-2">
-                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface font-mono text-[11px] font-bold text-accent border border-sep-line">
-                                      {secIdx + 1}
-                                    </span>
-                                    <span>{section.title}</span>
-                                  </h4>
-                                )}
-
-                                {section.content && (
-                                  <div className="text-sm font-sans leading-relaxed text-text">
-                                    <MarkdownRenderer content={section.content} />
-                                  </div>
-                                )}
-
-                                {section.diagram && section.diagram_type !== 'none' && (
-                                  <div className="mt-2.5">
-                                    <MermaidDiagram chart={section.diagram} caption={section.diagram_caption} />
-                                  </div>
-                                )}
-
-                                {section.code_snippet && (
-                                  <SectionCodeCard
-                                    snippet={section.code_snippet}
-                                    language={section.code_language}
-                                    explanation={section.code_explanation}
-                                  />
-                                )}
+                            {/* Executive Overview / Synthesis if present */}
+                            {payload.overview && (
+                              <div className="rounded-ui bg-surface/70 border border-sep-line/70 p-3.5 shadow-2xs">
+                                <div className="flex items-center gap-1.5 text-accent mb-2 pb-1.5 border-b border-sep-line/60 font-display text-xs font-bold">
+                                  <BookLinearIcon className="h-4 w-4" />
+                                  <span>Overview</span>
+                                </div>
+                                <div className="text-sm font-sans leading-relaxed text-text/90">
+                                  <MarkdownRenderer content={payload.overview} />
+                                </div>
                               </div>
-                            ))}
+                            )}
+
+                            {/* Structured Sections */}
+                            {payload.sections && payload.sections.length > 0 && (
+                              <div className="space-y-3.5">
+                                {payload.sections.map((section, secIdx) => (
+                                  <div key={section.id || secIdx} className="space-y-2.5 rounded-ui bg-surface/40 border border-sep-line/50 p-3">
+                                    {section.title && (
+                                      <h4 className="font-display text-sm font-bold text-text border-b border-sep-line/60 pb-1.5 flex items-center gap-2">
+                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface font-mono text-[11px] font-bold text-accent border border-sep-line">
+                                          {secIdx + 1}
+                                        </span>
+                                        <span>{section.title}</span>
+                                      </h4>
+                                    )}
+
+                                    {section.content && (
+                                      <div className="text-sm font-sans leading-relaxed text-text">
+                                        <MarkdownRenderer content={section.content} />
+                                      </div>
+                                    )}
+
+                                    {section.diagram && section.diagram_type !== 'none' && (
+                                      <div className="mt-2.5">
+                                        <MermaidDiagram chart={section.diagram} caption={section.diagram_caption} />
+                                      </div>
+                                    )}
+
+                                    {section.code_snippet && (
+                                      <SectionCodeCard
+                                        snippet={section.code_snippet}
+                                        language={section.code_language}
+                                        explanation={section.code_explanation}
+                                      />
+                                    )}
+
+                                    {section.key_takeaways && (
+                                      <div className="mt-2.5 rounded-ui bg-sand/80 border border-sep-line p-2.5 flex items-start gap-2">
+                                        <Lightbulb className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                                        <div className="min-w-0 flex-1">
+                                          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-accent mb-0.5">
+                                            Key Takeaway
+                                          </p>
+                                          <MarkdownRenderer content={section.key_takeaways} className="text-xs text-text/80 font-sans" />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Summary-Level Key Takeaways */}
+                            {payload.key_takeaways && payload.key_takeaways.length > 0 && (
+                              <div className="rounded-ui bg-surface border border-success/30 p-3 shadow-2xs">
+                                <div className="flex items-center gap-1.5 text-success mb-2 font-display text-xs font-bold">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>Key Mastery Takeaways</span>
+                                </div>
+                                <ul className="space-y-1.5 text-xs text-text/85">
+                                  {payload.key_takeaways.map((item, i) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-success shrink-0 mt-1.5" />
+                                      <span className="leading-relaxed">{item}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         );
                       }

@@ -10,6 +10,7 @@ import rehypeSlug from 'rehype-slug';
 import rehypeHighlight from 'rehype-highlight';
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github.css';
+import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
 
 // Extend the default sanitize schema so KaTeX output (spans/math classes),
 // highlight.js classes, and a few common safe HTML elements survive sanitization.
@@ -54,6 +55,16 @@ function CodeBlock({ node, inline, className = '', children, ...props }) {
   const [copied, setCopied] = React.useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const codeText = String(children).replace(/\n$/, '');
+
+  // Render Mermaid diagrams directly inside markdown text using existing MermaidDiagram component
+  if (match && match[1]?.toLowerCase() === 'mermaid') {
+    return (
+      <div className="my-3">
+        <MermaidDiagram chart={codeText} />
+      </div>
+    );
+  }
+
   const isMultiLine = typeof children === 'string' && children.includes('\n');
   const isBlock = Boolean(match || isMultiLine);
 
