@@ -32,65 +32,88 @@ class LlamaParseClient(ParserClient):
         return file_extension.upper() in ["PDF", "DOCX", "PPTX", "TXT", "MD", "PNG", "JPG", "JPEG", "XLSX", "CSV", "WPS", "KEY"]
 
     async def parse(self, file_path: str) -> str:
-        if self.api_key:
-            # 1. Primary: Official llama_parse SDK
+        if not self.api_key:
+            raise RuntimeError("Cloud parser error: LLAMA_CLOUD_API_KEY is not configured.")
+
+        last_error = None
+        loop = asyncio.get_running_loop()
+
+        # 1. Primary Attempt: Official llama_parse SDK with retries
+        for attempt in range(1, 4):
             try:
                 from llama_parse import LlamaParse
-                parser = LlamaParse(api_key=self.api_key, result_type="markdown")
-                loop = asyncio.get_running_loop()
+                parser = LlamaParse(
+                    api_key=self.api_key,
+                    result_type="markdown",
+                    num_workers=2,
+                    check_interval=1,
+                    max_timeout=300,
+                    verbose=False,
+                )
                 documents = await loop.run_in_executor(None, parser.load_data, file_path)
                 if documents:
                     md_text = "\n\n".join(doc.text for doc in documents if doc.text)
                     if md_text and md_text.strip():
                         return md_text
             except Exception as llama_err:
-                logger.info(f"Primary llama_parse SDK call failed, trying llama_cloud fallback: {llama_err}")
+                last_error = llama_err
+                logger.warning(
+                    f"Cloud llama_parse attempt {attempt}/3 failed for {os.path.basename(file_path)}: {llama_err}"
+                )
+                if attempt < 3:
+                    await asyncio.sleep(2.0 * attempt)
 
-            # 2. Secondary: llama_cloud SDK API fallback
-            try:
-                from llama_cloud import LlamaCloud
-                client = LlamaCloud(api_key=self.api_key)
-
-                loop = asyncio.get_running_loop()
-
-                def _llama_cloud_parse():
-                    file_obj = client.files.create(file=file_path, purpose="parse")
-                    parse_res = client.parsing.parse(
-                        file_id=file_obj.id,
-                        tier="agentic",
-                        version="latest",
-                        expand=["markdown_full"],
-                    )
-                    return parse_res.markdown_full or parse_res.text_full or ""
-
-                md_content = await loop.run_in_executor(None, _llama_cloud_parse)
-                if md_content and md_content.strip():
-                    return md_content
-            except Exception as cloud_err:
-        # 3. Fallback: High-speed local PyMuPDF extraction
+        # 2. Secondary Attempt: llama_cloud SDK parsing API
         try:
-            loop = asyncio.get_running_loop()
+            from llama_cloud import LlamaCloud
+            client = LlamaCloud(api_key=self.api_key)
 
-            def _local_fitz_parse():
-                import fitz
-                doc = fitz.open(file_path)
-                pages_text = []
-                for page_num in range(len(doc)):
-                    page = doc[page_num]
-                    text = page.get_text("text")
-                    if text.strip():
-                        pages_text.append(f"## Page {page_num + 1}\n\n{text.strip()}")
-                doc.close()
-                return "\n\n".join(pages_text)
+            def _llama_cloud_parse():
+                file_obj = client.files.create(file=file_path, purpose="parse")
+                parse_res = client.parsing.parse(
+                    file_id=file_obj.id,
+                    tier="agentic",
+                    version="latest",
+                    expand=["markdown_full"],
+                )
+                return parse_res.markdown_full or parse_res.text_full or ""
 
-            local_text = await loop.run_in_executor(None, _local_fitz_parse)
-            if local_text and local_text.strip():
-                logger.info(f"Successfully extracted text via local PyMuPDF fallback for {file_path}")
-                return local_text
-        except Exception as fitz_err:
-            logger.warning(f"Local PyMuPDF extraction failed for {file_path}: {fitz_err}")
+            md_content = await loop.run_in_executor(None, _llama_cloud_parse)
+            if md_content and md_content.strip():
+                return md_content
+        except Exception as cloud_err:
+            last_error = cloud_err
+            logger.warning(f"Cloud LlamaCloud API fallback failed: {cloud_err}")
 
-        raise RuntimeError("Llama parser quota exceeded and local extraction failed")
+        # 3. Tertiary Attempt: Direct async HTTP REST parsing
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=120.0, write=120.0, pool=10.0)) as http_client:
+                with open(file_path, "rb") as f:
+                    file_bytes = f.read()
+                upload_res = await http_client.post(
+                    "https://api.cloud.llamaindex.ai/api/v1/parsing/upload",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    files={"file": (os.path.basename(file_path), file_bytes, "application/octet-stream")},
+                )
+                if upload_res.status_code == 200:
+                    job_id = upload_res.json().get("id")
+                    if job_id:
+                        for _ in range(60):
+                            await asyncio.sleep(2.0)
+                            status_res = await http_client.get(
+                                f"https://api.cloud.llamaindex.ai/api/v1/parsing/job/{job_id}/result/markdown",
+                                headers={"Authorization": f"Bearer {self.api_key}"},
+                            )
+                            if status_res.status_code == 200:
+                                res_json = status_res.json()
+                                md = res_json.get("markdown", "")
+                                if md and md.strip():
+                                    return md
+        except Exception as rest_err:
+            last_error = rest_err
+            logger.warning(f"Direct cloud REST parsing fallback failed: {rest_err}")
+
+        raise RuntimeError(f"Cloud parser failed across all attempts: {last_error}")
 
 
 class DocumentToPdfConverter:

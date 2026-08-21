@@ -136,10 +136,9 @@ services:
       context: .
       dockerfile: services/identity-service/Dockerfile
     container_name: synapse_identity_service
-    extra_hosts:
-      - "oauth2.googleapis.com:192.178.211.95"
-      - "openidconnect.googleapis.com:172.217.118.4"
-      - "accounts.google.com:192.178.211.84"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/identity-service/.env
@@ -186,12 +185,9 @@ services:
       context: .
       dockerfile: services/document-service/Dockerfile
     container_name: synapse_document_service
-    extra_hosts:
-      - "www.googleapis.com:172.217.118.4"
-      - "oauth2.googleapis.com:192.178.211.95"
-      - "openidconnect.googleapis.com:172.217.118.4"
-      - "accounts.google.com:192.178.211.84"
-      - "api.cloud.llamaindex.ai:54.87.249.245"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/document-service/.env
@@ -242,9 +238,9 @@ services:
       context: .
       dockerfile: services/ai-service/Dockerfile
     container_name: synapse_ai_service
-    extra_hosts:
-      - "generativelanguage.googleapis.com:172.217.114.4"
-      - "oauth2.googleapis.com:192.178.211.95"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/ai-service/.env
