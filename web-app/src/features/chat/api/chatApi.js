@@ -1,4 +1,7 @@
 import api from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
+
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 /**
  * Fetch persistent chat history for a workspace.
@@ -69,7 +72,7 @@ export async function sendRAGChatMessageStream({
     payload.domain_type = domainType;
   }
 
-  const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+  const token = useAuthStore.getState().token || localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
   const headers = {
     'Content-Type': 'application/json',
   };
@@ -77,9 +80,11 @@ export async function sendRAGChatMessageStream({
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch('/api/v1/rag/chat/stream', {
+  const url = `${baseURL}/api/v1/rag/chat/stream`;
+  const response = await fetch(url, {
     method: 'POST',
     headers,
+    credentials: 'include',
     body: JSON.stringify(payload),
   });
 
