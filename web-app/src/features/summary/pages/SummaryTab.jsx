@@ -186,32 +186,9 @@ export function SummaryTab() {
       {/* Overview Card */}
       {summary.overview && (
         <Card className="border-accent/20 bg-surface p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4 mb-3 border-b border-sep-line pb-3">
-            <div className="flex items-center gap-2 text-accent">
-              <BookLinearIcon className="h-5 w-5" />
-              <h2 className="font-display text-base font-bold text-text">Executive Synthesis</h2>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerate}
-                disabled={isGenerating || generateMutation.isPending}
-                leftIcon={
-                  isGenerating ? (
-                    <CircleNotch className="h-3.5 w-3.5 animate-spin text-accent" />
-                  ) : (
-                    <RegenerateIcon className="h-3.5 w-3.5" />
-                  )
-                }
-                className="font-mono text-xs"
-              >
-                {isGenerating ? 'Synthesizing...' : 'Regenerate'}
-              </Button>
-              <Badge variant="outline" className="font-mono text-[11px] text-accent border-accent/30 bg-accent/5">
-                Gemini 2.5 Flash
-              </Badge>
-            </div>
+          <div className="flex items-center gap-2 text-accent mb-3 border-b border-sep-line pb-3">
+            <BookLinearIcon className="h-5 w-5" />
+            <h2 className="font-display text-base font-bold text-text">Executive Synthesis</h2>
           </div>
           <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans">
             <MarkdownRenderer content={summary.overview} />
