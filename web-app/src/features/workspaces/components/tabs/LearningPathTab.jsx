@@ -7,7 +7,7 @@ import {
   CircleNotch,
   CaretRight,
 } from '@/components/ui/icons';
-import { Card, Button, RegenerateIcon, FlashcardsIcon } from '@/components/ui';
+import { Card, Button, RegenerateIcon } from '@/components/ui';
 import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
@@ -112,24 +112,6 @@ export function LearningPathTab({ workspace: propWorkspace }) {
       ) : (
         /* Generated Learning Path Display */
         <div className="space-y-6">
-          {/* Curriculum Overview Banner */}
-          <div className="rounded-ui border border-sep-line bg-surface-raised p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
-            <div className="space-y-1">
-              <h3 className="font-display text-base sm:text-lg font-bold text-text">
-                {learningPath.title}
-              </h3>
-              <p className="font-body text-xs sm:text-sm text-text/80 leading-relaxed">
-                {learningPath.description}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-1.5 rounded-ui bg-sand px-3 py-1.5 font-mono text-xs text-text border border-sep-line">
-                <FlashcardsIcon className="h-3.5 w-3.5 text-accent" />
-                <span>{learningPath.units.length} Learning Units</span>
-              </div>
-            </div>
-          </div>
-
           {/* Sequenced Milestone Units Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {learningPath.units.map((unit, index) => (

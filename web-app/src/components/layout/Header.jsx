@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { List, Upload, Sparkle, Trash, ArrowLeft } from '@/components/ui/icons';
+import { List, Upload, Sparkle, Trash, ArrowLeft, FlashcardsIcon } from '@/components/ui/icons';
 import { useUIStore } from '@/store/uiStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
@@ -181,6 +181,14 @@ export function Header({ title, children, className }) {
           </h1>
         )}
       </div>
+
+      {/* Main Header Center: Learning Units Badge on Learning Path Tab */}
+      {isLearningPathTab && hasLearningPath && (
+        <div className="hidden sm:flex items-center gap-1.5 rounded-ui bg-sand px-3 py-1 font-mono text-xs text-text border border-sep-line shadow-xs">
+          <FlashcardsIcon className="h-3.5 w-3.5 text-accent" />
+          <span>{learningPath.units.length} Learning Units</span>
+        </div>
+      )}
 
       {/* Main Header Right Actions */}
       <div className="flex items-center gap-2 sm:gap-3">
