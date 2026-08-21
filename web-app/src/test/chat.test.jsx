@@ -160,6 +160,74 @@ describe('AI Tutor RAG Chat Component', () => {
     expect(screen.getByText('What is deadlock?')).toBeInTheDocument();
   });
 
+  it('completes assistant response and persists history even when navigating away and back', async () => {
+    const user = userEvent.setup();
+    let resolveRAG;
+    const ragPromise = new Promise((resolve) => {
+      resolveRAG = resolve;
+    });
+
+    chatApi.fetchWorkspaceChat.mockResolvedValue({ messages: [] });
+    chatApi.sendRAGChatMessage.mockReturnValue(ragPromise);
+    chatApi.saveWorkspaceChat.mockResolvedValue({ status: 'ok' });
+
+    const sharedQueryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const { unmount } = render(
+      <QueryClientProvider client={sharedQueryClient}>
+        <MemoryRouter initialEntries={['/workspaces/ws-1/chat']}>
+          <Routes>
+            <Route path="/workspaces/:workspaceId/chat" element={<ChatPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    const inputElem = await screen.findByPlaceholderText(/Type a message/i);
+    await user.type(inputElem, 'What is Single Responsibility Principle?');
+    await user.click(screen.getByRole('button', { name: /Send/i }));
+
+    expect(screen.getByText('What is Single Responsibility Principle?')).toBeInTheDocument();
+
+    // Simulate navigating to another tab/route (unmounting ChatPage)
+    unmount();
+
+    // Resolve RAG response while unmounted
+    resolveRAG({
+      question: 'What is Single Responsibility Principle?',
+      answer: 'The Single Responsibility Principle states that a module should have one reason to change.',
+    });
+
+    // Wait for mutation to settle
+    await waitFor(() => {
+      expect(chatApi.saveWorkspaceChat).toHaveBeenCalledWith(
+        'ws-1',
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: 'assistant',
+            content: 'The Single Responsibility Principle states that a module should have one reason to change.',
+          }),
+        ])
+      );
+    });
+
+    // Remount ChatPage (user navigating back to Chat tab)
+    render(
+      <QueryClientProvider client={sharedQueryClient}>
+        <MemoryRouter initialEntries={['/workspaces/ws-1/chat']}>
+          <Routes>
+            <Route path="/workspaces/:workspaceId/chat" element={<ChatPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText('What is Single Responsibility Principle?')).toBeInTheDocument();
+    expect(await screen.findByText(/The Single Responsibility Principle states that a module should have one reason to change./i)).toBeInTheDocument();
+  });
+
   it('renders currency dollar amounts cleanly without KaTeX math corruption', () => {
     const input = "If a product's price increases from **$50** to **$60**:\n\n$$\\text{Difference} = 60 - 50 = 10$$";
     const processed = preprocessMarkdownForMath(input);

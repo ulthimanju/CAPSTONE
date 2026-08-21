@@ -62,7 +62,7 @@ class AIServiceClient:
                 temperature=0.2,
                 max_tokens=4096,
             )
-            resp = await stub.GenerateText(req, timeout=30.0)
+            resp = await stub.GenerateText(req, timeout=90.0)
             if resp and resp.text:
                 return resp.text
         except Exception as e:

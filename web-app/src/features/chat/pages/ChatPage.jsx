@@ -6,12 +6,10 @@ import {
   Copy,
   Check,
 } from '@/components/ui/icons';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   useWorkspaceChatQuery,
-  useSaveWorkspaceChatMutation,
   useSendRAGMessageMutation,
-  chatKeys,
+  useIsRAGPending,
 } from '../hooks/useChat';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
 import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
@@ -74,14 +72,13 @@ function formatMessageTime(timestamp) {
 
 export function ChatPage() {
   const { workspaceId } = useParams();
-  const queryClient = useQueryClient();
   const [input, setInput] = useState('');
   const [copiedIndex, setCopiedIndex] = useState(null);
   const messagesEndRef = useRef(null);
 
   const { data: chatData, isLoading: isChatLoading } = useWorkspaceChatQuery(workspaceId);
-  const saveChatMutation = useSaveWorkspaceChatMutation(workspaceId);
   const sendMutation = useSendRAGMessageMutation(workspaceId);
+  const isRAGPending = useIsRAGPending(workspaceId) || sendMutation.isPending;
 
   const messages = useMemo(() => (Array.isArray(chatData?.messages) ? chatData.messages : []), [chatData?.messages]);
 
@@ -89,76 +86,14 @@ export function ChatPage() {
     if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, sendMutation.isPending]);
+  }, [messages, isRAGPending]);
 
   const handleSend = (textToSend) => {
     const question = (textToSend || input).trim();
-    if (!question || sendMutation.isPending) return;
+    if (!question || isRAGPending) return;
 
-    const userMessage = {
-      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-      role: 'user',
-      content: question,
-      timestamp: new Date().toISOString(),
-    };
-
-    const currentCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
-    const prevMessages = Array.isArray(currentCached?.messages) ? currentCached.messages : messages;
-    const newMessages = [...prevMessages, userMessage];
-
-    // Optimistically update the query cache immediately so query is never lost across tab switches
-    queryClient.setQueryData(chatKeys.workspace(workspaceId), {
-      messages: newMessages,
-    });
     setInput('');
-
-    // Persist user message to the backend immediately
-    saveChatMutation.mutate(newMessages);
-
-    sendMutation.mutate(
-      { question, topK: 5 },
-      {
-        onSuccess: (data) => {
-          const assistantMessage = {
-            id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1),
-            role: 'assistant',
-            content: data.answer,
-            citations: data.citations || [],
-            timestamp: new Date().toISOString(),
-          };
-          const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
-          const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : newMessages;
-          const updated = [...baseMessages, assistantMessage];
-          queryClient.setQueryData(chatKeys.workspace(workspaceId), {
-            messages: updated,
-          });
-          saveChatMutation.mutate(updated);
-        },
-        onError: (err) => {
-          const errMsg =
-            err?.response?.data?.detail ||
-            err?.response?.data?.error?.message ||
-            err?.message ||
-            'Failed to get a response from your AI tutor.';
-
-          const assistantErrorMessage = {
-            id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1),
-            role: 'assistant',
-            content: errMsg,
-            isError: true,
-            timestamp: new Date().toISOString(),
-          };
-          const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
-          const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : newMessages;
-          const updated = [...baseMessages, assistantErrorMessage];
-          queryClient.setQueryData(chatKeys.workspace(workspaceId), {
-            messages: updated,
-          });
-          saveChatMutation.mutate(updated);
-          toast.error(errMsg);
-        },
-      }
-    );
+    sendMutation.mutate({ question, topK: 5 });
   };
 
   const handleKeyDown = (e) => {
@@ -312,7 +247,7 @@ export function ChatPage() {
           })
         )}
 
-        {sendMutation.isPending && (
+        {isRAGPending && (
           <div className="flex justify-start">
             <div className="max-w-[75%] rounded-md bg-sand border border-sep-line p-3.5 shadow-xs flex items-center gap-3">
               <CircleNotch className="h-4 w-4 animate-spin text-accent" />
@@ -341,15 +276,15 @@ export function ChatPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            disabled={sendMutation.isPending}
+            disabled={isRAGPending}
             className="flex-1 rounded-md border border-sep-line bg-bg px-4 py-2.5 font-sans text-xs sm:text-sm text-text placeholder:text-text/40 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-50 shadow-inner-xs transition-colors"
           />
           <button
             type="submit"
-            disabled={!input.trim() || sendMutation.isPending}
+            disabled={!input.trim() || isRAGPending}
             className="flex items-center justify-center rounded-md bg-gradient-to-br from-[#E08850] to-[#C1622D] hover:from-[#E89860] hover:to-[#C96C35] px-6 py-2.5 font-sans text-xs sm:text-sm font-medium text-white shadow-theme transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
           >
-            {sendMutation.isPending ? (
+            {isRAGPending ? (
               <CircleNotch className="h-4 w-4 animate-spin" />
             ) : (
               'Send'

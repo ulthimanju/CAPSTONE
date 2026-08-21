@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { fetchWorkspaceChat, saveWorkspaceChat, sendRAGChatMessage } from '../api/chatApi';
 import { chatKeys } from './chatKeys';
@@ -54,22 +54,106 @@ export function useSaveWorkspaceChatMutation(workspaceId) {
 }
 
 /**
+ * Hook to track whether a RAG inference query is currently executing for this workspace.
+ * Queries TanStack Query's global MutationCache so it survives component unmounts and route changes.
+ */
+export function useIsRAGPending(workspaceId) {
+  const count = useIsMutating({
+    mutationKey: ['workspace-rag-chat', workspaceId],
+  });
+  return count > 0;
+}
+
+/**
  * Hook to send user questions to the AI Tutor RAG endpoint.
  * 
- * Note on Cache Architecture:
- * This is a stateless LLM inference call. Responses are received
- * and saved directly into the persistent workspace chat thread.
+ * Resilient Cache & Persistence Architecture:
+ * - Immediately adds user message to TanStack Query cache.
+ * - Immediately persists user message to backend DB.
+ * - Upon resolution, appends assistant answer and persists, even if the user
+ *   navigated to another workspace tab while waiting for generation.
  */
 export function useSendRAGMessageMutation(workspaceId) {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationKey: ['workspace-rag-chat', workspaceId],
-    mutationFn: ({ question, topK = 5 }) => sendRAGChatMessage(workspaceId, question, topK),
+    mutationFn: async ({ question, topK = 5 }) => {
+      const userMessage = {
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        role: 'user',
+        content: question,
+        timestamp: new Date().toISOString(),
+      };
+
+      const cached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+      const prevMessages = Array.isArray(cached?.messages) ? cached.messages : [];
+      const updatedWithUser = [...prevMessages, userMessage];
+
+      // Optimistically update query cache immediately
+      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+        messages: updatedWithUser,
+      });
+
+      // Persist user message to the backend immediately
+      try {
+        await saveWorkspaceChat(workspaceId, updatedWithUser);
+      } catch (err) {
+        console.warn('Failed to persist user message immediately:', err);
+      }
+
+      const data = await sendRAGChatMessage(workspaceId, question, topK);
+      return { data, userMessage };
+    },
+    onSuccess: ({ data }) => {
+      const assistantMessage = {
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1),
+        role: 'assistant',
+        content: data.answer,
+        citations: data.citations || [],
+        timestamp: new Date().toISOString(),
+      };
+
+      const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+      const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : [];
+      const updated = [...baseMessages, assistantMessage];
+
+      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+        messages: updated,
+      });
+
+      saveWorkspaceChat(workspaceId, updated).catch((err) => {
+        console.error('Failed to save assistant response:', err);
+      });
+    },
     onError: (err) => {
-      const errorMsg =
+      const errMsg =
         err?.response?.data?.detail ||
-        err?.response?.data?.message ||
+        err?.response?.data?.error?.message ||
+        err?.message ||
         'Failed to get answer from AI Tutor. Ensure documents are indexed.';
-      toast.error(errorMsg);
+
+      const assistantErrorMessage = {
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + 1),
+        role: 'assistant',
+        content: errMsg,
+        isError: true,
+        timestamp: new Date().toISOString(),
+      };
+
+      const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+      const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : [];
+      const updated = [...baseMessages, assistantErrorMessage];
+
+      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+        messages: updated,
+      });
+
+      saveWorkspaceChat(workspaceId, updated).catch((saveErr) => {
+        console.error('Failed to save error response:', saveErr);
+      });
+
+      toast.error(errMsg);
     },
   });
 }
