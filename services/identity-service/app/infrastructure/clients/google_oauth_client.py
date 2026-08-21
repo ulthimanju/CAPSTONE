@@ -161,18 +161,31 @@ class GoogleOAuthClient(OAuthClientInterface):
         if not code:
             raise GoogleOAuthError("Authorization code is missing from Google callback.")
 
-        async with httpx.AsyncClient(timeout=get_default_httpx_timeout(connect=10.0, read=30.0, write=30.0, pool=10.0)) as http_client:
-            token_resp = await http_client.post(
-                "https://oauth2.googleapis.com/token",
-                data={
-                    "client_id": settings.google_client_id,
-                    "client_secret": settings.google_client_secret,
-                    "code": code,
-                    "grant_type": "authorization_code",
-                    "redirect_uri": settings.google_redirect_uri,
-                },
-                headers={"Accept": "application/json"},
-            )
+        timeout_cfg = get_default_httpx_timeout(connect=20.0, read=45.0, write=30.0, pool=15.0)
+        async with httpx.AsyncClient(timeout=timeout_cfg) as http_client:
+            token_resp = None
+            last_err = None
+            for attempt in range(2):
+                try:
+                    token_resp = await http_client.post(
+                        "https://oauth2.googleapis.com/token",
+                        data={
+                            "client_id": settings.google_client_id,
+                            "client_secret": settings.google_client_secret,
+                            "code": code,
+                            "grant_type": "authorization_code",
+                            "redirect_uri": settings.google_redirect_uri,
+                        },
+                        headers={"Accept": "application/json"},
+                    )
+                    break
+                except (httpx.TimeoutException, httpx.NetworkError) as e:
+                    last_err = e
+                    logger.warning(f"Google OAuth token request attempt {attempt + 1} failed ({e}), retrying...")
+
+            if token_resp is None:
+                raise GoogleOAuthError(f"Failed to reach Google OAuth servers: {last_err}")
+
             if token_resp.status_code != 200:
                 error_body = token_resp.text
                 try:
@@ -198,12 +211,15 @@ class GoogleOAuthClient(OAuthClientInterface):
                     pass
 
             if not user_info:
-                uinfo_resp = await http_client.get(
-                    "https://openidconnect.googleapis.com/v1/userinfo",
-                    headers={"Authorization": f"Bearer {access_token}"},
-                )
-                if uinfo_resp.status_code == 200:
-                    user_info = uinfo_resp.json()
+                try:
+                    uinfo_resp = await http_client.get(
+                        "https://openidconnect.googleapis.com/v1/userinfo",
+                        headers={"Authorization": f"Bearer {access_token}"},
+                    )
+                    if uinfo_resp.status_code == 200:
+                        user_info = uinfo_resp.json()
+                except Exception as e:
+                    logger.warning(f"Failed to fetch userinfo from Google endpoint: {e}")
 
             if not user_info or not user_info.get("email"):
                 raise GoogleOAuthError("Failed to retrieve user profile info from Google.")

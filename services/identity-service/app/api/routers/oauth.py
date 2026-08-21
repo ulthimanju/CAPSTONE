@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Request, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse, JSONResponse
 from pydantic import BaseModel, Field
@@ -20,6 +21,8 @@ from app.application.use_cases.oauth_login import OAuthUseCase
 from app.domain.exceptions.oauth import GoogleOAuthError
 from app.infrastructure.cache.oauth_exchange import OAuthExchangeManager
 from app.config.settings import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/oauth/google", tags=["OAuth"])
 exchange_manager = OAuthExchangeManager()
@@ -68,9 +71,11 @@ async def google_callback(
             user_agent=request.headers.get("user-agent"),
         )
     except GoogleOAuthError as exc:
-        if "access_denied" in str(exc).lower() or "denied" in str(exc).lower():
-            return RedirectResponse(url=f"{settings.frontend_url}/login")
-        raise
+        logger.warning(f"Google OAuth flow error: {exc}")
+        return RedirectResponse(url=f"{settings.frontend_url}/login?error=oauth_failed")
+    except Exception as exc:
+        logger.exception(f"Unexpected error during Google OAuth callback: {exc}")
+        return RedirectResponse(url=f"{settings.frontend_url}/login?error=oauth_error")
 
     # Generate short-lived single-use exchange code to keep JWT out of URL history & logs
     exchange_code = await exchange_manager.create_exchange_code(
