@@ -24,7 +24,7 @@ export async function saveWorkspaceChat(workspaceId, messages) {
  * The global axios timeout of 30s would fire before the backend responds, so we
  * override it here specifically for this endpoint.
  */
-export async function sendRAGChatMessage(workspaceId, question, topK = 5, workspaceCodeLanguage = null) {
+export async function sendRAGChatMessage(workspaceId, question, topK = 5, workspaceCodeLanguage = null, domainType = null) {
   const payload = {
     workspace_id: workspaceId,
     question,
@@ -32,6 +32,9 @@ export async function sendRAGChatMessage(workspaceId, question, topK = 5, worksp
   };
   if (workspaceCodeLanguage) {
     payload.workspace_code_language = workspaceCodeLanguage;
+  }
+  if (domainType) {
+    payload.domain_type = domainType;
   }
 
   const res = await api.post(

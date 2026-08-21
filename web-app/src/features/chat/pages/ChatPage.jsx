@@ -166,6 +166,7 @@ export function ChatPage() {
       question,
       topK: 5,
       workspaceCodeLanguage: workspace?.workspace_code_language || null,
+      domainType: workspace?.domain_type || null,
     });
   };
 

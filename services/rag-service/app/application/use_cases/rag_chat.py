@@ -70,29 +70,47 @@ def _parse_structured_rag_answer(raw_text: str, default_code_language: str | Non
     }
 
 
-def build_rag_system_instruction(workspace_code_language: str | None = None) -> str:
+def build_rag_system_instruction(
+    workspace_code_language: str | None = None,
+    domain_type: str | None = None,
+) -> str:
     clean_lang = workspace_code_language.strip() if workspace_code_language and workspace_code_language.strip() else None
+    clean_domain = (domain_type or "TECHNICAL").strip().upper()
+    is_non_technical = clean_domain == "NON_TECHNICAL"
 
-    lang_directive = ""
-    if clean_lang:
-        lang_directive = (
-            f"- When writing code snippets or implementation logic, strictly use `{clean_lang}` syntax and idioms unless requested otherwise.\n"
+    if is_non_technical:
+        domain_role_directive = (
+            "You are a Principal Academic Synthesizer, Domain Scholar, and University-Grade Tutor.\n"
+            "This is a NON-TECHNICAL workspace (e.g. Humanities, Business, Management, Law, Social Sciences, Natural Sciences).\n"
+            "Your objective is to answer questions with conceptual depth, qualitative frameworks, and real-world case studies based ONLY on the provided context."
+        )
+        domain_code_rule = (
+            "4. **Strict Non-Technical Rule**: NEVER generate programming code, script syntax, SQL, or pseudocode. "
+            "Explain mechanisms through qualitative analysis, conceptual hierarchies, comparative tables, and domain frameworks."
+        )
+    else:
+        lang_str = f" using `{clean_lang}`" if clean_lang else ""
+        domain_role_directive = (
+            "You are a Senior Systems Architect and Technical Academic Tutor.\n"
+            f"This is a TECHNICAL workspace. Your objective is to provide authoritative, rigorous explanations{lang_str} based ONLY on the provided context."
+        )
+        lang_rule = f" In code blocks, strictly use `{clean_lang}` syntax and idioms." if clean_lang else ""
+        domain_code_rule = (
+            f"4. **Technical Code Rule**: For implementation, algorithmic, or query requests, provide clean, idiomatic code inside markdown code fences (` ``` `).{lang_rule} "
+            "Include time/space complexity ($O(N)$) where relevant."
         )
 
-    return (
-        "You are a precise, workspace-grounded AI academic tutor.\n"
-        "Your objective is to answer the user's question directly, accurately, and dynamically using ONLY the provided workspace context.\n\n"
-        "# Core Directives:\n"
-        "1. **Direct & Focused**: Answer only what the user asked. Do NOT dump tangential textbook chapters or unwanted filler.\n"
-        "2. **Dynamic Format Calibration**:\n"
-        "   - For quick definitions or factual questions: Deliver a concise 1-2 paragraph explanation with core terms and KaTeX formulas ($ formula $ or $$ formula $$) where applicable.\n"
-        "   - For comparisons / trade-offs: Use a compact Markdown comparison table.\n"
-        "   - For code / query questions: Provide clean, idiomatic code inside markdown code fences with a brief explanation.\n"
-        "   - For multi-step workflows: You may include a Mermaid diagram (```mermaid ... ```) if visualizing the process adds clear clarity.\n"
-        f"{lang_directive}"
-        "3. **Truthfulness & Grounding**: Base every explanation directly on the provided context passages. If the context does not contain the answer, politely state that the uploaded documents do not cover it.\n"
-        "4. Respond in clean, natural, formatted Markdown."
-    )
+    return f"""{domain_role_directive}
+
+# Core Directives:
+1. **Direct & Focused**: Answer only what the user asked. Do NOT dump tangential textbook chapters or unrequested filler.
+2. **Dynamic Format Calibration**:
+   - For quick definitions or factual questions: Deliver a concise 1-2 paragraph explanation with core terms and KaTeX formulas ($ formula $ or $$ formula $$) where applicable.
+   - For comparisons / trade-offs: Use a compact Markdown comparison table.
+   - For multi-step workflows / life-cycles: You may include a Mermaid diagram (```mermaid ... ```) if visualizing the process adds clear clarity.
+3. **Truthfulness & Grounding**: Base every explanation directly on the provided context passages. If the context does not contain the answer, politely state that the uploaded documents do not cover it.
+{domain_code_rule}
+5. Respond in clean, natural, formatted Markdown."""
 
 
 class WorkspaceContextGuardrailError(Exception):
@@ -196,6 +214,7 @@ class RAGChatOrchestrator:
         top_k: int = 5,
         return_sources: bool = False,
         workspace_code_language: str | None = None,
+        domain_type: str | None = None,
     ) -> str | tuple[str, list[dict]]:
         # Step 1 & 2: Check RAG Retrieval Cache
         retrieved_chunks = await self.rag_cache.get_retrieved_chunks(workspace_id, question, top_k)
@@ -222,8 +241,11 @@ class RAGChatOrchestrator:
             retrieved_chunks=retrieved_chunks,
         )
 
-        # Step 5: Dynamic Workspace-grounded educational instruction
-        rag_sys_instruction = build_rag_system_instruction(workspace_code_language)
+        # Step 5: Domain-adaptive instruction
+        rag_sys_instruction = build_rag_system_instruction(
+            workspace_code_language=workspace_code_language,
+            domain_type=domain_type,
+        )
 
         prompt = (
             f"--- GROUNDED WORKSPACE CONTEXT ---\n{context_str}\n\n"
@@ -261,6 +283,7 @@ class RAGChatOrchestrator:
         question: str,
         top_k: int = 5,
         workspace_code_language: str | None = None,
+        domain_type: str | None = None,
     ):
         """
         Streams RAG responses: yields citations event, streaming text chunks, and final completed payload.
@@ -301,7 +324,10 @@ class RAGChatOrchestrator:
         context_str = ContextBuilder.build_rag_prompt_context(
             retrieved_chunks=retrieved_chunks,
         )
-        rag_sys_instruction = build_rag_system_instruction(workspace_code_language)
+        rag_sys_instruction = build_rag_system_instruction(
+            workspace_code_language=workspace_code_language,
+            domain_type=domain_type,
+        )
         prompt = (
             f"--- GROUNDED WORKSPACE CONTEXT ---\n{context_str}\n\n"
             f"User Question: {question}\n\n"

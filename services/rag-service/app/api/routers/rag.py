@@ -182,6 +182,7 @@ async def rag_chat(
             top_k=req.top_k,
             return_sources=True,
             workspace_code_language=req.workspace_code_language,
+            domain_type=req.domain_type,
         )
         res_data = {
             "question": req.question,
@@ -222,6 +223,7 @@ async def rag_chat_stream(
                 question=req.question,
                 top_k=req.top_k,
                 workspace_code_language=req.workspace_code_language,
+                domain_type=req.domain_type,
             ):
                 event_name = sse_event["event"]
                 event_data = json.dumps(sse_event["data"], default=str)
