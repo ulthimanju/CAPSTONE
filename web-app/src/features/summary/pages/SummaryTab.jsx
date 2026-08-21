@@ -7,7 +7,7 @@ import {
   CheckCircle,
 } from '@/components/ui/icons';
 import { Card, Button, Badge, BookLinearIcon, RegenerateIcon } from '@/components/ui';
-import { useWorkspaceSummaryQuery, useGenerateSummaryMutation, useSummaryStore } from '../hooks/useSummary';
+import { useWorkspaceSummaryQuery, useGenerateSummaryMutation, useIsSummaryGenerating } from '../hooks/useSummary';
 import { MermaidDiagram } from '../components/MermaidDiagram';
 import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
 import { toast } from 'sonner';
@@ -71,9 +71,7 @@ export function SummaryTab() {
   const { workspaceId } = useParams();
   const { data: summaryData, isLoading } = useWorkspaceSummaryQuery(workspaceId);
   const generateMutation = useGenerateSummaryMutation(workspaceId);
-  const isGenerating = useSummaryStore((state) =>
-    Boolean(state.generatingWorkspaces[workspaceId])
-  );
+  const isGenerating = useIsSummaryGenerating(workspaceId);
 
   const summary = summaryData?.summary;
   const hasSummary = Boolean(

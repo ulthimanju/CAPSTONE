@@ -60,6 +60,9 @@ export function useWorkspaceDocumentSSE(workspaceId) {
           }
 
           queryClient.invalidateQueries({
+            queryKey: workspaceKeys.generationStatus(workspaceId),
+          });
+          queryClient.invalidateQueries({
             queryKey: learningPathKeys.path(workspaceId),
           });
           queryClient.invalidateQueries({

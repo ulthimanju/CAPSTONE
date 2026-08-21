@@ -85,3 +85,34 @@ class WorkspaceSummaryResponse(BaseModel):
 class WorkspaceListResponse(BaseModel):
     workspaces: list[WorkspaceResponse]
     total: int
+
+
+class GenerationJobResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    workspace_id: UUID
+    job_type: str
+    unit_id: str | None = None
+    status: str
+    started_at: datetime
+    completed_at: datetime | None = None
+    error_message: str | None = None
+
+
+class RegisterGenerationJobRequest(BaseModel):
+    job_type: str
+    unit_id: str | None = None
+
+
+class UpdateGenerationJobRequest(BaseModel):
+    status: str
+    error_message: str | None = None
+
+
+class WorkspaceGenerationStatusResponse(BaseModel):
+    workspace_id: UUID
+    summary_status: str = "IDLE"
+    learning_path_status: str = "IDLE"
+    unit_statuses: dict[str, str] = {}
+    active_jobs: list[GenerationJobResponse] = []

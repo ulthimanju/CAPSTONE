@@ -24,6 +24,10 @@ from app.schemas.workspace import (
     SaveTopicsCoveredRequest,
     WorkspaceResponse,
     WorkspaceListResponse,
+    GenerationJobResponse,
+    RegisterGenerationJobRequest,
+    UpdateGenerationJobRequest,
+    WorkspaceGenerationStatusResponse,
 )
 from app.application.use_cases.create_workspace import CreateWorkspaceUseCase
 from app.application.use_cases.get_workspace import GetWorkspaceUseCase
@@ -577,6 +581,127 @@ async def save_learning_unit_content(
     return {"status": "saved", "workspace_id": str(workspace_id), "unit_id": unit_content.unit_id, "unit_title": req.unit_title}
 
 
+@router.get("/{workspace_id}/generation-jobs", response_model=WorkspaceGenerationStatusResponse)
+async def get_workspace_generation_status(
+    workspace_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
+
+    from app.infrastructure.database.models import GenerationJobModel, WorkspaceModel
+    from sqlalchemy import select
+
+    # Fetch active jobs (QUEUED or RUNNING)
+    stmt = (
+        select(GenerationJobModel)
+        .where(
+            GenerationJobModel.workspace_id == workspace_id,
+            GenerationJobModel.status.in_(["QUEUED", "RUNNING"])
+        )
+        .order_by(GenerationJobModel.started_at.desc())
+    )
+    res = await db.execute(stmt)
+    active_jobs = res.scalars().all()
+
+    # Determine aggregated statuses
+    summary_status = "IDLE"
+    learning_path_status = "IDLE"
+    unit_statuses: dict[str, str] = {}
+
+    for job in active_jobs:
+        if job.job_type == "SUMMARY":
+            summary_status = job.status
+        elif job.job_type == "LEARNING_PATH":
+            learning_path_status = job.status
+        elif job.job_type == "LEARNING_UNIT" and job.unit_id:
+            unit_statuses[job.unit_id] = job.status
+
+    return WorkspaceGenerationStatusResponse(
+        workspace_id=workspace_id,
+        summary_status=summary_status,
+        learning_path_status=learning_path_status,
+        unit_statuses=unit_statuses,
+        active_jobs=[GenerationJobResponse.model_validate(j) for j in active_jobs],
+    )
+
+
+@router.post("/{workspace_id}/generation-jobs", response_model=GenerationJobResponse)
+async def register_or_get_generation_job(
+    workspace_id: UUID,
+    req: RegisterGenerationJobRequest,
+    user_id: UUID = Depends(get_current_user_id),
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    mem_repo: MemberRepository = Depends(get_member_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
+
+    from app.infrastructure.database.models import GenerationJobModel
+    from sqlalchemy import select
+
+    # Idempotent Check: Is there already an active job for this workspace + target?
+    stmt = select(GenerationJobModel).where(
+        GenerationJobModel.workspace_id == workspace_id,
+        GenerationJobModel.job_type == req.job_type,
+        GenerationJobModel.status.in_(["QUEUED", "RUNNING"]),
+    )
+    if req.unit_id:
+        stmt = stmt.where(GenerationJobModel.unit_id == req.unit_id)
+
+    res = await db.execute(stmt)
+    existing_job = res.scalar_one_or_none()
+
+    if existing_job:
+        return GenerationJobResponse.model_validate(existing_job)
+
+    # Create new RUNNING job
+    now_dt = datetime.now(timezone.utc)
+    new_job = GenerationJobModel(
+        workspace_id=workspace_id,
+        job_type=req.job_type,
+        unit_id=req.unit_id,
+        status="RUNNING",
+        started_at=now_dt,
+    )
+    db.add(new_job)
+    await db.commit()
+    await db.refresh(new_job)
+    return GenerationJobResponse.model_validate(new_job)
+
+
+@router.patch("/{workspace_id}/generation-jobs/{job_id}", response_model=GenerationJobResponse)
+async def update_generation_job_status(
+    workspace_id: UUID,
+    job_id: UUID,
+    req: UpdateGenerationJobRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    from app.infrastructure.database.models import GenerationJobModel
+    from sqlalchemy import select
+
+    stmt = select(GenerationJobModel).where(
+        GenerationJobModel.id == job_id,
+        GenerationJobModel.workspace_id == workspace_id,
+    )
+    res = await db.execute(stmt)
+    job = res.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Generation job not found")
+
+    job.status = req.status
+    if req.status in ["COMPLETED", "FAILED"]:
+        job.completed_at = datetime.now(timezone.utc)
+    if req.error_message:
+        job.error_message = req.error_message
+
+    await db.commit()
+    await db.refresh(job)
+    return GenerationJobResponse.model_validate(job)
+
+
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workspace(
     workspace_id: UUID,
@@ -588,3 +713,4 @@ async def delete_workspace(
     use_case = DeleteWorkspaceUseCase(ws_repo, act_repo)
     await use_case.execute(workspace_id, user_id, user_email)
     return None
+

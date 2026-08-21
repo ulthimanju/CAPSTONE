@@ -111,6 +111,14 @@ export const workspaceApi = {
     const response = await apiClient.get('/api/v1/workspaces/check-name', { params });
     return response.data;
   },
+
+  /**
+   * Fetches the authoritative active generation job statuses from backend.
+   */
+  getWorkspaceGenerationStatus: async (workspaceId) => {
+    const response = await apiClient.get(`/api/v1/workspaces/${workspaceId}/generation-jobs`);
+    return response.data;
+  },
 };
 
 export default workspaceApi;

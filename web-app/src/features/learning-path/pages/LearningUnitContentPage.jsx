@@ -11,7 +11,7 @@ import { Card, Button, Badge, BookLinearIcon, FlashcardsIcon, QuizIcon } from '@
 import {
   useUnitContentQuery,
   useGenerateUnitContentMutation,
-  useLearningPathStore,
+  useIsUnitContentGenerating,
 } from '../hooks/useLearningPath';
 import { UnitSummaryView } from '../components/UnitSummaryView';
 import { UnitFlashcardsView } from '../components/UnitFlashcardsView';
@@ -27,16 +27,14 @@ export function LearningUnitContentPage() {
 
   const activeTab = searchParams.get('tab') || 'summary';
 
-  const isGeneratingUnit = useLearningPathStore((state) =>
-    Boolean(state.generatingUnits[`${workspaceId}:${decodedUnitTitle}`])
-  );
-
   const {
     data: unitData,
     isLoading,
   } = useUnitContentQuery(workspaceId, decodedUnitTitle);
 
-  const generateMutation = useGenerateUnitContentMutation(workspaceId, decodedUnitTitle);
+  const isGeneratingUnit = useIsUnitContentGenerating(workspaceId, unitData?.unit_id, decodedUnitTitle);
+
+  const generateMutation = useGenerateUnitContentMutation(workspaceId, decodedUnitTitle, unitData?.unit_id);
 
   const content = unitData?.content;
   const hasContent = Boolean(

@@ -12,7 +12,7 @@ import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
   useGenerateUnitContentMutation,
-  useLearningPathStore,
+  useIsLearningPathGenerating,
 } from '@/features/learning-path/hooks/useLearningPath';
 import { toast } from 'sonner';
 
@@ -22,9 +22,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
   const workspace = propWorkspace || context.workspace;
   const workspaceId = workspace?.id;
 
-  const isGenerating = useLearningPathStore((state) =>
-    Boolean(state.generatingWorkspaces[workspaceId])
-  );
+  const isGenerating = useIsLearningPathGenerating(workspaceId);
 
   const {
     data: learningPath,

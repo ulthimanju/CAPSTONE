@@ -139,3 +139,20 @@ class UserQuizSubmissionModel(Base):
     answers_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class GenerationJobModel(Base):
+    __tablename__ = "generation_jobs"
+    __table_args__ = (
+        Index("idx_gen_jobs_ws_type_status", "workspace_id", "job_type", "status"),
+        Index("idx_gen_jobs_ws_unit_type", "workspace_id", "unit_id", "job_type"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    job_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'SUMMARY', 'LEARNING_PATH', 'LEARNING_UNIT'
+    unit_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="QUEUED")  # 'QUEUED', 'RUNNING', 'COMPLETED', 'FAILED'
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)

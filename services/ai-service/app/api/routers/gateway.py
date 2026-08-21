@@ -518,6 +518,19 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
             response_schema=WorkspaceSummaryResponse,
         )
 
+        job_id = None
+        try:
+            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=10.0)) as reg_client:
+                reg_res = await reg_client.post(
+                    f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
+                    json={"job_type": "SUMMARY", "unit_id": None},
+                    headers={"Authorization": authorization} if authorization else {},
+                )
+                if reg_res.status_code in [200, 201]:
+                    job_id = reg_res.json().get("id")
+        except Exception as reg_err:
+            logger.warning(f"Failed to register generation job for summary: {reg_err}", extra={"workspace_id": ws_id})
+
         ws_summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
 
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
@@ -533,9 +546,28 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
                 headers=headers,
             )
 
+        if job_id:
+            try:
+                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
+                    await patch_client.patch(
+                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
+                        json={"status": "COMPLETED"},
+                    )
+            except Exception:
+                pass
+
         await _publish_summary_event(ws_id, "COMPLETED", user_id=user_id_str, workspace_name=ws_meta.get("name"))
 
     except Exception as e:
+        if 'job_id' in locals() and job_id:
+            try:
+                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
+                    await patch_client.patch(
+                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
+                        json={"status": "FAILED", "error_message": str(e)},
+                    )
+            except Exception:
+                pass
         await _publish_summary_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
         logger.exception("Error generating workspace summary", extra={"workspace_id": ws_id})
 
@@ -673,6 +705,19 @@ async def _process_learning_path_generation(workspace_id: str, authorization: st
             response_schema=LearningPathResponse,
         )
 
+        job_id = None
+        try:
+            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=10.0)) as reg_client:
+                reg_res = await reg_client.post(
+                    f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
+                    json={"job_type": "LEARNING_PATH", "unit_id": None},
+                    headers={"Authorization": authorization} if authorization else {},
+                )
+                if reg_res.status_code in [200, 201]:
+                    job_id = reg_res.json().get("id")
+        except Exception as reg_err:
+            logger.warning(f"Failed to register generation job for learning path: {reg_err}", extra={"workspace_id": ws_id})
+
         lp_validated = LearningPathResponse.model_validate_json(gemini_res["text"])
 
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
@@ -688,9 +733,28 @@ async def _process_learning_path_generation(workspace_id: str, authorization: st
                 headers=headers,
             )
 
+        if job_id:
+            try:
+                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
+                    await patch_client.patch(
+                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
+                        json={"status": "COMPLETED"},
+                    )
+            except Exception:
+                pass
+
         await _publish_learning_path_event(ws_id, "COMPLETED", user_id=user_id_str, workspace_name=ws_name)
 
     except Exception as e:
+        if 'job_id' in locals() and job_id:
+            try:
+                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
+                    await patch_client.patch(
+                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
+                        json={"status": "FAILED", "error_message": str(e)},
+                    )
+            except Exception:
+                pass
         await _publish_learning_path_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
         logger.exception("Error generating workspace learning path", extra={"workspace_id": ws_id})
 
@@ -816,6 +880,21 @@ async def _process_unit_content_generation(
         except Exception as rag_err:
             logger.warning(f"RAG context retrieval for unit '{req.unit_title}' failed: {rag_err}", extra={"workspace_id": ws_id})
 
+        workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
+        unit_key = req.unit_id or req.unit_title
+        job_id = None
+        try:
+            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=10.0)) as reg_client:
+                reg_res = await reg_client.post(
+                    f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
+                    json={"job_type": "LEARNING_UNIT", "unit_id": unit_key},
+                    headers={"Authorization": auth_val} if auth_val else {},
+                )
+                if reg_res.status_code in [200, 201]:
+                    job_id = reg_res.json().get("id")
+        except Exception as reg_err:
+            logger.warning(f"Failed to register generation job for unit: {reg_err}", extra={"workspace_id": ws_id, "unit_id": unit_key})
+
         await _publish_unit_generation_event(ws_id, req.unit_title, "IN_PROGRESS", user_id=user_id_val)
 
         # 2. Build Single Prompt for Summary + Flashcards + Quiz
@@ -900,7 +979,6 @@ Generate a unified learning bundle containing:
         unit_validated.problems = [p for p in unit_validated.problems if _canonicalize_problem(p)]
 
         # 5. Persist to workspace-service
-        workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
             persist_headers = {}
             if auth_val:
@@ -912,7 +990,7 @@ Generate a unified learning bundle containing:
             res = await client.put(
                 f"{workspace_url}/api/v1/workspaces/{ws_id}/units/content",
                 json={
-                    "unit_id": req.unit_id or req.unit_title,
+                    "unit_id": unit_key,
                     "unit_title": req.unit_title,
                     "summary_json": unit_validated.summary.model_dump(),
                     "flashcards_json": [f.model_dump() for f in unit_validated.flashcards],
@@ -925,10 +1003,29 @@ Generate a unified learning bundle containing:
             )
             res.raise_for_status()
 
+        if job_id:
+            try:
+                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
+                    await patch_client.patch(
+                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
+                        json={"status": "COMPLETED"},
+                    )
+            except Exception:
+                pass
+
         # 6. Publish COMPLETED event
         await _publish_unit_generation_event(ws_id, req.unit_title, "COMPLETED", user_id=user_id_val)
 
     except Exception as e:
+        if 'job_id' in locals() and job_id:
+            try:
+                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
+                    await patch_client.patch(
+                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
+                        json={"status": "FAILED", "error_message": str(e)},
+                    )
+            except Exception:
+                pass
         await _publish_unit_generation_event(ws_id, req.unit_title, "FAILED", user_id=user_id_val, error=str(e))
         logger.exception("Error generating unit content", extra={"workspace_id": ws_id, "unit_title": req.unit_title})
 

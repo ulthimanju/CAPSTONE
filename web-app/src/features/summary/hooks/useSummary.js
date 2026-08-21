@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query';
 import summaryApi from '../api/summaryApi';
 import { useWorkspaceDocumentSSE } from '@/features/documents/hooks/useDocuments';
 import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
+import { useWorkspaceGenerationStatusQuery } from '@/features/workspaces/hooks/useWorkspaces';
 
 export const SUMMARY_QUERY_KEY = 'workspace-summary';
 
@@ -20,12 +21,27 @@ export const useSummaryStore = create((set, get) => ({
   isGenerating: (workspaceId) => Boolean(get().generatingWorkspaces[workspaceId]),
 }));
 
-export function useWorkspaceSummaryQuery(workspaceId) {
-  const queryClient = useQueryClient();
-  const setGenerating = useSummaryStore((state) => state.setGenerating);
-  const isGenerating = useSummaryStore((state) =>
+/**
+ * Authoritative hook to determine whether summary generation is actively in progress.
+ * Consolidates backend generation job state and local in-flight mutation state.
+ */
+export function useIsSummaryGenerating(workspaceId) {
+  const { data: genStatus } = useWorkspaceGenerationStatusQuery(workspaceId);
+  const isMutatingCount = useIsMutating({
+    mutationKey: ['workspace-summary-generate', workspaceId],
+  });
+  const localStoreFlag = useSummaryStore((state) =>
     Boolean(state.generatingWorkspaces[workspaceId])
   );
+
+  const isBackendRunning =
+    genStatus?.summary_status === 'RUNNING' || genStatus?.summary_status === 'QUEUED';
+
+  return isBackendRunning || isMutatingCount > 0 || localStoreFlag;
+}
+
+export function useWorkspaceSummaryQuery(workspaceId) {
+  const isGenerating = useIsSummaryGenerating(workspaceId);
 
   // Listen to real-time platform events (e.g. SummaryGeneration COMPLETED / FAILED)
   useWorkspaceDocumentSSE(workspaceId);
@@ -35,10 +51,6 @@ export function useWorkspaceSummaryQuery(workspaceId) {
     queryFn: async () => {
       if (!workspaceId) return null;
       const data = await summaryApi.getWorkspaceSummary(workspaceId);
-      const summary = data?.summary;
-      if (summary && (summary.overview || (summary.sections && summary.sections.length > 0))) {
-        setGenerating(workspaceId, false);
-      }
       return data;
     },
     enabled: Boolean(workspaceId),
@@ -52,18 +64,21 @@ export function useGenerateSummaryMutation(workspaceId) {
   const setGenerating = useSummaryStore((state) => state.setGenerating);
 
   return useMutation({
+    mutationKey: ['workspace-summary-generate', workspaceId],
     mutationFn: async () => {
       setGenerating(workspaceId, true);
       return summaryApi.generateWorkspaceSummary(workspaceId);
     },
     onSuccess: () => {
       setGenerating(workspaceId, true);
-      // Invalidate workspace details and summary
+      // Invalidate workspace details, summary, and generation-status
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.generationStatus(workspaceId) });
       queryClient.invalidateQueries({ queryKey: [SUMMARY_QUERY_KEY, workspaceId] });
     },
     onError: () => {
       setGenerating(workspaceId, false);
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.generationStatus(workspaceId) });
     },
   });
 }

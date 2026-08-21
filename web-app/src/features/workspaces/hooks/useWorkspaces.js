@@ -43,6 +43,31 @@ export function useWorkspaceQuery(workspaceId, options = {}) {
 }
 
 /**
+ * Hook to query authoritative active generation job statuses from backend.
+ * Polling interval activates only when any job is actively in-flight ('RUNNING' / 'QUEUED').
+ */
+export function useWorkspaceGenerationStatusQuery(workspaceId, options = {}) {
+  return useQuery({
+    queryKey: workspaceKeys.generationStatus(workspaceId),
+    queryFn: () => workspaceApi.getWorkspaceGenerationStatus(workspaceId),
+    enabled: Boolean(workspaceId),
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data) return false;
+      const isAnyActive =
+        data.summary_status === 'RUNNING' ||
+        data.summary_status === 'QUEUED' ||
+        data.learning_path_status === 'RUNNING' ||
+        data.learning_path_status === 'QUEUED' ||
+        (data.unit_statuses && Object.values(data.unit_statuses).some((s) => s === 'RUNNING' || s === 'QUEUED'));
+      return isAnyActive ? 2500 : false;
+    },
+    staleTime: 0,
+    ...options,
+  });
+}
+
+/**
  * Mutation hook to create a new workspace.
  */
 export function useCreateWorkspaceMutation(options = {}) {

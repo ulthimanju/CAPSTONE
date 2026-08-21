@@ -6,7 +6,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { WorkspaceSelector } from '@/features/workspaces/components/WorkspaceSelector';
 import { useMultiFileUpload } from '@/features/documents/hooks/useMultiFileUpload';
 import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
-import { useGenerateSummaryMutation } from '@/features/summary/hooks/useSummary';
+import { useGenerateSummaryMutation, useIsSummaryGenerating } from '@/features/summary/hooks/useSummary';
 import {
   useWorkspaceChatQuery,
   useSaveWorkspaceChatMutation,
@@ -15,7 +15,8 @@ import {
   useWorkspaceLearningPathQuery,
   useGenerateLearningPathMutation,
   useGenerateUnitContentMutation,
-  useLearningPathStore,
+  useIsLearningPathGenerating,
+  useIsUnitContentGenerating,
 } from '@/features/learning-path/hooks/useLearningPath';
 import { useCurrentUser, useGoogleDriveStatusQuery } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
@@ -34,15 +35,14 @@ export function Header({ title, children, className }) {
   const { data: workspace } = useWorkspaceQuery(activeWorkspaceId);
   const isOwner = workspace?.user_role === 'OWNER' || workspace?.owner_id === currentUser?.id;
   const generateSummaryMutation = useGenerateSummaryMutation(activeWorkspaceId);
+  const isGeneratingSummary = useIsSummaryGenerating(activeWorkspaceId);
 
   const { data: chatData } = useWorkspaceChatQuery(activeWorkspaceId);
   const saveChatMutation = useSaveWorkspaceChatMutation(activeWorkspaceId);
 
   const { data: learningPath } = useWorkspaceLearningPathQuery(activeWorkspaceId);
   const generateLearningPathMutation = useGenerateLearningPathMutation(activeWorkspaceId);
-  const isGeneratingPath = useLearningPathStore((state) =>
-    Boolean(state.generatingWorkspaces[activeWorkspaceId])
-  );
+  const isGeneratingPath = useIsLearningPathGenerating(activeWorkspaceId);
 
   const isLearningUnitDetailPage =
     location.pathname.includes('/learning-path/') &&
@@ -57,9 +57,7 @@ export function Header({ title, children, className }) {
     unitTitleParam
   );
 
-  const isGeneratingUnit = useLearningPathStore((state) =>
-    unitTitleParam ? Boolean(state.generatingUnits[`${activeWorkspaceId}:${unitTitleParam}`]) : false
-  );
+  const isGeneratingUnit = useIsUnitContentGenerating(activeWorkspaceId, null, unitTitleParam);
 
   const { uploadFiles, isUploading } = useMultiFileUpload(activeWorkspaceId);
 
@@ -193,7 +191,7 @@ export function Header({ title, children, className }) {
               <Button
                 variant="outline"
                 onClick={handleGenerateSummary}
-                isLoading={generateSummaryMutation.isPending}
+                isLoading={generateSummaryMutation.isPending || isGeneratingSummary}
                 leftIcon={<Sparkle className="h-4 w-4 text-accent" />}
                 className="text-xs py-1.5 px-3 border-accent/30 hover:border-accent"
                 title={
@@ -202,7 +200,7 @@ export function Header({ title, children, className }) {
                     : 'Generate complete workspace summary with Gemini 2.5 Flash'
                 }
               >
-                {generateSummaryMutation.isPending
+                {generateSummaryMutation.isPending || isGeneratingSummary
                   ? 'Synthesizing...'
                   : isSummaryGenerated
                   ? 'Regenerate Summary'
