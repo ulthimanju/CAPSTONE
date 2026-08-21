@@ -45,7 +45,7 @@ async def init_db():
             text(
                 """
                 CREATE INDEX IF NOT EXISTS idx_doc_chunks_embedding_hnsw 
-                ON chunk_embeddings USING hnsw ((vector::halfvec(3072)) halfvec_cosine_ops) 
+                ON chunk_embeddings USING hnsw ((vector::halfvec(1024)) halfvec_cosine_ops) 
                 WITH (m = 16, ef_construction = 64);
                 """
             )
