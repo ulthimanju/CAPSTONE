@@ -1,16 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { CircleNotch, WarningCircle } from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '../api/authApi';
-import { useProfileQuery } from '../hooks/useAuth';
+import { useProfileQuery, AUTH_QUERY_KEYS } from '../hooks/useAuth';
+import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
+import { workspaceApi } from '@/features/workspaces/api/workspaceApi';
 import { ROUTES } from '@/config/constants';
 
 export function AuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const setToken = useAuthStore((state) => state.setToken);
   const token = useAuthStore((state) => state.token);
   const [validationError, setValidationError] = useState(null);
@@ -43,6 +47,15 @@ export function AuthCallbackPage() {
         .then((data) => {
           if (data?.access_token) {
             setToken(data.access_token);
+            if (data.user) {
+              queryClient.setQueryData(AUTH_QUERY_KEYS.PROFILE, data.user);
+            }
+            // Trigger parallel prefetch of workspaces so dashboard is instant
+            queryClient.prefetchQuery({
+              queryKey: workspaceKeys.list({ limit: 50, offset: 0 }),
+              queryFn: () => workspaceApi.getWorkspaces({ limit: 50, offset: 0 }),
+            });
+            navigate(ROUTES.WORKSPACES, { replace: true });
           } else {
             setValidationError('Failed to retrieve access credentials.');
           }
@@ -61,6 +74,7 @@ export function AuthCallbackPage() {
     // 3. Fallback direct token handler (e.g. testing environments)
     if (rawToken) {
       setToken(rawToken);
+      navigate(ROUTES.WORKSPACES, { replace: true });
       return;
     }
 
@@ -68,19 +82,19 @@ export function AuthCallbackPage() {
     if (!token) {
       setValidationError('Invalid or missing authentication parameters.');
     }
-  }, [rawCode, rawToken, rawError, setToken, token]);
+  }, [rawCode, rawToken, rawError, setToken, token, navigate, queryClient]);
 
-  // 4. Hydrate user profile via TanStack Query once token is available in store
-  const { data: profile, isLoading: isProfileLoading, isError, error } = useProfileQuery({
+  // 4. Fallback profile hydration for direct token logins
+  const { data: profile, isError, error } = useProfileQuery({
     enabled: Boolean(token) && !validationError,
   });
 
-  // 5. Navigate to destination on confirmed profile hydration
+  // 5. Navigate to destination if profile resolves from background query
   useEffect(() => {
-    if (profile) {
+    if (profile && !validationError) {
       navigate(ROUTES.WORKSPACES, { replace: true });
     }
-  }, [profile, navigate]);
+  }, [profile, validationError, navigate]);
 
   if (validationError || isError) {
     const errorMsg =

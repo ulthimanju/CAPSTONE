@@ -35,6 +35,7 @@ class OAuthExchangeRequest(BaseModel):
 class OAuthExchangeResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user: dict[str, Any] | None = None
 
 
 @router.get("/login")
@@ -77,11 +78,20 @@ async def google_callback(
         logger.exception(f"Unexpected error during Google OAuth callback: {exc}")
         return RedirectResponse(url=f"{settings.frontend_url}/login?error=oauth_error")
 
+    user_info = {
+        "id": str(result.user.id),
+        "email": getattr(result.user, "email", ""),
+        "name": getattr(result.user, "name", "") or getattr(result.user, "email", "").split("@")[0],
+        "role": getattr(result.user, "role", "student"),
+        "picture": getattr(result.user, "picture", None),
+    }
+
     # Generate short-lived single-use exchange code to keep JWT out of URL history & logs
     exchange_code = await exchange_manager.create_exchange_code(
         access_token=result.access_token,
         refresh_token=result.refresh_token,
         user_id=str(result.user.id),
+        user_info=user_info,
         ttl_seconds=60,
     )
 
@@ -118,6 +128,7 @@ async def exchange_code(
         content={
             "access_token": payload["access_token"],
             "token_type": "bearer",
+            "user": payload.get("user") or None,
         }
     )
     if payload.get("refresh_token"):

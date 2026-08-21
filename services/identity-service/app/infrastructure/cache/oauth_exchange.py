@@ -42,6 +42,7 @@ class OAuthExchangeManager:
         access_token: str,
         refresh_token: str | None,
         user_id: str,
+        user_info: dict[str, Any] | None = None,
         ttl_seconds: int = 60,
     ) -> str:
         raw_code = secrets.token_urlsafe(32)
@@ -50,6 +51,7 @@ class OAuthExchangeManager:
             "access_token": access_token,
             "refresh_token": refresh_token,
             "user_id": user_id,
+            "user": user_info or {},
             "expires_at": time.time() + ttl_seconds,
         }
 
