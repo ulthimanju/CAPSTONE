@@ -23,9 +23,9 @@ class ChunkEmbeddingModel(Base):
     chunk_index = Column(Integer, nullable=False)
     chunk_content = Column(Text, nullable=False)
     document_name = Column(String(255), nullable=True)
-    embedding_model = Column(String(100), nullable=False, default="text-embedding-004")
-    embedding_dimension = Column(Integer, nullable=False, default=3072)
-    vector = Column(Vector(3072), nullable=True)
+    embedding_model = Column(String(100), nullable=False, default="voyage-4-large")
+    embedding_dimension = Column(Integer, nullable=False, default=1024)
+    vector = Column(Vector(1024), nullable=True)
 
     is_active = Column(Boolean, nullable=False, default=True)
     status = Column(String(50), nullable=False, default="COMPLETED")

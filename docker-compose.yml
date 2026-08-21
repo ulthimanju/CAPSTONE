@@ -214,6 +214,9 @@ services:
       context: .
       dockerfile: services/rag-service/Dockerfile
     container_name: synapse_rag_service
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     env_file:
       - .env.common
       - services/rag-service/.env

@@ -105,10 +105,17 @@ class VectorEmbeddingProvider:
         }
 
         last_error = None
+        http_timeout = httpx.Timeout(connect=20.0, read=timeout_seconds, write=timeout_seconds, pool=10.0)
+
         for attempt in range(1, retries + 1):
             try:
-                async with httpx.AsyncClient(timeout=timeout_seconds) as client:
+                async with httpx.AsyncClient(timeout=http_timeout) as client:
                     resp = await client.post(self.api_url, headers=headers, json=payload)
+                    if resp.status_code == 429:
+                        logger.warning("Voyage AI rate limited (429), backing off before retry %d/%d...", attempt, retries)
+                        if attempt < retries:
+                            await asyncio.sleep(2.0 * attempt)
+                            continue
                     resp.raise_for_status()
                     data = resp.json()
 
@@ -125,6 +132,6 @@ class VectorEmbeddingProvider:
                     e,
                 )
                 if attempt < retries:
-                    await asyncio.sleep(1.0 * attempt)
+                    await asyncio.sleep(1.5 * attempt)
 
         raise RuntimeError(f"Vector embedding failed for model {model} after {retries} retries: {last_error}")

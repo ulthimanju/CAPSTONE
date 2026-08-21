@@ -24,18 +24,18 @@ ROUTING_KEY = "synapse.rag.ingest.#"
 ai_client = AIServiceClient()
 
 
-async def _get_embeddings_with_retry(texts: list[str], max_retries: int = 3) -> list[list[float]]:
+async def _get_embeddings_with_retry(texts: list[str], max_retries: int = 5) -> list[list[float]]:
     """
     Worker-side embedding generation with exponential backoff.
     """
     for attempt in range(1, max_retries + 1):
         try:
-            return await ai_client.get_embeddings(texts)
+            return await ai_client.get_embeddings(texts, model="voyage-4-large", input_type="document")
         except Exception as e:
             logger.warning(f"Worker embedding attempt {attempt}/{max_retries} failed: {e}")
             if attempt == max_retries:
                 raise
-            await asyncio.sleep(0.5 * (2 ** (attempt - 1)))
+            await asyncio.sleep(1.0 * (2 ** (attempt - 1)))
     return []
 
 
