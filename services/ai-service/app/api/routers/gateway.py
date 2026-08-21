@@ -135,286 +135,126 @@ async def generate_text(req: GenerationRequest):
         raise HTTPException(status_code=500, detail=f"Text generation error: {e}")
 
 
+from urllib.parse import urlparse
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
+from app.domain.prompts.learning_path_prompt_builder import LearningPathPromptBuilder
+from app.domain.prompts.unit_content_prompt_builder import UnitContentPromptBuilder
+from app.domain.prompts.base_prompt_builder import BasePromptContextBuilder
+from app.domain.services.structured_ai_generator import StructuredAIGenerator
+from app.infrastructure.clients.workspace_service_client import WorkspaceServiceClient
+from app.infrastructure.events.ai_event_publisher import AIEventPublisher
+from shared.security.jwt import create_internal_service_token
+from app.schemas.gateway import (
+    WorkspaceSummaryResponse,
+    LearningPathResponse,
+    UnitContentResponse,
+    GenerateUnitContentRequest,
+)
+
+ws_client = WorkspaceServiceClient()
+ai_generator = StructuredAIGenerator(gemini_client)
 
 
-from app.schemas.gateway import WorkspaceSummaryResponse
-async def _publish_summary_event(
-    workspace_id: str,
-    status: str,
-    user_id: str | None = None,
-    error: str | None = None,
-    workspace_name: str | None = None,
-):
-    _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
-    _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
-    try:
-        notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
-        mapped_status = _STATUS_MAP.get(status, "PROCESSING")
-
-        ws_label = f" for '{workspace_name}'" if workspace_name else ""
-        if mapped_status == "COMPLETED":
-            title = "Workspace Summary Generated"
-            message = f"Synthesized comprehensive AI summary{ws_label} with key concepts and exam takeaways."
-        elif mapped_status == "FAILED":
-            title = "Workspace Summary Failed"
-            message = error or f"Failed to synthesize workspace summary{ws_label}."
-        else:
-            title = f"Workspace Summary {status.capitalize()}"
-            message = f"Workspace summary generation{ws_label} is {status.lower()}."
-
-        payload = {
-            "event_id": str(generate_uuid()),
-            "event_name": "SummaryGeneration",
-            "service": "ai-service",
-            "resource_type": "workspace",
-            "resource_id": workspace_id,
-            "workspace_id": workspace_id,
-            "workspace_name": workspace_name,
-            "user_id": user_id,
-            "recipient_id": user_id,
-            "title": title,
-            "message": message,
-            "status": mapped_status,
-            "progress": _PROGRESS_MAP.get(mapped_status, 0),
-            "payload": {"workspace_id": workspace_id, "workspace_name": workspace_name},
-            "occurred_at": datetime.now(timezone.utc).isoformat(),
-        }
-        from shared.events import DomainEvent, publish_domain_event
-        event = DomainEvent(
-            event_type="SummaryGeneration",
-            workspace_id=workspace_id,
-            user_id=user_id,
-            payload=payload,
-        )
-        published = await publish_domain_event("synapse.notifications.ai", event)
-        if not published:
-            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
-                await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
-
-        # Real-time SSE to Redis for browser instant updates
-        try:
-            from shared.events.publisher import publish_workspace_event
-            await publish_workspace_event(
-                workspace_id=workspace_id,
-                event_type="SummaryGeneration",
-                payload=payload,
-            )
-        except Exception:
-            pass
-    except Exception as evt_err:
-        logger.warning(f"Notice: Failed to publish SummaryGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
+def _get_auth_header(authorization: str | None, user_id_str: str) -> str:
+    if authorization:
+        return authorization
+    token = create_internal_service_token(
+        secret_key=settings.jwt_secret,
+        algorithm=settings.jwt_algorithm,
+        issuer=settings.jwt_issuer,
+        user_id=user_id_str,
+    )
+    return f"Bearer {token}"
 
 
 def build_chunk_knowledge_map(chunk: dict) -> str:
     content = (chunk.get("content") or "").strip()
-
     if not content:
         return ""
-
-    title = (
-        chunk.get("title")
-        or chunk.get("document_filename")
-        or "Untitled"
-    ).strip()
-
-    # 1. Extract Headings & Hierarchy
-    heading_matches = re.findall(
-        r"^(#{1,6})\s+(.+?)\s*$",
-        content,
-        re.MULTILINE,
-    )
-
-    subtopics = [
-        heading.strip()
-        for _, heading in heading_matches
-        if heading.strip()
-    ]
-
-    hierarchy_parts = []
-    for level_hashes, heading_text in heading_matches[:5]:
-        level = len(level_hashes)
-        hierarchy_parts.append(f"H{level}: {heading_text.strip()}")
-
-    # 2. Extract Available Artifacts
+    title = (chunk.get("title") or chunk.get("document_filename") or "Untitled").strip()
+    heading_matches = re.findall(r"^(#{1,6})\s+(.+?)\s*$", content, re.MULTILINE)
+    subtopics = [h.strip() for _, h in heading_matches if h.strip()]
+    hierarchy_parts = [f"H{len(lh)}: {ht.strip()}" for lh, ht in heading_matches[:5]]
     artifacts = []
     if "```mermaid" in content.lower():
         artifacts.append("Mermaid diagram")
-
     code_langs = re.findall(r"```([a-zA-Z0-9_-]+)", content)
     if code_langs:
         unique_langs = sorted(list(set([l.capitalize() for l in code_langs if l.lower() != "mermaid"])))
-        if unique_langs:
-            artifacts.append(f"{'/'.join(unique_langs)} code")
-        else:
-            artifacts.append("Code example")
-
-    if re.search(r"^\s*\|.*\|", content, re.MULTILINE):
-        artifacts.append("Comparison table")
-
-    if re.search(r"\b(warning|important|caution|pitfall|note)\b", content, re.IGNORECASE):
-        artifacts.append("Warning / Callout note")
-
-    if re.search(r"(^|\n)\s*[-*]\s+", content):
-        artifacts.append("Structured list")
-
-    if re.search(r"\$\$|\$\\w+", content):
-        artifacts.append("KaTeX formula")
-
-    # 3. Extract Important Concepts & Key Terms
+        artifacts.append(f"{'/'.join(unique_langs)} code" if unique_langs else "Code example")
     bold_terms = re.findall(r"\*\*([^*]+)\*\*", content)
     inline_code_terms = re.findall(r"`([^`]+)`", content)
-    concept_keywords = re.findall(
-        r"\b([A-Z][a-zA-Z0-9_-]{2,}(?:\s+[A-Z][a-zA-Z0-9_-]{2,})?)\b",
-        content,
-    )
-
-    raw_concepts = bold_terms + inline_code_terms + concept_keywords
+    raw_concepts = bold_terms + inline_code_terms
     cleaned_concepts = []
     for term in raw_concepts:
         clean = term.strip()
-        if 3 <= len(clean) <= 40 and not clean.lower().startswith("http") and clean.lower() not in [c.lower() for c in cleaned_concepts]:
+        if 3 <= len(clean) <= 40 and clean.lower() not in [c.lower() for c in cleaned_concepts]:
             cleaned_concepts.append(clean)
             if len(cleaned_concepts) >= 8:
                 break
-
     parts = [f"Title: {title}"]
-
     if hierarchy_parts:
         parts.append("Hierarchy:\n- " + "\n- ".join(hierarchy_parts))
-
     if subtopics:
         parts.append("Subtopics: " + "; ".join(subtopics[:10]))
-
     if artifacts:
         parts.append("Available Artifacts: " + ", ".join(artifacts))
-
     if cleaned_concepts:
         parts.append("Important Terms / Concepts: " + ", ".join(cleaned_concepts))
-
     return "\n".join(parts)
 
 
-def divide_into_regions(
-    chunks: list[dict],
-    region_count: int = 10,
-) -> list[list[dict]]:
+def divide_into_regions(chunks: list[dict], region_count: int = 10) -> list[list[dict]]:
     if not chunks:
         return []
-
     region_size = math.ceil(len(chunks) / region_count)
-
-    return [
-        chunks[i:i + region_size]
-        for i in range(0, len(chunks), region_size)
-    ]
+    return [chunks[i:i + region_size] for i in range(0, len(chunks), region_size)]
 
 
 def split_content_blocks(content: str) -> list[str]:
     if not content or not content.strip():
         return []
-
-    blocks = re.split(
-        r"(?=^#{1,6}\s+)",
-        content,
-        flags=re.MULTILINE,
-    )
-
-    result = [
-        block.strip()
-        for block in blocks
-        if block.strip()
-    ]
-
+    blocks = re.split(r"(?=^#{1,6}\s+)", content, flags=re.MULTILINE)
+    result = [b.strip() for b in blocks if b.strip()]
     if not result and content.strip():
         paragraphs = re.split(r"\n\s*\n", content)
         result = [p.strip() for p in paragraphs if p.strip()]
-
     return result
 
 
 def calculate_block_importance(block: str, title: str = "") -> float:
     if not block or not block.strip():
         return 0.0
-
     score = 0.0
-
-    # Conceptual importance (+0.25)
-    if re.search(
-        r"\b(definition|overview|concept|principle|what is)\b",
-        block,
-        re.IGNORECASE,
-    ):
+    if re.search(r"\b(definition|overview|concept|principle|what is)\b", block, re.IGNORECASE):
         score += 0.25
-
-    # Important rules / distinctions (+0.20)
-    if re.search(
-        r"\b(rule|important|warning|limitation|pitfall|difference|distinction)\b",
-        block,
-        re.IGNORECASE,
-    ):
+    if re.search(r"\b(rule|important|warning|limitation|pitfall|difference|distinction)\b", block, re.IGNORECASE):
         score += 0.20
-
-    # Examples / implementation (+0.15)
-    if re.search(
-        r"\b(example|implementation|use case|syntax)\b",
-        block,
-        re.IGNORECASE,
-    ):
+    if re.search(r"\b(example|implementation|use case|syntax)\b", block, re.IGNORECASE):
         score += 0.15
-
-    # Structured artifacts (+0.15 Mermaid, +0.10 Code, +0.10 Table)
     if "```mermaid" in block.lower():
         score += 0.15
-
     if "```" in block:
         score += 0.10
-
-    if re.search(
-        r"^\s*\|.*\|",
-        block,
-        re.MULTILINE,
-    ):
+    if re.search(r"^\s*\|.*\|", block, re.MULTILINE):
         score += 0.10
-
-    # Substantive content (+0.10)
     score += min(len(block) / 5000, 0.10)
-
     return min(score, 1.0)
 
 
-def select_representative_passages(
-    chunks: list[dict],
-    detailed_token_budget: int = 9000,
-) -> list[dict]:
-
-    regions = divide_into_regions(
-        chunks,
-        region_count=10,
-    )
-
+def select_representative_passages(chunks: list[dict], detailed_token_budget: int = 9000) -> list[dict]:
+    regions = divide_into_regions(chunks, region_count=10)
     if not regions:
         return []
-
     all_blocks = []
-
     for region_index, region in enumerate(regions):
         for chunk_index, chunk in enumerate(region):
             chunk_id = str(chunk.get("chunk_index", chunk_index + 1))
-            title = (
-                chunk.get("title")
-                or chunk.get("document_filename")
-                or "Untitled"
-            ).strip()
-
+            title = (chunk.get("title") or chunk.get("document_filename") or "Untitled").strip()
             content = chunk.get("content", "") or ""
-
-            for block_index, block in enumerate(
-                split_content_blocks(content)
-            ):
+            for block_index, block in enumerate(split_content_blocks(content)):
                 if not block.strip():
                     continue
-
                 all_blocks.append({
                     "region_index": region_index,
                     "chunk_index": chunk_index,
@@ -422,162 +262,79 @@ def select_representative_passages(
                     "chunk_id": chunk_id,
                     "title": title,
                     "content": block,
-                    "score": calculate_block_importance(
-                        block,
-                        title,
-                    ),
+                    "score": calculate_block_importance(block, title),
                 })
-
     selected = []
     selected_ids = set()
     used_tokens = 0
-
-    # Phase 1: Guarantee minimum coverage across every workspace region (top 1 block per region)
     for region_index in range(len(regions)):
-        region_blocks = [
-            b for b in all_blocks
-            if b["region_index"] == region_index
-        ]
-
+        region_blocks = [b for b in all_blocks if b["region_index"] == region_index]
         if not region_blocks:
             continue
-
         region_blocks.sort(key=lambda b: b["score"], reverse=True)
         best = region_blocks[0]
         tokens = TokenCounter.estimate_tokens(best["content"])
-
         if used_tokens + tokens <= detailed_token_budget:
             selected.append(best)
             selected_ids.add(id(best))
             used_tokens += tokens
-
-    # Phase 2: Use remaining budget globally for highest-value blocks
-    remaining_blocks = [
-        b for b in all_blocks
-        if id(b) not in selected_ids
-    ]
-
+    remaining_blocks = [b for b in all_blocks if id(b) not in selected_ids]
     remaining_blocks.sort(key=lambda b: b["score"], reverse=True)
-
     for block in remaining_blocks:
         tokens = TokenCounter.estimate_tokens(block["content"])
-
         if used_tokens + tokens > detailed_token_budget:
             continue
-
         selected.append(block)
         used_tokens += tokens
-
     return selected
 
 
-from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
+# ── 1. Workspace Summary Generation Pipeline ──────────────────────────────────
 
 async def _process_summary_generation(workspace_id: str, authorization: str | None, user_id_str: str, job_id: str | None = None):
     ws_id = workspace_id
-    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
-    document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
+    auth_header = _get_auth_header(authorization, user_id_str)
+    ws_name = None
 
     try:
-        await _publish_summary_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
+        await AIEventPublisher.publish_generation_event("SummaryGeneration", ws_id, "IN_PROGRESS", user_id=user_id_str)
 
-        if not authorization:
-            from shared.security.jwt import JWTManager, JWTSettings
-            jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
-            internal_token = jwt_mgr.create_access_token(
-                user_id=user_id_str,
-                email="internal@synapse.edu",
-                role="ADMIN",
-                session_id=str(uuid.uuid4()),
-                expire_minutes=60,
-            )
-            authorization = f"Bearer {internal_token}"
+        ws_meta = await ws_client.get_workspace(ws_id, auth_header)
+        ws_name = ws_meta.get("name")
+        topics_covered = ws_meta.get("topics_covered") or await ws_client.get_topics(ws_id, auth_header)
 
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=60.0)) as client:
-            headers = {"Authorization": authorization}
-
-            ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
-            if ws_res.status_code != 200:
-                raise HTTPException(status_code=404, detail="Workspace metadata not found")
-            ws_meta = ws_res.json()
-
-            topics_covered = ws_meta.get("topics_covered") or ""
-            if not topics_covered:
-                topics_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}/topics", headers=headers)
-                if topics_res.status_code == 200:
-                    topics_covered = topics_res.json().get("topics_covered", "")
-
-        workspace_code_language = ws_meta.get("workspace_code_language")
-
-        context_parts = [
-            f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
-            f"Domain Type: {ws_meta.get('domain_type', 'TECHNICAL')}",
-        ]
-        if workspace_code_language:
-            context_parts.append(f"Primary Code Language: {workspace_code_language}")
-        context_parts.extend([
-            "",
-            "--- WORKSPACE TOPICS COVERED & KNOWLEDGE OUTLINE ---",
-            topics_covered if topics_covered else "No processed topics covered outline available yet.",
-        ])
-
-        assembled_prompt = "\n".join(context_parts)
-        if len(assembled_prompt) > 40000:
-            assembled_prompt = assembled_prompt[:40000] + "\n... [Context Truncated]"
+        assembled_prompt = BasePromptContextBuilder.build_grounded_context(
+            workspace_meta=ws_meta,
+            topics_covered=topics_covered,
+            max_chars=40000,
+        )
 
         sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction(
-            workspace_code_language=workspace_code_language
+            workspace_code_language=ws_meta.get("workspace_code_language")
         )
 
-        gemini_res = await gemini_client.generate_text(
+        ws_summary = await ai_generator.generate_structured(
             prompt=assembled_prompt,
             system_instruction=sys_instruction,
-            model=settings.gemini_default_model,
-            temperature=0.3,
-            top_p=0.95,
-            max_output_tokens=16384,
-            response_mime_type="application/json",
             response_schema=WorkspaceSummaryResponse,
+            max_output_tokens=16384,
         )
 
-        ws_summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
-
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
-            headers = {}
-            if authorization:
-                headers["Authorization"] = authorization
-            if user_id_str:
-                headers["X-User-Id"] = user_id_str
-
-            await client.put(
-                f"{workspace_url}/api/v1/workspaces/{ws_id}/summary",
-                json={"summary_json": ws_summary_validated.model_dump()},
-                headers=headers,
-            )
+        await ws_client.save_summary(ws_id, ws_summary.model_dump(), auth_header, user_id_str)
 
         if job_id:
-            try:
-                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
-                    await patch_client.patch(
-                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
-                        json={"status": "COMPLETED"},
-                    )
-            except Exception:
-                pass
+            await ws_client.update_generation_job_status(ws_id, job_id, "COMPLETED", auth_header=auth_header)
 
-        await _publish_summary_event(ws_id, "COMPLETED", user_id=user_id_str, workspace_name=ws_meta.get("name"))
+        await AIEventPublisher.publish_generation_event(
+            "SummaryGeneration", ws_id, "COMPLETED", user_id=user_id_str, workspace_name=ws_name
+        )
 
     except Exception as e:
-        if 'job_id' in locals() and job_id:
-            try:
-                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
-                    await patch_client.patch(
-                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
-                        json={"status": "FAILED", "error_message": str(e)},
-                    )
-            except Exception:
-                pass
-        await _publish_summary_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
+        if job_id:
+            await ws_client.update_generation_job_status(ws_id, job_id, "FAILED", error_message=str(e), auth_header=auth_header)
+        await AIEventPublisher.publish_generation_event(
+            "SummaryGeneration", ws_id, "FAILED", user_id=user_id_str, error=str(e), workspace_name=ws_name
+        )
         logger.exception("Error generating workspace summary", extra={"workspace_id": ws_id})
 
 
@@ -590,195 +347,60 @@ async def generate_workspace_summary_endpoint(
 ):
     ws_id = workspace_id
     user_id_str = str(user_id)
-    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
+    auth_header = _get_auth_header(authorization, user_id_str)
 
-    if not authorization:
-        from shared.security.jwt import JWTManager, JWTSettings
-        jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
-        internal_token = jwt_mgr.create_access_token(
-            user_id=user_id_str,
-            email="internal@synapse.edu",
-            role="ADMIN",
-            session_id=str(uuid.uuid4()),
-            expire_minutes=60,
-        )
-        authorization = f"Bearer {internal_token}"
+    job_id = await ws_client.register_generation_job(ws_id, "SUMMARY", auth_header=auth_header)
 
-    job_id = None
-    try:
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as reg_client:
-            reg_res = await reg_client.post(
-                f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
-                json={"job_type": "SUMMARY", "unit_id": None},
-                headers={"Authorization": authorization} if authorization else {},
-            )
-            if reg_res.status_code in [200, 201]:
-                job_id = reg_res.json().get("id")
-    except Exception as reg_err:
-        logger.warning(f"Failed to synchronously register generation job for summary: {reg_err}", extra={"workspace_id": ws_id})
-
-    await _publish_summary_event(ws_id, "QUEUED", user_id=user_id_str)
-    await _publish_summary_event(ws_id, "STARTED", user_id=user_id_str)
-    background_tasks.add_task(_process_summary_generation, ws_id, authorization, user_id_str, job_id)
+    await AIEventPublisher.publish_generation_event("SummaryGeneration", ws_id, "QUEUED", user_id=user_id_str)
+    await AIEventPublisher.publish_generation_event("SummaryGeneration", ws_id, "STARTED", user_id=user_id_str)
+    background_tasks.add_task(_process_summary_generation, ws_id, auth_header, user_id_str, job_id)
     return {"status": "accepted", "workspace_id": ws_id, "job_id": job_id, "message": "Summary generation started"}
 
 
-from app.domain.prompts.learning_path_prompt_builder import LearningPathPromptBuilder
-from app.schemas.gateway import LearningPathResponse
-
-
-async def _publish_learning_path_event(
-    workspace_id: str,
-    status: str,
-    user_id: str | None = None,
-    error: str | None = None,
-    workspace_name: str | None = None,
-):
-    _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
-    _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
-    try:
-        notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
-        mapped_status = _STATUS_MAP.get(status, "PROCESSING")
-
-        ws_label = f" for '{workspace_name}'" if workspace_name else ""
-        if mapped_status == "COMPLETED":
-            title = "Learning Path Generated"
-            message = f"Generated structured modular learning path and study units{ws_label}."
-        elif mapped_status == "FAILED":
-            title = "Learning Path Failed"
-            message = error or f"Failed to generate learning path{ws_label}."
-        else:
-            title = f"Learning Path {status.capitalize()}"
-            message = f"Learning path generation{ws_label} is {status.lower()}."
-
-        payload = {
-            "event_id": str(generate_uuid()),
-            "event_name": "LearningPathGeneration",
-            "service": "ai-service",
-            "resource_type": "workspace",
-            "resource_id": workspace_id,
-            "workspace_id": workspace_id,
-            "workspace_name": workspace_name,
-            "user_id": user_id,
-            "recipient_id": user_id,
-            "title": title,
-            "message": message,
-            "status": mapped_status,
-            "progress": _PROGRESS_MAP.get(mapped_status, 0),
-            "payload": {"workspace_id": workspace_id, "workspace_name": workspace_name},
-            "occurred_at": datetime.now(timezone.utc).isoformat(),
-        }
-        from shared.events import DomainEvent, publish_domain_event
-        event = DomainEvent(
-            event_type="LearningPathGeneration",
-            workspace_id=workspace_id,
-            user_id=user_id,
-            payload=payload,
-        )
-        published = await publish_domain_event("synapse.notifications.ai", event)
-        if not published:
-            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
-                await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
-
-        # Real-time SSE to Redis for browser instant updates
-        try:
-            from shared.events.publisher import publish_workspace_event
-            await publish_workspace_event(
-                workspace_id=workspace_id,
-                event_type="LearningPathGeneration",
-                payload=payload,
-            )
-        except Exception:
-            pass
-    except Exception as evt_err:
-        logger.warning(f"Notice: Failed to publish LearningPathGeneration event: {evt_err}", extra={"workspace_id": workspace_id})
-
-
-from fastapi import BackgroundTasks
+# ── 2. Learning Path Generation Pipeline ──────────────────────────────────────
 
 async def _process_learning_path_generation(workspace_id: str, authorization: str | None, user_id_str: str, job_id: str | None = None):
     ws_id = workspace_id
-    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
+    auth_header = _get_auth_header(authorization, user_id_str)
+    ws_name = None
 
     try:
-        await _publish_learning_path_event(ws_id, "IN_PROGRESS", user_id=user_id_str)
+        await AIEventPublisher.publish_generation_event("LearningPathGeneration", ws_id, "IN_PROGRESS", user_id=user_id_str)
 
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=120.0)) as client:
-            headers = {"Authorization": authorization} if authorization else {}
-            ws_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}", headers=headers)
-            if ws_res.status_code != 200:
-                raise HTTPException(status_code=404, detail="Workspace metadata not found")
-            ws_meta = ws_res.json()
-            ws_name = ws_meta.get("name")
+        ws_meta = await ws_client.get_workspace(ws_id, auth_header)
+        ws_name = ws_meta.get("name")
+        topics_covered = ws_meta.get("topics_covered") or await ws_client.get_topics(ws_id, auth_header)
 
-            topics_covered = ws_meta.get("topics_covered") or ""
-            if not topics_covered:
-                topics_res = await client.get(f"{workspace_url}/api/v1/workspaces/{ws_id}/topics", headers=headers)
-                if topics_res.status_code == 200:
-                    topics_covered = topics_res.json().get("topics_covered", "")
-
-        context_parts = [
-            f"Workspace Title: {ws_meta.get('name', 'Untitled')}",
-            f"Domain Type: {ws_meta.get('domain_type', 'TECHNICAL')}\n",
-            "--- WORKSPACE TOPICS COVERED & KNOWLEDGE OUTLINE ---",
-            topics_covered if topics_covered else "No processed topics covered outline available yet.",
-        ]
-
-        assembled_prompt = "\n".join(context_parts)
-        if len(assembled_prompt) > 52000:
-            assembled_prompt = assembled_prompt[:52000] + "\n... [Workspace Outline Truncated]"
+        assembled_prompt = BasePromptContextBuilder.build_grounded_context(
+            workspace_meta=ws_meta,
+            topics_covered=topics_covered,
+            max_chars=52000,
+        )
 
         sys_instruction = LearningPathPromptBuilder.build_system_instruction()
 
-        gemini_res = await gemini_client.generate_text(
+        lp_validated = await ai_generator.generate_structured(
             prompt=assembled_prompt,
             system_instruction=sys_instruction,
-            model=settings.gemini_default_model,
-            temperature=0.3,
-            top_p=0.95,
-            max_output_tokens=8192,
-            response_mime_type="application/json",
             response_schema=LearningPathResponse,
+            max_output_tokens=8192,
         )
 
-        lp_validated = LearningPathResponse.model_validate_json(gemini_res["text"])
-
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
-            headers = {}
-            if authorization:
-                headers["Authorization"] = authorization
-            if user_id_str:
-                headers["X-User-Id"] = user_id_str
-
-            await client.put(
-                f"{workspace_url}/api/v1/workspaces/{ws_id}/learning-path",
-                json={"learning_path_json": lp_validated.model_dump()},
-                headers=headers,
-            )
+        await ws_client.save_learning_path(ws_id, lp_validated.model_dump(), auth_header, user_id_str)
 
         if job_id:
-            try:
-                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
-                    await patch_client.patch(
-                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
-                        json={"status": "COMPLETED"},
-                    )
-            except Exception:
-                pass
+            await ws_client.update_generation_job_status(ws_id, job_id, "COMPLETED", auth_header=auth_header)
 
-        await _publish_learning_path_event(ws_id, "COMPLETED", user_id=user_id_str, workspace_name=ws_name)
+        await AIEventPublisher.publish_generation_event(
+            "LearningPathGeneration", ws_id, "COMPLETED", user_id=user_id_str, workspace_name=ws_name
+        )
 
     except Exception as e:
-        if 'job_id' in locals() and job_id:
-            try:
-                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
-                    await patch_client.patch(
-                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
-                        json={"status": "FAILED", "error_message": str(e)},
-                    )
-            except Exception:
-                pass
-        await _publish_learning_path_event(ws_id, "FAILED", user_id=user_id_str, error=str(e))
+        if job_id:
+            await ws_client.update_generation_job_status(ws_id, job_id, "FAILED", error_message=str(e), auth_header=auth_header)
+        await AIEventPublisher.publish_generation_event(
+            "LearningPathGeneration", ws_id, "FAILED", user_id=user_id_str, error=str(e), workspace_name=ws_name
+        )
         logger.exception("Error generating workspace learning path", extra={"workspace_id": ws_id})
 
 
@@ -791,109 +413,17 @@ async def generate_workspace_learning_path_endpoint(
 ):
     ws_id = workspace_id
     user_id_str = str(user_id)
-    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
+    auth_header = _get_auth_header(authorization, user_id_str)
 
-    if not authorization:
-        from shared.security.jwt import JWTManager, JWTSettings
-        jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
-        internal_token = jwt_mgr.create_access_token(
-            user_id=user_id_str,
-            email="internal@synapse.edu",
-            role="ADMIN",
-            session_id=str(uuid.uuid4()),
-            expire_minutes=60,
-        )
-        authorization = f"Bearer {internal_token}"
+    job_id = await ws_client.register_generation_job(ws_id, "LEARNING_PATH", auth_header=auth_header)
 
-    job_id = None
-    try:
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as reg_client:
-            reg_res = await reg_client.post(
-                f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
-                json={"job_type": "LEARNING_PATH", "unit_id": None},
-                headers={"Authorization": authorization} if authorization else {},
-            )
-            if reg_res.status_code in [200, 201]:
-                job_id = reg_res.json().get("id")
-    except Exception as reg_err:
-        logger.warning(f"Failed to synchronously register generation job for learning path: {reg_err}", extra={"workspace_id": ws_id})
-
-    await _publish_learning_path_event(ws_id, "QUEUED", user_id=user_id_str)
-    await _publish_learning_path_event(ws_id, "STARTED", user_id=user_id_str)
-    background_tasks.add_task(_process_learning_path_generation, ws_id, authorization, user_id_str, job_id)
+    await AIEventPublisher.publish_generation_event("LearningPathGeneration", ws_id, "QUEUED", user_id=user_id_str)
+    await AIEventPublisher.publish_generation_event("LearningPathGeneration", ws_id, "STARTED", user_id=user_id_str)
+    background_tasks.add_task(_process_learning_path_generation, ws_id, auth_header, user_id_str, job_id)
     return {"status": "accepted", "workspace_id": ws_id, "job_id": job_id, "message": "Learning path generation started"}
 
 
-async def _publish_unit_generation_event(
-    workspace_id: str,
-    unit_title: str,
-    status: str,
-    user_id: str | None = None,
-    error: str | None = None,
-    workspace_name: str | None = None,
-):
-    _STATUS_MAP = {"QUEUED": "PENDING", "STARTED": "PROCESSING", "IN_PROGRESS": "PROCESSING", "COMPLETED": "COMPLETED", "FAILED": "FAILED"}
-    _PROGRESS_MAP = {"PENDING": 0, "PROCESSING": 50, "COMPLETED": 100, "FAILED": 0}
-    try:
-        notification_url = os.environ.get("NOTIFICATION_SERVICE_URL", "http://notification-service:8000")
-        mapped_status = _STATUS_MAP.get(status, "PROCESSING")
-
-        if mapped_status == "COMPLETED":
-            title = f"Study Unit '{unit_title}' Synthesized"
-            message = f"Synthesized study materials, formulas, examples, and practice questions for '{unit_title}'."
-        elif mapped_status == "FAILED":
-            title = f"Study Unit '{unit_title}' Failed"
-            message = error or f"Failed to synthesize study materials for '{unit_title}'."
-        else:
-            title = f"Study Unit {status.capitalize()}"
-            message = f"Study unit synthesis for '{unit_title}' is {status.lower()}."
-
-        payload = {
-            "event_id": str(generate_uuid()),
-            "event_name": "LearningUnitGeneration",
-            "service": "ai-service",
-            "resource_type": "workspace",
-            "resource_id": workspace_id,
-            "workspace_id": workspace_id,
-            "workspace_name": workspace_name,
-            "user_id": user_id,
-            "recipient_id": user_id,
-            "title": title,
-            "message": message,
-            "status": mapped_status,
-            "progress": _PROGRESS_MAP.get(mapped_status, 0),
-            "payload": {"workspace_id": workspace_id, "unit_title": unit_title},
-            "occurred_at": datetime.now(timezone.utc).isoformat(),
-        }
-        from shared.events import DomainEvent, publish_domain_event
-        event = DomainEvent(
-            event_type="LearningUnitGeneration",
-            workspace_id=workspace_id,
-            user_id=user_id,
-            payload=payload,
-        )
-        published = await publish_domain_event("synapse.notifications.ai", event)
-        if not published:
-            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as client:
-                await client.post(f"{notification_url}/api/v1/notifications/events", json=payload)
-
-        # Real-time SSE to Redis for browser instant updates
-        try:
-            from shared.events.publisher import publish_workspace_event
-            await publish_workspace_event(
-                workspace_id=workspace_id,
-                event_type="LearningUnitGeneration",
-                payload=payload,
-            )
-        except Exception:
-            pass
-    except Exception as evt_err:
-        logger.warning(f"Notice: Failed to publish LearningUnitGeneration event: {evt_err}", extra={"workspace_id": workspace_id, "unit_title": unit_title})
-
-
-from app.domain.prompts.unit_content_prompt_builder import UnitContentPromptBuilder
-from app.schemas.gateway import UnitContentResponse, GenerateUnitContentRequest
-
+# ── 3. Learning Unit Content Bundle Synthesis Pipeline ───────────────────────
 
 async def _process_unit_content_generation(
     ws_id: str,
@@ -902,6 +432,9 @@ async def _process_unit_content_generation(
     user_id_val: str,
     job_id: str | None = None,
 ):
+    auth_header = _get_auth_header(auth_val, user_id_val)
+    unit_key = req.unit_id or req.unit_title
+
     try:
         # 1. Retrieve RAG Context (~1K tokens) from rag-service
         rag_url = settings.rag_service_url.rstrip("/")
@@ -910,20 +443,14 @@ async def _process_unit_content_generation(
 
         try:
             async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
-                fwd_headers = {}
-                if auth_val:
-                    fwd_headers["Authorization"] = auth_val
-                if user_id_val:
-                    fwd_headers["X-User-Id"] = user_id_val
-                    fwd_headers["X-User-ID"] = user_id_val
+                fwd_headers = {"Authorization": auth_header, "X-User-Id": user_id_val, "X-User-ID": user_id_val}
                 rag_res = await client.post(
                     f"{rag_url}/api/v1/rag/search",
                     json={"workspace_id": ws_id, "query": search_query, "top_k": 5},
                     headers=fwd_headers,
                 )
                 if rag_res.status_code == 200:
-                    search_data = rag_res.json()
-                    chunks = search_data.get("results", [])
+                    chunks = rag_res.json().get("results", [])
                     retrieved_chunks_text = "\n\n".join([
                         f"--- Document Chunk ({c.get('document_name', 'Doc')}): ---\n{c.get('content', '')}"
                         for c in chunks
@@ -931,10 +458,9 @@ async def _process_unit_content_generation(
         except Exception as rag_err:
             logger.warning(f"RAG context retrieval for unit '{req.unit_title}' failed: {rag_err}", extra={"workspace_id": ws_id})
 
-        workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
-        unit_key = req.unit_id or req.unit_title
-
-        await _publish_unit_generation_event(ws_id, req.unit_title, "IN_PROGRESS", user_id=user_id_val)
+        await AIEventPublisher.publish_generation_event(
+            "LearningUnitGeneration", ws_id, "IN_PROGRESS", user_id=user_id_val, unit_title=req.unit_title
+        )
 
         # 2. Build Single Prompt for Summary + Flashcards + Quiz
         assembled_prompt = f"""
@@ -960,25 +486,15 @@ Generate a unified learning bundle containing:
 3. Quiz (5 questions with question, 4 options, correct_answer 0-3 index, explanation)
 """
 
-        # 3. Call Gemini in 1 pass
         sys_instruction = UnitContentPromptBuilder.build_system_instruction()
-        gemini_res = await gemini_client.generate_text(
+        unit_validated = await ai_generator.generate_structured(
             prompt=assembled_prompt,
             system_instruction=sys_instruction,
-            model=settings.gemini_default_model,
-            temperature=0.3,
-            top_p=0.95,
-            max_output_tokens=8192,
-            response_mime_type="application/json",
             response_schema=UnitContentResponse,
+            max_output_tokens=8192,
         )
 
-        # 4. Validate Schema & Canonicalize/Filter Problem URLs
-        unit_validated = UnitContentResponse.model_validate_json(gemini_res["text"])
-
         def _canonicalize_problem(p) -> bool:
-            import re
-            from urllib.parse import urlparse
             if not p or not getattr(p, "title", None):
                 return False
             url = (getattr(p, "url", "") or "").strip()
@@ -986,7 +502,6 @@ Generate a unified learning bundle containing:
             platform = (getattr(p, "platform", "") or "").lower()
             slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
 
-            # If URL is a generic root, search URL, or missing path, auto-construct canonical URL
             if not url or url in ("https://leetcode.com", "https://leetcode.com/", "https://leetcode.com/problemset/all/", "https://leetcode.com/problemset/", "https://www.hackerrank.com", "https://www.hackerrank.com/", "https://codeforces.com", "https://codeforces.com/"):
                 if "leetcode" in platform or "leetcode" in url:
                     p.url = f"https://leetcode.com/problems/{slug}/"
@@ -1006,7 +521,6 @@ Generate a unified learning bundle containing:
                 allowed = ("leetcode.com", "hackerrank.com", "codeforces.com")
                 if not any(hostname == d or hostname.endswith("." + d) for d in allowed):
                     return False
-                # If leetcode URL is still generic root, upgrade it using title slug
                 if ("leetcode.com" in hostname) and (parsed.path.rstrip("/") in ("", "/problemset", "/problemset/all")):
                     p.url = f"https://leetcode.com/problems/{slug}/"
                 elif ("hackerrank.com" in hostname) and (parsed.path.rstrip("/") in ("", "/challenges", "/domains")):
@@ -1017,55 +531,35 @@ Generate a unified learning bundle containing:
 
         unit_validated.problems = [p for p in unit_validated.problems if _canonicalize_problem(p)]
 
-        # 5. Persist to workspace-service
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
-            persist_headers = {}
-            if auth_val:
-                persist_headers["Authorization"] = auth_val
-            if user_id_val:
-                persist_headers["X-User-Id"] = user_id_val
-                persist_headers["X-User-ID"] = user_id_val
-
-            res = await client.put(
-                f"{workspace_url}/api/v1/workspaces/{ws_id}/units/content",
-                json={
-                    "unit_id": unit_key,
-                    "unit_title": req.unit_title,
-                    "summary_json": unit_validated.summary.model_dump(),
-                    "flashcards_json": [f.model_dump() for f in unit_validated.flashcards],
-                    "quiz_json": [q.model_dump() for q in unit_validated.quiz],
-                    "problems_json": [p.model_dump() for p in unit_validated.problems],
-                    "model": settings.gemini_default_model,
-                    "status": "READY",
-                },
-                headers=persist_headers,
-            )
-            res.raise_for_status()
+        await ws_client.save_unit_content(
+            workspace_id=ws_id,
+            unit_content_payload={
+                "unit_id": unit_key,
+                "unit_title": req.unit_title,
+                "summary_json": unit_validated.summary.model_dump(),
+                "flashcards_json": [f.model_dump() for f in unit_validated.flashcards],
+                "quiz_json": [q.model_dump() for q in unit_validated.quiz],
+                "problems_json": [p.model_dump() for p in unit_validated.problems],
+                "model": settings.gemini_default_model,
+                "status": "READY",
+            },
+            auth_header=auth_header,
+            user_id=user_id_val,
+        )
 
         if job_id:
-            try:
-                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
-                    await patch_client.patch(
-                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
-                        json={"status": "COMPLETED"},
-                    )
-            except Exception:
-                pass
+            await ws_client.update_generation_job_status(ws_id, job_id, "COMPLETED", auth_header=auth_header)
 
-        # 6. Publish COMPLETED event
-        await _publish_unit_generation_event(ws_id, req.unit_title, "COMPLETED", user_id=user_id_val)
+        await AIEventPublisher.publish_generation_event(
+            "LearningUnitGeneration", ws_id, "COMPLETED", user_id=user_id_val, unit_title=req.unit_title
+        )
 
     except Exception as e:
-        if 'job_id' in locals() and job_id:
-            try:
-                async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as patch_client:
-                    await patch_client.patch(
-                        f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs/{job_id}",
-                        json={"status": "FAILED", "error_message": str(e)},
-                    )
-            except Exception:
-                pass
-        await _publish_unit_generation_event(ws_id, req.unit_title, "FAILED", user_id=user_id_val, error=str(e))
+        if job_id:
+            await ws_client.update_generation_job_status(ws_id, job_id, "FAILED", error_message=str(e), auth_header=auth_header)
+        await AIEventPublisher.publish_generation_event(
+            "LearningUnitGeneration", ws_id, "FAILED", user_id=user_id_val, error=str(e), unit_title=req.unit_title
+        )
         logger.exception("Error generating unit content", extra={"workspace_id": ws_id, "unit_title": req.unit_title})
 
 
@@ -1085,37 +579,14 @@ async def generate_unit_content(
 
     user_id_val = request.headers.get("x-user-id") or x_user_id or "00000000-0000-0000-0000-000000000000"
     auth_val = request.headers.get("authorization") or authorization
-
-    if not auth_val:
-        from shared.security.jwt import JWTManager, JWTSettings
-        jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
-        internal_token = jwt_mgr.create_access_token(
-            user_id=str(user_id_val),
-            email="internal@synapse.edu",
-            role="ADMIN",
-            session_id=str(uuid.uuid4()),
-            expire_minutes=60,
-        )
-        auth_val = f"Bearer {internal_token}"
-
-    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
+    auth_header = _get_auth_header(auth_val, user_id_val)
     unit_key = req.unit_id or req.unit_title
-    job_id = None
-    try:
-        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as reg_client:
-            reg_res = await reg_client.post(
-                f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
-                json={"job_type": "LEARNING_UNIT", "unit_id": unit_key},
-                headers={"Authorization": auth_val} if auth_val else {},
-            )
-            if reg_res.status_code in [200, 201]:
-                job_id = reg_res.json().get("id")
-    except Exception as reg_err:
-        logger.warning(f"Failed to synchronously register generation job for unit: {reg_err}", extra={"workspace_id": ws_id, "unit_id": unit_key})
 
-    await _publish_unit_generation_event(ws_id, req.unit_title, "QUEUED", user_id=user_id_val)
-    await _publish_unit_generation_event(ws_id, req.unit_title, "STARTED", user_id=user_id_val)
-    background_tasks.add_task(_process_unit_content_generation, ws_id, req, auth_val, user_id_val, job_id)
+    job_id = await ws_client.register_generation_job(ws_id, "LEARNING_UNIT", unit_id=unit_key, auth_header=auth_header)
+
+    await AIEventPublisher.publish_generation_event("LearningUnitGeneration", ws_id, "QUEUED", user_id=user_id_val, unit_title=req.unit_title)
+    await AIEventPublisher.publish_generation_event("LearningUnitGeneration", ws_id, "STARTED", user_id=user_id_val, unit_title=req.unit_title)
+    background_tasks.add_task(_process_unit_content_generation, ws_id, req, auth_header, user_id_val, job_id)
 
     return {
         "status": "accepted",
@@ -1124,9 +595,6 @@ async def generate_unit_content(
         "job_id": job_id,
         "message": f"Unit content synthesis started for '{req.unit_title}'",
     }
-
-
-from fastapi.responses import StreamingResponse
 
 @router.post("/chat/stream")
 async def chat_stream(req: ChatRequest):

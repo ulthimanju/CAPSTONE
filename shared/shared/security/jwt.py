@@ -89,3 +89,23 @@ class JWTManager:
             iat=payload.get("iat"),
             exp=payload.get("exp"),
         )
+
+
+def create_internal_service_token(
+    secret_key: str,
+    algorithm: str = "HS256",
+    issuer: str = "synapse-internal",
+    user_id: str | uuid.UUID = "00000000-0000-0000-0000-000000000000",
+    email: str = "internal@synapse.edu",
+    role: str = "ADMIN",
+    expire_minutes: int = 60,
+) -> str:
+    """Standardized factory to create valid internal service-to-service bearer tokens."""
+    jwt_mgr = JWTManager(JWTSettings(secret_key=secret_key, algorithm=algorithm, issuer=issuer))
+    return jwt_mgr.create_access_token(
+        user_id=str(user_id),
+        email=email,
+        role=role,
+        session_id=str(uuid.uuid4()),
+        expire_minutes=expire_minutes,
+    )
