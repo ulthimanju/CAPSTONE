@@ -52,6 +52,15 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
     const status = (doc.status || '').toUpperCase();
     const parseStatus = (doc.parse_status || '').toUpperCase();
 
+    if (status === 'UPLOADING' || doc.is_optimistic) {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-ui bg-accent/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-accent border border-accent/30">
+          <CircleNotch className="h-3 w-3 animate-spin" />
+          <span>UPLOADING</span>
+        </span>
+      );
+    }
+
     if (
       status === 'INDEXED' ||
       status === 'READY_FOR_RAG' ||
@@ -250,7 +259,8 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
                 <button
                   type="button"
                   onClick={() => setDocToDelete(doc)}
-                  className="rounded-ui p-1.5 text-text/50 hover:bg-danger-tint hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                  disabled={doc.is_optimistic || doc.status === 'UPLOADING'}
+                  className="rounded-ui p-1.5 text-text/50 hover:bg-danger-tint hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger disabled:opacity-30 disabled:pointer-events-none"
                   aria-label={`Delete ${doc.original_filename}`}
                   title="Delete Document"
                 >

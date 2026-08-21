@@ -45,11 +45,41 @@ export function useMultiFileUpload(workspaceId) {
     if (validUploadTasks.length === 0) return;
 
     setIsUploading(true);
-    const toastId = toast.loading(
-      validUploadTasks.length === 1
-        ? `Uploading ${validUploadTasks[0].name}...`
-        : `Uploading ${validUploadTasks.length} documents...`
-    );
+
+    const optimisticDocs = validUploadTasks.map((file) => {
+      const ext = (file.name.split('.').pop() || 'FILE').toUpperCase();
+      return {
+        id: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        workspace_id: workspaceId,
+        original_filename: file.name,
+        file_size_bytes: file.size,
+        file_extension: ext,
+        mime_type: file.type || 'application/octet-stream',
+        status: 'UPLOADING',
+        parse_status: 'UPLOADING',
+        is_split: false,
+        part_count: 1,
+        chunk_count: 0,
+        created_at: new Date().toISOString(),
+        is_optimistic: true,
+      };
+    });
+
+    // Optimistically insert items immediately into document list cache
+    queryClient.setQueryData(DOCUMENT_QUERY_KEYS.workspaceList(workspaceId), (old) => {
+      const existing = Array.isArray(old?.documents)
+        ? old.documents
+        : Array.isArray(old)
+        ? old
+        : [];
+      if (Array.isArray(old)) {
+        return [...optimisticDocs, ...existing];
+      }
+      return {
+        ...(typeof old === 'object' && old !== null ? old : {}),
+        documents: [...optimisticDocs, ...existing],
+      };
+    });
 
     try {
       let successCount = 0;
@@ -67,26 +97,23 @@ export function useMultiFileUpload(workspaceId) {
       }
 
       // Synchronously invalidate and refetch workspace documents
-      queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
+      await queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
 
       if (successCount === validUploadTasks.length) {
         toast.success(
           successCount === 1
-            ? 'Document uploaded to Google Drive successfully'
-            : `${successCount} documents uploaded to Google Drive successfully`,
-          { id: toastId }
+            ? 'Document uploaded successfully'
+            : `${successCount} documents uploaded successfully`
         );
       } else if (successCount > 0) {
         toast.warning(
-          `${successCount} of ${validUploadTasks.length} documents uploaded to Google Drive.`,
-          { id: toastId }
+          `${successCount} of ${validUploadTasks.length} documents uploaded.`
         );
-      } else {
-        toast.dismiss(toastId);
       }
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Upload failed. Please try again.'), { id: toastId, duration: 6000 });
+      toast.error(getErrorMessage(err, 'Upload failed. Please try again.'), { duration: 6000 });
+      queryClient.invalidateQueries({ queryKey: DOCUMENT_QUERY_KEYS.workspaceList(workspaceId) });
     } finally {
       setIsUploading(false);
     }
