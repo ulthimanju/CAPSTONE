@@ -4,7 +4,7 @@ import { documentApi } from '../api/documentApi';
 import { documentKeys, DOCUMENT_QUERY_KEYS } from './documentKeys';
 import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 import { learningPathKeys } from '@/features/learning-path/hooks/learningPathKeys';
-import { STORAGE_KEYS } from '@/config/constants';
+import { useAuthStore } from '@/store/authStore';
 
 export { documentKeys, DOCUMENT_QUERY_KEYS };
 
@@ -20,7 +20,7 @@ export function useWorkspaceDocumentSSE(workspaceId) {
     }
 
     const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    const token = useAuthStore.getState().token;
     const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
     const sseUrl = `${baseURL}/api/v1/workspaces/${workspaceId}/events${tokenParam}`;
 

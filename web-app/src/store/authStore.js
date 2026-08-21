@@ -14,8 +14,8 @@ function parseUserSub(jwtToken) {
 }
 
 export const useAuthStore = create((set, get) => ({
-  token: localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null,
-  isAuthenticated: Boolean(localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)),
+  token: null,
+  isAuthenticated: false,
 
   setToken: (token) => {
     const prevToken = get().token;
@@ -33,10 +33,8 @@ export const useAuthStore = create((set, get) => ({
     }
 
     if (token) {
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
       set({ token, isAuthenticated: true });
     } else {
-      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
       set({ token: null, isAuthenticated: false });
     }
   },
@@ -46,8 +44,9 @@ export const useAuthStore = create((set, get) => ({
   },
 
   clearAuth: () => {
+    // Purge legacy storage items if present
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem('synapse_user'); // cleanup legacy key if present
+    localStorage.removeItem('synapse_user');
     localStorage.removeItem('synapse_active_workspace');
     useWorkspaceStore.getState().clearActiveWorkspace();
     try {

@@ -81,12 +81,13 @@ describe('Zod Schema Validation', () => {
 describe('LoginPage Component', () => {
   beforeEach(() => {
     useAuthStore.getState().clearAuth();
+    vi.spyOn(authApi, 'refreshToken').mockResolvedValue(null);
   });
 
-  it('renders brand heading and Continue with Google button', () => {
+  it('renders brand heading and Continue with Google button', async () => {
     renderWithProviders(<LoginPage />, { route: '/login' });
 
-    expect(screen.getByRole('heading', { level: 1, name: 'SYNAPSE' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'SYNAPSE' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
   });
 });

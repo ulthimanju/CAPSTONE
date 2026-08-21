@@ -72,6 +72,17 @@ export const authApi = {
   },
 
   /**
+   * Logs out the current session and clears cookies.
+   */
+  logout: async () => {
+    try {
+      await apiClient.post('/api/v1/sessions/logout');
+    } catch {
+      // Ignore network errors during logout
+    }
+  },
+
+  /**
    * Revokes all user sessions, or all other sessions if currentSessionId is provided.
    */
   revokeAllSessions: async (currentSessionId) => {

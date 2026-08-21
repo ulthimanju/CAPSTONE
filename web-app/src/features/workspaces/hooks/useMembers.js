@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { memberApi } from '../api/memberApi';
 import { workspaceKeys } from './workspaceKeys';
-import { STORAGE_KEYS } from '@/config/constants';
+import { useAuthStore } from '@/store/authStore';
 
 export const memberKeys = {
   all: ['workspace-members'],
@@ -23,7 +23,7 @@ export function useWorkspaceMemberSSE(workspaceId) {
     }
 
     const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    const token = useAuthStore.getState().token;
     const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
     const sseUrl = `${baseURL}/api/v1/workspaces/${workspaceId}/events${tokenParam}`;
 

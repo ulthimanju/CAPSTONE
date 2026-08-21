@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.api.dependencies.auth import get_current_user_id, get_current_session_context
 from app.api.dependencies.database import get_session_repository, get_unit_of_work
@@ -23,6 +23,7 @@ async def list_sessions(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
+    response: Response,
     auth_ctx: tuple[UUID, UUID | None] = Depends(get_current_session_context),
     session_repo: SessionRepository = Depends(get_session_repository),
     uow: UnitOfWorkInterface = Depends(get_unit_of_work),
@@ -35,10 +36,12 @@ async def logout(
     else:
         # Fallback to revoking all sessions
         await use_case.revoke_all_sessions(user_id)
+    response.delete_cookie(key="refresh_token", path="/")
 
 
 @router.post("/logout-all", status_code=status.HTTP_204_NO_CONTENT)
 async def logout_all(
+    response: Response,
     auth_ctx: tuple[UUID, UUID | None] = Depends(get_current_session_context),
     session_repo: SessionRepository = Depends(get_session_repository),
     uow: UnitOfWorkInterface = Depends(get_unit_of_work),
@@ -46,6 +49,7 @@ async def logout_all(
     user_id, _ = auth_ctx
     use_case = SessionUseCase(session_repo, uow)
     await use_case.revoke_all_sessions(user_id)
+    response.delete_cookie(key="refresh_token", path="/")
 
 
 @router.post("/revoke-others", status_code=status.HTTP_204_NO_CONTENT)

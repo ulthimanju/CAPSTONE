@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/utils/errors';
 
 export const AUTH_QUERY_KEYS = {
   PROFILE: ['auth', 'profile'],
+  BOOTSTRAP: ['auth', 'bootstrap'],
   GOOGLE_DRIVE: ['auth', 'google-drive'],
   SESSIONS: ['auth', 'sessions'],
 };
@@ -17,6 +18,34 @@ export const AUTH_STATUS = {
   AUTHENTICATED: 'AUTHENTICATED', // Confirmed valid session with loaded profile
   UNAUTHENTICATED: 'UNAUTHENTICATED', // No token, or revoked/expired token
 };
+
+/**
+ * Query hook for initial silent session restore via httpOnly refresh cookie.
+ * Ensures in-memory access tokens are seamlessly acquired on F5 reload.
+ */
+export function useAuthBootstrapQuery() {
+  const token = useAuthStore((state) => state.token);
+  const setToken = useAuthStore((state) => state.setToken);
+
+  return useQuery({
+    queryKey: AUTH_QUERY_KEYS.BOOTSTRAP,
+    queryFn: async () => {
+      try {
+        const data = await authApi.refreshToken();
+        if (data?.access_token) {
+          setToken(data.access_token);
+          return data;
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !token,
+    staleTime: Infinity,
+    retry: false,
+  });
+}
 
 /**
  * Query hook for current authenticated user profile.
@@ -49,11 +78,22 @@ export function useCurrentUser() {
  */
 export function useAuthStatus() {
   const token = useAuthStore((state) => state.token);
-  const { data: user, isLoading, isError } = useProfileQuery({
+  const { isLoading: isBootstrapping } = useAuthBootstrapQuery();
+
+  const { data: user, isLoading: isProfileLoading, isError } = useProfileQuery({
     enabled: Boolean(token),
   });
 
   if (!token) {
+    if (isBootstrapping) {
+      return {
+        status: AUTH_STATUS.UNKNOWN,
+        user: null,
+        isLoading: true,
+        isAuthenticated: false,
+      };
+    }
+
     return {
       status: AUTH_STATUS.UNAUTHENTICATED,
       user: null,
@@ -62,7 +102,7 @@ export function useAuthStatus() {
     };
   }
 
-  if (isLoading) {
+  if (isProfileLoading) {
     return {
       status: AUTH_STATUS.UNKNOWN,
       user: null,
@@ -209,9 +249,14 @@ export function useLogout() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const navigate = useNavigate();
 
-  return () => {
+  return async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Ignore network errors during logout
+    }
     queryClient.clear(); // purge all server-cached queries
-    clearAuth(); // purge access token and active workspace ID
+    clearAuth(); // purge in-memory access token and active workspace ID
     toast.info('Signed out successfully.');
     navigate(ROUTES.LOGIN, { replace: true });
   };
