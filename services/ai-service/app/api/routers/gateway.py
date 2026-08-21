@@ -302,11 +302,13 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
         ws_meta = await ws_client.get_workspace(ws_id, auth_header)
         ws_name = ws_meta.get("name")
         topics_covered = ws_meta.get("topics_covered") or await ws_client.get_topics(ws_id, auth_header)
+        source_chunks = await ws_client.get_workspace_chunks(ws_id, auth_header, limit=100)
 
-        assembled_prompt = BasePromptContextBuilder.build_grounded_context(
+        assembled_prompt = BasePromptContextBuilder.build_summary_grounded_context(
             workspace_meta=ws_meta,
             topics_covered=topics_covered,
-            max_chars=40000,
+            source_chunks=source_chunks,
+            max_chars=150000,
         )
 
         sys_instruction = WorkspaceSummaryPromptBuilder.build_system_instruction(

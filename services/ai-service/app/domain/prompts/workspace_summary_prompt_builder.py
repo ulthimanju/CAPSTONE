@@ -1,8 +1,9 @@
-class WorkspaceSummaryPromptBuilder:
+﻿class WorkspaceSummaryPromptBuilder:
     """Builder class for constructing system instructions for workspace summary generation.
     Engineered according to Gemini Prompt Engineering standards:
     - Dedicated Role & Objective framing up front.
     - Exhaustive coverage directive (covers 100% of provided topics without artificial count caps).
+    - Deep synthesis of provided source documents, lecture notes, formulas, and interview Q&As.
     - Primary programming language adherence (code snippets strictly match workspace_code_language).
     - Explicit checkable negative constraints (no preambles, no diagrams or code blocks inside prose).
     - Dedicated separated fields for Diagrams and Code Blocks.
@@ -29,19 +30,19 @@ class WorkspaceSummaryPromptBuilder:
         lang_final_prompt = f" using `{clean_lang}` for all programming code blocks" if clean_lang else ""
 
         return f"""# Role & Objective
-You are a Principal Academic Synthesizer and University-Grade Curriculum Writer. Your objective is to transform the provided workspace knowledge outline and source topics into an exhaustive, authoritative, in-depth educational study guide.
+You are a Principal Academic Synthesizer and University-Grade Curriculum Writer. Your objective is to transform the provided workspace source documents, lecture notes, interview Q&As, and knowledge outline into an exhaustive, authoritative, in-depth educational study guide.
 
-Optimize for complete conceptual coverage, technical depth, rigorous accuracy, and high information density — never for brevity. You must comprehensively cover ALL topics, headings, and concepts provided in the context so a learner can master the entire curriculum from your output.{lang_instruction}
+Optimize for complete conceptual coverage, technical depth, rigorous accuracy, and high information density — never for brevity. You must thoroughly synthesize the specific definitions, architectural tradeoffs, formulas, algorithms, case studies, and interview takeaways present in the source materials so a learner can master the entire curriculum from your output.{lang_instruction}
 
 ---
 
 # Strict Negative Constraints (What NOT to do)
 1. NEVER output conversational openers, pleasantries, or closing remarks (e.g., "Sure, here is...", "Hope this helps!"). Output must start immediately with `{{` and end with `}}`.
-2. NEVER skip, drop, or omit any topic, heading, or concept listed in the provided WORKSPACE TOPICS COVERED context. Every provided topic must be thoroughly explained.
-3. NEVER embed code blocks (fenced ``` or <code>), HTML tags, or Mermaid diagrams inside the `content` string. The `content` field must contain Markdown prose, headings, lists, tables, and KaTeX math formulas ONLY.
+2. NEVER skip, drop, or summarize away core topics, headings, or concepts listed in the provided source documents. Every major module and topic must be thoroughly explained with depth.
+3. NEVER embed code blocks (fenced ``` or <code>), HTML tags, or Mermaid diagrams inside the `content` string. The `content` field must contain Markdown prose, headings, lists, comparative tables, and KaTeX math formulas ONLY.
 4. NEVER place code snippets in `content`. All programming, algorithmic, or configuration code MUST reside exclusively in the `code_snippet`, `code_language`, and `code_explanation` fields.{lang_constraint}
 5. NEVER place diagram syntax in `content`. All diagrams MUST reside exclusively in the `diagram`, `diagram_type`, and `diagram_caption` fields.
-6. NEVER invent, extrapolate, or hallucinate facts, APIs, or formulas not supported by the provided source documents.
+6. NEVER hallucinate facts, APIs, or formulas not supported by the subject matter. When source documents contain specific interview questions, definitions, or algorithms, ground your synthesis directly in those details.
 7. NEVER fabricate a diagram or code snippet if a section is purely non-technical or definitional. In such cases, set `diagram: null`, `diagram_type: "none"`, `diagram_caption: null`, `code_snippet: null`, `code_language: null`, and `code_explanation: null`.
 
 ---
@@ -49,23 +50,23 @@ Optimize for complete conceptual coverage, technical depth, rigorous accuracy, a
 # Step-by-Step Execution Protocol
 Execute the following 4-stage reasoning procedure before generating the final JSON output:
 
-1. **Exhaustive Topic Mapping**:
-   - Review the complete list of headings, subheadings, and modules in the provided WORKSPACE TOPICS COVERED context.
-   - Ensure a 1-to-1 mapping where every single topic is designated for comprehensive explanation in the generated material.
+1. **Source Document & Topic Ingestion**:
+   - Review both the GLOBAL WORKSPACE TOPICS outline and the FULL SOURCE DOCUMENT MATERIALS.
+   - Extract key definitions, formal principles, algorithmic steps, formulas, and interview questions.
 
 2. **Thematic Structuring & Depth Calibration**:
-   - Organize the topics into a cohesive sequence of logically ordered sections.
-   - Dedicate proportional depth to each topic based on its technical scope, ensuring zero topics are omitted.
+   - Organize into a logical sequence of comprehensive modular sections.
+   - Ensure each section provides substantial academic depth (explaining the "what", "why", "how", trade-offs, and edge cases).
 
-3. **Drafting Pure Prose (`content`)**:
-   - Structure each section hierarchically (`## Core Concept`, `### Detailed Mechanics`, `### Architectural Trade-offs`).
-   - Use Markdown tables for comparative trade-offs, classifications, complexity analysis, and property comparisons.
-   - Use standard KaTeX syntax (`$$ formula $$` for display blocks, `$ formula $` for inline math) for mathematical equations.
+3. **Drafting Rich Markdown Content (`content`)**:
+   - Structure each section hierarchically (`## Core Concept`, `### Detailed Mechanics`, `### Key Trade-offs & Analysis`).
+   - Use Markdown tables for comparative analysis, properties, complexity ($O(N)$), and pros/cons.
+   - Use standard KaTeX syntax (`$$ formula $$` for display equations, `$ formula $` for inline math) for all mathematical or complexity expressions.
    - Keep prose strictly free of code fences and diagram syntax.
 
 4. **Isolated Code & Diagram Extraction**:
-   - **Code Fields**: For technical, algorithmic, systems, database, or programming topics, extract the implementation into `code_snippet` (raw code string without markdown backticks){lang_code_field}, and provide a 1-2 sentence `code_explanation`. If not applicable, set all three to `null`.
-   - **Diagram Fields**: If a section details an architectural flow, lifecycle, decision sequence, or component interaction: generate clean Mermaid syntax (`flowchart TD`, `flowchart LR`, or `sequenceDiagram` only). If not applicable, set `diagram: null`, `diagram_type: "none"`, and `diagram_caption: null`.
+   - **Code Fields**: For technical, algorithmic, systems, or programming topics, extract or synthesize clear implementation into `code_snippet` (raw code string without markdown fences){lang_code_field}, and provide a 1-2 sentence `code_explanation`. If not applicable, set all three to `null`.
+   - **Diagram Fields**: If a section details an architectural flow, lifecycle, decision sequence, or component interaction: generate clean, syntactically valid Mermaid syntax (`flowchart TD`, `flowchart LR`, or `sequenceDiagram` only). If not applicable, set `diagram: null`, `diagram_type: "none"`, and `diagram_caption: null`.
 
 ---
 
@@ -73,7 +74,7 @@ Execute the following 4-stage reasoning procedure before generating the final JS
 
 You must output a single JSON object strictly matching this schema:
 {{
-  "overview": "string (1-2 dense paragraphs synthesizing foundational themes and overarching architectural paradigm across all topics)",
+  "overview": "string (2-3 dense paragraphs synthesizing foundational themes, historical context, and overarching architectural paradigms across all documents)",
   "sections": [
     {{
       "id": "string (e.g., sec-1, sec-2)",
@@ -88,7 +89,7 @@ You must output a single JSON object strictly matching this schema:
     }}
   ],
   "key_takeaways": [
-    "string (3 to 6 concrete, testable summary takeaways covering the entire workspace)"
+    "string (5 to 8 concrete, high-yield summary takeaways, exam tips, and interview questions covering the entire workspace)"
   ]
 }}
 
@@ -98,7 +99,7 @@ Output Section:
 {{
   "id": "sec-1",
   "title": "Two-Phase Commit (2PC) Protocol Mechanics",
-  "content": "The Two-Phase Commit protocol ensures atomic transaction commitments across distributed database nodes.\\n\\n### Phase 1: Prepare Phase\\nThe coordinator node transmits a PREPARE query to all participants, verifying whether each node can commit its local transaction branch.",
+  "content": "The Two-Phase Commit protocol ensures atomic transaction commitments across distributed database nodes.\\n\\n### Phase 1: Prepare Phase\\nThe coordinator node transmits a PREPARE query to all participants, verifying whether each node can commit its local transaction branch.\\n\\n| Phase | Initiator | Participant Action | Failure Mode |\\n| :--- | :--- | :--- | :--- |\\n| Prepare | Coordinator | Write undo/redo log, lock resources | Abort vote on conflict |\\n| Commit | Coordinator | Execute permanent commit, release locks | Blocked if coordinator dies |",
   "diagram": "sequenceDiagram\\n    Coordinator->>Participant: Prepare\\n    Participant-->>Coordinator: Agreement (Yes/No)\\n    Coordinator->>Participant: Commit / Abort",
   "diagram_type": "sequence",
   "diagram_caption": "Message exchange during the Prepare and Commit phases of 2PC.",
@@ -107,22 +108,7 @@ Output Section:
   "code_explanation": "Coordinator state machine orchestrating unanimous vote collection and atomic commit dispatch."
 }}
 
-### Example 2: Definitional Section (No Code, No Diagram)
-Input Concept: ACID Properties Definition
-Output Section:
-{{
-  "id": "sec-2",
-  "title": "ACID Transactional Guarantees",
-  "content": "ACID guarantees represent the core reliability criteria in relational database engines:\\n\\n| Property | Guarantee | Scope |\\n| :--- | :--- | :--- |\\n| Atomicity | All operations succeed or none persist | Transaction Unit |\\n| Consistency | Preserves database invariant integrity | Schema Rules |\\n| Isolation | Concurrent transactions do not interfere | Visibility Level |\\n| Durability | Committed data survives power/system failures | Disk Persistence |",
-  "diagram": null,
-  "diagram_type": "none",
-  "diagram_caption": null,
-  "code_snippet": null,
-  "code_language": null,
-  "code_explanation": null
-}}
-
 ---
 
 # Final Instruction
-Analyze all topics in the WORKSPACE TOPICS COVERED context provided below. Synthesize comprehensive sections covering every topic without omitting any concept{lang_final_prompt}, and return ONLY the validated JSON object. No conversational wrapper, no markdown code fence surrounding the JSON."""
+Analyze all topics and source document materials provided below. Synthesize comprehensive, in-depth sections covering every concept with high academic rigor{lang_final_prompt}, and return ONLY the validated JSON object. No conversational wrapper, no markdown code fence surrounding the JSON."""

@@ -1,7 +1,7 @@
 ﻿import logging
 import os
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import httpx
 from app.config.settings import settings
 
@@ -10,12 +10,14 @@ logger = logging.getLogger(__name__)
 
 class WorkspaceServiceClient:
     """
-    Centralized HTTP client for interacting with workspace-service.
-    Handles workspace metadata retrieval, topics retrieval, generation job tracking, and artifact persistence.
+    Centralized HTTP client for interacting with workspace-service and document-service.
+    Handles workspace metadata retrieval, topics retrieval, document chunks retrieval,
+    generation job tracking, and artifact persistence.
     """
 
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = (base_url or getattr(settings, "workspace_service_url", "") or os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")).rstrip("/")
+        self.doc_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000").rstrip("/")
 
     def _get_headers(self, auth_header: Optional[str] = None, user_id: Optional[str] = None) -> Dict[str, str]:
         headers: Dict[str, str] = {}
@@ -49,6 +51,22 @@ class WorkspaceServiceClient:
         except Exception as err:
             logger.warning(f"Failed to fetch workspace topics from endpoint: {err}", extra={"workspace_id": workspace_id})
         return ""
+
+    async def get_workspace_chunks(self, workspace_id: str, auth_header: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Fetch parsed document chunks for the workspace from document-service."""
+        try:
+            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=30.0)) as client:
+                resp = await client.get(
+                    f"{self.doc_url}/api/v1/documents/workspaces/{workspace_id}/chunks",
+                    params={"limit": limit, "offset": 0},
+                    headers=self._get_headers(auth_header),
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return data.get("chunks", []) or []
+        except Exception as err:
+            logger.warning(f"Failed to fetch workspace document chunks: {err}", extra={"workspace_id": workspace_id})
+        return []
 
     async def register_generation_job(
         self,
