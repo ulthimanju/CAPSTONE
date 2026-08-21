@@ -22,22 +22,79 @@ import { toast } from 'sonner';
 
 function getStructuredPayload(content) {
   if (!content) return null;
-  if (typeof content === 'object' && (Array.isArray(content.sections) || content.overview || Array.isArray(content.key_takeaways))) {
-    return content;
+
+  // Case A: Already a parsed JS object
+  if (typeof content === 'object' && content !== null) {
+    if (Array.isArray(content.sections) && content.sections.length > 0) {
+      // Check for nested raw JSON string inside single fallback section
+      const firstContent = content.sections[0]?.content;
+      if (
+        content.sections.length === 1 &&
+        typeof firstContent === 'string' &&
+        firstContent.trim().startsWith('{') &&
+        firstContent.includes('"sections"')
+      ) {
+        const nested = getStructuredPayload(firstContent);
+        if (nested) return nested;
+      }
+      return content;
+    }
+    if (content.overview || Array.isArray(content.key_takeaways)) {
+      return content;
+    }
   }
+
+  // Case B: String containing JSON
   if (typeof content === 'string') {
-    const trimmed = content.trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    let clean = content.trim();
+    if (clean.startsWith('```')) {
+      clean = clean.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    }
+
+    if (clean.startsWith('{') && (clean.includes('"sections"') || clean.includes('"overview"'))) {
+      // 1. Direct standard parse
       try {
-        const parsed = JSON.parse(trimmed);
+        const parsed = JSON.parse(clean);
         if (parsed && (Array.isArray(parsed.sections) || parsed.overview || Array.isArray(parsed.key_takeaways))) {
           return parsed;
         }
       } catch {
-        // ignore
+        // 2. Repair LaTeX single backslashes (e.g. \text -> \\text, \times -> \\times)
+        try {
+          const repaired = clean.replace(/(?<!\\)\\(?![/u"bfnrt\\])/g, '\\\\');
+          const parsed = JSON.parse(repaired);
+          if (parsed && (Array.isArray(parsed.sections) || parsed.overview || Array.isArray(parsed.key_takeaways))) {
+            return parsed;
+          }
+        } catch {
+          // 3. Fallback regex field extractor
+          try {
+            const sections = [];
+            const blockMatches = clean.matchAll(/\{\s*"id":\s*"([^"]*)",\s*"title":\s*"([^"]*)",\s*"content":\s*"([\s\S]*?)"(?:\s*,\s*"diagram"|\s*,\s*"code_snippet"|\s*\})/g);
+            for (const match of blockMatches) {
+              const secId = match[1];
+              const secTitle = match[2];
+              const secContent = match[3]
+                .replace(/\\n/g, '\n')
+                .replace(/\\t/g, '\t')
+                .replace(/\\"/g, '"');
+              sections.push({
+                id: secId || `sec-${sections.length + 1}`,
+                title: secTitle || 'Key Concept',
+                content: secContent,
+              });
+            }
+            if (sections.length > 0) {
+              return { sections };
+            }
+          } catch {
+            // ignore
+          }
+        }
       }
     }
   }
+
   return null;
 }
 

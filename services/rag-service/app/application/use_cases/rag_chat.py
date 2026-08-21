@@ -21,38 +21,75 @@ def _parse_structured_rag_answer(raw_text: str, default_code_language: str | Non
 
     fallback_lang = default_code_language.lower() if default_code_language else None
 
-    # Try direct JSON parse
-    try:
-        data = json.loads(clean)
-        if isinstance(data, dict) and "sections" in data and isinstance(data["sections"], list):
-            normalized_sections = []
-            for idx, sec in enumerate(data["sections"]):
-                if isinstance(sec, dict):
-                    code_snip = sec.get("code_snippet") if sec.get("code_snippet") else None
-                    code_lang = sec.get("code_language") if sec.get("code_language") else (fallback_lang if code_snip else None)
-                    normalized_sections.append({
-                        "id": str(sec.get("id") or f"sec-{idx+1}"),
-                        "title": str(sec.get("title") or "Key Concept"),
-                        "content": str(sec.get("content") or ""),
-                        "diagram": sec.get("diagram") if sec.get("diagram") else None,
-                        "diagram_type": str(sec.get("diagram_type") or "none"),
-                        "diagram_caption": sec.get("diagram_caption") if sec.get("diagram_caption") else None,
-                        "code_snippet": code_snip,
-                        "code_language": str(code_lang) if code_lang else None,
-                        "code_explanation": sec.get("code_explanation") if sec.get("code_explanation") else None,
-                    })
-            if normalized_sections:
-                return {"sections": normalized_sections}
-    except Exception as e:
-        logger.warning(f"Failed to parse structured JSON from RAG output: {e}")
+    # Candidate 1: direct parse
+    # Candidate 2: escape single backslashes for invalid escape chars in LaTeX (e.g. \text -> \\text, \times -> \\times)
+    candidates = [
+        clean,
+        re.sub(r'(?<!\\)\\(?![/u"bfnrt\\])', r'\\\\', clean),
+    ]
 
-    # Fallback to single section wrapping the raw text
+    for cand in candidates:
+        try:
+            data = json.loads(cand)
+            if isinstance(data, dict) and "sections" in data and isinstance(data["sections"], list):
+                normalized_sections = []
+                for idx, sec in enumerate(data["sections"]):
+                    if isinstance(sec, dict):
+                        code_snip = sec.get("code_snippet") if sec.get("code_snippet") else None
+                        code_lang = sec.get("code_language") if sec.get("code_language") else (fallback_lang if code_snip else None)
+                        normalized_sections.append({
+                            "id": str(sec.get("id") or f"sec-{idx+1}"),
+                            "title": str(sec.get("title") or "Key Concept"),
+                            "content": str(sec.get("content") or ""),
+                            "diagram": sec.get("diagram") if sec.get("diagram") else None,
+                            "diagram_type": str(sec.get("diagram_type") or "none"),
+                            "diagram_caption": sec.get("diagram_caption") if sec.get("diagram_caption") else None,
+                            "code_snippet": code_snip,
+                            "code_language": str(code_lang) if code_lang else None,
+                            "code_explanation": sec.get("code_explanation") if sec.get("code_explanation") else None,
+                        })
+                if normalized_sections:
+                    return {"sections": normalized_sections}
+        except Exception:
+            pass
+
+    # Regex extraction fallback for unclosed or damaged JSON strings
+    if '"sections"' in clean:
+        try:
+            content_blocks = re.findall(r'"title":\s*"([^"]*)".*?"content":\s*"([\s\S]*?)"(?:\s*,\s*"diagram"|\s*,\s*"code_snippet"|\s*\})', clean)
+            if content_blocks:
+                extracted = []
+                for idx, (t, c) in enumerate(content_blocks):
+                    clean_c = c.replace('\\n', '\n').replace('\\t', '\t').replace('\\"', '"')
+                    extracted.append({
+                        "id": f"sec-{idx+1}",
+                        "title": t or "Key Concept",
+                        "content": clean_c,
+                        "diagram": None,
+                        "diagram_type": "none",
+                        "diagram_caption": None,
+                        "code_snippet": None,
+                        "code_language": None,
+                        "code_explanation": None,
+                    })
+                if extracted:
+                    return {"sections": extracted}
+        except Exception:
+            pass
+
+    # Fallback to single section wrapping pure content (cleaned if it was a raw json string)
+    fallback_content = raw_text
+    if fallback_content.strip().startswith('{') and '"content":' in fallback_content:
+        match = re.search(r'"content":\s*"([\s\S]*?)"(?:\s*,\s*"diagram"|\s*,\s*"code_snippet"|\s*\})', fallback_content)
+        if match:
+            fallback_content = match.group(1).replace('\\n', '\n').replace('\\t', '\t').replace('\\"', '"')
+
     return {
         "sections": [
             {
                 "id": "sec-1",
                 "title": "Response",
-                "content": raw_text,
+                "content": fallback_content,
                 "diagram": None,
                 "diagram_type": "none",
                 "diagram_caption": None,
