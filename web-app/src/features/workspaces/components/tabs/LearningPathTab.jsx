@@ -100,10 +100,6 @@ export function LearningPathTab({ workspace: propWorkspace }) {
             No Learning Path Generated
           </h3>
 
-          <p className="mt-2 max-w-md font-body text-xs sm:text-sm text-text/70 leading-relaxed">
-            Generate an adaptive study sequence with milestone checkpoints, estimated topic durations, and prerequisite paths synthesized from your documents.
-          </p>
-
           <Button
             onClick={handleGenerate}
             isLoading={generateMutation.isPending || isGenerating}
