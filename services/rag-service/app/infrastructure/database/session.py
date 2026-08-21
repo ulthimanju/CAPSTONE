@@ -40,7 +40,7 @@ async def init_db():
         # This is idempotent and safe to run on every startup.
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
-        # Ensure HNSW vector index for sub-10ms cosine similarity search
+        # Ensure HNSW vector index for approximate nearest neighbor cosine similarity search
         await conn.execute(
             text(
                 """
