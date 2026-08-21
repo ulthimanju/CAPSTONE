@@ -1,4 +1,3 @@
-import { create } from 'zustand';
 import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query';
 import learningPathApi from '../api/learningPathApi';
 import { useWorkspaceDocumentSSE } from '@/features/documents/hooks/useDocuments';
@@ -8,33 +7,6 @@ import { learningPathKeys } from './learningPathKeys';
 
 export { learningPathKeys };
 
-export const useLearningPathStore = create((set, get) => ({
-  generatingWorkspaces: {},
-  generatingUnits: {},
-
-  setGenerating: (workspaceId, isGenerating) =>
-    set((state) => ({
-      generatingWorkspaces: {
-        ...state.generatingWorkspaces,
-        [workspaceId]: isGenerating,
-      },
-    })),
-
-  setGeneratingUnit: (workspaceId, unitIdentifier, isGenerating) => {
-    const key = `${workspaceId}:${unitIdentifier}`;
-    set((state) => ({
-      generatingUnits: {
-        ...state.generatingUnits,
-        [key]: isGenerating,
-      },
-    }));
-  },
-
-  isGenerating: (workspaceId) => Boolean(get().generatingWorkspaces[workspaceId]),
-  isGeneratingUnit: (workspaceId, unitIdentifier) =>
-    Boolean(get().generatingUnits[`${workspaceId}:${unitIdentifier}`]),
-}));
-
 /**
  * Authoritative hook to determine whether learning path generation is actively in progress.
  */
@@ -43,14 +15,11 @@ export function useIsLearningPathGenerating(workspaceId) {
   const isMutatingCount = useIsMutating({
     mutationKey: ['workspace-learning-path-generate', workspaceId],
   });
-  const localStoreFlag = useLearningPathStore((state) =>
-    Boolean(state.generatingWorkspaces[workspaceId])
-  );
 
   const isBackendRunning =
     genStatus?.learning_path_status === 'RUNNING' || genStatus?.learning_path_status === 'QUEUED';
 
-  return isBackendRunning || isMutatingCount > 0 || localStoreFlag;
+  return isBackendRunning || isMutatingCount > 0;
 }
 
 /**
@@ -62,9 +31,6 @@ export function useIsUnitContentGenerating(workspaceId, unitId, unitTitle) {
   const isMutatingCount = useIsMutating({
     mutationKey: ['workspace-unit-generate', workspaceId, targetKey],
   });
-  const localStoreFlag = useLearningPathStore((state) =>
-    Boolean(state.generatingUnits[`${workspaceId}:${targetKey}`] || (unitTitle && state.generatingUnits[`${workspaceId}:${unitTitle}`]))
-  );
 
   const backendUnitStatus =
     (unitId && genStatus?.unit_statuses?.[unitId]) ||
@@ -73,7 +39,7 @@ export function useIsUnitContentGenerating(workspaceId, unitId, unitTitle) {
   const isBackendRunning =
     backendUnitStatus === 'RUNNING' || backendUnitStatus === 'QUEUED';
 
-  return isBackendRunning || isMutatingCount > 0 || localStoreFlag;
+  return isBackendRunning || isMutatingCount > 0;
 }
 
 export function useWorkspaceLearningPathQuery(workspaceId) {
@@ -98,22 +64,18 @@ export function useWorkspaceLearningPathQuery(workspaceId) {
 
 export function useGenerateLearningPathMutation(workspaceId) {
   const queryClient = useQueryClient();
-  const setGenerating = useLearningPathStore((state) => state.setGenerating);
 
   return useMutation({
     mutationKey: ['workspace-learning-path-generate', workspaceId],
     mutationFn: async () => {
-      setGenerating(workspaceId, true);
       return learningPathApi.generateWorkspaceLearningPath(workspaceId);
     },
     onSuccess: () => {
-      setGenerating(workspaceId, true);
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.generationStatus(workspaceId) });
       queryClient.invalidateQueries({ queryKey: learningPathKeys.path(workspaceId) });
     },
     onError: () => {
-      setGenerating(workspaceId, false);
       queryClient.invalidateQueries({ queryKey: workspaceKeys.generationStatus(workspaceId) });
     },
   });
@@ -140,7 +102,6 @@ export function useUnitContentQuery(workspaceId, unitTitle, unitId = null) {
 
 export function useGenerateUnitContentMutation(workspaceId, unitTitle, unitId = null) {
   const queryClient = useQueryClient();
-  const setGeneratingUnit = useLearningPathStore((state) => state.setGeneratingUnit);
   const targetKey = unitId || unitTitle;
 
   return useMutation({
@@ -148,7 +109,6 @@ export function useGenerateUnitContentMutation(workspaceId, unitTitle, unitId = 
     mutationFn: async (payload) => {
       const title = payload?.unit_title || unitTitle;
       const uid = payload?.unit_id || unitId;
-      setGeneratingUnit(workspaceId, targetKey, true);
       return learningPathApi.generateLearningUnitContent(workspaceId, {
         unit_id: uid,
         unit_title: title,
@@ -159,7 +119,6 @@ export function useGenerateUnitContentMutation(workspaceId, unitTitle, unitId = 
     },
     onSuccess: (data, variables) => {
       const title = variables?.unit_title || unitTitle;
-      setGeneratingUnit(workspaceId, targetKey, true);
       queryClient.invalidateQueries({
         queryKey: learningPathKeys.unit(workspaceId, title),
       });
@@ -171,7 +130,6 @@ export function useGenerateUnitContentMutation(workspaceId, unitTitle, unitId = 
       });
     },
     onError: (err, variables) => {
-      setGeneratingUnit(workspaceId, targetKey, false);
       queryClient.invalidateQueries({
         queryKey: workspaceKeys.generationStatus(workspaceId),
       });

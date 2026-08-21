@@ -1,4 +1,3 @@
-import { create } from 'zustand';
 import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query';
 import summaryApi from '../api/summaryApi';
 import { useWorkspaceDocumentSSE } from '@/features/documents/hooks/useDocuments';
@@ -6,20 +5,6 @@ import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 import { useWorkspaceGenerationStatusQuery } from '@/features/workspaces/hooks/useWorkspaces';
 
 export const SUMMARY_QUERY_KEY = 'workspace-summary';
-
-export const useSummaryStore = create((set, get) => ({
-  generatingWorkspaces: {},
-
-  setGenerating: (workspaceId, isGenerating) =>
-    set((state) => ({
-      generatingWorkspaces: {
-        ...state.generatingWorkspaces,
-        [workspaceId]: isGenerating,
-      },
-    })),
-
-  isGenerating: (workspaceId) => Boolean(get().generatingWorkspaces[workspaceId]),
-}));
 
 /**
  * Authoritative hook to determine whether summary generation is actively in progress.
@@ -30,14 +15,11 @@ export function useIsSummaryGenerating(workspaceId) {
   const isMutatingCount = useIsMutating({
     mutationKey: ['workspace-summary-generate', workspaceId],
   });
-  const localStoreFlag = useSummaryStore((state) =>
-    Boolean(state.generatingWorkspaces[workspaceId])
-  );
 
   const isBackendRunning =
     genStatus?.summary_status === 'RUNNING' || genStatus?.summary_status === 'QUEUED';
 
-  return isBackendRunning || isMutatingCount > 0 || localStoreFlag;
+  return isBackendRunning || isMutatingCount > 0;
 }
 
 export function useWorkspaceSummaryQuery(workspaceId) {
@@ -61,23 +43,19 @@ export function useWorkspaceSummaryQuery(workspaceId) {
 
 export function useGenerateSummaryMutation(workspaceId) {
   const queryClient = useQueryClient();
-  const setGenerating = useSummaryStore((state) => state.setGenerating);
 
   return useMutation({
     mutationKey: ['workspace-summary-generate', workspaceId],
     mutationFn: async () => {
-      setGenerating(workspaceId, true);
       return summaryApi.generateWorkspaceSummary(workspaceId);
     },
     onSuccess: () => {
-      setGenerating(workspaceId, true);
       // Invalidate workspace details, summary, and generation-status
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.generationStatus(workspaceId) });
       queryClient.invalidateQueries({ queryKey: [SUMMARY_QUERY_KEY, workspaceId] });
     },
     onError: () => {
-      setGenerating(workspaceId, false);
       queryClient.invalidateQueries({ queryKey: workspaceKeys.generationStatus(workspaceId) });
     },
   });
