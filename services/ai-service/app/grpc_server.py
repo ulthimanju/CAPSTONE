@@ -2,6 +2,7 @@ import asyncio
 import logging
 import grpc
 from app.infrastructure.clients.providers.gemini_provider import GeminiClient
+from app.infrastructure.clients.providers.embedding_provider import VectorEmbeddingProvider
 from shared.grpc import ai_service_pb2, ai_service_pb2_grpc
 
 logger = logging.getLogger(__name__)
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 class AIGrpcServicer(ai_service_pb2_grpc.AIServiceServicer):
     def __init__(self):
         self.provider = GeminiClient()
+        self.vector_embedder = VectorEmbeddingProvider()
 
     async def GetEmbeddings(
         self,
@@ -20,7 +22,7 @@ class AIGrpcServicer(ai_service_pb2_grpc.AIServiceServicer):
         if not texts:
             return ai_service_pb2.EmbeddingResponse(embeddings=[])
         try:
-            vectors = await self.provider.embed_texts(texts)
+            vectors = await self.vector_embedder.embed_texts(texts)
             res_vectors = [
                 ai_service_pb2.FloatVector(values=v)
                 for v in vectors

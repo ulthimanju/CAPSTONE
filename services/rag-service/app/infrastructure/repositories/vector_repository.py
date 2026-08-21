@@ -30,7 +30,7 @@ class VectorRepository:
                 chunk_index=item["chunk_index"],
                 chunk_content=item["content"],
                 document_name=document_name,
-                embedding_model="text-embedding-004",
+                embedding_model="voyage-4-large",
                 embedding_dimension=len(item["vector"]),
                 vector=item["vector"],
                 status="COMPLETED",

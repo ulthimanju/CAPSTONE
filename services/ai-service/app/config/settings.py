@@ -11,6 +11,11 @@ class AIServiceSettings(PlatformSettings):
     gemini_default_model: str = "gemini-3.6-flash"
     gemini_embedding_model: str = "gemini-embedding-001"
 
+    voyage_api_key: str = "pa-14YbMx5eLDUZqPylzJMjdz8ohqTDuwk_gljVHZUFf4O"
+    voyage_document_model: str = "voyage-4-large"
+    voyage_query_model: str = "voyage-4-lite"
+    embedding_dimension: int = 1024
+
     workspace_service_url: str = "http://workspace-service:8000"
     rag_service_url: str = "http://rag-service:8000"
     document_service_url: str = "http://document-service:8000"

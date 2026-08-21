@@ -18,14 +18,15 @@ def test_ai_service_list_models():
     assert len(models) >= 2
     model_ids = [m["id"] for m in models]
     assert "gemini-2.5-flash" in model_ids
-    assert "text-embedding-004" in model_ids
+    assert "voyage-4-large" in model_ids
+    assert "voyage-4-lite" in model_ids
 
 
-@patch("app.api.routers.gateway.gemini_client.embed_texts", new_callable=AsyncMock)
+@patch("app.api.routers.gateway.vector_embedder.embed_texts", new_callable=AsyncMock)
 def test_ai_service_embeddings_endpoint(mock_embed):
     mock_embed.return_value = [[0.1, 0.2, 0.3]]
     client = TestClient(app)
-    res = client.post("/api/v1/ai/embeddings", json={"texts": ["test query"], "model": "text-embedding-004"})
+    res = client.post("/api/v1/ai/embeddings", json={"texts": ["test query"], "model": "voyage-4-large", "input_type": "document"})
     assert res.status_code == 200
     data = res.json()
     assert data["dimension"] == 3

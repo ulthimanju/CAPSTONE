@@ -49,12 +49,16 @@ async def generate_chunk_embeddings(
 
     texts = [c["content"] for c in req.chunks]
     vectors = []
-    batch_size = 90  # Gemini API limit is max 100 requests per batch call
+    batch_size = 100
 
     try:
         for i in range(0, len(texts), batch_size):
             sub_batch = texts[i : i + batch_size]
-            sub_vectors = await ai_client.get_embeddings(sub_batch)
+            sub_vectors = await ai_client.get_embeddings(
+                sub_batch,
+                model="voyage-4-large",
+                input_type="document",
+            )
             vectors.extend(sub_vectors)
     except Exception as e:
         logger.exception("Failed to fetch embeddings from ai-service", extra={"workspace_id": req.workspace_id, "document_id": req.document_id})
@@ -119,10 +123,9 @@ async def semantic_search(
         )
 
     try:
-        query_vectors = await ai_client.get_embeddings([req.query])
-        if not query_vectors:
+        query_vector = await ai_client.get_query_embedding(req.query, model="voyage-4-lite")
+        if not query_vector:
             raise HTTPException(status_code=500, detail="Query embedding returned empty vector.")
-        query_vector = query_vectors[0]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to embed query string: {e}")
 

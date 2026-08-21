@@ -6,7 +6,8 @@ from app.constants.enums import AIProvider
 
 class EmbeddingRequest(BaseModel):
     texts: list[str] = Field(..., description="List of text strings to embed")
-    model: str = Field(default="text-embedding-004", description="Gemini embedding model name")
+    model: str | None = Field(default=None, description="Embedding model name (e.g. voyage-4-large, voyage-4-lite)")
+    input_type: str | None = Field(default=None, description="Input type: 'document' or 'query'")
 
 
 class EmbeddingResponse(BaseModel):

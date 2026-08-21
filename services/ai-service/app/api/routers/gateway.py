@@ -22,9 +22,12 @@ from app.utils.ids import generate_uuid
 from app.config.settings import settings
 from app.api.dependencies.auth import get_current_user_id
 
+from app.infrastructure.clients.providers.embedding_provider import VectorEmbeddingProvider
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/ai", tags=["AI Gateway"])
 gemini_client = GeminiClient()
+vector_embedder = VectorEmbeddingProvider()
 
 
 from fastapi.responses import JSONResponse
@@ -32,14 +35,18 @@ from fastapi.responses import JSONResponse
 @router.get("/health")
 async def health_check():
     has_key = bool(gemini_client.api_key)
-    checks = {"gemini_api": "ok" if has_key else "unconfigured"}
-    status_code = 200 if has_key else 503
+    has_voyage_key = bool(vector_embedder.api_key)
+    checks = {
+        "gemini_api": "ok" if has_key else "unconfigured",
+        "embedding_api": "ok" if has_voyage_key else "unconfigured",
+    }
+    status_code = 200 if (has_key and has_voyage_key) else 503
     return JSONResponse(
         status_code=status_code,
         content={
-            "status": "ready" if has_key else "degraded",
-            "provider": "GEMINI",
-            "configured": has_key,
+            "status": "ready" if (has_key and has_voyage_key) else "degraded",
+            "provider": "HYBRID_GEMINI_VOYAGE",
+            "configured": bool(has_key and has_voyage_key),
             "checks": checks,
         },
     )
@@ -58,11 +65,19 @@ async def list_models():
                 "supports_streaming": True,
             },
             {
-                "id": "text-embedding-004",
-                "name": "Text Embedding 004",
+                "id": "voyage-4-large",
+                "name": "Voyage 4 Large (Document Indexing)",
                 "type": "EMBEDDING",
-                "input_token_limit": 2048,
-                "output_token_limit": 768,
+                "input_token_limit": 32000,
+                "output_token_limit": 1024,
+                "supports_embeddings": True,
+            },
+            {
+                "id": "voyage-4-lite",
+                "name": "Voyage 4 Lite (Fast Query RAG)",
+                "type": "EMBEDDING",
+                "input_token_limit": 32000,
+                "output_token_limit": 1024,
                 "supports_embeddings": True,
             },
         ]
@@ -72,17 +87,24 @@ async def list_models():
 @router.post("/embeddings", response_model=EmbeddingResponse)
 async def generate_embeddings(req: EmbeddingRequest):
     try:
-        vectors = await gemini_client.embed_texts(req.texts, model=req.model)
-        dim = len(vectors[0]) if vectors else 0
-        total_tokens = sum(TokenCounter.estimate_tokens(t) for t in req.texts)
-        return EmbeddingResponse(
+        vectors = await vector_embedder.embed_texts(
+            req.texts,
             model=req.model,
+            input_type=req.input_type,
+        )
+        dim = len(vectors[0]) if vectors else vector_embedder.embedding_dimension
+        total_tokens = sum(TokenCounter.estimate_tokens(t) for t in req.texts)
+        used_model = req.model or (
+            vector_embedder.default_query_model if req.input_type == "query" else vector_embedder.default_doc_model
+        )
+        return EmbeddingResponse(
+            model=used_model,
             dimension=dim,
             vectors=vectors,
             total_tokens=total_tokens,
         )
     except Exception as e:
-        logger.exception("Embedding generation failed", extra={"model": req.model})
+        logger.exception("Embedding generation failed", extra={"model": req.model, "input_type": req.input_type})
         raise HTTPException(status_code=500, detail=f"Embedding generation error: {e}")
 
 

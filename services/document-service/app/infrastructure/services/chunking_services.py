@@ -100,20 +100,22 @@ class MarkdownAnalyzer:
 
 class ChunkGenerator:
     @staticmethod
-    def generate_semantic_chunks(elements: list[dict[str, Any]], max_chars: int = 1500) -> list[dict[str, Any]]:
+    def generate_semantic_chunks(elements: list[dict[str, Any]], max_tokens: int = 31000) -> list[dict[str, Any]]:
         chunks = []
         current_chunk_content = []
-        current_chunk_chars = 0
+        current_chunk_tokens = 0
         current_heading = None
         current_level = None
 
         for el in elements:
-            el_len = len(el["content"])
+            el_text = el["content"]
+            el_tokens = max(1, int(len(el_text.split()) * 1.3))
+
             if el["type"] == ChunkType.HEADING:
                 current_heading = el["title"]
                 current_level = el["heading_level"]
 
-            if current_chunk_chars + el_len > max_chars and current_chunk_content:
+            if current_chunk_tokens + el_tokens > max_tokens and current_chunk_content:
                 chunk_text = "\n\n".join(current_chunk_content)
                 chunks.append({
                     "type": ChunkType.TEXT,
@@ -123,10 +125,10 @@ class ChunkGenerator:
                     "parent_heading": current_heading,
                 })
                 current_chunk_content = []
-                current_chunk_chars = 0
+                current_chunk_tokens = 0
 
-            current_chunk_content.append(el["content"])
-            current_chunk_chars += el_len
+            current_chunk_content.append(el_text)
+            current_chunk_tokens += el_tokens
 
         if current_chunk_content:
             chunk_text = "\n\n".join(current_chunk_content)

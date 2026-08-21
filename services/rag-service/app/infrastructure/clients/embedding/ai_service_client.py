@@ -29,11 +29,16 @@ class AIServiceClient:
             self._stub = ai_service_pb2_grpc.AIServiceStub(self._channel)
         return self._stub
 
-    async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+    async def get_embeddings(
+        self,
+        texts: List[str],
+        model: Optional[str] = "voyage-4-large",
+        input_type: Optional[str] = "document",
+    ) -> List[List[float]]:
         if not texts:
             return []
 
-        # 1. Primary: High-speed Binary gRPC
+        # 1. Primary: High-speed Binary gRPC (defaults to active provider)
         try:
             stub = self._get_grpc_stub()
             req = ai_service_pb2.EmbeddingRequest(texts=texts)
@@ -42,15 +47,23 @@ class AIServiceClient:
         except Exception as e:
             logger.warning(f"gRPC GetEmbeddings failed ({e}), falling back to HTTP")
 
-        # 2. Secondary: HTTP REST Fallback
+        # 2. Secondary: HTTP REST Fallback with exact model & input_type
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             resp = await client.post(
                 f"{self.base_url}/api/v1/ai/embeddings",
-                json={"texts": texts, "model": "gemini-embedding-001"},
+                json={"texts": texts, "model": model, "input_type": input_type},
             )
             resp.raise_for_status()
             data = resp.json()
             return data["vectors"]
+
+    async def get_query_embedding(
+        self,
+        query: str,
+        model: Optional[str] = "voyage-4-lite",
+    ) -> List[float]:
+        vectors = await self.get_embeddings([query], model=model, input_type="query")
+        return vectors[0] if vectors else []
 
     async def generate_text(self, prompt: str, system_instruction: Optional[str] = None) -> str:
         # 1. Primary: High-speed Binary gRPC

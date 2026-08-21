@@ -199,10 +199,9 @@ class RAGChatOrchestrator:
         # Step 1 & 2: Check RAG Retrieval Cache (bypasses embedding + pgvector on hit)
         retrieved_chunks = await self.rag_cache.get_retrieved_chunks(workspace_id, question, top_k)
         if retrieved_chunks is None:
-            query_vectors = await self.ai_client.get_embeddings([question])
-            if not query_vectors:
+            query_vector = await self.ai_client.get_query_embedding(question, model="voyage-4-lite")
+            if not query_vector:
                 raise RuntimeError("Failed to generate embedding vector for user question.")
-            query_vector = query_vectors[0]
 
             retrieved_chunks = await self.vector_repo.similarity_search(
                 workspace_id=workspace_id,
@@ -268,10 +267,9 @@ class RAGChatOrchestrator:
         # Step 1: Retrieval
         retrieved_chunks = await self.rag_cache.get_retrieved_chunks(workspace_id, question, top_k)
         if retrieved_chunks is None:
-            query_vectors = await self.ai_client.get_embeddings([question])
-            if not query_vectors:
+            query_vector = await self.ai_client.get_query_embedding(question, model="voyage-4-lite")
+            if not query_vector:
                 raise RuntimeError("Failed to generate embedding vector for user question.")
-            query_vector = query_vectors[0]
 
             retrieved_chunks = await self.vector_repo.similarity_search(
                 workspace_id=workspace_id,
