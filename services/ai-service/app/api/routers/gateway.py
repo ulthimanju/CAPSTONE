@@ -451,7 +451,7 @@ def select_representative_passages(
 
 from app.domain.prompts.workspace_summary_prompt_builder import WorkspaceSummaryPromptBuilder
 
-async def _process_summary_generation(workspace_id: str, authorization: str | None, user_id_str: str):
+async def _process_summary_generation(workspace_id: str, authorization: str | None, user_id_str: str, job_id: str | None = None):
     ws_id = workspace_id
     workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
     document_url = os.environ.get("DOCUMENT_SERVICE_URL", "http://document-service:8000")
@@ -518,19 +518,6 @@ async def _process_summary_generation(workspace_id: str, authorization: str | No
             response_schema=WorkspaceSummaryResponse,
         )
 
-        job_id = None
-        try:
-            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=10.0)) as reg_client:
-                reg_res = await reg_client.post(
-                    f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
-                    json={"job_type": "SUMMARY", "unit_id": None},
-                    headers={"Authorization": authorization} if authorization else {},
-                )
-                if reg_res.status_code in [200, 201]:
-                    job_id = reg_res.json().get("id")
-        except Exception as reg_err:
-            logger.warning(f"Failed to register generation job for summary: {reg_err}", extra={"workspace_id": ws_id})
-
         ws_summary_validated = WorkspaceSummaryResponse.model_validate_json(gemini_res["text"])
 
         async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=15.0)) as client:
@@ -581,10 +568,37 @@ async def generate_workspace_summary_endpoint(
 ):
     ws_id = workspace_id
     user_id_str = str(user_id)
+    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
+
+    if not authorization:
+        from shared.security.jwt import JWTManager, JWTSettings
+        jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
+        internal_token = jwt_mgr.create_access_token(
+            user_id=user_id_str,
+            email="internal@synapse.edu",
+            role="ADMIN",
+            session_id=str(uuid.uuid4()),
+            expire_minutes=60,
+        )
+        authorization = f"Bearer {internal_token}"
+
+    job_id = None
+    try:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as reg_client:
+            reg_res = await reg_client.post(
+                f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
+                json={"job_type": "SUMMARY", "unit_id": None},
+                headers={"Authorization": authorization} if authorization else {},
+            )
+            if reg_res.status_code in [200, 201]:
+                job_id = reg_res.json().get("id")
+    except Exception as reg_err:
+        logger.warning(f"Failed to synchronously register generation job for summary: {reg_err}", extra={"workspace_id": ws_id})
+
     await _publish_summary_event(ws_id, "QUEUED", user_id=user_id_str)
     await _publish_summary_event(ws_id, "STARTED", user_id=user_id_str)
-    background_tasks.add_task(_process_summary_generation, ws_id, authorization, user_id_str)
-    return {"status": "accepted", "workspace_id": ws_id, "message": "Summary generation started"}
+    background_tasks.add_task(_process_summary_generation, ws_id, authorization, user_id_str, job_id)
+    return {"status": "accepted", "workspace_id": ws_id, "job_id": job_id, "message": "Summary generation started"}
 
 
 from app.domain.prompts.learning_path_prompt_builder import LearningPathPromptBuilder
@@ -660,7 +674,7 @@ async def _publish_learning_path_event(
 
 from fastapi import BackgroundTasks
 
-async def _process_learning_path_generation(workspace_id: str, authorization: str | None, user_id_str: str):
+async def _process_learning_path_generation(workspace_id: str, authorization: str | None, user_id_str: str, job_id: str | None = None):
     ws_id = workspace_id
     workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000")
 
@@ -704,19 +718,6 @@ async def _process_learning_path_generation(workspace_id: str, authorization: st
             response_mime_type="application/json",
             response_schema=LearningPathResponse,
         )
-
-        job_id = None
-        try:
-            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=10.0)) as reg_client:
-                reg_res = await reg_client.post(
-                    f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
-                    json={"job_type": "LEARNING_PATH", "unit_id": None},
-                    headers={"Authorization": authorization} if authorization else {},
-                )
-                if reg_res.status_code in [200, 201]:
-                    job_id = reg_res.json().get("id")
-        except Exception as reg_err:
-            logger.warning(f"Failed to register generation job for learning path: {reg_err}", extra={"workspace_id": ws_id})
 
         lp_validated = LearningPathResponse.model_validate_json(gemini_res["text"])
 
@@ -768,10 +769,37 @@ async def generate_workspace_learning_path_endpoint(
 ):
     ws_id = workspace_id
     user_id_str = str(user_id)
+    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
+
+    if not authorization:
+        from shared.security.jwt import JWTManager, JWTSettings
+        jwt_mgr = JWTManager(JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm, issuer=settings.jwt_issuer))
+        internal_token = jwt_mgr.create_access_token(
+            user_id=user_id_str,
+            email="internal@synapse.edu",
+            role="ADMIN",
+            session_id=str(uuid.uuid4()),
+            expire_minutes=60,
+        )
+        authorization = f"Bearer {internal_token}"
+
+    job_id = None
+    try:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as reg_client:
+            reg_res = await reg_client.post(
+                f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
+                json={"job_type": "LEARNING_PATH", "unit_id": None},
+                headers={"Authorization": authorization} if authorization else {},
+            )
+            if reg_res.status_code in [200, 201]:
+                job_id = reg_res.json().get("id")
+    except Exception as reg_err:
+        logger.warning(f"Failed to synchronously register generation job for learning path: {reg_err}", extra={"workspace_id": ws_id})
+
     await _publish_learning_path_event(ws_id, "QUEUED", user_id=user_id_str)
     await _publish_learning_path_event(ws_id, "STARTED", user_id=user_id_str)
-    background_tasks.add_task(_process_learning_path_generation, ws_id, authorization, user_id_str)
-    return {"status": "accepted", "workspace_id": ws_id, "message": "Learning path generation started"}
+    background_tasks.add_task(_process_learning_path_generation, ws_id, authorization, user_id_str, job_id)
+    return {"status": "accepted", "workspace_id": ws_id, "job_id": job_id, "message": "Learning path generation started"}
 
 
 async def _publish_unit_generation_event(
@@ -850,6 +878,7 @@ async def _process_unit_content_generation(
     req: GenerateUnitContentRequest,
     auth_val: str | None,
     user_id_val: str,
+    job_id: str | None = None,
 ):
     try:
         # 1. Retrieve RAG Context (~1K tokens) from rag-service
@@ -882,18 +911,6 @@ async def _process_unit_content_generation(
 
         workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
         unit_key = req.unit_id or req.unit_title
-        job_id = None
-        try:
-            async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=10.0)) as reg_client:
-                reg_res = await reg_client.post(
-                    f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
-                    json={"job_type": "LEARNING_UNIT", "unit_id": unit_key},
-                    headers={"Authorization": auth_val} if auth_val else {},
-                )
-                if reg_res.status_code in [200, 201]:
-                    job_id = reg_res.json().get("id")
-        except Exception as reg_err:
-            logger.warning(f"Failed to register generation job for unit: {reg_err}", extra={"workspace_id": ws_id, "unit_id": unit_key})
 
         await _publish_unit_generation_event(ws_id, req.unit_title, "IN_PROGRESS", user_id=user_id_val)
 
@@ -1059,14 +1076,30 @@ async def generate_unit_content(
         )
         auth_val = f"Bearer {internal_token}"
 
+    workspace_url = os.environ.get("WORKSPACE_SERVICE_URL", "http://workspace-service:8000").rstrip("/")
+    unit_key = req.unit_id or req.unit_title
+    job_id = None
+    try:
+        async with httpx.AsyncClient(timeout=settings.get_httpx_timeout(read_override=5.0)) as reg_client:
+            reg_res = await reg_client.post(
+                f"{workspace_url}/api/v1/workspaces/{ws_id}/generation-jobs",
+                json={"job_type": "LEARNING_UNIT", "unit_id": unit_key},
+                headers={"Authorization": auth_val} if auth_val else {},
+            )
+            if reg_res.status_code in [200, 201]:
+                job_id = reg_res.json().get("id")
+    except Exception as reg_err:
+        logger.warning(f"Failed to synchronously register generation job for unit: {reg_err}", extra={"workspace_id": ws_id, "unit_id": unit_key})
+
     await _publish_unit_generation_event(ws_id, req.unit_title, "QUEUED", user_id=user_id_val)
     await _publish_unit_generation_event(ws_id, req.unit_title, "STARTED", user_id=user_id_val)
-    background_tasks.add_task(_process_unit_content_generation, ws_id, req, auth_val, user_id_val)
+    background_tasks.add_task(_process_unit_content_generation, ws_id, req, auth_val, user_id_val, job_id)
 
     return {
         "status": "accepted",
         "workspace_id": ws_id,
         "unit_title": req.unit_title,
+        "job_id": job_id,
         "message": f"Unit content synthesis started for '{req.unit_title}'",
     }
 

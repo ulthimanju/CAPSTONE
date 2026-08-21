@@ -49,6 +49,12 @@ export function useGenerateSummaryMutation(workspaceId) {
     mutationFn: async () => {
       return summaryApi.generateWorkspaceSummary(workspaceId);
     },
+    onMutate: async () => {
+      queryClient.setQueryData(workspaceKeys.generationStatus(workspaceId), (old) => ({
+        ...(old || {}),
+        summary_status: 'RUNNING',
+      }));
+    },
     onSuccess: () => {
       // Invalidate workspace details, summary, and generation-status
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });

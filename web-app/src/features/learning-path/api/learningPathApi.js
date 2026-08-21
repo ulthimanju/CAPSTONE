@@ -13,7 +13,7 @@ export const learningPathApi = {
    * Triggers Gemini workspace learning path curriculum generation via ai-service.
    */
   generateWorkspaceLearningPath: async (workspaceId) => {
-    const response = await apiClient.post(`/api/v1/workspaces/${workspaceId}/learning-path`);
+    const response = await apiClient.post(`/api/v1/ai/workspaces/${workspaceId}/learning-path`);
     return response.data;
   },
 

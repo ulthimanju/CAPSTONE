@@ -70,6 +70,12 @@ export function useGenerateLearningPathMutation(workspaceId) {
     mutationFn: async () => {
       return learningPathApi.generateWorkspaceLearningPath(workspaceId);
     },
+    onMutate: async () => {
+      queryClient.setQueryData(workspaceKeys.generationStatus(workspaceId), (old) => ({
+        ...(old || {}),
+        learning_path_status: 'RUNNING',
+      }));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.generationStatus(workspaceId) });
@@ -116,6 +122,18 @@ export function useGenerateUnitContentMutation(workspaceId, unitTitle, unitId = 
         learning_objectives: payload?.learning_objectives || [],
         tags: payload?.tags || [],
       });
+    },
+    onMutate: async (payload) => {
+      const title = payload?.unit_title || unitTitle;
+      const uid = payload?.unit_id || unitId || title;
+      queryClient.setQueryData(workspaceKeys.generationStatus(workspaceId), (old) => ({
+        ...(old || {}),
+        unit_statuses: {
+          ...(old?.unit_statuses || {}),
+          [uid]: 'RUNNING',
+          ...(title ? { [title]: 'RUNNING' } : {}),
+        },
+      }));
     },
     onSuccess: (data, variables) => {
       const title = variables?.unit_title || unitTitle;
