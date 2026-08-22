@@ -201,26 +201,13 @@ export function DocumentListTable({ workspaceId, documents = [], isOwner = true 
                   )}
                 </div>
                 <div className="min-w-0">
-                  {webViewLink ? (
-                    <a
-                      href={webViewLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-display text-sm font-bold text-text hover:text-accent truncate flex items-center gap-1.5 group"
-                      title={doc.original_filename}
-                    >
-                      <span className="truncate">{doc.original_filename}</span>
-                      <ArrowSquareOut className="h-3 w-3 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
-                    </a>
-                  ) : (
-                    <Link
-                      to={`/workspaces/${workspaceId}/documents/${doc.id}`}
-                      className="font-display text-sm font-bold text-text hover:text-accent truncate block"
-                      title={doc.original_filename}
-                    >
-                      {doc.original_filename}
-                    </Link>
-                  )}
+                  <Link
+                    to={`/workspaces/${workspaceId}/documents/${doc.id}`}
+                    className="font-display text-sm font-bold text-text hover:text-accent truncate block"
+                    title={doc.original_filename}
+                  >
+                    {doc.original_filename}
+                  </Link>
                   <p className="font-mono text-[11px] text-text/50">
                     Uploaded {formattedDate}
                     {doc.is_split ? ` • Sliced (${doc.part_count} parts)` : ''}

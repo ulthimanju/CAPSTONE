@@ -202,8 +202,8 @@ class GoogleOAuthClient(OAuthClientInterface):
                 pass
         self._pkce_verifiers_memory[nonce] = verifier
 
-        # Google Drive connection is mandatory for document indexing & sync
-        scope = "openid email profile https://www.googleapis.com/auth/drive.file"
+        # Google Drive connection is mandatory for document indexing & sync (appDataFolder + drive.file)
+        scope = "openid email profile https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file"
 
         params = {
             "response_type": "code",

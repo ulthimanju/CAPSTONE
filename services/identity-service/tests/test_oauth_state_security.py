@@ -170,7 +170,7 @@ async def test_oauth_login_includes_mandatory_drive_scope(oauth_client):
     response = await oauth_client.login_redirect(mock_request, "https://app.synapse.local/api/v1/oauth/google/callback")
     location = unquote(response.headers.get("location", ""))
 
-    assert "scope=openid email profile https://www.googleapis.com/auth/drive.file" in location
+    assert "scope=openid email profile https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file" in location
     assert "prompt=consent select_account" in location
 
 

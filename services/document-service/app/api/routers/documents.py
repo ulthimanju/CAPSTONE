@@ -248,7 +248,11 @@ async def upload_document_raw(
 
     # Perform multipart upload directly to Google Drive
     file_bytes = await asyncio.to_thread(_read_file_bytes, temp_path)
-    metadata = {"name": file.filename, "mimeType": file.content_type or "application/pdf"}
+    metadata = {
+        "name": file.filename,
+        "mimeType": file.content_type or "application/pdf",
+        "parents": ["appDataFolder"],
+    }
     boundary = "----GoogleDriveBoundary7MA4YW"
     body = (
         f"--{boundary}\r\n"
