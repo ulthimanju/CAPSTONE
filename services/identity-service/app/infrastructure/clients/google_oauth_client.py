@@ -386,13 +386,18 @@ class GoogleOAuthClient(OAuthClientInterface):
                         data=token_data,
                         headers={"Accept": "application/json"},
                     )
-                    break
+                    # RFC 6749 / Google OAuth: Single-use authorization codes and deterministic 4xx client errors
+                    # (e.g., 400 invalid_grant, 401 invalid_client, 400 redirect_uri_mismatch) MUST NOT be retried.
+                    if token_resp.status_code < 500:
+                        break
+
+                    logger.warning(f"Google OAuth token endpoint returned transient HTTP {token_resp.status_code} (attempt {attempt + 1}), retrying...")
                 except (httpx.TimeoutException, httpx.NetworkError) as e:
                     last_err = e
-                    logger.warning(f"Google OAuth token request attempt {attempt + 1} failed ({e}), retrying...")
+                    logger.warning(f"Google OAuth token request attempt {attempt + 1} failed due to network/timeout ({e}), retrying...")
 
             if token_resp is None:
-                raise GoogleOAuthError(f"Failed to reach Google OAuth servers: {last_err}")
+                raise GoogleOAuthError(f"Failed to reach Google OAuth servers after retries: {last_err}")
 
             if token_resp.status_code != 200:
                 error_body = token_resp.text
@@ -453,17 +458,36 @@ class GoogleOAuthClient(OAuthClientInterface):
         return user_dto, token_dto
 
     async def refresh_access_token(self, refresh_token: str) -> dict:
-        async with httpx.AsyncClient(timeout=get_default_httpx_timeout(connect=10.0, read=30.0, write=30.0, pool=10.0)) as http_client:
-            token_resp = await http_client.post(
-                 "https://oauth2.googleapis.com/token",
-                 data={
-                     "client_id": settings.google_client_id,
-                     "client_secret": settings.google_client_secret,
-                     "refresh_token": refresh_token,
-                     "grant_type": "refresh_token",
-                 },
-                 headers={"Accept": "application/json"},
-            )
+        timeout_cfg = get_default_httpx_timeout(connect=10.0, read=30.0, write=30.0, pool=10.0)
+        async with httpx.AsyncClient(timeout=timeout_cfg) as http_client:
+            token_resp = None
+            last_err = None
+            for attempt in range(3):
+                try:
+                    if attempt > 0:
+                        await asyncio.sleep(0.5 * attempt)
+                    token_resp = await http_client.post(
+                        "https://oauth2.googleapis.com/token",
+                        data={
+                            "client_id": settings.google_client_id,
+                            "client_secret": settings.google_client_secret,
+                            "refresh_token": refresh_token,
+                            "grant_type": "refresh_token",
+                        },
+                        headers={"Accept": "application/json"},
+                    )
+                    # 4xx client errors (e.g. invalid_grant, invalid_client) are non-transient and must fail fast
+                    if token_resp.status_code < 500:
+                        break
+
+                    logger.warning(f"Google token refresh returned transient HTTP {token_resp.status_code} (attempt {attempt + 1}), retrying...")
+                except (httpx.TimeoutException, httpx.NetworkError) as e:
+                    last_err = e
+                    logger.warning(f"Google token refresh attempt {attempt + 1} network error ({e}), retrying...")
+
+            if token_resp is None:
+                raise GoogleOAuthError(f"Failed to reach Google OAuth servers during token refresh: {last_err}")
+
             if token_resp.status_code != 200:
                 error_body = token_resp.text
                 error_code = ""
