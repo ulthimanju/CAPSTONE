@@ -43,7 +43,6 @@ import {
   Warning,
   WarningCircle,
   Info,
-  CircleNotch,
   MagnifyingGlass,
   DotsThreeVertical,
   DotsThree,
@@ -118,6 +117,40 @@ import {
   Link,
 } from '@phosphor-icons/react';
 
+// ─── Type 2 Radial Spoke Spinner (iOS / Sonner style 12-bar loader) ────────
+export function SpokeSpinner({ className = 'h-4 w-4 shrink-0', ...props }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      aria-hidden="true"
+      {...props}
+    >
+      <g strokeWidth="2.5" strokeLinecap="round">
+        <line x1="12" y1="2" x2="12" y2="5" opacity="1" />
+        <line x1="17" y1="3.34" x2="15.5" y2="5.94" opacity="0.91" />
+        <line x1="20.66" y1="7" x2="18.06" y2="8.5" opacity="0.83" />
+        <line x1="22" y1="12" x2="19" y2="12" opacity="0.75" />
+        <line x1="20.66" y1="17" x2="18.06" y2="15.5" opacity="0.66" />
+        <line x1="17" y1="20.66" x2="15.5" y2="18.06" opacity="0.58" />
+        <line x1="12" y1="22" x2="12" y2="19" opacity="0.5" />
+        <line x1="7" y1="20.66" x2="8.5" y2="18.06" opacity="0.41" />
+        <line x1="3.34" y1="17" x2="5.94" y2="15.5" opacity="0.33" />
+        <line x1="2" y1="12" x2="5" y2="12" opacity="0.25" />
+        <line x1="3.34" y1="7" x2="5.94" y2="8.5" opacity="0.16" />
+        <line x1="7" y1="3.34" x2="8.5" y2="5.94" opacity="0.08" />
+      </g>
+    </svg>
+  );
+}
+
+export const CircleNotch = SpokeSpinner;
+export const Spinner = SpokeSpinner;
+export const Loader2 = SpokeSpinner;
+export const Loader = SpokeSpinner;
+
 // ─── Backward-compatible aliases (old lucide names → Phosphor equivalents) ───
 export const Smartphone = DeviceMobile;
 export const Tablet = DeviceTablet;
@@ -136,7 +169,6 @@ export const Trash2 = Trash;
 export const RotateCcw = ArrowCounterClockwise;
 export const RotateCw = ArrowClockwise;
 export const Sparkles = Sparkle;
-export const Loader2 = CircleNotch;
 export const AlertCircle = WarningCircle;
 export const AlertTriangle = Warning;
 export const ShieldAlert = ShieldWarning;
@@ -181,7 +213,6 @@ export {
   Warning,
   WarningCircle,
   Info,
-  CircleNotch,
   MagnifyingGlass,
   DotsThreeVertical,
   DotsThree,
