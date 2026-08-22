@@ -86,7 +86,7 @@ export function LoginPage() {
       />
 
       {/* Top Header: Brand & Tagline */}
-      <header className="relative z-10 flex items-center justify-between">
+      <header className="relative z-10 w-full max-w-6xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src="/logo.svg" alt="SYNAPSE Logo" className="h-10 w-10 object-contain shrink-0" />
           <div>
@@ -101,9 +101,9 @@ export function LoginPage() {
       </header>
 
       {/* Main Dual-Column Content */}
-      <main className="relative z-10 my-auto grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16 py-8">
+      <main className="relative z-10 my-auto grid w-full max-w-6xl mx-auto grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-12 py-8">
         {/* Left Hero & Feature Highlights Column */}
-        <div className="flex flex-col space-y-7 lg:col-span-7 xl:col-span-7 max-w-xl">
+        <div className="flex flex-col space-y-7 lg:col-span-7 max-w-xl">
           {/* Main Headline */}
           <div>
             <h2 className="font-display text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-tight text-text leading-[1.12]">
@@ -180,7 +180,7 @@ export function LoginPage() {
         </div>
 
         {/* Right Authentication Card */}
-        <div className="flex justify-center lg:col-span-5 xl:col-span-5 lg:justify-end">
+        <div className="flex justify-center lg:col-span-5 lg:justify-center">
           <div className="w-full max-w-md rounded-ui border border-sep-line bg-surface-raised p-8 sm:p-12 text-center shadow-xs">
             {/* Top Centered Doc Icon */}
             <div className="mb-6 flex justify-center">
