@@ -6,13 +6,15 @@ from shared.security.claims import JWTClaims
 
 def get_authenticated_claims(
     authorization: str | None,
-    jwt_secret: str,
+    jwt_secret: str | None = None,
     jwt_algorithm: str = "HS256",
     jwt_issuer: str = "identity-service",
+    jwt_public_key: str | None = None,
     **kwargs,
 ) -> JWTClaims:
     """
     Validates Bearer JWT and extracts validated JWTClaims.
+    Supports asymmetric public key verification (RS256/ES256) or symmetric secret verification (HS256).
     Raises HTTP 401 Unauthorized if missing, malformed, or signature/claims invalid.
     """
     if authorization and authorization.startswith("Bearer "):
@@ -21,6 +23,7 @@ def get_authenticated_claims(
             jwt_manager = JWTManager(
                 JWTSettings(
                     secret_key=jwt_secret,
+                    public_key=jwt_public_key,
                     algorithm=jwt_algorithm,
                     issuer=jwt_issuer,
                 )

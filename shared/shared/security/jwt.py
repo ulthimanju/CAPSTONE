@@ -8,13 +8,22 @@ from shared.security.claims import JWTClaims
 
 @dataclass
 class JWTSettings:
-    secret_key: str
+    secret_key: str | None = None
+    private_key: str | None = None
+    public_key: str | None = None
     algorithm: str = "HS256"
     issuer: str = "identity-service"
     audience: str | None = None
 
 
 class JWTManager:
+    """
+    Production-grade JWT Manager supporting:
+    - Asymmetric cryptographic algorithms (RS256, ES256) with public/private key separation
+    - Symmetric cryptographic algorithms (HS256)
+    - Strict algorithm whitelisting and claims verification (iss, aud, exp, iat, nbf)
+    """
+
     def __init__(self, settings: JWTSettings):
         self.settings = settings
 
@@ -38,15 +47,20 @@ class JWTManager:
             iat=int(now.timestamp()),
             exp=int(expire.timestamp()),
         )
-        return jwt.encode(claims.to_dict(), self.settings.secret_key, algorithm=self.settings.algorithm)
+        signing_key = self.settings.private_key or self.settings.secret_key
+        if not signing_key:
+            raise ValueError(f"Signing key (private_key or secret_key) is required for {self.settings.algorithm} encoding")
+
+        return jwt.encode(claims.to_dict(), signing_key, algorithm=self.settings.algorithm)
 
     def create_refresh_token(self) -> str:
         """Generate a cryptographically random token string."""
         return secrets.token_urlsafe(64)
 
     def decode_token(self, token: str) -> dict:
-        if not self.settings.secret_key:
-            raise ValueError("JWT secret_key is required for verification")
+        verification_key = self.settings.public_key or self.settings.secret_key
+        if not verification_key:
+            raise ValueError(f"Verification key (public_key or secret_key) is required for {self.settings.algorithm} decoding")
 
         # Explicitly whitelist EXACTLY the configured algorithm in list format
         allowed_algorithms = [self.settings.algorithm] if isinstance(self.settings.algorithm, str) else list(self.settings.algorithm)
@@ -64,7 +78,7 @@ class JWTManager:
         try:
             kwargs = {
                 "token": token,
-                "key": self.settings.secret_key,
+                "key": verification_key,
                 "algorithms": allowed_algorithms,
                 "options": options,
             }
