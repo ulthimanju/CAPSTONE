@@ -77,11 +77,13 @@ class GoogleOAuthClient(OAuthClientInterface):
         return verifier, challenge
 
     def _create_signed_state(self, csrf_token: str | None = None) -> tuple[str, str]:
+        csrf_token = csrf_token or secrets.token_urlsafe(32)
+        csrf_hash = hashlib.sha256(csrf_token.encode("utf-8")).hexdigest()[:16]
         nonce = secrets.token_urlsafe(16)
         ts = str(int(time.time()))
-        payload = f"{ts}:{nonce}"
+        payload = f"{ts}:{nonce}:{csrf_hash}"
         sig = hmac.new(settings.jwt_secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
-        return f"{payload}.{sig}", nonce
+        return f"{payload}.{sig}", csrf_token
 
     async def _verify_and_consume_signed_state(self, state: str, request: Any) -> bool:
         try:
@@ -100,17 +102,25 @@ class GoogleOAuthClient(OAuthClientInterface):
                 return False
 
             parts = payload.split(":")
-            if len(parts) < 2:
+            if len(parts) < 3:
                 return False
 
-            ts_str, nonce = parts[0], parts[1]
+            ts_str, nonce, expected_csrf_hash = parts[0], parts[1], parts[2]
             ts = int(ts_str)
 
             # 2. Strict 900-second (15 minute) TTL enforcement
             if abs(time.time() - ts) > 900:
                 return False
 
-            # 3. Atomic single-use nonce consumption (Replay protection)
+            # 3. Strict browser session binding (RFC 6819 Double-Submit Cookie verification)
+            cookie_csrf = getattr(request, "cookies", {}).get("oauth_csrf") if request else None
+            if not cookie_csrf:
+                return False
+            actual_csrf_hash = hashlib.sha256(cookie_csrf.encode("utf-8")).hexdigest()[:16]
+            if not hmac.compare_digest(actual_csrf_hash, expected_csrf_hash):
+                return False  # Attacker injected state into victim browser!
+
+            # 4. Atomic single-use nonce consumption (Replay protection)
             redis = get_redis_client()
             if redis:
                 try:
