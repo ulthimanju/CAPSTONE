@@ -455,25 +455,45 @@ class GoogleOAuthClient(OAuthClientInterface):
     async def refresh_access_token(self, refresh_token: str) -> dict:
         async with httpx.AsyncClient(timeout=get_default_httpx_timeout(connect=10.0, read=30.0, write=30.0, pool=10.0)) as http_client:
             token_resp = await http_client.post(
-                "https://oauth2.googleapis.com/token",
-                data={
-                    "client_id": settings.google_client_id,
-                    "client_secret": settings.google_client_secret,
-                    "refresh_token": refresh_token,
-                    "grant_type": "refresh_token",
-                },
-                headers={"Accept": "application/json"},
+                 "https://oauth2.googleapis.com/token",
+                 data={
+                     "client_id": settings.google_client_id,
+                     "client_secret": settings.google_client_secret,
+                     "refresh_token": refresh_token,
+                     "grant_type": "refresh_token",
+                 },
+                 headers={"Accept": "application/json"},
             )
             if token_resp.status_code != 200:
                 error_body = token_resp.text
+                error_code = ""
                 try:
                     error_json = token_resp.json()
-                    error_body = error_json.get("error_description") or error_json.get("error") or error_body
+                    error_code = error_json.get("error", "")
+                    error_body = error_json.get("error_description") or error_code or error_body
                 except Exception:
                     pass
+
+                if error_code == "invalid_grant" or "invalid_grant" in error_body.lower():
+                    from app.domain.exceptions.oauth import GoogleInvalidGrantError
+                    raise GoogleInvalidGrantError(f"Google authorization revoked or expired: {error_body}")
+
                 raise GoogleOAuthError(f"OAuth token refresh failed: {error_body}")
 
             return token_resp.json()
+
+    async def revoke_token(self, token: str) -> bool:
+        """Proactively revokes Google token at Google OAuth endpoint upon disconnect."""
+        try:
+            async with httpx.AsyncClient(timeout=get_default_httpx_timeout(connect=5.0, read=10.0, write=5.0, pool=5.0)) as http_client:
+                res = await http_client.post(
+                    f"https://oauth2.googleapis.com/revoke?token={token}",
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                )
+                return res.status_code == 200
+        except Exception as e:
+            logger.warning(f"Failed to revoke Google token at Google endpoint: {e}")
+            return False
 
     async def get_token_scopes(self, access_token: str) -> list[str]:
         """

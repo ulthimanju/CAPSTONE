@@ -24,6 +24,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from app.api.dependencies.database import get_oauth_client
 from app.infrastructure.clients.google_oauth_client import GoogleOAuthClient
+from app.domain.exceptions.oauth import GoogleInvalidGrantError
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +58,29 @@ async def get_google_token(
             logger.info(f"Refreshing Google OAuth token for user {user_id} (is_expired={is_expired}, force_refresh={force_refresh})")
             tokens = await oauth_client.refresh_access_token(identity.refresh_token)
             new_access_token = tokens.get("access_token")
+            new_refresh_token = tokens.get("refresh_token")
             expires_in = tokens.get("expires_in", 3600)
             if new_access_token:
                 identity.access_token = new_access_token
+                if new_refresh_token:
+                    identity.refresh_token = new_refresh_token
                 identity.expires_at = now + timedelta(seconds=expires_in)
                 await oauth_repo.update(identity)
                 logger.info(f"Google OAuth token successfully refreshed for user {user_id}")
+        except GoogleInvalidGrantError as e:
+            logger.warning(f"Google access revoked for user {user_id}: {e}. Disconnecting integration.")
+            identity.access_token = None
+            identity.refresh_token = None
+            identity.expires_at = None
+            await oauth_repo.update(identity)
+            return {
+                "linked": False,
+                "access_token": None,
+                "scopes": [],
+                "expires_at": None,
+                "status": "reauth_required",
+                "message": "Google authorization was revoked or expired. Please re-authenticate.",
+            }
         except Exception as e:
             logger.warning(f"Google token refresh attempt warning for user {user_id}: {e}")
 
@@ -83,12 +101,29 @@ async def get_google_token(
         try:
             tokens = await oauth_client.refresh_access_token(identity.refresh_token)
             new_access_token = tokens.get("access_token")
+            new_refresh_token = tokens.get("refresh_token")
             expires_in = tokens.get("expires_in", 3600)
             if new_access_token:
                 identity.access_token = new_access_token
+                if new_refresh_token:
+                    identity.refresh_token = new_refresh_token
                 identity.expires_at = now + timedelta(seconds=expires_in)
                 await oauth_repo.update(identity)
                 granted_scopes = await oauth_client.get_token_scopes(identity.access_token)
+        except GoogleInvalidGrantError as e:
+            logger.warning(f"Google authorization revoked on secondary check for user {user_id}: {e}")
+            identity.access_token = None
+            identity.refresh_token = None
+            identity.expires_at = None
+            await oauth_repo.update(identity)
+            return {
+                "linked": False,
+                "access_token": None,
+                "scopes": [],
+                "expires_at": None,
+                "status": "reauth_required",
+                "message": "Google authorization was revoked or expired. Please re-authenticate.",
+            }
         except Exception as e:
             logger.warning(f"Secondary Google token refresh attempt warning for user {user_id}: {e}")
 
@@ -112,5 +147,27 @@ async def get_google_token(
         "expires_at": identity.expires_at.isoformat() if identity.expires_at else None,
         "status": "active",
     }
+
+
+@router.post("/google-disconnect")
+async def disconnect_google(
+    user_id: UUID = Depends(get_current_user_id),
+    oauth_repo=Depends(get_oauth_repository),
+    oauth_client: GoogleOAuthClient = Depends(get_oauth_client),
+):
+    """
+    Explicitly unlinks Google Drive integration and proactively revokes credentials at Google.
+    """
+    identity = await oauth_repo.get_by_user_id(str(user_id), provider="google")
+    if identity:
+        token_to_revoke = identity.refresh_token or identity.access_token
+        if token_to_revoke:
+            await oauth_client.revoke_token(token_to_revoke)
+        identity.access_token = None
+        identity.refresh_token = None
+        identity.expires_at = None
+        await oauth_repo.update(identity)
+
+    return {"success": True, "message": "Google Drive integration disconnected and revoked."}
 
 

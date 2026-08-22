@@ -13,6 +13,11 @@ class GoogleOAuthError(OAuthError):
     pass
 
 
+class GoogleInvalidGrantError(GoogleOAuthError):
+    """Raised when Google rejects refresh token with invalid_grant (consent revoked or expired)."""
+    pass
+
+
 class TokenValidationError(IdentityServiceError):
     """Raised when token validation or decoding fails."""
     pass
