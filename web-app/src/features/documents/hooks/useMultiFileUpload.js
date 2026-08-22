@@ -7,12 +7,22 @@ import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 import { getErrorMessage } from '@/lib/errorUtils';
 import { ALLOWED_DOCUMENT_EXTENSIONS as ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS } from '@/utils/files';
 
+import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
+import { useWorkspacePermissions } from '@/features/workspaces/hooks/useWorkspacePermissions';
+
 export function useMultiFileUpload(workspaceId) {
   const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
+  const { data: workspace } = useWorkspaceQuery(workspaceId, { enabled: Boolean(workspaceId) });
+  const { canUploadDocuments } = useWorkspacePermissions(workspace);
 
   const uploadFiles = async (fileList) => {
     if (!workspaceId || !fileList || fileList.length === 0) return;
+
+    if (!canUploadDocuments) {
+      toast.error('Permission denied: Only the workspace owner is allowed to upload files.');
+      return;
+    }
 
     const filesArray = Array.from(fileList);
     const validUploadTasks = [];
