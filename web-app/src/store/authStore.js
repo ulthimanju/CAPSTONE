@@ -100,6 +100,11 @@ export const useAuthStore = create((set, get) => ({
       proactiveRefreshTimer = null;
     }
 
+    // Abort and reject any pending 401 queued promises immediately
+    import('@/lib/api')
+      .then(({ abortRefreshQueue }) => abortRefreshQueue('User logged out'))
+      .catch(() => {});
+
     // Purge legacy storage items if present
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem('synapse_user');
