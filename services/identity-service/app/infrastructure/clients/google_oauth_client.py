@@ -1,5 +1,7 @@
+import logging
 from authlib.integrations.starlette_client import OAuth
 import httpx
+import asyncio
 import secrets
 import time
 import hmac
@@ -16,6 +18,8 @@ from app.application.dto.oauth import GoogleUserDTO, GoogleTokenDTO
 from app.domain.exceptions.oauth import GoogleOAuthError
 from app.infrastructure.cache.oauth_exchange import get_redis_client
 from shared.config import get_default_httpx_timeout
+
+logger = logging.getLogger(__name__)
 
 GOOGLE_SERVER_METADATA = {
     "issuer": "https://accounts.google.com",
@@ -161,12 +165,14 @@ class GoogleOAuthClient(OAuthClientInterface):
         if not code:
             raise GoogleOAuthError("Authorization code is missing from Google callback.")
 
-        timeout_cfg = get_default_httpx_timeout(connect=20.0, read=45.0, write=30.0, pool=15.0)
+        timeout_cfg = get_default_httpx_timeout(connect=30.0, read=45.0, write=30.0, pool=20.0)
         async with httpx.AsyncClient(timeout=timeout_cfg) as http_client:
             token_resp = None
             last_err = None
-            for attempt in range(2):
+            for attempt in range(3):
                 try:
+                    if attempt > 0:
+                        await asyncio.sleep(0.5 * attempt)
                     token_resp = await http_client.post(
                         "https://oauth2.googleapis.com/token",
                         data={

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { FileText, Lightbulb, Share, Shield, CircleNotch } from '@/components/ui/icons';
 import { Button } from '@/components/ui/Button';
 import { useAuthStatus, AUTH_STATUS } from '../hooks/useAuth';
@@ -38,6 +39,22 @@ export function LoginPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const { status } = useAuthStatus();
   const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const err = params.get('error');
+    if (err) {
+      const messages = {
+        oauth_error: 'Unable to complete Google sign-in. Please try again.',
+        oauth_failed: 'Authentication was cancelled or denied.',
+        session_expired: 'Your session expired. Please sign in again.',
+      };
+      toast.error(messages[err] || 'Authentication error. Please try again.');
+      if (window.history?.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [location.search]);
 
   // If initial profile verification is in flight, show quiet loading indicator
   if (status === AUTH_STATUS.UNKNOWN) {
