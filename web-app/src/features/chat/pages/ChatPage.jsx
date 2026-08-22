@@ -258,7 +258,7 @@ export function ChatPage() {
                                   <span>Overview</span>
                                 </div>
                                 <div className="text-sm font-sans leading-relaxed text-text/90">
-                                  <MarkdownRenderer content={payload.overview} />
+                                  <ContentRenderer content={payload.overview} />
                                 </div>
                               </div>
                             )}
@@ -282,7 +282,7 @@ export function ChatPage() {
 
                                       {section.content && (
                                         <div className="text-sm font-sans leading-relaxed text-text">
-                                          <MarkdownRenderer content={section.content} />
+                                          <ContentRenderer content={section.content} />
                                         </div>
                                       )}
 
@@ -307,7 +307,7 @@ export function ChatPage() {
                                           <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-accent mb-0.5">
                                             Key Takeaway
                                           </p>
-                                          <MarkdownRenderer content={section.key_takeaways} className="text-xs text-text/80 font-sans" />
+                                          <ContentRenderer content={section.key_takeaways} className="text-xs text-text/80 font-sans" />
                                         </div>
                                       </div>
                                     )}
