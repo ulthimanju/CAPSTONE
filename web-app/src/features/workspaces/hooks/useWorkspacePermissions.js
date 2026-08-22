@@ -64,7 +64,9 @@ export function useWorkspacePermissions(workspace, currentMember = null) {
   // 4 Core Capability Domains
   const canAccessWorkspace = true;
   const canManageWorkspace = isOwnerOrAdmin;
-  const canManageContent = isOwner || isAdmin || isEditor;
+  // File Uploads & Document Management are strictly restricted to the OWNER
+  const canUploadDocuments = isOwner;
+  const canManageContent = isOwner;
   const canGenerateLearningContent = isOwner || isAdmin || isEditor;
   const canTakeQuiz = true;
 
@@ -83,6 +85,7 @@ export function useWorkspacePermissions(workspace, currentMember = null) {
     canTransferOwnership,
     canAccessWorkspace,
     canManageWorkspace,
+    canUploadDocuments,
     canManageContent,
     canGenerateLearningContent,
     canTakeQuiz,

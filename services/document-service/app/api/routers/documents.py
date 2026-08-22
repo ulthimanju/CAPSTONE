@@ -53,7 +53,7 @@ async def upload_document(
     user_id: UUID = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_db_session),
 ):
-    await verify_workspace_access(req.workspace_id, user_id, required_write=True, authorization=authorization)
+    await verify_workspace_access(req.workspace_id, user_id, required_owner=True, authorization=authorization)
     ext = req.filename.split(".")[-1].lower() if "." in req.filename else ""
     IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "tif", "tiff"}
     is_image = ext in IMAGE_EXTENSIONS
@@ -111,7 +111,7 @@ async def upload_document_raw(
     authorization: str | None = Header(None),
     user_id: UUID = Depends(get_current_user_id),
 ):
-    await verify_workspace_access(workspace_id, user_id, required_write=True, authorization=authorization)
+    await verify_workspace_access(workspace_id, user_id, required_owner=True, authorization=authorization)
     import hashlib
     sha256 = hashlib.sha256()
     ALLOWED_EXTENSIONS = {"pdf", "docx", "wps", "pptx", "key", "xlsx", "csv", "png", "jpg", "jpeg", "tif", "tiff"}
@@ -449,7 +449,7 @@ async def rename_document(
     repo = get_document_repository(session)
     get_use_case = GetDocumentUseCase(repo)
     doc = await get_use_case.execute(document_id)
-    await verify_workspace_access(doc.workspace_id, user_id, required_write=True, authorization=authorization)
+    await verify_workspace_access(doc.workspace_id, user_id, required_owner=True, authorization=authorization)
     use_case = RenameDocumentUseCase(repo)
     return await use_case.execute(document_id, req)
 
@@ -464,7 +464,7 @@ async def delete_document(
     repo = get_document_repository(session)
     get_use_case = GetDocumentUseCase(repo)
     doc = await get_use_case.execute(document_id)
-    await verify_workspace_access(doc.workspace_id, user_id, required_write=True, authorization=authorization)
+    await verify_workspace_access(doc.workspace_id, user_id, required_owner=True, authorization=authorization)
     use_case = DeleteDocumentUseCase(repo)
     await use_case.execute(document_id)
     return None

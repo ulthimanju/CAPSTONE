@@ -25,6 +25,7 @@ async def verify_workspace_access(
     workspace_id: UUID,
     user_id: UUID,
     required_write: bool = False,
+    required_owner: bool = False,
     authorization: str | None = None,
 ) -> dict:
     headers = {"X-User-ID": str(user_id)}
@@ -44,6 +45,13 @@ async def verify_workspace_access(
                 raise HTTPException(status_code=403, detail="Failed to verify workspace access")
             ws_data = res.json()
             user_role = ws_data.get("user_role")
+
+            if required_owner and user_role != "OWNER":
+                raise HTTPException(
+                    status_code=403,
+                    detail="Permission denied. Only the workspace owner is allowed to upload or modify files.",
+                )
+
             if required_write and user_role == "VIEWER":
                 raise HTTPException(status_code=403, detail="Permission denied. Read-only access to workspace.")
             return ws_data

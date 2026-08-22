@@ -17,7 +17,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useDeleteDocumentMutation } from '../hooks/useDocuments';
 import { formatBytes, getFileIcon } from '@/utils/formatters';
 
-export function DocumentListTable({ workspaceId, documents = [] }) {
+export function DocumentListTable({ workspaceId, documents = [], isOwner = true }) {
   const [docToDelete, setDocToDelete] = useState(null);
 
   const deleteMutation = useDeleteDocumentMutation(workspaceId, {
@@ -238,18 +238,20 @@ export function DocumentListTable({ workspaceId, documents = [] }) {
                 {formatBytes(doc.file_size_bytes)}
               </div>
 
-              {/* Actions: Delete only */}
+              {/* Actions: Delete only (Owner Only) */}
               <div className="col-span-1 flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={() => setDocToDelete(doc)}
-                  disabled={doc.is_optimistic || doc.status === 'UPLOADING'}
-                  className="rounded-ui p-1.5 text-text/50 hover:bg-danger-tint hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger disabled:opacity-30 disabled:pointer-events-none"
-                  aria-label={`Delete ${doc.original_filename}`}
-                  title="Delete Document"
-                >
-                  <Trash className="h-4 w-4" />
-                </button>
+                {isOwner && (
+                  <button
+                    type="button"
+                    onClick={() => setDocToDelete(doc)}
+                    disabled={doc.is_optimistic || doc.status === 'UPLOADING'}
+                    className="rounded-ui p-1.5 text-text/50 hover:bg-danger-tint hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger disabled:opacity-30 disabled:pointer-events-none"
+                    aria-label={`Delete ${doc.original_filename}`}
+                    title="Delete Document"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           );
