@@ -52,6 +52,7 @@ class OAuthExchangeManager:
         self,
         session_id: str,
         user_id: str,
+        binding_hash: str | None = None,
         ttl_seconds: int = 60,
     ) -> str:
         raw_code = secrets.token_urlsafe(32)
@@ -59,6 +60,7 @@ class OAuthExchangeManager:
         payload = {
             "session_id": str(session_id),
             "user_id": str(user_id),
+            "binding_hash": binding_hash,
             "expires_at": time.time() + ttl_seconds,
         }
 

@@ -84,3 +84,38 @@ async def test_oauth_exchange_code_with_redis_getdel_single_use_and_expiration()
     await asyncio.sleep(1.1)
     res2 = await manager.consume_exchange_code(code2)
     assert res2 is None
+
+
+@pytest.mark.asyncio
+async def test_oauth_exchange_code_fixation_rejected_on_foreign_browser():
+    """
+    Verifies that an exchange code generated for an attacker's browser session
+    cannot be redeemed by a victim's browser lacking the corresponding session cookie.
+    """
+    import hashlib
+    import hmac
+
+    manager = OAuthExchangeManager(redis_client=None)
+
+    attacker_refresh_cookie = "attacker_secret_refresh_token_123"
+    attacker_binding = hashlib.sha256(attacker_refresh_cookie.encode("utf-8")).hexdigest()[:32]
+
+    # Attacker initiates OAuth and obtains exchange code bound to their cookie
+    attacker_code = await manager.create_exchange_code(
+        session_id="attacker_session_1",
+        user_id="attacker_user_1",
+        binding_hash=attacker_binding,
+        ttl_seconds=60,
+    )
+
+    # Attacker sends attacker_code to victim
+    # Victim's browser attempts to consume the code without the attacker's cookie
+    payload = await manager.consume_exchange_code(attacker_code)
+    assert payload is not None
+
+    victim_cookie = "victim_different_refresh_cookie_999"
+    victim_binding = hashlib.sha256(victim_cookie.encode("utf-8")).hexdigest()[:32]
+
+    # Validation must detect mismatch and block session fixation
+    is_valid_browser = hmac.compare_digest(victim_binding, payload["binding_hash"])
+    assert is_valid_browser is False

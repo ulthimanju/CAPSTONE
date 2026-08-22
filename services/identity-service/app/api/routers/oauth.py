@@ -87,10 +87,13 @@ async def google_callback(
         "picture": getattr(result.user, "picture", None),
     }
 
-    # Generate short-lived single-use exchange code containing only opaque references (session_id, user_id)
+    # Generate short-lived single-use exchange code bound to the initiating browser session
+    import hashlib
+    binding_hash = hashlib.sha256(result.refresh_token.encode("utf-8")).hexdigest()[:32]
     exchange_code = await exchange_manager.create_exchange_code(
         session_id=str(result.session.id),
         user_id=str(result.user.id),
+        binding_hash=binding_hash,
         ttl_seconds=60,
     )
 
@@ -122,10 +125,13 @@ async def exchange_code(
 ):
     """
     Atomically consumes a single-use exchange code and returns the JWT in the response body.
+    Enforces strict browser session binding (Anti-Code-Fixation / Login-CSRF defense).
     Protects Bearer access tokens from URL leaking via browser history, proxy logs, and Referer headers.
     Redis stores only minimal ephemeral session/user IDs with no access or refresh tokens.
     """
     import uuid
+    import hmac
+    import hashlib
     from datetime import datetime, timezone
     from shared.security.jwt import JWTManager, JWTSettings
 
@@ -135,6 +141,23 @@ async def exchange_code(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid, expired, or already consumed authorization code.",
         )
+
+    # Browser Session Fixation / Login-CSRF Protection:
+    # Verify that the exchange request is originating from the exact browser that completed OAuth callback
+    expected_binding = payload.get("binding_hash")
+    if expected_binding:
+        cookie_token = request.cookies.get("refresh_token") if hasattr(request, "cookies") else None
+        if not cookie_token:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Security violation: Authorization exchange code is bound to another browser session.",
+            )
+        actual_binding = hashlib.sha256(cookie_token.encode("utf-8")).hexdigest()[:32]
+        if not hmac.compare_digest(actual_binding, expected_binding):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Security violation: Authorization exchange code is bound to another browser session.",
+            )
 
     session_id_str = payload.get("session_id")
     user_id_str = payload.get("user_id")
