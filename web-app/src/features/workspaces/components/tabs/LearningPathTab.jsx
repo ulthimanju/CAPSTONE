@@ -16,11 +16,14 @@ import {
 } from '@/features/learning-path/hooks/useLearningPath';
 import { toast } from 'sonner';
 
+import { useWorkspacePermissions } from '@/features/workspaces/hooks/useWorkspacePermissions';
+
 export function LearningPathTab({ workspace: propWorkspace }) {
   const navigate = useNavigate();
   const context = useOutletContext() || {};
   const workspace = propWorkspace || context.workspace;
   const workspaceId = workspace?.id;
+  const { canGenerateLearningContent, isViewer } = useWorkspacePermissions(workspace);
 
   const isGenerating = useIsLearningPathGenerating(workspaceId);
 
@@ -33,7 +36,7 @@ export function LearningPathTab({ workspace: propWorkspace }) {
   const generateMutation = useGenerateLearningPathMutation(workspaceId);
 
   const handleGenerate = () => {
-    if (!workspaceId || generateMutation.isPending || isGenerating) return;
+    if (!workspaceId || generateMutation.isPending || isGenerating || !canGenerateLearningContent) return;
 
     generateMutation.mutate(undefined, {
       onSuccess: () => {
@@ -99,15 +102,26 @@ export function LearningPathTab({ workspace: propWorkspace }) {
           <h3 className="font-display text-lg font-bold text-text">
             No Learning Path Generated
           </h3>
+          <p className="mt-2 max-w-md text-xs sm:text-sm text-text/60 font-body leading-relaxed">
+            {canGenerateLearningContent
+              ? 'Synthesize sequenced learning units from your uploaded documents to start step-by-step studying.'
+              : 'A learning path has not been generated for this workspace yet. Contact a workspace editor or owner to generate one.'}
+          </p>
 
-          <Button
-            onClick={handleGenerate}
-            isLoading={generateMutation.isPending || isGenerating}
-            leftIcon={<RegenerateIcon className="h-4 w-4" />}
-            className="mt-6 text-xs sm:text-sm"
-          >
-            {isGenerating || generateMutation.isPending ? 'Synthesizing Path...' : 'Generate Path'}
-          </Button>
+          {canGenerateLearningContent ? (
+            <Button
+              onClick={handleGenerate}
+              isLoading={generateMutation.isPending || isGenerating}
+              leftIcon={<RegenerateIcon className="h-4 w-4" />}
+              className="mt-6 text-xs sm:text-sm"
+            >
+              {isGenerating || generateMutation.isPending ? 'Synthesizing Path...' : 'Generate Path'}
+            </Button>
+          ) : (
+            <div className="mt-6 inline-flex items-center gap-1.5 rounded-ui bg-sand/60 px-3 py-1.5 font-mono text-xs text-text/60 border border-sep-line">
+              <span>Read-only access (Generation reserved for Editors & Owners)</span>
+            </div>
+          )}
         </Card>
       ) : (
         /* Generated Learning Path Display */

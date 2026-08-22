@@ -67,8 +67,19 @@ export function SectionCodeCard({ snippet, language, explanation }) {
   );
 }
 
+import { useOutletContext } from 'react-router-dom';
+import { useWorkspacePermissions } from '@/features/workspaces/hooks/useWorkspacePermissions';
+import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
+
 export function SummaryTab() {
   const { workspaceId } = useParams();
+  const outletContext = useOutletContext() || {};
+  const { data: workspaceData } = useWorkspaceQuery(workspaceId, {
+    enabled: !outletContext.workspace,
+  });
+  const workspace = outletContext.workspace || workspaceData;
+  const { canGenerateLearningContent, isViewer } = useWorkspacePermissions(workspace);
+
   const { data: summaryData, isLoading } = useWorkspaceSummaryQuery(workspaceId);
   const generateMutation = useGenerateSummaryMutation(workspaceId);
   const isGenerating = useIsSummaryGenerating(workspaceId);
@@ -79,7 +90,7 @@ export function SummaryTab() {
   );
 
   const handleGenerate = () => {
-    if (!workspaceId || generateMutation.isPending || isGenerating) return;
+    if (!workspaceId || generateMutation.isPending || isGenerating || !canGenerateLearningContent) return;
 
     generateMutation.mutate(undefined, {
       onSuccess: () => {
@@ -140,22 +151,30 @@ export function SummaryTab() {
         </div>
         <h3 className="font-display text-lg font-bold text-text">No Workspace Summary Generated</h3>
         <p className="mt-2 max-w-md text-sm text-text/60 font-sans">
-          Synthesize all documents, textbooks, and notes in this workspace into a comprehensive, university-level study guide with architecture diagrams.
+          {canGenerateLearningContent
+            ? 'Synthesize all documents, textbooks, and notes in this workspace into a comprehensive, university-level study guide with architecture diagrams.'
+            : 'A summary has not been generated for this workspace yet. Contact a workspace editor or owner to generate one.'}
         </p>
         <div className="mt-6">
-          <Button
-            onClick={handleGenerate}
-            disabled={generateMutation.isPending || isGenerating}
-            leftIcon={
-              isGenerating ? (
-                <CircleNotch className="h-4 w-4 animate-spin text-accent" />
-              ) : (
-                <RegenerateIcon className="h-4 w-4" />
-              )
-            }
-          >
-            {isGenerating ? 'Generating Summary...' : 'Generate Summary with Gemini'}
-          </Button>
+          {canGenerateLearningContent ? (
+            <Button
+              onClick={handleGenerate}
+              disabled={generateMutation.isPending || isGenerating}
+              leftIcon={
+                isGenerating ? (
+                  <CircleNotch className="h-4 w-4 animate-spin text-accent" />
+                ) : (
+                  <RegenerateIcon className="h-4 w-4" />
+                )
+              }
+            >
+              {isGenerating ? 'Generating Summary...' : 'Generate Summary with Gemini'}
+            </Button>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 rounded-ui bg-sand/60 px-3 py-1.5 font-mono text-xs text-text/60 border border-sep-line">
+              <span>Read-only access (Generation reserved for Editors & Owners)</span>
+            </div>
+          )}
         </div>
       </Card>
     );
