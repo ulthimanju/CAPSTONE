@@ -10,8 +10,7 @@ async def test_oauth_exchange_code_single_use_consumption():
     manager = OAuthExchangeManager(redis_client=None)
 
     raw_code = await manager.create_exchange_code(
-        access_token="test_jwt_access_token_123",
-        refresh_token="test_refresh_token_456",
+        session_id="test_session_id_123",
         user_id="test_user_id_789",
         ttl_seconds=60,
     )
@@ -19,7 +18,7 @@ async def test_oauth_exchange_code_single_use_consumption():
     # 1. First consumption succeeds
     first_res = await manager.consume_exchange_code(raw_code)
     assert first_res is not None
-    assert first_res["access_token"] == "test_jwt_access_token_123"
+    assert first_res["session_id"] == "test_session_id_123"
     assert first_res["user_id"] == "test_user_id_789"
 
     # 2. Replay attempt immediately returns None
@@ -34,8 +33,7 @@ async def test_oauth_exchange_code_strict_ttl_expiration():
 
     # Create code with 1 second TTL
     raw_code = await manager.create_exchange_code(
-        access_token="test_jwt_access_token_expired",
-        refresh_token=None,
+        session_id="test_session_id_expired",
         user_id="test_user_id_expired",
         ttl_seconds=1,
     )
@@ -72,16 +70,17 @@ async def test_oauth_exchange_code_with_redis_getdel_single_use_and_expiration()
     manager = OAuthExchangeManager(redis_client=mock_redis)
 
     # Test single-use
-    code1 = await manager.create_exchange_code("jwt1", "ref1", "uid1", ttl_seconds=60)
+    code1 = await manager.create_exchange_code("sess1", "uid1", ttl_seconds=60)
     res1 = await manager.consume_exchange_code(code1)
     assert res1 is not None
-    assert res1["access_token"] == "jwt1"
+    assert res1["session_id"] == "sess1"
+    assert res1["user_id"] == "uid1"
 
     res1_replay = await manager.consume_exchange_code(code1)
     assert res1_replay is None
 
     # Test expiration
-    code2 = await manager.create_exchange_code("jwt2", "ref2", "uid2", ttl_seconds=1)
+    code2 = await manager.create_exchange_code("sess2", "uid2", ttl_seconds=1)
     await asyncio.sleep(1.1)
     res2 = await manager.consume_exchange_code(code2)
     assert res2 is None

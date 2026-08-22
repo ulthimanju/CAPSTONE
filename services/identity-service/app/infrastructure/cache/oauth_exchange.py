@@ -39,19 +39,15 @@ class OAuthExchangeManager:
 
     async def create_exchange_code(
         self,
-        access_token: str,
-        refresh_token: str | None,
+        session_id: str,
         user_id: str,
-        user_info: dict[str, Any] | None = None,
         ttl_seconds: int = 60,
     ) -> str:
         raw_code = secrets.token_urlsafe(32)
         code_hash = self._hash_code(raw_code)
         payload = {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "user_id": user_id,
-            "user": user_info or {},
+            "session_id": str(session_id),
+            "user_id": str(user_id),
             "expires_at": time.time() + ttl_seconds,
         }
 

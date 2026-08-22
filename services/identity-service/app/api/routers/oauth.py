@@ -87,12 +87,10 @@ async def google_callback(
         "picture": getattr(result.user, "picture", None),
     }
 
-    # Generate short-lived single-use exchange code to keep JWT out of URL history & logs
+    # Generate short-lived single-use exchange code containing only opaque references (session_id, user_id)
     exchange_code = await exchange_manager.create_exchange_code(
-        access_token=result.access_token,
-        refresh_token=result.refresh_token,
+        session_id=str(result.session.id),
         user_id=str(result.user.id),
-        user_info=user_info,
         ttl_seconds=60,
     )
 
@@ -119,11 +117,18 @@ async def google_callback(
 async def exchange_code(
     body: OAuthExchangeRequest,
     request: Request,
+    user_repo: UserRepository = Depends(get_user_repository),
+    session_repo: SessionRepository = Depends(get_session_repository),
 ):
     """
     Atomically consumes a single-use exchange code and returns the JWT in the response body.
     Protects Bearer access tokens from URL leaking via browser history, proxy logs, and Referer headers.
+    Redis stores only minimal ephemeral session/user IDs with no access or refresh tokens.
     """
+    import uuid
+    from datetime import datetime, timezone
+    from shared.security.jwt import JWTManager, JWTSettings
+
     payload = await exchange_manager.consume_exchange_code(body.code)
     if not payload:
         raise HTTPException(
@@ -131,26 +136,50 @@ async def exchange_code(
             detail="Invalid, expired, or already consumed authorization code.",
         )
 
-    response = JSONResponse(
-        content={
-            "access_token": payload["access_token"],
-            "token_type": "bearer",
-            "user": payload.get("user") or None,
-        }
+    session_id_str = payload.get("session_id")
+    user_id_str = payload.get("user_id")
+    if not session_id_str or not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Malformed authorization exchange payload.",
+        )
+
+    session_uuid = uuid.UUID(session_id_str)
+    user_uuid = uuid.UUID(user_id_str)
+
+    session = await session_repo.get_by_id(session_uuid)
+    if not session or session.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired or not found.",
+        )
+
+    user = await user_repo.get_by_id(user_uuid)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account not found.",
+        )
+
+    jwt_settings = JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    jwt_manager = JWTManager(jwt_settings)
+    access_token = jwt_manager.create_access_token(
+        user_id=user.id,
+        email=user.email,
+        role=user.role,
+        session_id=session.id,
     )
-    if payload.get("refresh_token"):
-        is_secure = (
-            getattr(settings, "cookie_secure", False)
-            or settings.app_env.lower() in ("prod", "production")
-            or (hasattr(request, "url") and str(request.url.scheme).lower() == "https")
-        )
-        response.set_cookie(
-            key="refresh_token",
-            value=payload["refresh_token"],
-            httponly=True,
-            secure=is_secure,
-            samesite="lax",
-            path="/",
-            max_age=settings.refresh_token_expire_days * 86400,
-        )
-    return response
+
+    user_info = {
+        "id": str(user.id),
+        "email": getattr(user, "email", ""),
+        "name": getattr(user, "name", "") or getattr(user, "email", "").split("@")[0],
+        "role": getattr(user, "role", "student"),
+        "picture": getattr(user, "picture", None) or getattr(user, "picture_url", None),
+    }
+
+    return OAuthExchangeResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_info,
+    )
