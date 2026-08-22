@@ -1,15 +1,25 @@
 import React, { useEffect } from 'react';
 import { useParams, useLocation, Link, Outlet } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { CircleNotch, WarningCircle, ArrowLeft } from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useWorkspaceQuery } from '../hooks/useWorkspaces';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { summaryApi } from '@/features/summary/api/summaryApi';
+import { SUMMARY_QUERY_KEY } from '@/features/summary/hooks/useSummary';
+import { learningPathApi } from '@/features/learning-path/api/learningPathApi';
+import { learningPathKeys } from '@/features/learning-path/hooks/learningPathKeys';
+import { fetchWorkspaceChat } from '@/features/chat/api/chatApi';
+import { chatKeys } from '@/features/chat/hooks/chatKeys';
+import { documentApi } from '@/features/documents/api/documentApi';
+import { documentKeys } from '@/features/documents/hooks/documentKeys';
 import { ROUTES } from '@/config/constants';
 
 export function WorkspaceDetailPage() {
   const { workspaceId } = useParams();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
 
   const {
@@ -22,8 +32,38 @@ export function WorkspaceDetailPage() {
   useEffect(() => {
     if (workspace?.id) {
       setActiveWorkspaceId(workspace.id);
+      const wId = workspace.id;
+
+      // Predictive Tab Prefetching: Pre-load Summary, Learning Path, Chat, & Documents for 0ms transitions
+      try {
+        queryClient.prefetchQuery({
+          queryKey: [SUMMARY_QUERY_KEY, wId],
+          queryFn: () => summaryApi.getWorkspaceSummary(wId),
+          staleTime: 60 * 1000,
+        });
+
+        queryClient.prefetchQuery({
+          queryKey: learningPathKeys.path(wId),
+          queryFn: () => learningPathApi.getWorkspaceLearningPath(wId),
+          staleTime: 60 * 1000,
+        });
+
+        queryClient.prefetchQuery({
+          queryKey: chatKeys.workspace(wId),
+          queryFn: () => fetchWorkspaceChat(wId),
+          staleTime: 60 * 1000,
+        });
+
+        queryClient.prefetchQuery({
+          queryKey: documentKeys.list({ workspace_id: wId }),
+          queryFn: () => documentApi.getWorkspaceDocuments(wId),
+          staleTime: 30 * 1000,
+        });
+      } catch {
+        // Safe catch for headless testing environments
+      }
     }
-  }, [workspace?.id, setActiveWorkspaceId]);
+  }, [workspace?.id, setActiveWorkspaceId, queryClient]);
 
   if (isLoading) {
     return (

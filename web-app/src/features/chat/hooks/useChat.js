@@ -111,6 +111,30 @@ export function useSendRAGMessageMutation(workspaceId) {
 
       try {
         if (typeof sendRAGChatMessageStream === 'function') {
+          let pendingAccumulated = '';
+          let rafId = null;
+
+          const flushBatch = () => {
+            if (rafId) {
+              if (typeof cancelAnimationFrame !== 'undefined') {
+                cancelAnimationFrame(rafId);
+              }
+              rafId = null;
+            }
+            queryClient.setQueryData(chatKeys.workspace(workspaceId), (old) => {
+              const msgs = Array.isArray(old?.messages) ? [...old.messages] : [];
+              const targetIdx = msgs.findIndex((m) => m.id === assistantMsgId);
+              if (targetIdx !== -1) {
+                msgs[targetIdx] = {
+                  ...msgs[targetIdx],
+                  content: pendingAccumulated,
+                  citations: receivedCitations,
+                };
+              }
+              return { messages: msgs };
+            });
+          };
+
           const streamResult = await sendRAGChatMessageStream({
             workspaceId,
             question,
@@ -121,20 +145,23 @@ export function useSendRAGMessageMutation(workspaceId) {
               receivedCitations = cites;
             },
             onChunk: (_chunk, accumulated) => {
-              queryClient.setQueryData(chatKeys.workspace(workspaceId), (old) => {
-                const msgs = Array.isArray(old?.messages) ? [...old.messages] : [];
-                const targetIdx = msgs.findIndex((m) => m.id === assistantMsgId);
-                if (targetIdx !== -1) {
-                  msgs[targetIdx] = {
-                    ...msgs[targetIdx],
-                    content: accumulated,
-                    citations: receivedCitations,
-                  };
+              pendingAccumulated = accumulated;
+              if (!rafId) {
+                if (typeof requestAnimationFrame !== 'undefined') {
+                  rafId = requestAnimationFrame(() => {
+                    rafId = null;
+                    flushBatch();
+                  });
+                } else {
+                  flushBatch();
                 }
-                return { messages: msgs };
-              });
+              }
             },
           });
+
+          // Final flush to guarantee any remaining characters are synced
+          flushBatch();
+
           if (streamResult && (streamResult.answer || streamResult.data)) {
             data = streamResult.data || streamResult;
           }

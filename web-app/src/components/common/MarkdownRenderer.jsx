@@ -316,7 +316,7 @@ export function preprocessMarkdownForMath(text) {
   return processed;
 }
 
-export function MarkdownRenderer({
+function MarkdownRendererBase({
   content,
   className = '',
   style = {},
@@ -327,19 +327,30 @@ export function MarkdownRenderer({
 }) {
   if (!content) return null;
 
-  const sanitizedContent = preprocessMarkdownForMath(content);
+  const sanitizedContent = React.useMemo(() => preprocessMarkdownForMath(content), [content]);
 
-  const remarkPlugins = [remarkGfm, remarkMath];
-  if (softBreaks) remarkPlugins.push(remarkBreaks);
+  const remarkPlugins = React.useMemo(() => {
+    const plugins = [remarkGfm, remarkMath];
+    if (softBreaks) plugins.push(remarkBreaks);
+    return plugins;
+  }, [softBreaks]);
 
-  const rehypePlugins = [];
-  if (allowHtml) {
-    rehypePlugins.push(rehypeRaw, [rehypeSanitize, sanitizeSchema]);
-  }
-  rehypePlugins.push(
-    [rehypeKatex, { output: 'htmlAndMathml', throwOnError: false, strict: false, errorColor: '#cc0000' }],
-    rehypeSlug,
-    rehypeHighlight
+  const rehypePlugins = React.useMemo(() => {
+    const plugins = [];
+    if (allowHtml) {
+      plugins.push(rehypeRaw, [rehypeSanitize, sanitizeSchema]);
+    }
+    plugins.push(
+      [rehypeKatex, { output: 'htmlAndMathml', throwOnError: false, strict: false, errorColor: '#cc0000' }],
+      rehypeSlug,
+      rehypeHighlight
+    );
+    return plugins;
+  }, [allowHtml]);
+
+  const mergedComponents = React.useMemo(
+    () => ({ ...defaultComponents, ...components }),
+    [components]
   );
 
   return (
@@ -357,7 +368,7 @@ export function MarkdownRenderer({
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
         rehypePlugins={rehypePlugins}
-        components={{ ...defaultComponents, ...components }}
+        components={mergedComponents}
       >
         {sanitizedContent}
       </ReactMarkdown>
@@ -365,4 +376,5 @@ export function MarkdownRenderer({
   );
 }
 
+export const MarkdownRenderer = React.memo(MarkdownRendererBase);
 export default MarkdownRenderer;

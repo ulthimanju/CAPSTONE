@@ -77,10 +77,20 @@ export function useCreateWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (newWorkspace) => workspaceApi.createWorkspace(newWorkspace),
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       if (data?.id) {
         setActiveWorkspaceId(data.id);
+        queryClient.setQueriesData({ queryKey: workspaceKeys.lists() }, (old) => {
+          if (!old) return old;
+          const currentList = Array.isArray(old.workspaces) ? old.workspaces : [];
+          if (currentList.some((w) => w.id === data.id)) return old;
+          return {
+            ...old,
+            workspaces: [data, ...currentList],
+            total: (old.total || currentList.length) + 1,
+          };
+        });
       }
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       options.onSuccess?.(data, variables, context);
     },
     onError: (error, variables, context) => {
@@ -101,6 +111,14 @@ export function useUpdateWorkspaceMutation(workspaceId, options = {}) {
     onSuccess: (data, variables, context) => {
       if (data) {
         queryClient.setQueryData(workspaceKeys.detail(workspaceId), data);
+        queryClient.setQueriesData({ queryKey: workspaceKeys.lists() }, (old) => {
+          if (!old) return old;
+          const currentList = Array.isArray(old.workspaces) ? old.workspaces : [];
+          return {
+            ...old,
+            workspaces: currentList.map((w) => (w.id === workspaceId ? { ...w, ...data } : w)),
+          };
+        });
       }
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       options.onSuccess?.(data, variables, context);
@@ -122,6 +140,15 @@ export function useArchiveWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (workspaceId) => workspaceApi.archiveWorkspace(workspaceId),
     onSuccess: (data, workspaceId, context) => {
+      queryClient.setQueriesData({ queryKey: workspaceKeys.lists() }, (old) => {
+        if (!old) return old;
+        const currentList = Array.isArray(old.workspaces) ? old.workspaces : [];
+        return {
+          ...old,
+          workspaces: currentList.filter((w) => w.id !== workspaceId),
+          total: Math.max(0, (old.total || currentList.length) - 1),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.archived() });
@@ -144,6 +171,15 @@ export function useRestoreWorkspaceMutation(options = {}) {
   return useMutation({
     mutationFn: (workspaceId) => workspaceApi.restoreWorkspace(workspaceId),
     onSuccess: (data, workspaceId, context) => {
+      queryClient.setQueriesData({ queryKey: workspaceKeys.archived() }, (old) => {
+        if (!old) return old;
+        const currentList = Array.isArray(old.workspaces) ? old.workspaces : [];
+        return {
+          ...old,
+          workspaces: currentList.filter((w) => w.id !== workspaceId),
+          total: Math.max(0, (old.total || currentList.length) - 1),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.archived() });
@@ -167,6 +203,24 @@ export function useDeleteWorkspaceMutation(options = {}) {
     mutationFn: (workspaceId) => workspaceApi.deleteWorkspace(workspaceId),
     onSuccess: (data, workspaceId, context) => {
       queryClient.removeQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+      queryClient.setQueriesData({ queryKey: workspaceKeys.lists() }, (old) => {
+        if (!old) return old;
+        const currentList = Array.isArray(old.workspaces) ? old.workspaces : [];
+        return {
+          ...old,
+          workspaces: currentList.filter((w) => w.id !== workspaceId),
+          total: Math.max(0, (old.total || currentList.length) - 1),
+        };
+      });
+      queryClient.setQueriesData({ queryKey: workspaceKeys.archived() }, (old) => {
+        if (!old) return old;
+        const currentList = Array.isArray(old.workspaces) ? old.workspaces : [];
+        return {
+          ...old,
+          workspaces: currentList.filter((w) => w.id !== workspaceId),
+          total: Math.max(0, (old.total || currentList.length) - 1),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.archived() });
       clearActiveWorkspace();
