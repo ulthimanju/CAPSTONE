@@ -49,7 +49,8 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
 
   const unitTitle = meta.unit_title || 'Study Unit';
   const email = meta.invited_email || meta.member_email || meta.user_email || meta.email;
-  const role = meta.new_role || meta.role;
+  const actor = meta.actor_name || email || 'Member';
+  const role = (meta.new_role || meta.role || '').replace('WorkspaceRole.', '').toUpperCase();
 
   // 1. Document Indexing / Processing Completed
   if (
@@ -70,7 +71,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 2. Document Uploaded
   if (rawType.includes('document.uploaded') || rawType.includes('document.created')) {
     return {
-      title: `"${docName}" uploaded successfully`,
+      title: `"${docName}" document has been uploaded successfully`,
       message: 'Document is being analyzed and parsed into learning materials.',
       workspaceName: wsName,
       icon: 'document',
@@ -80,7 +81,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 3. Document Parsed
   if (rawType.includes('document.parsed') || rawType.includes('documentparsing')) {
     return {
-      title: `"${docName}" analysis completed`,
+      title: `"${docName}" document has been analyzed successfully`,
       message: 'Markdown structure and diagrams extracted.',
       workspaceName: wsName,
       icon: 'document',
@@ -90,7 +91,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 4. Document Processing Failed
   if (rawType.includes('document.failed') || rawType.includes('indexing.failed')) {
     return {
-      title: `"${docName}" processing failed`,
+      title: `"${docName}" document processing failed`,
       message: meta.error || 'An error occurred while processing the document.',
       workspaceName: wsName,
       icon: 'error',
@@ -100,7 +101,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 5. Document Deleted
   if (rawType.includes('document.deleted')) {
     return {
-      title: `"${docName}" removed from workspace`,
+      title: `"${docName}" document has been removed`,
       message: 'Document and associated vector embeddings were deleted.',
       workspaceName: wsName,
       icon: 'trash',
@@ -110,7 +111,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 6. Summary Generated
   if (rawType.includes('summarygeneration') || rawType.includes('summary')) {
     return {
-      title: `Executive Summary generated${wsName ? ` for "${wsName}"` : ''}`,
+      title: '"Executive Summary" has been generated successfully',
       message: 'Comprehensive study guide and architectural diagrams are ready.',
       workspaceName: wsName,
       icon: 'summary',
@@ -120,7 +121,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 7. Learning Path Generated
   if (rawType.includes('learningpathgeneration') || rawType.includes('learning_path')) {
     return {
-      title: `Learning Path generated${wsName ? ` for "${wsName}"` : ''}`,
+      title: '"Adaptive Learning Path" has been generated successfully',
       message: 'Structured curriculum and study milestones are ready.',
       workspaceName: wsName,
       icon: 'compass',
@@ -130,7 +131,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 8. Learning Unit Generated
   if (rawType.includes('learningunitgeneration') || rawType.includes('unit')) {
     return {
-      title: `Study Unit "${unitTitle}" ready`,
+      title: `"${unitTitle}" study unit has been synthesized successfully`,
       message: 'Deep-dive study content and explanations synthesized.',
       workspaceName: wsName,
       icon: 'unit',
@@ -140,8 +141,8 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 9. Collaborator Invited
   if (rawType.includes('member_invited') || rawType.includes('invitation')) {
     return {
-      title: 'Collaborator invited',
-      message: `Invitation sent to ${email || 'collaborator'}${wsName ? ` for "${wsName}"` : ''}.`,
+      title: `Invitation sent to ${email || 'collaborator'}`,
+      message: `Invitation sent to ${email || 'collaborator'}.`,
       workspaceName: wsName,
       icon: 'invite',
     };
@@ -150,8 +151,8 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 10. Collaborator Joined
   if (rawType.includes('member_joined') || rawType.includes('member.joined')) {
     return {
-      title: 'Collaborator joined workspace',
-      message: `${email || 'A collaborator'} joined "${wsName || 'the workspace'}".`,
+      title: `${actor} joined the workspace`,
+      message: `${actor} joined the workspace.`,
       workspaceName: wsName,
       icon: 'user-plus',
     };
@@ -160,18 +161,27 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 11. Member Role Updated
   if (rawType.includes('role_updated') || rawType.includes('member.role')) {
     return {
-      title: 'Member role updated',
-      message: `${email || 'Member'}'s role was changed to ${role || 'new role'}.`,
+      title: `${actor} role updated to ${role || 'collaborator'}`,
+      message: `Role permissions updated.`,
       workspaceName: wsName,
       icon: 'pencil',
     };
   }
 
   // 12. Member Removed / Left
-  if (rawType.includes('member_removed') || rawType.includes('member.removed') || rawType.includes('member_left') || rawType.includes('member.left')) {
+  if (rawType.includes('member_removed') || rawType.includes('member.removed')) {
     return {
-      title: 'Member access updated',
-      message: `${email || 'A member'} left or was removed from "${wsName || 'the workspace'}".`,
+      title: `${actor} was removed from the workspace`,
+      message: `Access to the workspace was revoked.`,
+      workspaceName: wsName,
+      icon: 'user-minus',
+    };
+  }
+
+  if (rawType.includes('member_left') || rawType.includes('member.left')) {
+    return {
+      title: `${actor} left the workspace`,
+      message: `Member left the workspace.`,
       workspaceName: wsName,
       icon: 'user-minus',
     };
@@ -179,9 +189,10 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
 
   // 13. Ownership Transferred
   if (rawType.includes('ownership_transferred')) {
+    const newOwner = meta.new_owner_name || meta.new_owner_email || 'new owner';
     return {
-      title: 'Workspace ownership transferred',
-      message: `Primary ownership of "${wsName || 'the workspace'}" was transferred.`,
+      title: `Workspace ownership transferred to ${newOwner}`,
+      message: `Primary workspace owner updated.`,
       workspaceName: wsName,
       icon: 'user-plus',
     };
@@ -190,7 +201,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 14. Workspace Lifecycle (Created, Archived, Restored, Deleted)
   if (rawType.includes('workspace.created')) {
     return {
-      title: `Workspace "${wsName || 'New Workspace'}" created`,
+      title: 'Workspace created successfully',
       message: 'Workspace is initialized and ready for study documents.',
       workspaceName: wsName,
       icon: 'folder',
@@ -199,7 +210,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
 
   if (rawType.includes('workspace.archived')) {
     return {
-      title: `Workspace "${wsName || 'Workspace'}" archived`,
+      title: 'Workspace has been archived',
       message: 'Workspace was moved to archives.',
       workspaceName: wsName,
       icon: 'archive',
@@ -208,7 +219,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
 
   if (rawType.includes('workspace.restored')) {
     return {
-      title: `Workspace "${wsName || 'Workspace'}" restored`,
+      title: 'Workspace has been restored',
       message: 'Workspace was restored from archives.',
       workspaceName: wsName,
       icon: 'restore',
@@ -217,7 +228,7 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
 
   if (rawType.includes('workspace.deleted')) {
     return {
-      title: `Workspace "${wsName || 'Workspace'}" deleted`,
+      title: 'Workspace has been deleted',
       message: 'Workspace was permanently deleted.',
       workspaceName: wsName,
       icon: 'trash',
@@ -227,19 +238,19 @@ function formatFriendlyNotification(item, workspaceMap = {}) {
   // 15. Fallback clean up
   const cleanTitle = (item.title || 'Notification')
     .replace(/EventStatus\./gi, '')
+    .replace(/WorkspaceRole\./gi, '')
     .replace(/event\s+/gi, '')
     .replace(/[._]/g, ' ')
     .trim();
 
-  const cleanMessage = (item.message || '')
-    .replace(/EventStatus\./gi, '')
-    .replace(/Event\s+/gi, '')
-    .replace(/[._]/g, ' ')
-    .trim();
+  const isSuccess = cleanTitle.toLowerCase().includes('completed') || cleanTitle.toLowerCase().includes('success');
+  const formattedTitle = isSuccess
+    ? `"${cleanTitle.replace(/completed|success/gi, '').trim()}" completed successfully`
+    : cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
 
   return {
-    title: cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1),
-    message: cleanMessage || 'Notification updated.',
+    title: formattedTitle,
+    message: 'Notification updated.',
     workspaceName: wsName,
     icon: 'bell',
   };

@@ -39,77 +39,77 @@ class NotificationStore:
         doc_name = meta.get("document_name") or meta.get("original_filename") or meta.get("filename") or "Document"
         unit_title = meta.get("unit_title") or "Study Unit"
         email = meta.get("invited_email") or meta.get("member_email") or meta.get("user_email")
-        role = meta.get("new_role") or meta.get("role")
+        actor = meta.get("actor_name") or email or "Member"
+        role = (meta.get("new_role") or meta.get("role") or "").replace("WorkspaceRole.", "").upper()
 
         # 1. Document Events
         if "document.indexing.completed" in name_lower or "vectorindexing" in name_lower or "document.indexed" in name_lower:
             return f'"{doc_name}" document has been processed successfully', 'Vector embeddings and semantic indexing are ready for AI tutoring.'
 
         if "document.uploaded" in name_lower or "document.created" in name_lower:
-            return f'"{doc_name}" uploaded successfully', 'Document is being analyzed and parsed into learning materials.'
+            return f'"{doc_name}" document has been uploaded successfully', 'Document is being analyzed and parsed into learning materials.'
 
         if "document.parsed" in name_lower or "documentparsing" in name_lower:
-            return f'"{doc_name}" parsed successfully', 'Markdown structure and diagrams extracted.'
+            return f'"{doc_name}" document has been analyzed successfully', 'Markdown structure and diagrams extracted.'
 
         if "document.failed" in name_lower or "indexing.failed" in name_lower:
-            return f'"{doc_name}" processing failed', meta.get("error") or 'An error occurred while processing the document.'
+            return f'"{doc_name}" document processing failed', meta.get("error") or 'An error occurred while processing the document.'
 
         if "document.deleted" in name_lower:
-            return f'"{doc_name}" removed from workspace', 'Document and associated embeddings were deleted.'
+            return f'"{doc_name}" document has been removed', 'Document and associated embeddings were deleted.'
 
         if "document.renamed" in name_lower:
-            return f'Document renamed to "{doc_name}"', 'Document title was updated.'
+            return f'"{doc_name}" document has been renamed', 'Document title was updated.'
 
         # 2. AI Synthesis Events
         if "summarygeneration" in name_lower or "summary" in name_lower:
-            ws_ctx = f' for {ws_label}' if ws_label else ''
-            return f'Executive Summary generated{ws_ctx}', 'Comprehensive study guide and architectural diagrams are ready.'
+            return '"Executive Summary" has been generated successfully', 'Comprehensive study guide and architectural diagrams are ready.'
 
         if "learningpathgeneration" in name_lower or "learning_path" in name_lower:
-            ws_ctx = f' for {ws_label}' if ws_label else ''
-            return f'Learning Path generated{ws_ctx}', 'Structured curriculum and study milestones are ready.'
+            return '"Adaptive Learning Path" has been generated successfully', 'Structured curriculum and study milestones are ready.'
 
         if "learningunitgeneration" in name_lower or "unit" in name_lower:
-            return f'Study Unit "{unit_title}" ready', 'Deep-dive study content and explanations synthesized.'
+            return f'"{unit_title}" study unit has been synthesized successfully', 'Deep-dive study content and explanations synthesized.'
 
         if "quizsubmission" in name_lower or "quiz" in name_lower:
-            return 'Quiz completed', meta.get("message") or 'Your score and answers have been recorded.'
+            return '"Workspace Quiz" has been submitted successfully', meta.get("message") or 'Your score and answers have been recorded.'
 
         # 3. Workspace Collaboration & Lifecycle
         if "member_invited" in name_lower or "invitation" in name_lower:
-            return 'Collaborator invited', f'Invitation sent to {email or "collaborator"}{f" for {ws_label}" if ws_label else ""}.'
+            return f'Invitation sent to {email or "collaborator"}', f'Collaborator was invited to the workspace.'
 
         if "member_joined" in name_lower or "member.joined" in name_lower:
-            return 'Collaborator joined workspace', f'{email or "A collaborator"} joined {ws_label or "the workspace"}.'
+            return f'{actor} joined the workspace', f'Collaborator joined the workspace.'
 
         if "role_updated" in name_lower or "member.role" in name_lower:
-            return 'Member role updated', f'{email or "Member"}\'s role was changed to {role or "new role"}.'
+            return f'{actor} role updated to {role or "collaborator"}', f'Role permissions updated.'
 
         if "member_removed" in name_lower or "member.removed" in name_lower:
-            return 'Member removed', f'{email or "A member"} was removed from {ws_label or "the workspace"}.'
+            return f'{actor} was removed from the workspace', f'Access to the workspace was revoked.'
 
         if "member_left" in name_lower or "member.left" in name_lower:
-            return 'Member left workspace', f'{email or "A member"} left {ws_label or "the workspace"}.'
+            return f'{actor} left the workspace', f'Member left the workspace.'
 
         if "ownership_transferred" in name_lower:
-            return 'Workspace ownership transferred', f'Primary ownership of {ws_label or "the workspace"} was transferred.'
+            new_owner = meta.get("new_owner_name") or meta.get("new_owner_email") or "new owner"
+            return f'Workspace ownership transferred to {new_owner}', 'Primary workspace owner updated.'
 
         if "workspace.created" in name_lower:
-            return f'Workspace "{ws_label or "New Workspace"}" created', 'Workspace is initialized and ready for study documents.'
+            return 'Workspace created successfully', 'Workspace is initialized and ready for study documents.'
 
         if "workspace.archived" in name_lower:
-            return f'Workspace "{ws_label or "Workspace"}" archived', 'Workspace was moved to archives.'
+            return 'Workspace has been archived', 'Workspace was moved to archives.'
 
         if "workspace.restored" in name_lower:
-            return f'Workspace "{ws_label or "Workspace"}" restored', 'Workspace was restored from archives.'
+            return 'Workspace has been restored', 'Workspace was restored from archives.'
 
         if "workspace.deleted" in name_lower:
-            return f'Workspace "{ws_label or "Workspace"}" deleted', 'Workspace was permanently deleted.'
+            return 'Workspace has been deleted', 'Workspace was permanently deleted.'
 
         # Default Clean Fallback
-        clean_event = event_name.replace(".", " ").replace("_", " ").title()
+        clean_event = event_name.replace("EventStatus.", "").replace("WorkspaceRole.", "").replace(".", " ").replace("_", " ").title()
         status_clean = (status or "").replace("EventStatus.", "").replace("_", " ").title()
-        title_str = f"{clean_event} {status_clean}".strip()
+        title_str = f'"{clean_event}" updated successfully' if "Completed" in status_clean or "Success" in status_clean else f"{clean_event} {status_clean}".strip()
         msg_str = meta.get("message") or meta.get("summary") or f"{clean_event} updated"
         return title_str, msg_str
 
