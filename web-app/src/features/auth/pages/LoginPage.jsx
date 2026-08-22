@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import { FileText, Lightbulb, Share, Shield, CircleNotch } from '@/components/ui/icons';
+import { Button } from '@/components/ui/Button';
 import { useAuthStatus, AUTH_STATUS } from '../hooks/useAuth';
 import { authApi } from '../api/authApi';
 import { ROUTES } from '@/config/constants';
 import { getSafeInternalRedirect } from '@/lib/navigation';
 
-function GoogleIcon({ className = 'h-5 w-5 shrink-0' }) {
+function GoogleIcon({ className = 'h-4 w-4 shrink-0' }) {
   return (
     <img
       src="/google-icon.svg"
-      alt="Google"
+      alt=""
       className={`${className} object-contain`}
       aria-hidden="true"
     />
@@ -185,27 +186,20 @@ export function LoginPage() {
 
             {/* Google Action Button */}
             <div className="mt-8">
-              <button
-                type="button"
+              <Button
+                variant="primary"
                 onClick={handleGoogleLogin}
-                disabled={isRedirecting}
-                className="group relative flex w-full items-center justify-center gap-3 rounded-ui bg-gradient-rust hover:bg-gradient-rust-hover px-6 py-3.5 font-body text-sm sm:text-base font-medium text-on-accent transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:pointer-events-none"
+                isLoading={isRedirecting}
+                leftIcon={
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white p-0.5">
+                    <GoogleIcon className="h-3.5 w-3.5" />
+                  </div>
+                }
+                className="w-full py-3 text-sm sm:text-base font-medium shadow-xs"
                 aria-label="Continue with Google"
               >
-                {isRedirecting ? (
-                  <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-on-accent border-t-transparent" />
-                    Connecting to Google...
-                  </span>
-                ) : (
-                  <>
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white p-0.5">
-                      <GoogleIcon className="h-4 w-4" />
-                    </div>
-                    <span>Continue with Google</span>
-                  </>
-                )}
-              </button>
+                {isRedirecting ? 'Connecting to Google...' : 'Continue with Google'}
+              </Button>
             </div>
           </div>
         </div>
