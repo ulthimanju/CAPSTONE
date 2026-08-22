@@ -62,10 +62,21 @@ class JWTManager:
         if not verification_key:
             raise ValueError(f"Verification key (public_key or secret_key) is required for {self.settings.algorithm} decoding")
 
-        # Explicitly whitelist EXACTLY the configured algorithm in list format
-        allowed_algorithms = [self.settings.algorithm] if isinstance(self.settings.algorithm, str) else list(self.settings.algorithm)
+        # 1. Inspect unverified header to explicitly reject 'none' algorithm or disallowed algs
+        try:
+            unverified_header = jwt.get_unverified_header(token)
+            token_alg = unverified_header.get("alg")
+            if not token_alg or token_alg.lower() == "none":
+                raise ValueError("Insecure 'none' algorithm is strictly rejected")
+        except JWTError as exc:
+            raise ValueError(f"Malformed JWT header: {exc}") from exc
 
-        # Enforce strict verification of signature, expiration, issued-at, not-before, issuer, audience
+        # 2. Explicitly whitelist EXACTLY the configured algorithm in list format
+        allowed_algorithms = [self.settings.algorithm] if isinstance(self.settings.algorithm, str) else list(self.settings.algorithm)
+        if token_alg not in allowed_algorithms:
+            raise ValueError(f"Algorithm mismatch: received '{token_alg}', expected '{self.settings.algorithm}'")
+
+        # 3. Enforce strict cryptographic verification of signature, expiration, issued-at, not-before, issuer, audience
         options = {
             "verify_signature": True,
             "verify_exp": True,
@@ -93,11 +104,28 @@ class JWTManager:
 
     def get_claims(self, token: str) -> JWTClaims:
         payload = self.decode_token(token)
+
+        # 4. Strict claim format validations (sub, session_id must be valid UUIDs)
+        sub_str = payload.get("sub")
+        if not sub_str:
+            raise ValueError("JWT missing required 'sub' claim")
+        try:
+            uuid.UUID(str(sub_str))
+        except ValueError as exc:
+            raise ValueError(f"JWT 'sub' claim is not a valid UUID: {sub_str}") from exc
+
+        session_id_str = payload.get("session_id")
+        if session_id_str:
+            try:
+                uuid.UUID(str(session_id_str))
+            except ValueError as exc:
+                raise ValueError(f"JWT 'session_id' claim is not a valid UUID: {session_id_str}") from exc
+
         return JWTClaims(
-            sub=payload["sub"],
+            sub=str(sub_str),
             email=payload.get("email", ""),
             role=payload.get("role", "user"),
-            session_id=payload.get("session_id", ""),
+            session_id=str(session_id_str) if session_id_str else "",
             iss=payload.get("iss", self.settings.issuer),
             aud=payload.get("aud", self.settings.audience),
             iat=payload.get("iat"),
