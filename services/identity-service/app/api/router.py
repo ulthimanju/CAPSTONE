@@ -3,6 +3,7 @@ from app.api.routers import oauth, profile, sessions, tokens, health, users, tes
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(oauth.router)
+api_router.include_router(sessions.auth_router)
 api_router.include_router(profile.router)
 api_router.include_router(sessions.router)
 api_router.include_router(tokens.router)

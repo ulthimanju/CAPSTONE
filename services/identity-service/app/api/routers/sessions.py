@@ -10,6 +10,7 @@ from app.domain.exceptions.session import SessionNotFoundError, SessionAccessDen
 from app.schemas.auth import SessionResponse
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
+auth_router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.get("", response_model=list[SessionResponse])
@@ -22,6 +23,7 @@ async def list_sessions(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     response: Response,
     auth_ctx: tuple[UUID, UUID | None] = Depends(get_current_session_context),
@@ -40,6 +42,7 @@ async def logout(
 
 
 @router.post("/logout-all", status_code=status.HTTP_204_NO_CONTENT)
+@auth_router.post("/logout-all", status_code=status.HTTP_204_NO_CONTENT)
 async def logout_all(
     response: Response,
     auth_ctx: tuple[UUID, UUID | None] = Depends(get_current_session_context),
