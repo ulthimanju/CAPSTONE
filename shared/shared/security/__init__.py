@@ -8,6 +8,7 @@ from shared.security.permissions import (
     ROLE_PERMISSIONS,
     has_workspace_permission,
     check_workspace_permission,
+    authorize,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "ROLE_PERMISSIONS",
     "has_workspace_permission",
     "check_workspace_permission",
+    "authorize",
 ]

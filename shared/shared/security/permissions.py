@@ -167,3 +167,49 @@ def check_workspace_permission(
         detail_msg = custom_message or f"Permission denied: Requires '{permission.value}' capability."
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail_msg)
 
+
+def authorize(
+    user: any,
+    workspace: any,
+    permission: WorkspacePermission | str,
+    caller_role: WorkspaceRole | str | None = None,
+    custom_message: str | None = None,
+) -> None:
+    """
+    Authoritative evaluation: authorize(user, workspace, "document.delete").
+    Treats roles as presets and resolves permissions explicitly.
+    Raises HTTP 403 Forbidden if the action is unauthorized.
+    """
+    user_id = str(getattr(user, "id", user))
+    ws_owner_id = str(getattr(workspace, "owner_id", ""))
+    is_owner = bool(user_id and ws_owner_id and user_id == ws_owner_id)
+
+    role = caller_role or getattr(workspace, "user_role", None)
+    if is_owner:
+        role = WorkspaceRole.OWNER
+
+    perm_enum = None
+    if isinstance(permission, WorkspacePermission):
+        perm_enum = permission
+    else:
+        # Match string value (e.g. "document.delete" -> WorkspacePermission.WORKSPACE_DOCUMENT_DELETE)
+        clean_perm = str(permission).strip().lower()
+        for p in WorkspacePermission:
+            val = p.value.lower()
+            if val == clean_perm or val.endswith(f".{clean_perm}") or clean_perm.endswith(f".{val}"):
+                perm_enum = p
+                break
+        if not perm_enum:
+            try:
+                perm_enum = WorkspacePermission(clean_perm)
+            except Exception:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Unknown permission '{permission}'")
+
+    check_workspace_permission(
+        role=role,
+        permission=perm_enum,
+        is_owner=is_owner,
+        custom_message=custom_message,
+    )
+
+
