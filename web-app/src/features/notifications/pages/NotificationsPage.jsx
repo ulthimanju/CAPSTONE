@@ -443,9 +443,6 @@ export function NotificationsPage() {
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 font-body text-xs text-text/70 leading-relaxed">
-                      {message}
-                    </p>
 
                     {/* Metadata details if renamed */}
                     {item.metadata?.old_name && item.metadata?.new_name && (
@@ -454,7 +451,7 @@ export function NotificationsPage() {
                       </p>
                     )}
 
-                    <div className="mt-2 flex items-center gap-1 font-mono text-[10px] text-text/50">
+                    <div className="mt-1.5 flex items-center gap-1 font-mono text-[10px] text-text/50">
                       <Clock className="h-3 w-3" />
                       <span>{new Date(item.created_at || Date.now()).toLocaleString()}</span>
                     </div>
