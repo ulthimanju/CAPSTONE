@@ -72,7 +72,7 @@ export async function sendRAGChatMessageStream({
     payload.domain_type = domainType;
   }
 
-  const token = useAuthStore.getState().token || localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+  const token = useAuthStore.getState().token;
   const headers = {
     'Content-Type': 'application/json',
   };
