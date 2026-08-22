@@ -61,6 +61,13 @@ export function useWorkspacePermissions(workspace, currentMember = null) {
   const canDeleteWorkspace = isOwner;
   const canTransferOwnership = isOwner;
 
+  // 4 Core Capability Domains
+  const canAccessWorkspace = true;
+  const canManageWorkspace = isOwnerOrAdmin;
+  const canManageContent = isOwner || isAdmin || isEditor;
+  const canGenerateLearningContent = isOwner || isAdmin || isEditor;
+  const canTakeQuiz = true;
+
   const roleDisplayLabel = WORKSPACE_ROLE_LABELS[callerRole] || 'Viewer';
 
   return {
@@ -74,6 +81,11 @@ export function useWorkspacePermissions(workspace, currentMember = null) {
     canArchiveWorkspace,
     canDeleteWorkspace,
     canTransferOwnership,
+    canAccessWorkspace,
+    canManageWorkspace,
+    canManageContent,
+    canGenerateLearningContent,
+    canTakeQuiz,
     callerRole,
     roleDisplayLabel,
     currentUser,
