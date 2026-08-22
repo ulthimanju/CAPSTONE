@@ -217,9 +217,12 @@ class GoogleOAuthClient(OAuthClientInterface):
             "code_challenge": challenge,
             "code_challenge_method": "S256",
             "access_type": "offline",
-            "prompt": "consent select_account",
-            "include_granted_scopes": "true",
+            "prompt": "select_account",
         }
+        if include_drive:
+            params["prompt"] = "consent select_account"
+            params["include_granted_scopes"] = "true"
+
         auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
         response = RedirectResponse(url=auth_url, status_code=302)
         is_secure = (
