@@ -4,13 +4,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.entities.oauth_identity import OAuthIdentity
 from app.domain.repositories.oauth_repository import OAuthRepository
 from app.infrastructure.database.models import OAuthIdentityModel
+from app.config.settings import settings
+from shared.security.encryption import EncryptionService
+
+_crypto = EncryptionService(settings.jwt_secret)
 
 
 def _to_entity(m: OAuthIdentityModel) -> OAuthIdentity:
     return OAuthIdentity(
-        id=m.id, user_id=m.user_id, provider=m.provider,
-        provider_user_id=m.provider_user_id, email=m.email,
-        access_token=m.access_token, refresh_token=m.refresh_token, expires_at=m.expires_at,
+        id=m.id,
+        user_id=m.user_id,
+        provider=m.provider,
+        provider_user_id=m.provider_user_id,
+        email=m.email,
+        access_token=_crypto.decrypt(m.access_token),
+        refresh_token=_crypto.decrypt(m.refresh_token),
+        expires_at=m.expires_at,
     )
 
 
@@ -30,9 +39,13 @@ class SQLAlchemyOAuthRepository(OAuthRepository):
 
     async def create(self, identity: OAuthIdentity) -> OAuthIdentity:
         m = OAuthIdentityModel(
-            id=identity.id, user_id=identity.user_id, provider=identity.provider,
-            provider_user_id=identity.provider_user_id, email=identity.email,
-            access_token=identity.access_token, refresh_token=identity.refresh_token,
+            id=identity.id,
+            user_id=identity.user_id,
+            provider=identity.provider,
+            provider_user_id=identity.provider_user_id,
+            email=identity.email,
+            access_token=_crypto.encrypt(identity.access_token),
+            refresh_token=_crypto.encrypt(identity.refresh_token),
             expires_at=identity.expires_at,
         )
         self._db.add(m)
@@ -45,8 +58,8 @@ class SQLAlchemyOAuthRepository(OAuthRepository):
             select(OAuthIdentityModel).where(OAuthIdentityModel.id == identity.id)
         )
         m = result.scalar_one()
-        m.access_token = identity.access_token
-        m.refresh_token = identity.refresh_token
+        m.access_token = _crypto.encrypt(identity.access_token)
+        m.refresh_token = _crypto.encrypt(identity.refresh_token)
         m.expires_at = identity.expires_at
         await self._db.flush()
         await self._db.refresh(m)
