@@ -6,8 +6,11 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 export const authApi = {
   /**
    * Returns the backend Google OAuth redirect initiation URL.
+   * By default requests standard identity scopes (Least Privilege).
+   * Pass includeDrive: true for incremental step-up consent.
    */
-  getGoogleLoginUrl: () => `${API_BASE}/api/v1/oauth/google/login`,
+  getGoogleLoginUrl: (includeDrive = false) =>
+    `${API_BASE}/api/v1/oauth/google/login${includeDrive ? '?drive=true' : ''}`,
 
   /**
    * Exchanges a short-lived single-use authorization code for a JWT access token.
@@ -44,6 +47,14 @@ export const authApi = {
     } catch {
       return { isLinked: false, data: null };
     }
+  },
+
+  /**
+   * Proactively disconnects Google Drive integration and revokes credentials at Google.
+   */
+  disconnectGoogleDrive: async () => {
+    const response = await apiClient.post('/api/v1/profile/google-disconnect');
+    return response.data;
   },
 
   /**
