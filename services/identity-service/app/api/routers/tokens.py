@@ -16,13 +16,17 @@ from app.api.dependencies.database import (
     get_unit_of_work,
 )
 
+from shared.security.rate_limiter import RateLimiter
+
 router = APIRouter(prefix="/tokens", tags=["Tokens"])
 logger = logging.getLogger(__name__)
 jwt_settings = JWTSettings(secret_key=settings.jwt_secret, algorithm=settings.jwt_algorithm)
 jwt_manager = JWTManager(jwt_settings)
 
+refresh_rate_limiter = RateLimiter(max_requests=15, window_seconds=60, key_prefix="rate_limit:tokens_refresh")
 
-@router.post("/refresh", response_model=TokenResponse)
+
+@router.post("/refresh", response_model=TokenResponse, dependencies=[Depends(refresh_rate_limiter)])
 async def refresh_token(
     response: Response,
     request: Request,

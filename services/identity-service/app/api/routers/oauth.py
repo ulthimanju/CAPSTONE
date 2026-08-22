@@ -23,10 +23,16 @@ from app.domain.exceptions.oauth import GoogleOAuthError
 from app.infrastructure.cache.oauth_exchange import OAuthExchangeManager
 from app.config.settings import settings
 
+from shared.security.rate_limiter import RateLimiter
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/oauth/google", tags=["OAuth"])
 exchange_manager = OAuthExchangeManager()
+
+login_rate_limiter = RateLimiter(max_requests=30, window_seconds=60, key_prefix="rate_limit:oauth_login")
+callback_rate_limiter = RateLimiter(max_requests=30, window_seconds=60, key_prefix="rate_limit:oauth_callback")
+exchange_rate_limiter = RateLimiter(max_requests=10, window_seconds=60, key_prefix="rate_limit:oauth_exchange")
 
 
 class OAuthExchangeRequest(BaseModel):
@@ -39,7 +45,7 @@ class OAuthExchangeResponse(BaseModel):
     user: dict[str, Any] | None = None
 
 
-@router.get("/login")
+@router.get("/login", dependencies=[Depends(login_rate_limiter)])
 async def google_login(
     request: Request,
     scope: str | None = None,
@@ -51,7 +57,7 @@ async def google_login(
     return await oauth_client.login_redirect(request, redirect_uri, include_drive=bool(include_drive))
 
 
-@router.get("/callback")
+@router.get("/callback", dependencies=[Depends(callback_rate_limiter)])
 async def google_callback(
     request: Request,
     user_repo: UserRepository = Depends(get_user_repository),
@@ -119,7 +125,7 @@ async def google_callback(
     return response
 
 
-@router.post("/exchange", response_model=OAuthExchangeResponse)
+@router.post("/exchange", response_model=OAuthExchangeResponse, dependencies=[Depends(exchange_rate_limiter)])
 async def exchange_code(
     body: OAuthExchangeRequest,
     request: Request,
