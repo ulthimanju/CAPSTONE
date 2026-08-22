@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Bell,
   CheckCheck,
@@ -14,6 +14,7 @@ import {
   Trash,
   Folder,
   Compass,
+  CheckCircle,
 } from '@/components/ui/icons';
 import {
   useNotificationsQuery,
@@ -21,8 +22,228 @@ import {
   useMarkNotificationReadMutation,
   useMarkAllNotificationsReadMutation,
 } from '../hooks/useNotifications';
+import { useWorkspacesQuery } from '@/features/workspaces/hooks/useWorkspaces';
 import { Card, Button, BookLinearIcon } from '@/components/ui';
 import { toast } from 'sonner';
+
+/**
+ * Transforms raw machine event titles/messages into clean, friendly human text.
+ */
+function formatFriendlyNotification(item, workspaceMap = {}) {
+  const meta = { ...(item.payload || {}), ...(item.metadata || {}) };
+  const rawType = (item.event_type || item.type || item.title || '').toLowerCase();
+  const rawTitle = (item.title || '').toLowerCase();
+  const rawMsg = (item.message || '').toLowerCase();
+
+  const wsName =
+    item.workspace_name ||
+    meta.workspace_name ||
+    (item.workspace_id ? workspaceMap[item.workspace_id]?.name : null);
+
+  const docName =
+    meta.document_name ||
+    meta.original_filename ||
+    meta.filename ||
+    meta.name ||
+    'Document';
+
+  const unitTitle = meta.unit_title || 'Study Unit';
+  const email = meta.invited_email || meta.member_email || meta.user_email || meta.email;
+  const role = meta.new_role || meta.role;
+
+  // 1. Document Indexing / Processing Completed
+  if (
+    rawType.includes('indexing.completed') ||
+    rawType.includes('vectorindexing') ||
+    rawType.includes('document.indexed') ||
+    rawTitle.includes('indexing.completed') ||
+    rawMsg.includes('indexing.completed')
+  ) {
+    return {
+      title: `"${docName}" document has been processed successfully`,
+      message: 'Vector embeddings and semantic indexing are ready for AI tutoring.',
+      workspaceName: wsName,
+      icon: 'document-done',
+    };
+  }
+
+  // 2. Document Uploaded
+  if (rawType.includes('document.uploaded') || rawType.includes('document.created')) {
+    return {
+      title: `"${docName}" uploaded successfully`,
+      message: 'Document is being analyzed and parsed into learning materials.',
+      workspaceName: wsName,
+      icon: 'document',
+    };
+  }
+
+  // 3. Document Parsed
+  if (rawType.includes('document.parsed') || rawType.includes('documentparsing')) {
+    return {
+      title: `"${docName}" analysis completed`,
+      message: 'Markdown structure and diagrams extracted.',
+      workspaceName: wsName,
+      icon: 'document',
+    };
+  }
+
+  // 4. Document Processing Failed
+  if (rawType.includes('document.failed') || rawType.includes('indexing.failed')) {
+    return {
+      title: `"${docName}" processing failed`,
+      message: meta.error || 'An error occurred while processing the document.',
+      workspaceName: wsName,
+      icon: 'error',
+    };
+  }
+
+  // 5. Document Deleted
+  if (rawType.includes('document.deleted')) {
+    return {
+      title: `"${docName}" removed from workspace`,
+      message: 'Document and associated vector embeddings were deleted.',
+      workspaceName: wsName,
+      icon: 'trash',
+    };
+  }
+
+  // 6. Summary Generated
+  if (rawType.includes('summarygeneration') || rawType.includes('summary')) {
+    return {
+      title: `Executive Summary generated${wsName ? ` for "${wsName}"` : ''}`,
+      message: 'Comprehensive study guide and architectural diagrams are ready.',
+      workspaceName: wsName,
+      icon: 'summary',
+    };
+  }
+
+  // 7. Learning Path Generated
+  if (rawType.includes('learningpathgeneration') || rawType.includes('learning_path')) {
+    return {
+      title: `Learning Path generated${wsName ? ` for "${wsName}"` : ''}`,
+      message: 'Structured curriculum and study milestones are ready.',
+      workspaceName: wsName,
+      icon: 'compass',
+    };
+  }
+
+  // 8. Learning Unit Generated
+  if (rawType.includes('learningunitgeneration') || rawType.includes('unit')) {
+    return {
+      title: `Study Unit "${unitTitle}" ready`,
+      message: 'Deep-dive study content and explanations synthesized.',
+      workspaceName: wsName,
+      icon: 'unit',
+    };
+  }
+
+  // 9. Collaborator Invited
+  if (rawType.includes('member_invited') || rawType.includes('invitation')) {
+    return {
+      title: 'Collaborator invited',
+      message: `Invitation sent to ${email || 'collaborator'}${wsName ? ` for "${wsName}"` : ''}.`,
+      workspaceName: wsName,
+      icon: 'invite',
+    };
+  }
+
+  // 10. Collaborator Joined
+  if (rawType.includes('member_joined') || rawType.includes('member.joined')) {
+    return {
+      title: 'Collaborator joined workspace',
+      message: `${email || 'A collaborator'} joined "${wsName || 'the workspace'}".`,
+      workspaceName: wsName,
+      icon: 'user-plus',
+    };
+  }
+
+  // 11. Member Role Updated
+  if (rawType.includes('role_updated') || rawType.includes('member.role')) {
+    return {
+      title: 'Member role updated',
+      message: `${email || 'Member'}'s role was changed to ${role || 'new role'}.`,
+      workspaceName: wsName,
+      icon: 'pencil',
+    };
+  }
+
+  // 12. Member Removed / Left
+  if (rawType.includes('member_removed') || rawType.includes('member.removed') || rawType.includes('member_left') || rawType.includes('member.left')) {
+    return {
+      title: 'Member access updated',
+      message: `${email || 'A member'} left or was removed from "${wsName || 'the workspace'}".`,
+      workspaceName: wsName,
+      icon: 'user-minus',
+    };
+  }
+
+  // 13. Ownership Transferred
+  if (rawType.includes('ownership_transferred')) {
+    return {
+      title: 'Workspace ownership transferred',
+      message: `Primary ownership of "${wsName || 'the workspace'}" was transferred.`,
+      workspaceName: wsName,
+      icon: 'user-plus',
+    };
+  }
+
+  // 14. Workspace Lifecycle (Created, Archived, Restored, Deleted)
+  if (rawType.includes('workspace.created')) {
+    return {
+      title: `Workspace "${wsName || 'New Workspace'}" created`,
+      message: 'Workspace is initialized and ready for study documents.',
+      workspaceName: wsName,
+      icon: 'folder',
+    };
+  }
+
+  if (rawType.includes('workspace.archived')) {
+    return {
+      title: `Workspace "${wsName || 'Workspace'}" archived`,
+      message: 'Workspace was moved to archives.',
+      workspaceName: wsName,
+      icon: 'archive',
+    };
+  }
+
+  if (rawType.includes('workspace.restored')) {
+    return {
+      title: `Workspace "${wsName || 'Workspace'}" restored`,
+      message: 'Workspace was restored from archives.',
+      workspaceName: wsName,
+      icon: 'restore',
+    };
+  }
+
+  if (rawType.includes('workspace.deleted')) {
+    return {
+      title: `Workspace "${wsName || 'Workspace'}" deleted`,
+      message: 'Workspace was permanently deleted.',
+      workspaceName: wsName,
+      icon: 'trash',
+    };
+  }
+
+  // 15. Fallback clean up
+  const cleanTitle = (item.title || 'Notification')
+    .replace(/EventStatus\./gi, '')
+    .replace(/event\s+/gi, '')
+    .replace(/[._]/g, ' ')
+    .trim();
+
+  const cleanMessage = (item.message || '')
+    .replace(/EventStatus\./gi, '')
+    .replace(/Event\s+/gi, '')
+    .replace(/[._]/g, ' ')
+    .trim();
+
+  return {
+    title: cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1),
+    message: cleanMessage || 'Notification updated.',
+    workspaceName: wsName,
+    icon: 'bell',
+  };
+}
 
 export function NotificationsPage() {
   // Real-time live SSE notification stream listener
@@ -31,6 +252,17 @@ export function NotificationsPage() {
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'UNREAD'
 
   const { data, isLoading, error } = useNotificationsQuery({ limit: 100 });
+  const { data: workspacesData } = useWorkspacesQuery();
+  const workspaces = workspacesData?.workspaces || (Array.isArray(workspacesData) ? workspacesData : []);
+
+  const workspaceMap = useMemo(() => {
+    const map = {};
+    for (const ws of workspaces) {
+      if (ws?.id) map[ws.id] = ws;
+    }
+    return map;
+  }, [workspaces]);
+
   const markReadMutation = useMarkNotificationReadMutation();
   const markAllReadMutation = useMarkAllNotificationsReadMutation({
     onSuccess: () => {
@@ -45,20 +277,37 @@ export function NotificationsPage() {
     filter === 'UNREAD' ? n.status === 'UNREAD' : true
   );
 
-  const getNotificationIcon = (item) => {
-    const evt = (item.event_type || item.title || '').toLowerCase();
-    if (evt.includes('archive')) return <Archive className="h-4 w-4" />;
-    if (evt.includes('restore') || evt.includes('unarchive')) return <ArrowCounterClockwise className="h-4 w-4" />;
-    if (evt.includes('rename') || evt.includes('update')) return <PencilSimple className="h-4 w-4" />;
-    if (evt.includes('invite') || evt.includes('join')) return <UserPlus className="h-4 w-4" />;
-    if (evt.includes('remove') || evt.includes('leave')) return <UserMinus className="h-4 w-4" />;
-    if (evt.includes('delete')) return <Trash className="h-4 w-4" />;
-    if (evt.includes('learning_path') || evt.includes('learning path')) return <Compass className="h-4 w-4" />;
-    if (evt.includes('unit')) return <BookLinearIcon className="h-4 w-4" />;
-    if (evt.includes('summary') || evt.includes('document')) return <FileText className="h-4 w-4" />;
-    if (item.type === 'TUTOR') return <Sparkle className="h-4 w-4" />;
-    if (item.type === 'INVITE') return <Envelope className="h-4 w-4" />;
-    return <Bell className="h-4 w-4" />;
+  const renderIcon = (iconKey) => {
+    switch (iconKey) {
+      case 'document-done':
+        return <CheckCircle className="h-4 w-4 text-success" />;
+      case 'document':
+        return <FileText className="h-4 w-4 text-accent" />;
+      case 'summary':
+        return <FileText className="h-4 w-4 text-accent" />;
+      case 'compass':
+        return <Compass className="h-4 w-4 text-accent" />;
+      case 'unit':
+        return <BookLinearIcon className="h-4 w-4 text-accent" />;
+      case 'archive':
+        return <Archive className="h-4 w-4 text-amber-500" />;
+      case 'restore':
+        return <ArrowCounterClockwise className="h-4 w-4 text-accent" />;
+      case 'trash':
+        return <Trash className="h-4 w-4 text-danger" />;
+      case 'pencil':
+        return <PencilSimple className="h-4 w-4 text-accent" />;
+      case 'user-plus':
+        return <UserPlus className="h-4 w-4 text-accent" />;
+      case 'user-minus':
+        return <UserMinus className="h-4 w-4 text-danger" />;
+      case 'invite':
+        return <Envelope className="h-4 w-4 text-accent" />;
+      case 'folder':
+        return <Folder className="h-4 w-4 text-accent" />;
+      default:
+        return <Bell className="h-4 w-4 text-accent" />;
+    }
   };
 
   const handleToggleRead = (item) => {
@@ -81,7 +330,7 @@ export function NotificationsPage() {
             )}
           </div>
           <p className="mt-1 font-body text-xs text-text/70">
-            Workspace events, member updates, and real-time activity stored in MongoDB.
+            Workspace events, document indexing milestones, and collaborator activities.
           </p>
         </div>
 
@@ -152,6 +401,8 @@ export function NotificationsPage() {
         <div className="space-y-3">
           {filteredNotifications.map((item) => {
             const isRead = item.status === 'READ';
+            const { title, message, workspaceName, icon } = formatFriendlyNotification(item, workspaceMap);
+
             return (
               <Card
                 key={item.id}
@@ -170,29 +421,30 @@ export function NotificationsPage() {
                         : 'bg-sand border-sep-line text-accent'
                     }`}
                   >
-                    {getNotificationIcon(item)}
+                    {renderIcon(icon)}
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h4
                         className={`text-xs ${
                           isRead ? 'text-text/80 font-medium' : 'text-text font-bold'
                         }`}
                       >
-                        {item.title}
+                        {title}
                       </h4>
                       {!isRead && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" />
                       )}
-                      {item.workspace_name && (
-                        <span className="rounded bg-sand px-1.5 py-0.5 font-mono text-[9px] text-accent border border-sep-line/50">
-                          {item.workspace_name}
+                      {workspaceName && (
+                        <span className="inline-flex items-center gap-1 rounded-ui bg-accent/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-accent border border-accent/25 shadow-2xs">
+                          <Folder className="h-2.5 w-2.5 shrink-0" />
+                          <span>{workspaceName}</span>
                         </span>
                       )}
                     </div>
                     <p className="mt-1 font-body text-xs text-text/70 leading-relaxed">
-                      {item.message}
+                      {message}
                     </p>
 
                     {/* Metadata details if renamed */}
