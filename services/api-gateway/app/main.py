@@ -205,6 +205,8 @@ UNTRUSTED_IDENTITY_HEADERS = {
     "x-user-id",
     "x-user-email",
     "x-user-role",
+    "x-session-id",
+    "x-auth-context",
     "x-authenticated-user",
     "x-consumer-custom-id",
     "x-consumer-username",
@@ -215,9 +217,10 @@ UNTRUSTED_IDENTITY_HEADERS = {
 def sanitize_and_prepare_headers(request: Request, req_id: str) -> dict[str, str]:
     """
     Security Gate:
-    1. Explicitly strips any client-supplied identity/role headers to prevent spoofing attacks.
-    2. Validates incoming Authorization Bearer JWT against jwt_secret.
-    3. Injects cryptographically authenticated identity headers (X-User-ID, X-User-Role) downstream.
+    1. Explicitly strips any client-supplied identity/role/session headers to prevent spoofing attacks.
+    2. Validates incoming Authorization Bearer JWT cryptographically.
+    3. Injects authenticated identity headers (X-User-ID, X-User-Role, X-Session-ID, X-User-Email) downstream.
+    4. Preserves the validated Authorization Bearer JWT so downstream services can verify claims independently.
     """
     headers = {
         k: v for k, v in request.headers.items()
@@ -245,6 +248,8 @@ def sanitize_and_prepare_headers(request: Request, req_id: str) -> dict[str, str
                     headers["X-User-Email"] = str(claims.email)
                 if hasattr(claims, "role") and claims.role:
                     headers["X-User-Role"] = str(claims.role)
+                if hasattr(claims, "session_id") and claims.session_id:
+                    headers["X-Session-ID"] = str(claims.session_id)
         except Exception:
             pass
 
