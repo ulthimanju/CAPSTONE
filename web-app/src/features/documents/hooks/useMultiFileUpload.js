@@ -5,11 +5,7 @@ import { documentApi } from '../api/documentApi';
 import { DOCUMENT_QUERY_KEYS } from './useDocuments';
 import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 import { getErrorMessage } from '@/lib/errorUtils';
-
-const ALLOWED_EXTENSIONS = [
-  'pdf', 'docx', 'wps', 'pptx', 'key', 'xlsx', 'csv', 'png', 'jpg', 'jpeg', 'tif', 'tiff'
-];
-const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'tif', 'tiff'];
+import { ALLOWED_DOCUMENT_EXTENSIONS as ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS } from '@/utils/files';
 
 export function useMultiFileUpload(workspaceId) {
   const queryClient = useQueryClient();

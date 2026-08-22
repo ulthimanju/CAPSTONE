@@ -8,18 +8,11 @@ import {
 } from '@/components/ui/icons';
 import { Card, Button, Badge, BookLinearIcon, FlashcardsIcon, QuizIcon } from '@/components/ui';
 import { ContentRenderer } from '@/components/common/ContentRenderer';
+import { formatBytes } from '@/utils/formatters';
 import {
   useDocumentQuery,
   useDocumentParseResultQuery,
 } from '../hooks/useDocuments';
-
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
 
 export function DocumentReaderPage() {
   const { workspaceId, documentId } = useParams();

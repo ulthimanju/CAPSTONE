@@ -15,23 +15,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useDeleteDocumentMutation } from '../hooks/useDocuments';
-
-function getFileIcon(ext) {
-  const e = (ext || '').toLowerCase();
-  if (['png', 'jpg', 'jpeg', 'tif', 'tiff'].includes(e)) return ImageIcon;
-  if (['xlsx', 'csv'].includes(e)) return FileSpreadsheet;
-  if (['pptx', 'key'].includes(e)) return Presentation;
-  return FileText;
-}
-
-function formatBytes(bytes, decimals = 1) {
-  if (!bytes || bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-}
+import { formatBytes, getFileIcon } from '@/utils/formatters';
 
 export function DocumentListTable({ workspaceId, documents = [] }) {
   const [docToDelete, setDocToDelete] = useState(null);
