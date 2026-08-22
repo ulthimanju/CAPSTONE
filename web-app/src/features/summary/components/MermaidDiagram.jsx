@@ -9,7 +9,7 @@ function initMermaid() {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'neutral',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
       fontFamily: 'JetBrains Mono, Menlo, monospace',
       suppressErrorRendering: true,
     });
