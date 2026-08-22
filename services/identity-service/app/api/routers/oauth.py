@@ -107,7 +107,14 @@ async def google_callback(
     )
 
     redirect_url = f"{settings.frontend_url}/auth/callback?code={exchange_code}"
-    response = RedirectResponse(url=redirect_url)
+    response = RedirectResponse(
+        url=redirect_url,
+        headers={
+            "Referrer-Policy": "no-referrer",
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
     is_secure = (
         getattr(settings, "cookie_secure", False)
         or settings.app_env.lower() in ("prod", "production")
