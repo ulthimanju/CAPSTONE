@@ -11,6 +11,21 @@ import { workspaceKeys } from '@/features/workspaces/hooks/workspaceKeys';
 import { workspaceApi } from '@/features/workspaces/api/workspaceApi';
 import { ROUTES } from '@/config/constants';
 
+const ALLOWED_REDIRECT_PREFIXES = ['/workspaces', '/dashboard', '/profile', '/courses', '/settings'];
+
+function getSafeRedirectUrl(target) {
+  if (!target || typeof target !== 'string') return ROUTES.WORKSPACES;
+  const trimmed = target.trim();
+  // Prevent protocol-relative URLs (//evil.com) and backslash traversal (/\\evil.com)
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\')) {
+    return ROUTES.WORKSPACES;
+  }
+  const isAllowed = ALLOWED_REDIRECT_PREFIXES.some(
+    (prefix) => trimmed === prefix || trimmed.startsWith(prefix + '/') || trimmed.startsWith(prefix + '?')
+  );
+  return isAllowed ? trimmed : ROUTES.WORKSPACES;
+}
+
 export function AuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -24,11 +39,15 @@ export function AuthCallbackPage() {
   const rawCode = searchParams.get('code');
   const rawToken = searchParams.get('token');
   const rawError = searchParams.get('error');
+  const rawNext = searchParams.get('next') || searchParams.get('redirect') || sessionStorage.getItem('auth_redirect');
 
   useEffect(() => {
     // 1. Immediately scrub query parameters from browser URL bar & history
     if (window.history?.replaceState) {
       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    if (sessionStorage.getItem('auth_redirect')) {
+      sessionStorage.removeItem('auth_redirect');
     }
 
     if (rawError) {
@@ -38,6 +57,8 @@ export function AuthCallbackPage() {
 
     if (exchangeAttemptedRef.current) return;
     exchangeAttemptedRef.current = true;
+
+    const targetDestination = getSafeRedirectUrl(rawNext);
 
     // 2. Single-use Authorization Exchange Code Pattern (Recommended RFC 6819)
     if (rawCode) {
@@ -55,7 +76,7 @@ export function AuthCallbackPage() {
               queryKey: workspaceKeys.list({ limit: 50, offset: 0 }),
               queryFn: () => workspaceApi.getWorkspaces({ limit: 50, offset: 0 }),
             });
-            navigate(ROUTES.WORKSPACES, { replace: true });
+            navigate(targetDestination, { replace: true });
           } else {
             setValidationError('Failed to retrieve access credentials.');
           }

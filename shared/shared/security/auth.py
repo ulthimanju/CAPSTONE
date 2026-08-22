@@ -60,3 +60,29 @@ def verify_user_identity(
         jwt_issuer=jwt_issuer,
     )
     return UUID(claims.sub)
+
+
+ALLOWED_REDIRECT_PATHS = ("/workspaces", "/dashboard", "/profile", "/courses", "/settings", "/auth/callback")
+
+
+def validate_safe_redirect(
+    target_url: str | None,
+    allowed_paths: tuple[str, ...] = ALLOWED_REDIRECT_PATHS,
+    default: str = "/workspaces",
+) -> str:
+    """
+    Validates redirect targets to prevent Open Redirect vulnerabilities (CWE-601).
+    Rejects:
+    - Absolute URLs with schemas (https://evil.com, javascript:...)
+    - Protocol-relative URLs (//evil.com)
+    - Backslash obfuscation (/\\evil.com)
+    - Paths outside the allowed application path list
+    """
+    if not target_url or not isinstance(target_url, str):
+        return default
+    trimmed = target_url.strip()
+    if not trimmed.startswith("/") or trimmed.startswith("//") or trimmed.startswith("/\\"):
+        return default
+    if any(trimmed == path or trimmed.startswith(f"{path}/") or trimmed.startswith(f"{path}?") for path in allowed_paths):
+        return trimmed
+    return default
