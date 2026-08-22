@@ -8,9 +8,8 @@ from app.domain.entities.workspace_activity import WorkspaceActivity
 from app.constants.enums import WorkspaceRole, ActivityType
 from app.schemas.workspace import WorkspaceResponse
 from app.utils.ids import generate_uuid
-
-
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+from shared.security.permissions import WorkspacePermission, check_workspace_permission
 
 
 class TransferOwnershipUseCase:
@@ -31,8 +30,12 @@ class TransferOwnershipUseCase:
         if not workspace:
             raise HTTPException(status_code=404, detail="Workspace not found")
 
-        if workspace.owner_id != current_owner_id:
-            raise HTTPException(status_code=403, detail="Only current owner can transfer ownership")
+        check_workspace_permission(
+            role=None,
+            permission=WorkspacePermission.WORKSPACE_TRANSFER,
+            is_owner=(workspace.owner_id == current_owner_id),
+            custom_message="Only current owner can transfer ownership",
+        )
 
         target_member = await self.member_repo.get_member(workspace_id, new_owner_id)
         if not target_member:

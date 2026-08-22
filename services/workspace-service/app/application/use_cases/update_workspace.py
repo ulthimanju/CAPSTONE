@@ -7,7 +7,7 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.entities.workspace_activity import WorkspaceActivity
 from app.constants.enums import WorkspaceRole, WorkspaceStatus, ActivityType, WorkspaceDomainType
 from app.schemas.workspace import UpdateWorkspaceRequest, WorkspaceResponse
-from app.utils.ids import generate_uuid
+from shared.security.permissions import WorkspacePermission, check_workspace_permission
 
 
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
@@ -32,11 +32,12 @@ class UpdateWorkspaceUseCase:
             raise HTTPException(status_code=404, detail="Workspace not found")
 
         caller_member = await self.member_repo.get_member(workspace_id, user_id)
-        is_owner = workspace.owner_id == user_id
-        is_admin = caller_member and caller_member.role in [WorkspaceRole.OWNER, WorkspaceRole.ADMIN]
-
-        if not (is_owner or is_admin):
-            raise HTTPException(status_code=403, detail="Permission denied to update workspace")
+        check_workspace_permission(
+            role=caller_member.role if caller_member else None,
+            permission=WorkspacePermission.WORKSPACE_UPDATE,
+            is_owner=(workspace.owner_id == user_id),
+            custom_message="Permission denied to update workspace",
+        )
 
         old_name = workspace.name
         is_renamed = False

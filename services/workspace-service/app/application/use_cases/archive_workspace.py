@@ -7,9 +7,8 @@ from app.domain.entities.workspace_activity import WorkspaceActivity
 from app.constants.enums import WorkspaceStatus, ActivityType
 from app.schemas.workspace import WorkspaceResponse
 from app.utils.ids import generate_uuid
-
-
 from app.infrastructure.cache.workspace_cache import WorkspaceCacheManager
+from shared.security.permissions import WorkspacePermission, check_workspace_permission
 
 
 class ArchiveWorkspaceUseCase:
@@ -27,8 +26,12 @@ class ArchiveWorkspaceUseCase:
         workspace = await self.workspace_repo.get_by_id(workspace_id)
         if not workspace:
             raise HTTPException(status_code=404, detail="Workspace not found")
-        if workspace.owner_id != user_id:
-            raise HTTPException(status_code=403, detail="Only owner can archive workspace")
+        check_workspace_permission(
+            role=None,
+            permission=WorkspacePermission.WORKSPACE_ARCHIVE,
+            is_owner=(workspace.owner_id == user_id),
+            custom_message="Only owner can archive workspace",
+        )
 
         now = datetime.now(timezone.utc)
         workspace.status = WorkspaceStatus.ARCHIVED

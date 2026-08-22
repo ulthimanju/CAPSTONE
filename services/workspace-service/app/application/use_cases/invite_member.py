@@ -8,6 +8,7 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.entities.workspace_invitation import WorkspaceInvitation
 from app.domain.entities.workspace_activity import WorkspaceActivity
 from app.constants.enums import WorkspaceRole, InvitationStatus, ActivityType
+from shared.security.permissions import WorkspacePermission, check_workspace_permission
 from app.schemas.member import InviteMemberRequest
 from app.schemas.invitation import InvitationResponse
 from app.utils.ids import generate_uuid
@@ -39,15 +40,18 @@ class InviteMemberUseCase:
 
         member = await self.member_repo.get_member(workspace_id, invited_by)
         is_owner = workspace.owner_id == invited_by
-        can_invite = is_owner or (member and member.role in (WorkspaceRole.OWNER, WorkspaceRole.ADMIN))
-        if not can_invite:
-            raise HTTPException(status_code=403, detail="Permission denied to invite member")
+        check_workspace_permission(
+            role=member.role if member else None,
+            permission=WorkspacePermission.WORKSPACE_MEMBER_INVITE,
+            is_owner=is_owner,
+            custom_message="Permission denied to invite member",
+        )
 
         target_email = req.email.lower().strip() if req.email else None
         if not target_email and not req.user_id:
             raise HTTPException(status_code=400, detail="Please provide a valid email address to invite")
 
-        # 1. Enforce Admin privilege boundaries
+        # 1. Enforce Admin privilege boundaries (only owner can grant Admin role)
         if not is_owner and req.role == WorkspaceRole.ADMIN:
             raise HTTPException(status_code=403, detail="Only the workspace Owner can invite or assign an Admin.")
 
