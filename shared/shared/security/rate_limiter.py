@@ -2,7 +2,6 @@ import time
 import asyncio
 from typing import Any
 from fastapi import Request, HTTPException, status
-from starlette.responses import Response
 
 _memory_rate_limit_cache: dict[str, list[float]] = {}
 _memory_lock = asyncio.Lock()
@@ -71,7 +70,7 @@ class RateLimiter:
 
             return False, remaining, 0
 
-    async def __call__(self, request: Request, response: Response | None = None) -> None:
+    async def __call__(self, request: Request) -> None:
         try:
             from app.infrastructure.cache.oauth_exchange import get_redis_client
             redis = get_redis_client()
