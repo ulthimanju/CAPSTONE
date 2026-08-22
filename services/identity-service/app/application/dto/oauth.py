@@ -10,6 +10,7 @@ class GoogleUserDTO:
     email: str
     name: str
     picture: str | None = None
+    email_verified: bool = True
 
 
 @dataclass

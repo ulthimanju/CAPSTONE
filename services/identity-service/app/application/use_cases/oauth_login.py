@@ -49,26 +49,83 @@ class OAuthUseCase:
             email = user_dto.email
             name = user_dto.name
             picture = user_dto.picture
+            email_verified = getattr(user_dto, "email_verified", True)
 
-            # 1. Check or create User
-            user = await self.user_repo.get_by_email(email)
-            if not user:
-                user = User(
-                    id=generate_uuid(),
-                    email=email,
-                    name=name,
-                    picture_url=picture,
-                    role=Role.STUDENT,
-                    created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc)
-                )
-                user = await self.user_repo.create(user)
-
-            # 2. Check or create/update OAuth Identity with concurrent race recovery
             from sqlalchemy.exc import IntegrityError
+            from app.domain.exceptions.oauth import GoogleOAuthError
 
+            # Canonical OIDC Lookup Hierarchy:
+            # 1. Primary Lookup: Google Provider + Subject (sub)
             identity = await self.oauth_repo.get_by_provider(OAuthProvider.GOOGLE, provider_user_id)
-            if not identity:
+            user = None
+
+            if identity:
+                # Existing linked identity found via immutable sub
+                user = await self.user_repo.get_by_id(identity.user_id)
+                if not user:
+                    # Inconsistent state recovery: user record was deleted but identity remained
+                    user = await self.user_repo.get_by_email(email)
+                    if not user:
+                        user = User(
+                            id=identity.user_id,
+                            email=email,
+                            name=name,
+                            picture_url=picture,
+                            role=Role.STUDENT,
+                            created_at=datetime.now(timezone.utc),
+                            updated_at=datetime.now(timezone.utc),
+                        )
+                        user = await self.user_repo.create(user)
+                    else:
+                        identity.user_id = user.id
+
+                # Synchronize profile metadata if changed
+                profile_updated = False
+                if name and user.name != name:
+                    user.name = name
+                    profile_updated = True
+                if picture and user.picture_url != picture:
+                    user.picture_url = picture
+                    profile_updated = True
+                if email_verified and email and user.email != email:
+                    user.email = email
+                    profile_updated = True
+
+                if profile_updated:
+                    user.updated_at = datetime.now(timezone.utc)
+                    await self.user_repo.update(user)
+
+                # Update OAuth tokens
+                identity.email = email
+                identity.access_token = token_dto.access_token
+                if token_dto.refresh_token:
+                    identity.refresh_token = token_dto.refresh_token
+                identity.expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
+                await self.oauth_repo.update(identity)
+
+            else:
+                # 2. Unlinked Subject: Require verified email to link or provision
+                if not email_verified:
+                    raise GoogleOAuthError(
+                        "Cannot link or provision account: Google email address is not verified."
+                    )
+
+                # Check if account already exists with this verified email
+                user = await self.user_repo.get_by_email(email)
+                if not user:
+                    # Provision new user
+                    user = User(
+                        id=generate_uuid(),
+                        email=email,
+                        name=name,
+                        picture_url=picture,
+                        role=Role.STUDENT,
+                        created_at=datetime.now(timezone.utc),
+                        updated_at=datetime.now(timezone.utc),
+                    )
+                    user = await self.user_repo.create(user)
+
+                # Create new OAuth identity binding
                 new_identity = OAuthIdentity(
                     id=generate_uuid(),
                     user_id=user.id,
@@ -77,7 +134,7 @@ class OAuthUseCase:
                     email=email,
                     access_token=token_dto.access_token,
                     refresh_token=token_dto.refresh_token,
-                    expires_at=datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
+                    expires_at=datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in),
                 )
                 try:
                     await self.oauth_repo.create(new_identity)
@@ -93,12 +150,6 @@ class OAuthUseCase:
                         identity.refresh_token = token_dto.refresh_token
                     identity.expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
                     await self.oauth_repo.update(identity)
-            else:
-                identity.access_token = token_dto.access_token
-                if token_dto.refresh_token:
-                    identity.refresh_token = token_dto.refresh_token
-                identity.expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_dto.expires_in)
-                await self.oauth_repo.update(identity)
 
 
             # 3. Create Session

@@ -313,6 +313,13 @@ class GoogleOAuthClient(OAuthClientInterface):
         if not claims.get("email"):
             raise GoogleOAuthError("Google ID token missing 'email' claim.")
 
+        # Validate email_verified claim
+        email_verified = claims.get("email_verified")
+        if isinstance(email_verified, str):
+            email_verified = email_verified.lower() == "true"
+        if not email_verified:
+            raise GoogleOAuthError("Google account email is not verified.")
+
         return claims
 
     async def fetch_user_info_and_tokens(self, request: Any) -> tuple[GoogleUserDTO, GoogleTokenDTO]:
@@ -419,11 +426,16 @@ class GoogleOAuthClient(OAuthClientInterface):
             if not user_info or not user_info.get("email"):
                 raise GoogleOAuthError("Failed to retrieve verified user profile info from Google.")
 
+        raw_verified = user_info.get("email_verified", True)
+        if isinstance(raw_verified, str):
+            raw_verified = raw_verified.lower() == "true"
+
         user_dto = GoogleUserDTO(
             sub=user_info["sub"],
             email=user_info["email"],
             name=user_info.get("name", user_info["email"].split("@")[0]),
             picture=user_info.get("picture"),
+            email_verified=bool(raw_verified),
         )
 
         token_dto = GoogleTokenDTO(
