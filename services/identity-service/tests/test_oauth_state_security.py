@@ -131,4 +131,31 @@ async def test_oauth_callback_cancellation_redirects_to_login():
     assert response.headers.get("location") == f"{settings.frontend_url}/login"
 
 
+@pytest.mark.asyncio
+async def test_pkce_s256_challenge_generation_and_parameters(oauth_client):
+    import base64
+    import hashlib
+    from unittest.mock import MagicMock
+    from starlette.datastructures import URL
+
+    verifier, challenge = oauth_client._generate_pkce_pair()
+    assert len(verifier) >= 43
+    assert len(challenge) > 0
+    assert "=" not in challenge  # Unpadded base64url
+
+    # Verify S256 calculation
+    expected_digest = hashlib.sha256(verifier.encode("ascii")).digest()
+    expected_challenge = base64.urlsafe_b64encode(expected_digest).decode("ascii").rstrip("=")
+    assert challenge == expected_challenge
+
+    mock_request = MagicMock()
+    mock_request.url = URL("https://app.synapse.local/api/v1/oauth/google/login")
+    response = await oauth_client.login_redirect(mock_request, "https://app.synapse.local/api/v1/oauth/google/callback")
+    location = response.headers.get("location", "")
+
+    assert "code_challenge=" in location
+    assert "code_challenge_method=S256" in location
+    assert "oauth_verifier=" in response.headers.get("set-cookie", "")
+
+
 

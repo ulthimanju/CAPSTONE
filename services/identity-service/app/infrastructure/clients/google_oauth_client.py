@@ -50,6 +50,7 @@ oauth.register(
 class GoogleOAuthClient(OAuthClientInterface):
     """
     Production-grade Google OAuth Client implementing:
+    - RFC 7636 / RFC 9700 PKCE with SHA-256 (code_challenge & code_verifier)
     - Cryptographic HMAC-SHA256 state signatures
     - Constant-time signature verification (timing attack protection)
     - 300-second (5 minute) state lifetime expiration
@@ -58,9 +59,22 @@ class GoogleOAuthClient(OAuthClientInterface):
     """
 
     _spent_nonces_memory: set[str] = set()
+    _pkce_verifiers_memory: dict[str, str] = {}
 
     def __init__(self):
         self._client = oauth.google
+
+    @staticmethod
+    def _generate_pkce_pair() -> tuple[str, str]:
+        """
+        Generates RFC 7636 / RFC 9700 compliant PKCE verifier and S256 challenge.
+        - code_verifier: 64-byte high-entropy URL-safe random string.
+        - code_challenge: base64url(SHA256(verifier)) with unpadded base64.
+        """
+        verifier = secrets.token_urlsafe(64)
+        digest = hashlib.sha256(verifier.encode("ascii")).digest()
+        challenge = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+        return verifier, challenge
 
     def _create_signed_state(self, csrf_token: str | None = None) -> tuple[str, str]:
         nonce = secrets.token_urlsafe(16)
@@ -118,6 +132,17 @@ class GoogleOAuthClient(OAuthClientInterface):
 
     async def login_redirect(self, request: Any, redirect_uri: str) -> RedirectResponse:
         state, csrf_token = self._create_signed_state()
+        verifier, challenge = self._generate_pkce_pair()
+
+        # Associate PKCE verifier with state nonce (TTL: 10 minutes)
+        nonce = state.split(".")[0].split(":")[1]
+        redis = get_redis_client()
+        if redis:
+            try:
+                await redis.set(f"oauth_pkce:{nonce}", verifier, ex=600)
+            except Exception:
+                pass
+        self._pkce_verifiers_memory[nonce] = verifier
 
         params = {
             "response_type": "code",
@@ -125,6 +150,8 @@ class GoogleOAuthClient(OAuthClientInterface):
             "redirect_uri": redirect_uri,
             "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
             "state": state,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
             "access_type": "offline",
             "prompt": "consent select_account",
             "include_granted_scopes": "true",
@@ -144,6 +171,15 @@ class GoogleOAuthClient(OAuthClientInterface):
             secure=is_secure,
             path="/",
             max_age=300,
+        )
+        response.set_cookie(
+            key="oauth_verifier",
+            value=verifier,
+            httponly=True,
+            samesite="lax",
+            secure=is_secure,
+            path="/api/v1/oauth",
+            max_age=600,
         )
         return response
 
@@ -165,6 +201,33 @@ class GoogleOAuthClient(OAuthClientInterface):
         if not code:
             raise GoogleOAuthError("Authorization code is missing from Google callback.")
 
+        # Retrieve PKCE code_verifier
+        nonce = state.split(".")[0].split(":")[1]
+        code_verifier = None
+        redis = get_redis_client()
+        if redis:
+            try:
+                code_verifier = await redis.get(f"oauth_pkce:{nonce}")
+                if code_verifier and isinstance(code_verifier, bytes):
+                    code_verifier = code_verifier.decode("utf-8")
+                await redis.delete(f"oauth_pkce:{nonce}")
+            except Exception:
+                pass
+        if not code_verifier:
+            code_verifier = self._pkce_verifiers_memory.pop(nonce, None)
+        if not code_verifier and hasattr(request, "cookies"):
+            code_verifier = request.cookies.get("oauth_verifier")
+
+        token_data = {
+            "client_id": settings.google_client_id,
+            "client_secret": settings.google_client_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": settings.google_redirect_uri,
+        }
+        if code_verifier:
+            token_data["code_verifier"] = code_verifier
+
         timeout_cfg = get_default_httpx_timeout(connect=30.0, read=45.0, write=30.0, pool=20.0)
         async with httpx.AsyncClient(timeout=timeout_cfg) as http_client:
             token_resp = None
@@ -175,13 +238,7 @@ class GoogleOAuthClient(OAuthClientInterface):
                         await asyncio.sleep(0.5 * attempt)
                     token_resp = await http_client.post(
                         "https://oauth2.googleapis.com/token",
-                        data={
-                            "client_id": settings.google_client_id,
-                            "client_secret": settings.google_client_secret,
-                            "code": code,
-                            "grant_type": "authorization_code",
-                            "redirect_uri": settings.google_redirect_uri,
-                        },
+                        data=token_data,
                         headers={"Accept": "application/json"},
                     )
                     break
