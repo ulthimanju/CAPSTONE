@@ -40,6 +40,83 @@ export function useNotificationsQuery({ limit = 50, offset = 0 } = {}, options =
 }
 
 /**
+ * Formats a clean, human-friendly title for real-time SSE toast alerts.
+ */
+function formatFriendlyToastTitle(payload) {
+  const meta = { ...(payload || {}), ...(payload.metadata || {}) };
+  const rawType = (payload.event_type || payload.event_name || payload.type || payload.title || '').toLowerCase();
+  const docName = meta.document_name || meta.original_filename || meta.filename || meta.name || 'Document';
+  const unitTitle = meta.unit_title || 'Study Unit';
+  const email = meta.invited_email || meta.member_email || meta.user_email || meta.email;
+  const actor = meta.actor_name || email || 'Member';
+  const role = (meta.new_role || meta.role || '').replace('WorkspaceRole.', '').toUpperCase();
+
+  if (rawType.includes('indexing.completed') || rawType.includes('vectorindexing') || rawType.includes('document.indexed')) {
+    return `"${docName}" document has been processed successfully`;
+  }
+  if (rawType.includes('document.uploaded') || rawType.includes('document.created')) {
+    return `"${docName}" document has been uploaded successfully`;
+  }
+  if (rawType.includes('document.parsed') || rawType.includes('documentparsing')) {
+    return `"${docName}" document has been analyzed successfully`;
+  }
+  if (rawType.includes('document.failed') || rawType.includes('indexing.failed')) {
+    return `"${docName}" document processing failed`;
+  }
+  if (rawType.includes('document.deleted')) {
+    return `"${docName}" document has been removed`;
+  }
+  if (rawType.includes('summarygeneration') || rawType.includes('summary')) {
+    return '"Executive Summary" has been generated successfully';
+  }
+  if (rawType.includes('learningpathgeneration') || rawType.includes('learning_path')) {
+    return '"Adaptive Learning Path" has been generated successfully';
+  }
+  if (rawType.includes('learningunitgeneration') || rawType.includes('unit')) {
+    return `"${unitTitle}" study unit has been synthesized successfully`;
+  }
+  if (rawType.includes('member_invited') || rawType.includes('invitation')) {
+    return `Invitation sent to ${email || 'collaborator'}`;
+  }
+  if (rawType.includes('member_joined') || rawType.includes('collaborator_joined')) {
+    return `${actor} joined the workspace`;
+  }
+  if (rawType.includes('role_updated') || rawType.includes('member.role')) {
+    return `${actor} role updated to ${role || 'collaborator'}`;
+  }
+  if (rawType.includes('member_removed') || rawType.includes('member.removed')) {
+    return `${actor} was removed from the workspace`;
+  }
+  if (rawType.includes('member_left') || rawType.includes('member.left')) {
+    return `${actor} left the workspace`;
+  }
+  if (rawType.includes('ownership_transferred')) {
+    const newOwner = meta.new_owner_name || meta.new_owner_email || 'new owner';
+    return `Workspace ownership transferred to ${newOwner}`;
+  }
+  if (rawType.includes('workspace.created')) {
+    return 'Workspace created successfully';
+  }
+  if (rawType.includes('workspace.archived')) {
+    return 'Workspace has been archived';
+  }
+  if (rawType.includes('workspace.restored')) {
+    return 'Workspace has been restored';
+  }
+  if (rawType.includes('workspace.deleted')) {
+    return 'Workspace has been deleted';
+  }
+
+  const clean = (payload.title || rawType)
+    .replace(/EventStatus\./gi, '')
+    .replace(/WorkspaceRole\./gi, '')
+    .replace(/event\s+/gi, '')
+    .replace(/[._]/g, ' ')
+    .trim();
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+/**
  * Real-time SSE subscription hook for live notification stream.
  * Automatically invalidates notification & invitation caches and displays toast alerts.
  */
@@ -70,7 +147,7 @@ export function useNotificationSSE() {
           }
 
           const currentUserId = useAuthStore.getState().user?.id || useAuthStore.getState().user?.sub;
-          const actorId = payload.actor_id || payload.metadata?.actor_id;
+          const actorId = payload.actor_id || payload.metadata?.actor_id || payload.user_id;
           const isOriginatingActor = Boolean(actorId && currentUserId && String(actorId) === String(currentUserId));
 
           const wsId = payload.workspace_id || payload.metadata?.workspace_id;
@@ -113,20 +190,29 @@ export function useNotificationSSE() {
             queryClient.invalidateQueries({ queryKey: ['auth', 'sessions'] });
           }
 
-          // 5. Display real-time toast alert for actionable notifications
-          const eventName = payload.event_name || payload.title || '';
-          const title = payload.title || (eventName ? eventName.replace(/([A-Z])/g, ' $1').trim() : 'Notification');
-          const message = payload.message || payload.description || '';
-          const toastKey = payload.event_id || `${eventName}-${payload.resource_id || wsId || docId || title}`;
+          // 5. Display real-time toast alert only when not already notified by an interactive mutation
+          const isInteractiveUserAction =
+            isOriginatingActor &&
+            (eventType.includes('joined') ||
+              eventType.includes('invited') ||
+              eventType.includes('invitation') ||
+              eventType.includes('archived') ||
+              eventType.includes('restored') ||
+              eventType.includes('deleted') ||
+              eventType.includes('role_updated') ||
+              eventType.includes('uploaded'));
 
-          if (message || title) {
+          if (!isInteractiveUserAction) {
+            const title = formatFriendlyToastTitle(payload);
+            const toastKey = payload.event_id || `${eventType}-${payload.resource_id || wsId || docId || title}`;
+
             const isSuccess =
               payload.status === 'COMPLETED' ||
               eventType.includes('completed') ||
               eventType.includes('joined') ||
               eventType.includes('restored') ||
-              eventName.toLowerCase().includes('parsed') ||
-              eventName.toLowerCase().includes('indexed');
+              eventType.includes('indexed') ||
+              eventType.includes('parsed');
 
             const isError =
               payload.status === 'FAILED' ||
@@ -136,20 +222,17 @@ export function useNotificationSSE() {
             if (isSuccess) {
               toast.success(title, {
                 id: toastKey,
-                description: message,
-                duration: 3000,
+                duration: 3500,
               });
             } else if (isError) {
               toast.error(title, {
                 id: toastKey,
-                description: message,
-                duration: 3000,
+                duration: 4000,
               });
             } else {
               toast(title, {
                 id: toastKey,
-                description: message,
-                duration: 3000,
+                duration: 3500,
               });
             }
           }
@@ -159,13 +242,6 @@ export function useNotificationSSE() {
       };
 
       eventSource.onmessage = handleNotification;
-      eventSource.addEventListener('message', handleNotification);
-      eventSource.addEventListener('notification', handleNotification);
-      eventSource.addEventListener('WorkspaceInvitationSent', handleNotification);
-      eventSource.addEventListener('WorkspaceArchived', handleNotification);
-      eventSource.addEventListener('WorkspaceRestored', handleNotification);
-      eventSource.addEventListener('MemberJoined', handleNotification);
-      eventSource.addEventListener('DocumentParsed', handleNotification);
 
       eventSource.onerror = (err) => {
         console.debug('Notification SSE connection state:', eventSource.readyState, err);
