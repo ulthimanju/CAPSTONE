@@ -167,17 +167,17 @@ const defaultComponents = {
     </h4>
   ),
   ul: ({ children, ...props }) => (
-    <ul className="my-2.5 space-y-1.5 pl-5 list-disc text-text/85 text-xs sm:text-sm marker:text-accent" {...props}>
+    <ul className="my-2.5 space-y-1.5 pl-6 sm:pl-7 list-disc list-outside text-text/85 text-xs sm:text-sm marker:text-accent" {...props}>
       {children}
     </ul>
   ),
   ol: ({ children, ...props }) => (
-    <ol className="my-2.5 space-y-1.5 pl-5 list-decimal text-text/85 text-xs sm:text-sm marker:font-mono marker:text-accent marker:font-bold" {...props}>
+    <ol className="my-2.5 space-y-1.5 pl-6 sm:pl-7 list-decimal list-outside text-text/85 text-xs sm:text-sm marker:font-mono marker:text-accent marker:font-bold" {...props}>
       {children}
     </ol>
   ),
   li: ({ children, ...props }) => (
-    <li className="leading-relaxed" {...props}>
+    <li className="leading-relaxed pl-1.5" {...props}>
       {children}
     </li>
   ),

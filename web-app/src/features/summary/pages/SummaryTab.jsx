@@ -210,7 +210,7 @@ export function SummaryTab() {
 
               {/* Section Prose / Markdown with Table & KaTeX Support */}
               {section.content && (
-                <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans overflow-x-auto">
+                <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans px-1">
                   <MarkdownRenderer content={section.content} />
                 </div>
               )}
