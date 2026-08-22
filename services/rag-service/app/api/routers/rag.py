@@ -39,11 +39,8 @@ async def generate_chunk_embeddings(
     session: AsyncSession = Depends(get_db_session),
 ):
     if authorization or x_user_id:
-        try:
-            uid = get_current_user_id(authorization, x_user_id)
-            await verify_workspace_access(req.workspace_id, uid, required_write=True, authorization=authorization)
-        except Exception:
-            pass
+        uid = get_current_user_id(authorization, x_user_id)
+        await verify_workspace_access(req.workspace_id, uid, required_write=True, authorization=authorization)
     if not req.chunks:
         raise HTTPException(status_code=400, detail="No chunks provided for embedding generation.")
 
