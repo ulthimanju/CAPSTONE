@@ -160,3 +160,35 @@
 .hljs-template-variable {
   color: var(--text) !important;
 }
+
+/* ==========================================================================
+   KaTeX Math Equation Formatting — Atomic Single-Line Formulas & Overflow
+   ========================================================================== */
+
+/* Keeps inline equations intact on one line without breaking across operators */
+.katex {
+  white-space: nowrap;
+  font-size: 1.05em;
+  text-rendering: auto;
+}
+
+.katex-html {
+  white-space: nowrap;
+}
+
+/* Standalone display block equations ($$...$$) support smooth horizontal scroll */
+.katex-display {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  max-width: 100% !important;
+  padding: 0.5rem 0 !important;
+  margin: 0.75rem 0 !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.katex-display > .katex {
+  white-space: nowrap;
+  display: inline-block;
+  min-width: min-content;
+}
+
