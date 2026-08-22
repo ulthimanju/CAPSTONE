@@ -5,7 +5,7 @@ from app.domain.repositories.workspace_repository import WorkspaceRepository
 from app.domain.repositories.member_repository import MemberRepository
 from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.entities.workspace_activity import WorkspaceActivity
-from app.constants.enums import ActivityType
+from app.constants.enums import ActivityType, WorkspaceRole
 from app.utils.ids import generate_uuid
 
 
@@ -30,11 +30,21 @@ class RemoveMemberUseCase:
         if not workspace:
             raise HTTPException(status_code=404, detail="Workspace not found")
 
-        if workspace.owner_id != actor_id and actor_id != member_user_id:
-            raise HTTPException(status_code=403, detail="Permission denied to remove member")
+        is_owner = (workspace.owner_id == actor_id)
+        is_self = (actor_id == member_user_id)
 
+        # Explicit exception: The workspace owner cannot leave or be removed unless ownership is transferred first
         if workspace.owner_id == member_user_id:
-            raise HTTPException(status_code=400, detail="Cannot remove owner from workspace")
+            raise HTTPException(
+                status_code=400,
+                detail="The workspace owner cannot leave or be removed. You must transfer ownership to another member before leaving.",
+            )
+
+        caller_member = await self.member_repo.get_member(workspace_id, actor_id)
+        is_admin = caller_member and caller_member.role in [WorkspaceRole.OWNER, WorkspaceRole.ADMIN]
+
+        if not (is_owner or is_self or is_admin):
+            raise HTTPException(status_code=403, detail="Permission denied to remove member")
 
         success = await self.member_repo.remove_member(workspace_id, member_user_id)
         if success:
