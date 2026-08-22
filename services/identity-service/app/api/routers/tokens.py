@@ -2,7 +2,7 @@ import hashlib
 import secrets
 import logging
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, Cookie, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Cookie, HTTPException, Response, Request, status
 from app.config.settings import settings
 from app.schemas.auth import TokenRefreshRequest, TokenResponse
 from app.utils.ids import generate_uuid
@@ -25,6 +25,7 @@ jwt_manager = JWTManager(jwt_settings)
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
     response: Response,
+    request: Request,
     body: TokenRefreshRequest | None = None,
     refresh_token: str | None = Cookie(None),
     refresh_repo=Depends(get_refresh_token_repository),
@@ -96,11 +97,16 @@ async def refresh_token(
 
         # Leaving 'async with uow:' automatically commits the transaction atomically!
 
+    is_secure = (
+        getattr(settings, "cookie_secure", False)
+        or settings.app_env.lower() in ("prod", "production")
+        or (hasattr(request, "url") and str(request.url.scheme).lower() == "https")
+    )
     response.set_cookie(
         key="refresh_token",
         value=new_raw_refresh_token,
         httponly=True,
-        secure=False,
+        secure=is_secure,
         samesite="lax",
         path="/",
         max_age=settings.refresh_token_expire_days * 86400,
