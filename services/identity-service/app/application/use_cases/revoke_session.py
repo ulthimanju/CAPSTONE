@@ -1,8 +1,10 @@
+import time
 from uuid import UUID
 from app.domain.entities.session import Session
 from app.domain.repositories.session_repository import SessionRepository
 from app.domain.repositories.unit_of_work import UnitOfWorkInterface
 from app.domain.exceptions.session import SessionNotFoundError, SessionAccessDeniedError
+from app.infrastructure.cache.oauth_exchange import get_redis_client
 
 
 class SessionUseCase:
@@ -12,6 +14,23 @@ class SessionUseCase:
 
     async def list_sessions(self, user_id: UUID) -> list[Session]:
         return await self.session_repo.list_by_user(user_id)
+
+    async def _mark_session_revoked_in_cache(self, session_id: UUID) -> None:
+        redis = get_redis_client()
+        if redis:
+            try:
+                # Cache revoked session marker for 15 min (900s max access token lifetime)
+                await redis.set(f"revoked_session:{session_id}", "1", ex=900)
+            except Exception:
+                pass
+
+    async def _mark_user_sessions_revoked_in_cache(self, user_id: UUID) -> None:
+        redis = get_redis_client()
+        if redis:
+            try:
+                await redis.set(f"revoked_user_sessions:{user_id}", str(int(time.time())), ex=900)
+            except Exception:
+                pass
 
     async def revoke_session(self, session_id: UUID, user_id: UUID | None = None) -> None:
         if self.uow:
@@ -32,6 +51,8 @@ class SessionUseCase:
                     raise SessionAccessDeniedError("Cannot revoke another user's session")
             await self.session_repo.delete(session_id)
 
+        await self._mark_session_revoked_in_cache(session_id)
+
     async def revoke_all_sessions(self, user_id: UUID) -> None:
         if self.uow:
             async with self.uow:
@@ -39,9 +60,13 @@ class SessionUseCase:
         else:
             await self.session_repo.delete_all_for_user(user_id)
 
+        await self._mark_user_sessions_revoked_in_cache(user_id)
+
     async def revoke_other_sessions(self, user_id: UUID, current_session_id: UUID) -> None:
         if self.uow:
             async with self.uow:
                 await self.session_repo.delete_others_for_user(user_id, current_session_id)
         else:
             await self.session_repo.delete_others_for_user(user_id, current_session_id)
+
+        await self._mark_user_sessions_revoked_in_cache(user_id)
