@@ -73,6 +73,7 @@ import {
   useWorkspaceMemberSSE,
 } from '../../hooks/useMembers';
 import { ActivityTab } from './ActivityTab';
+import { useWorkspacePermissions } from '../../hooks/useWorkspacePermissions';
 import { useCurrentUser } from '@/features/auth/hooks/useAuth';
 import { ROUTES } from '@/config/constants';
 import { cn } from '@/lib/cn';
@@ -110,11 +111,8 @@ export function ManageWorkspaceTab({ workspace: propWorkspace }) {
   } = useMembersQuery(workspace?.id);
 
   // Caller role determination
-  const isOwner = workspace?.user_role === 'OWNER' || workspace?.owner_id === currentUser?.id;
   const currentMember = members.find((m) => m.user_id === currentUser?.id);
-  const callerRole = isOwner ? 'OWNER' : (currentMember?.role || workspace?.user_role || 'VIEWER');
-  const isOwnerOrAdmin = isOwner || callerRole === 'ADMIN';
-  const canManageMembers = isOwner || callerRole === 'ADMIN';
+  const { isOwner, callerRole, isOwnerOrAdmin, canManageMembers } = useWorkspacePermissions(workspace, currentMember);
 
   const activeTab = useMemo(() => {
     const tabParam = searchParams.get('tab');

@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { workspaceKeys } from './workspaceKeys';
 
 export { workspaceKeys };
+export { useWorkspacePermissions } from './useWorkspacePermissions';
 
 /**
  * Hook to fetch paginated workspaces for the current user.

@@ -38,6 +38,7 @@ import {
   useWorkspaceActivitiesQuery,
   useWorkspaceMemberSSE,
 } from '../../hooks/useMembers';
+import { useWorkspacePermissions } from '../../hooks/useWorkspacePermissions';
 import { useCurrentUser } from '@/features/auth/hooks/useAuth';
 import { ROUTES } from '@/config/constants';
 import { cn } from '@/lib/cn';
@@ -141,11 +142,8 @@ export function CollaboratorsTab({ workspace: propWorkspace }) {
   if (!workspace) return null;
 
   // Caller role determination
-  const isOwner = workspace.user_role === 'OWNER' || workspace.owner_id === currentUser?.id;
   const currentMember = members.find((m) => m.user_id === currentUser?.id);
-  const callerRole = isOwner ? 'OWNER' : (currentMember?.role || workspace.user_role || 'VIEWER');
-  const isOwnerOrAdmin = isOwner || callerRole === 'ADMIN';
-  const canManageMembers = isOwner || callerRole === 'ADMIN';
+  const { isOwner, callerRole, isOwnerOrAdmin, canManageMembers } = useWorkspacePermissions(workspace, currentMember);
 
   // Filtered members and invitations
   const filteredMembers = useMemo(() => {
