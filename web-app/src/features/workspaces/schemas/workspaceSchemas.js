@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+export const WORKSPACE_ROLES = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  EDITOR: 'EDITOR',
+  VIEWER: 'VIEWER',
+};
+
+export const WORKSPACE_ROLE_LABELS = {
+  OWNER: 'Owner',
+  ADMIN: 'Admin',
+  EDITOR: 'Collaborator',
+  VIEWER: 'Viewer',
+};
+
 export const workspaceDomainTypeSchema = z.enum(['TECHNICAL', 'NON_TECHNICAL']);
 export const workspaceVisibilitySchema = z.enum(['PRIVATE', 'INTERNAL', 'PUBLIC']);
 export const workspaceStatusSchema = z.enum(['ACTIVE', 'ARCHIVED', 'DELETED']);
