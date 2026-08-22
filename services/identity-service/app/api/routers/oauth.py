@@ -98,11 +98,16 @@ async def google_callback(
 
     redirect_url = f"{settings.frontend_url}/auth/callback?code={exchange_code}"
     response = RedirectResponse(url=redirect_url)
+    is_secure = (
+        getattr(settings, "cookie_secure", False)
+        or settings.app_env.lower() in ("prod", "production")
+        or (hasattr(request, "url") and str(request.url.scheme).lower() == "https")
+    )
     response.set_cookie(
         key="refresh_token",
         value=result.refresh_token,
         httponly=True,
-        secure=False,
+        secure=is_secure,
         samesite="lax",
         path="/",
         max_age=settings.refresh_token_expire_days * 86400,
@@ -113,6 +118,7 @@ async def google_callback(
 @router.post("/exchange", response_model=OAuthExchangeResponse)
 async def exchange_code(
     body: OAuthExchangeRequest,
+    request: Request,
 ):
     """
     Atomically consumes a single-use exchange code and returns the JWT in the response body.
@@ -133,11 +139,16 @@ async def exchange_code(
         }
     )
     if payload.get("refresh_token"):
+        is_secure = (
+            getattr(settings, "cookie_secure", False)
+            or settings.app_env.lower() in ("prod", "production")
+            or (hasattr(request, "url") and str(request.url.scheme).lower() == "https")
+        )
         response.set_cookie(
             key="refresh_token",
             value=payload["refresh_token"],
             httponly=True,
-            secure=False,
+            secure=is_secure,
             samesite="lax",
             path="/",
             max_age=settings.refresh_token_expire_days * 86400,
