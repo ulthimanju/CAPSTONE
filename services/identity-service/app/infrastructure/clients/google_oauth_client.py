@@ -11,6 +11,7 @@ import base64
 from urllib.parse import urlencode
 from typing import Any
 
+from jose import jwt, JWTError
 from fastapi.responses import RedirectResponse
 from app.config.settings import settings
 from app.application.interfaces.oauth_client import OAuthClientInterface
@@ -20,6 +21,53 @@ from app.infrastructure.cache.oauth_exchange import get_redis_client
 from shared.config import get_default_httpx_timeout
 
 logger = logging.getLogger(__name__)
+
+_GOOGLE_JWKS_CACHE: dict[str, Any] = {}
+_GOOGLE_JWKS_CACHE_TIME: float = 0.0
+
+
+async def get_google_jwks(http_client: httpx.AsyncClient | None = None) -> dict[str, Any]:
+    global _GOOGLE_JWKS_CACHE, _GOOGLE_JWKS_CACHE_TIME
+    now = time.time()
+    if _GOOGLE_JWKS_CACHE and (now - _GOOGLE_JWKS_CACHE_TIME < 3600):
+        return _GOOGLE_JWKS_CACHE
+
+    redis = get_redis_client()
+    if redis:
+        try:
+            cached_json = await redis.get("oauth:google_jwks")
+            if cached_json:
+                _GOOGLE_JWKS_CACHE = json.loads(cached_json)
+                _GOOGLE_JWKS_CACHE_TIME = now
+                return _GOOGLE_JWKS_CACHE
+        except Exception:
+            pass
+
+    return await fetch_fresh_google_jwks(http_client)
+
+
+async def fetch_fresh_google_jwks(http_client: httpx.AsyncClient | None = None) -> dict[str, Any]:
+    global _GOOGLE_JWKS_CACHE, _GOOGLE_JWKS_CACHE_TIME
+    client = http_client or httpx.AsyncClient(timeout=10.0)
+    try:
+        res = await client.get("https://www.googleapis.com/oauth2/v3/certs")
+        if res.status_code == 200:
+            jwks = res.json()
+            _GOOGLE_JWKS_CACHE = jwks
+            _GOOGLE_JWKS_CACHE_TIME = time.time()
+            redis = get_redis_client()
+            if redis:
+                try:
+                    await redis.set("oauth:google_jwks", json.dumps(jwks), ex=3600)
+                except Exception:
+                    pass
+            return jwks
+    except Exception as e:
+        logger.warning(f"Failed to fetch Google JWKS certificates: {e}")
+    finally:
+        if not http_client:
+            await client.aclose()
+    return _GOOGLE_JWKS_CACHE or {"keys": []}
 
 GOOGLE_SERVER_METADATA = {
     "issuer": "https://accounts.google.com",
@@ -193,6 +241,80 @@ class GoogleOAuthClient(OAuthClientInterface):
         )
         return response
 
+    async def validate_google_id_token(
+        self,
+        id_token_str: str,
+        http_client: httpx.AsyncClient | None = None,
+    ) -> dict[str, Any]:
+        """
+        Cryptographically validates Google OIDC ID Token according to OpenID Connect Core 1.0 & RFC 7519.
+        
+        Verifies:
+        1. RSA256 digital signature against Google's public JWKS certificates.
+        2. Issuer ('iss') matches 'https://accounts.google.com' or 'accounts.google.com'.
+        3. Audience ('aud') matches application google_client_id.
+        4. Expiration ('exp') is strictly in the future.
+        5. Issued-at ('iat') is valid.
+        6. Authorized party ('azp') matches google_client_id if present.
+        7. Subject ('sub') and Email claims are present.
+        """
+        if not id_token_str or "." not in id_token_str:
+            raise GoogleOAuthError("Malformed Google ID token.")
+
+        try:
+            unverified_header = jwt.get_unverified_header(id_token_str)
+        except Exception as e:
+            raise GoogleOAuthError(f"Cannot parse Google ID token header: {e}")
+
+        kid = unverified_header.get("kid")
+        alg = unverified_header.get("alg")
+        if alg != "RS256":
+            raise GoogleOAuthError(f"Unsupported ID token signature algorithm '{alg}'. Expected RS256.")
+
+        jwks = await get_google_jwks(http_client)
+        rsa_key = next((k for k in jwks.get("keys", []) if k.get("kid") == kid), None)
+        if not rsa_key:
+            jwks = await fetch_fresh_google_jwks(http_client)
+            rsa_key = next((k for k in jwks.get("keys", []) if k.get("kid") == kid), None)
+
+        if not rsa_key:
+            raise GoogleOAuthError(f"Google public certificate for kid '{kid}' not found in JWKS.")
+
+        try:
+            claims = jwt.decode(
+                id_token_str,
+                rsa_key,
+                algorithms=["RS256"],
+                audience=settings.google_client_id if settings.google_client_id else None,
+                options={
+                    "verify_signature": True,
+                    "verify_aud": bool(settings.google_client_id),
+                    "verify_exp": True,
+                    "verify_iat": True,
+                    "verify_nbf": True,
+                },
+            )
+        except JWTError as exc:
+            raise GoogleOAuthError(f"Cryptographic verification of Google ID token failed: {exc}")
+
+        # Validate issuer
+        iss = claims.get("iss")
+        if iss not in ("https://accounts.google.com", "accounts.google.com"):
+            raise GoogleOAuthError(f"Invalid Google ID token issuer: {iss}")
+
+        # Validate azp
+        azp = claims.get("azp")
+        if azp and settings.google_client_id and azp != settings.google_client_id:
+            raise GoogleOAuthError(f"Google ID token azp '{azp}' mismatch with client ID.")
+
+        # Validate required identity fields
+        if not claims.get("sub"):
+            raise GoogleOAuthError("Google ID token missing 'sub' claim.")
+        if not claims.get("email"):
+            raise GoogleOAuthError("Google ID token missing 'email' claim.")
+
+        return claims
+
     async def fetch_user_info_and_tokens(self, request: Any) -> tuple[GoogleUserDTO, GoogleTokenDTO]:
         error = request.query_params.get("error")
         if error:
@@ -275,15 +397,15 @@ class GoogleOAuthClient(OAuthClientInterface):
 
             user_info = None
             id_token_str = tokens.get("id_token")
-            if id_token_str and "." in id_token_str:
+            if id_token_str:
+                # Cryptographically verify the ID token signature against Google JWKS
                 try:
-                    payload_b64 = id_token_str.split(".")[1]
-                    payload_b64 += "=" * ((4 - len(payload_b64) % 4) % 4)
-                    user_info = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
-                except Exception:
-                    pass
+                    user_info = await self.validate_google_id_token(id_token_str, http_client=http_client)
+                except Exception as e:
+                    logger.warning(f"ID token cryptographic verification error: {e}")
 
             if not user_info:
+                # Fallback to direct authenticated userinfo endpoint
                 try:
                     uinfo_resp = await http_client.get(
                         "https://openidconnect.googleapis.com/v1/userinfo",
@@ -295,7 +417,7 @@ class GoogleOAuthClient(OAuthClientInterface):
                     logger.warning(f"Failed to fetch userinfo from Google endpoint: {e}")
 
             if not user_info or not user_info.get("email"):
-                raise GoogleOAuthError("Failed to retrieve user profile info from Google.")
+                raise GoogleOAuthError("Failed to retrieve verified user profile info from Google.")
 
         user_dto = GoogleUserDTO(
             sub=user_info["sub"],
