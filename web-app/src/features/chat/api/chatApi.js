@@ -12,10 +12,18 @@ export async function fetchWorkspaceChat(workspaceId) {
 }
 
 /**
- * Save persistent chat history for a workspace.
+ * Save persistent chat history for a workspace and current user.
  */
 export async function saveWorkspaceChat(workspaceId, messages) {
   const res = await api.put(`/api/v1/workspaces/${workspaceId}/chat`, { messages });
+  return res.data;
+}
+
+/**
+ * Clear private chat history for a workspace and current user.
+ */
+export async function clearWorkspaceChat(workspaceId) {
+  const res = await api.delete(`/api/v1/workspaces/${workspaceId}/chat`);
   return res.data;
 }
 

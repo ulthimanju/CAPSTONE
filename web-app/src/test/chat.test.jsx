@@ -11,12 +11,17 @@ import { preprocessMarkdownForMath } from '@/components/common/ContentRenderer';
 vi.mock('@/features/chat/api/chatApi', () => ({
   fetchWorkspaceChat: vi.fn(),
   saveWorkspaceChat: vi.fn(),
+  clearWorkspaceChat: vi.fn(),
   sendRAGChatMessage: vi.fn(),
   sendRAGChatMessageStream: vi.fn(),
 }));
 
 vi.mock('@/features/workspaces/hooks/useWorkspaces', () => ({
   useWorkspaceQuery: vi.fn(() => ({ data: { id: 'ws-1', workspace_code_language: 'Java' } })),
+}));
+
+vi.mock('@/features/auth/hooks/useAuth', () => ({
+  useCurrentUser: vi.fn(() => ({ user: { id: 'u-1', name: 'Test User', email: 'test@example.com' } })),
 }));
 
 function renderWithClient(ui, initialEntries = ['/workspaces/ws-1/chat']) {
@@ -231,6 +236,34 @@ describe('AI Tutor RAG Chat Component', () => {
 
     expect(await screen.findByText('What is Single Responsibility Principle?')).toBeInTheDocument();
     expect(await screen.findByText(/The Single Responsibility Principle states that a module should have one reason to change./i)).toBeInTheDocument();
+  });
+
+  it('allows user to clear their private chat history', async () => {
+    const user = userEvent.setup();
+    const mockMessages = [
+      {
+        id: 'msg-1',
+        role: 'user',
+        content: 'Explain binary trees',
+        timestamp: '2026-08-15T10:00:00Z',
+      },
+    ];
+
+    chatApi.fetchWorkspaceChat.mockResolvedValue({ messages: mockMessages });
+    chatApi.clearWorkspaceChat.mockResolvedValue({ status: 'cleared' });
+
+    renderWithClient(<ChatPage />);
+
+    expect(await screen.findByText('Explain binary trees')).toBeInTheDocument();
+
+    const clearBtn = screen.getByRole('button', { name: /Clear Chat/i });
+    await user.click(clearBtn);
+
+    await waitFor(() => {
+      expect(chatApi.clearWorkspaceChat).toHaveBeenCalledWith('ws-1');
+    });
+
+    expect(await screen.findByText('Ask Your AI Study Tutor')).toBeInTheDocument();
   });
 
   it('renders currency dollar amounts cleanly without KaTeX math corruption', () => {

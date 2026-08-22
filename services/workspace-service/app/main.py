@@ -70,6 +70,23 @@ async def lifespan(app: FastAPI):
                 "CREATE INDEX IF NOT EXISTS idx_user_quiz_user ON user_quiz_submissions (user_id)"
             )
         )
+        # Migrate workspace_chats to composite primary key (workspace_id, user_id)
+        await conn.execute(
+            __import__("sqlalchemy", fromlist=["text"]).text(
+                "DO $$ "
+                "BEGIN "
+                "  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'workspace_chats') THEN "
+                "    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'workspace_chats' AND column_name = 'user_id') THEN "
+                "      ALTER TABLE workspace_chats ADD COLUMN user_id UUID; "
+                "      UPDATE workspace_chats wc SET user_id = w.owner_id FROM workspaces w WHERE wc.workspace_id = w.id AND wc.user_id IS NULL; "
+                "      ALTER TABLE workspace_chats DROP CONSTRAINT IF EXISTS workspace_chats_pkey; "
+                "      ALTER TABLE workspace_chats ALTER COLUMN user_id SET NOT NULL; "
+                "      ALTER TABLE workspace_chats ADD PRIMARY KEY (workspace_id, user_id); "
+                "    END IF; "
+                "  END IF; "
+                "END $$;"
+            )
+        )
     yield
     try:
         await engine.dispose()

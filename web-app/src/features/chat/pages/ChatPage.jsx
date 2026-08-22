@@ -7,11 +7,13 @@ import {
   Check,
   Lightbulb,
   CheckCircle,
+  Trash,
 } from '@/components/ui/icons';
 import { BookLinearIcon } from '@/components/ui';
 import {
   useWorkspaceChatQuery,
   useSendRAGMessageMutation,
+  useClearWorkspaceChatMutation,
   useIsRAGPending,
 } from '../hooks/useChat';
 import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
@@ -147,6 +149,7 @@ export function ChatPage() {
   const { data: chatData, isLoading: isChatLoading } = useWorkspaceChatQuery(workspaceId);
   const { data: workspace } = useWorkspaceQuery(workspaceId);
   const sendMutation = useSendRAGMessageMutation(workspaceId);
+  const clearMutation = useClearWorkspaceChatMutation(workspaceId);
   const isRAGPending = useIsRAGPending(workspaceId) || sendMutation.isPending;
 
   const messages = useMemo(() => (Array.isArray(chatData?.messages) ? chatData.messages : []), [chatData?.messages]);
@@ -179,36 +182,44 @@ export function ChatPage() {
 
   const handleCopy = (content, idx) => {
     const textToCopy = getCopyableText(content);
-    navigator.clipboard.writeText(textToCopy);
-    setCopiedIndex(idx);
-    toast.success('Copied to clipboard');
-    setTimeout(() => setCopiedIndex(null), 2000);
+    if (!textToCopy) return;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopiedIndex(idx);
+      toast.success('Copied to clipboard');
+      setTimeout(() => setCopiedIndex(null), 2000);
+    });
   };
 
-  if (isChatLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <CircleNotch className="h-8 w-8 animate-spin text-accent" />
-          <p className="font-mono text-sm text-text/60">Loading tutor chat session...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleClearChat = () => {
+    if (messages.length === 0 || clearMutation.isPending) return;
+    clearMutation.mutate();
+  };
 
-  // Group messages by date for date dividers
   const todayFormatted = formatMessageDate(new Date().toISOString());
 
   return (
     <div className="flex flex-col h-full w-full bg-bg min-h-0 flex-1">
       {/* Messages Viewport */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-8 lg:px-12 py-6 space-y-5 min-h-0">
-        {/* Date Divider */}
-        <div className="flex items-center my-4">
+        {/* Date Divider & Clear Action */}
+        <div className="flex items-center justify-between my-4 gap-3">
           <div className="flex-1 border-t border-sep-line" />
-          <span className="px-4 font-mono text-[11px] font-medium tracking-widest text-text/60 uppercase">
+          <span className="font-mono text-[11px] font-medium tracking-widest text-text/60 uppercase shrink-0">
             {messages.length > 0 ? formatMessageDate(messages[0].timestamp) : todayFormatted}
           </span>
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearChat}
+              disabled={clearMutation.isPending || isRAGPending}
+              className="inline-flex items-center gap-1 font-mono text-[10px] text-text/50 hover:text-red-500 transition-colors px-2 py-0.5 rounded-ui border border-sep-line/50 hover:border-red-500/40 bg-surface/50"
+              title="Clear private conversation"
+            >
+              <Trash className="h-3 w-3" />
+              <span>Clear Chat</span>
+            </button>
+          )}
           <div className="flex-1 border-t border-sep-line" />
         </div>
 

@@ -332,7 +332,10 @@ async def get_workspace_chat(
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
-    stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
+    stmt = select(WorkspaceChatModel).where(
+        WorkspaceChatModel.workspace_id == workspace_id,
+        WorkspaceChatModel.user_id == user_id,
+    )
     res = await db.execute(stmt)
     chat = res.scalar_one_or_none()
     return {"messages": chat.messages_json if chat else []}
@@ -347,14 +350,18 @@ async def save_workspace_chat(
     mem_repo: MemberRepository = Depends(get_member_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
-    stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
+    stmt = select(WorkspaceChatModel).where(
+        WorkspaceChatModel.workspace_id == workspace_id,
+        WorkspaceChatModel.user_id == user_id,
+    )
     res = await db.execute(stmt)
     chat = res.scalar_one_or_none()
 
     if not chat:
         chat = WorkspaceChatModel(
             workspace_id=workspace_id,
+            user_id=user_id,
             messages_json=req.messages,
         )
         db.add(chat)
@@ -364,7 +371,7 @@ async def save_workspace_chat(
 
     await db.flush()
     await db.commit()
-    return {"status": "saved", "workspace_id": str(workspace_id), "count": len(req.messages)}
+    return {"status": "saved", "workspace_id": str(workspace_id), "user_id": str(user_id), "count": len(req.messages)}
 
 
 @router.delete("/{workspace_id}/chat")
@@ -375,8 +382,11 @@ async def clear_workspace_chat(
     mem_repo: MemberRepository = Depends(get_member_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo, allowed_roles=(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.EDITOR))
-    stmt = select(WorkspaceChatModel).where(WorkspaceChatModel.workspace_id == workspace_id)
+    await _verify_content_access(workspace_id, user_id, ws_repo, mem_repo)
+    stmt = select(WorkspaceChatModel).where(
+        WorkspaceChatModel.workspace_id == workspace_id,
+        WorkspaceChatModel.user_id == user_id,
+    )
     res = await db.execute(stmt)
     chat = res.scalar_one_or_none()
     if chat:
@@ -384,7 +394,7 @@ async def clear_workspace_chat(
         flag_modified(chat, "messages_json")
         await db.flush()
         await db.commit()
-    return {"status": "cleared", "workspace_id": str(workspace_id)}
+    return {"status": "cleared", "workspace_id": str(workspace_id), "user_id": str(user_id)}
 
 
 @router.patch("/{workspace_id}/units/quiz-progress")

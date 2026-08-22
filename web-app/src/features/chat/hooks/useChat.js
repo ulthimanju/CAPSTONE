@@ -1,16 +1,26 @@
 import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { fetchWorkspaceChat, saveWorkspaceChat, sendRAGChatMessage, sendRAGChatMessageStream } from '../api/chatApi';
+import {
+  fetchWorkspaceChat,
+  saveWorkspaceChat,
+  clearWorkspaceChat,
+  sendRAGChatMessage,
+  sendRAGChatMessageStream,
+} from '../api/chatApi';
+import { useCurrentUser } from '@/features/auth/hooks/useAuth';
 import { chatKeys } from './chatKeys';
 
 export { chatKeys };
 
 /**
- * Hook to fetch persistent chat history for a workspace.
+ * Hook to fetch persistent private chat history for a workspace and current user.
  */
 export function useWorkspaceChatQuery(workspaceId) {
+  const { user } = useCurrentUser();
+  const userId = user?.id;
+
   return useQuery({
-    queryKey: chatKeys.workspace(workspaceId),
+    queryKey: chatKeys.workspace(workspaceId, userId),
     queryFn: () => fetchWorkspaceChat(workspaceId),
     enabled: Boolean(workspaceId),
     staleTime: 60 * 1000,
@@ -19,34 +29,37 @@ export function useWorkspaceChatQuery(workspaceId) {
 }
 
 /**
- * Hook to persist workspace chat conversation history.
+ * Hook to persist user-scoped workspace chat conversation history.
  * 
  * Zero-Read Optimistic Update:
- * Directly syncs the saved messages payload to the cache using setQueryData
+ * Directly syncs the saved messages payload to the user's isolated cache slice
  * with zero redundant background GET refetches.
  */
 export function useSaveWorkspaceChatMutation(workspaceId) {
   const queryClient = useQueryClient();
+  const { user } = useCurrentUser();
+  const userId = user?.id;
+  const targetKey = chatKeys.workspace(workspaceId, userId);
 
   return useMutation({
     mutationFn: (messages) => saveWorkspaceChat(workspaceId, messages),
     onMutate: async (messages) => {
-      await queryClient.cancelQueries({ queryKey: chatKeys.workspace(workspaceId) });
-      const previousChat = queryClient.getQueryData(chatKeys.workspace(workspaceId));
-      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+      await queryClient.cancelQueries({ queryKey: targetKey });
+      const previousChat = queryClient.getQueryData(targetKey);
+      queryClient.setQueryData(targetKey, {
         messages: Array.isArray(messages) ? messages : [],
       });
-      return { previousChat };
+      return { previousChat, targetKey };
     },
     onError: (err, _messages, context) => {
       console.error('Failed to save chat history:', err);
-      if (context?.previousChat) {
-        queryClient.setQueryData(chatKeys.workspace(workspaceId), context.previousChat);
+      if (context?.previousChat && context?.targetKey) {
+        queryClient.setQueryData(context.targetKey, context.previousChat);
       }
     },
-    onSuccess: (_, messages) => {
-      // Instant zero-read cache synchronization
-      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+    onSuccess: (_, messages, context) => {
+      const key = context?.targetKey || targetKey;
+      queryClient.setQueryData(key, {
         messages: Array.isArray(messages) ? messages : [],
       });
     },
@@ -54,24 +67,30 @@ export function useSaveWorkspaceChatMutation(workspaceId) {
 }
 
 /**
- * Hook to track whether a RAG inference query is currently executing for this workspace.
+ * Hook to track whether a RAG inference query is currently executing for this workspace/user.
  * Queries TanStack Query's global MutationCache so it survives component unmounts and route changes.
  */
 export function useIsRAGPending(workspaceId) {
+  const { user } = useCurrentUser();
+  const userId = user?.id;
   const count = useIsMutating({
-    mutationKey: ['workspace-rag-chat', workspaceId],
+    mutationKey: ['workspace-rag-chat', workspaceId, userId || 'current'],
   });
   return count > 0;
 }
 
 /**
  * Hook to send user questions to the AI Tutor RAG endpoint with real-time SSE streaming.
+ * Scoped to the individual authenticated user within the workspace.
  */
 export function useSendRAGMessageMutation(workspaceId) {
   const queryClient = useQueryClient();
+  const { user } = useCurrentUser();
+  const userId = user?.id;
+  const userChatKey = chatKeys.workspace(workspaceId, userId);
 
   return useMutation({
-    mutationKey: ['workspace-rag-chat', workspaceId],
+    mutationKey: ['workspace-rag-chat', workspaceId, userId || 'current'],
     mutationFn: async ({ question, topK = 5, workspaceCodeLanguage = null, domainType = null }) => {
       const userMessage = {
         id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
@@ -90,12 +109,12 @@ export function useSendRAGMessageMutation(workspaceId) {
         isStreaming: true,
       };
 
-      const cached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+      const cached = queryClient.getQueryData(userChatKey);
       const prevMessages = Array.isArray(cached?.messages) ? cached.messages : [];
       const updatedWithUser = [...prevMessages, userMessage];
 
       // Optimistically update query cache immediately with user message and streaming placeholder
-      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+      queryClient.setQueryData(userChatKey, {
         messages: [...updatedWithUser, assistantPlaceholder],
       });
 
@@ -121,7 +140,7 @@ export function useSendRAGMessageMutation(workspaceId) {
               }
               rafId = null;
             }
-            queryClient.setQueryData(chatKeys.workspace(workspaceId), (old) => {
+            queryClient.setQueryData(userChatKey, (old) => {
               const msgs = Array.isArray(old?.messages) ? [...old.messages] : [];
               const targetIdx = msgs.findIndex((m) => m.id === assistantMsgId);
               if (targetIdx !== -1) {
@@ -188,12 +207,12 @@ export function useSendRAGMessageMutation(workspaceId) {
         timestamp: new Date().toISOString(),
       };
 
-      const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+      const latestCached = queryClient.getQueryData(userChatKey);
       const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : [];
       const filtered = baseMessages.filter((m) => m.id !== assistantMsgId && !m.isStreaming);
       const updated = [...filtered, assistantMessage];
 
-      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+      queryClient.setQueryData(userChatKey, {
         messages: updated,
       });
 
@@ -216,12 +235,12 @@ export function useSendRAGMessageMutation(workspaceId) {
         timestamp: new Date().toISOString(),
       };
 
-      const latestCached = queryClient.getQueryData(chatKeys.workspace(workspaceId));
+      const latestCached = queryClient.getQueryData(userChatKey);
       const baseMessages = Array.isArray(latestCached?.messages) ? latestCached.messages : [];
       const filtered = baseMessages.filter((m) => !m.isStreaming);
       const updated = [...filtered, assistantErrorMessage];
 
-      queryClient.setQueryData(chatKeys.workspace(workspaceId), {
+      queryClient.setQueryData(userChatKey, {
         messages: updated,
       });
 
@@ -230,6 +249,38 @@ export function useSendRAGMessageMutation(workspaceId) {
       });
 
       toast.error(errMsg);
+    },
+  });
+}
+
+/**
+ * Hook to clear private chat history for the current user in a workspace.
+ */
+export function useClearWorkspaceChatMutation(workspaceId) {
+  const queryClient = useQueryClient();
+  const { user } = useCurrentUser();
+  const userId = user?.id;
+  const targetKey = chatKeys.workspace(workspaceId, userId);
+
+  return useMutation({
+    mutationFn: () => clearWorkspaceChat(workspaceId),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: targetKey });
+      const previousChat = queryClient.getQueryData(targetKey);
+      queryClient.setQueryData(targetKey, { messages: [] });
+      return { previousChat, targetKey };
+    },
+    onError: (err, _, context) => {
+      console.error('Failed to clear chat history:', err);
+      if (context?.previousChat && context?.targetKey) {
+        queryClient.setQueryData(context.targetKey, context.previousChat);
+      }
+      toast.error('Failed to clear chat history');
+    },
+    onSuccess: (_, __, context) => {
+      const key = context?.targetKey || targetKey;
+      queryClient.setQueryData(key, { messages: [] });
+      toast.success('Chat cleared');
     },
   });
 }
