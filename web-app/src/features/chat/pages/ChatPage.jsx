@@ -15,7 +15,7 @@ import {
   useIsRAGPending,
 } from '../hooks/useChat';
 import { useWorkspaceQuery } from '@/features/workspaces/hooks/useWorkspaces';
-import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
+import { ContentRenderer } from '@/components/common/ContentRenderer';
 import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
 import { SectionCodeCard } from '@/features/summary/pages/SummaryTab';
 import { toast } from 'sonner';
@@ -349,7 +349,7 @@ export function ChatPage() {
 
                       return (
                         <div className="text-sm font-sans leading-relaxed text-text">
-                          <MarkdownRenderer content={typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)} />
+                          <ContentRenderer content={typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)} />
                         </div>
                       );
                     })()}

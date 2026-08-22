@@ -9,7 +9,7 @@ import {
 import { Card, Button, Badge, BookLinearIcon, RegenerateIcon } from '@/components/ui';
 import { useWorkspaceSummaryQuery, useGenerateSummaryMutation, useIsSummaryGenerating } from '../hooks/useSummary';
 import { MermaidDiagram } from '../components/MermaidDiagram';
-import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
+import { ContentRenderer } from '@/components/common/ContentRenderer';
 import { toast } from 'sonner';
 import hljs from 'highlight.js';
 
@@ -191,7 +191,7 @@ export function SummaryTab() {
             <h2 className="font-display text-base font-bold text-text">Executive Synthesis</h2>
           </div>
           <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans">
-            <MarkdownRenderer content={summary.overview} />
+            <ContentRenderer content={summary.overview} />
           </div>
         </Card>
       )}
@@ -211,7 +211,7 @@ export function SummaryTab() {
               {/* Section Prose / Markdown with Table & KaTeX Support */}
               {section.content && (
                 <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans px-1">
-                  <MarkdownRenderer content={section.content} />
+                  <ContentRenderer content={section.content} />
                 </div>
               )}
 
@@ -239,7 +239,7 @@ export function SummaryTab() {
                     <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-accent mb-0.5">
                       Key Takeaway
                     </p>
-                    <MarkdownRenderer content={section.key_takeaways} className="text-xs text-text/80 font-sans" />
+                    <ContentRenderer content={section.key_takeaways} className="text-xs text-text/80 font-sans" />
                   </div>
                 </div>
               )}
@@ -260,7 +260,7 @@ export function SummaryTab() {
               <li key={i} className="flex items-start gap-2">
                 <span className="text-success font-bold mt-0.5 shrink-0">•</span>
                 <div className="min-w-0 flex-1">
-                  <MarkdownRenderer content={item} />
+                  <ContentRenderer content={item} />
                 </div>
               </li>
             ))}

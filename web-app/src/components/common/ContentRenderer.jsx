@@ -376,5 +376,6 @@ function MarkdownRendererBase({
   );
 }
 
-export const MarkdownRenderer = React.memo(MarkdownRendererBase);
-export default MarkdownRenderer;
+export const ContentRenderer = React.memo(MarkdownRendererBase);
+export const MarkdownRenderer = ContentRenderer;
+export default ContentRenderer;

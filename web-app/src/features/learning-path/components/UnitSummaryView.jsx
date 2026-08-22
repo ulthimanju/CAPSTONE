@@ -1,7 +1,7 @@
 import React from 'react';
 import { Lightbulb, CheckCircle, FileText } from '@/components/ui/icons';
 import { Card, Badge, BookLinearIcon } from '@/components/ui';
-import { MarkdownRenderer } from '@/components/common/MarkdownRenderer';
+import { ContentRenderer } from '@/components/common/ContentRenderer';
 import { MermaidDiagram } from '@/features/summary/components/MermaidDiagram';
 
 export function UnitSummaryView({ summary }) {
@@ -30,7 +30,7 @@ export function UnitSummaryView({ summary }) {
             </Badge>
           </div>
           <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans">
-            <MarkdownRenderer content={summary.overview} />
+            <ContentRenderer content={summary.overview} />
           </div>
         </Card>
       )}
@@ -53,7 +53,7 @@ export function UnitSummaryView({ summary }) {
                 </h4>
 
                 <div className="prose prose-sm max-w-none text-text/80 leading-relaxed font-sans mb-4">
-                  <MarkdownRenderer content={section.content} />
+                  <ContentRenderer content={section.content} />
                 </div>
 
                 {section.diagram && (

@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ChatPage } from '@/features/chat/pages/ChatPage';
 import * as chatApi from '@/features/chat/api/chatApi';
-import { preprocessMarkdownForMath } from '@/components/common/MarkdownRenderer';
+import { preprocessMarkdownForMath } from '@/components/common/ContentRenderer';
 
 vi.mock('@/features/chat/api/chatApi', () => ({
   fetchWorkspaceChat: vi.fn(),
