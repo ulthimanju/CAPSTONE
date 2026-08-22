@@ -41,8 +41,7 @@ async def test_redis_getdel_atomicity_under_50_concurrent_requests():
 
     # Create code
     raw_code = await manager.create_exchange_code(
-        access_token="test_jwt_token_123",
-        refresh_token="test_refresh_token_456",
+        session_id=str(uuid.uuid4()),
         user_id=str(uuid.uuid4()),
         ttl_seconds=60,
     )

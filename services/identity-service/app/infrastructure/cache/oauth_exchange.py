@@ -2,11 +2,20 @@ import json
 import secrets
 import hashlib
 import time
+import asyncio
 from typing import Any
 import redis.asyncio as aioredis
 from app.config.settings import settings
 
 _global_redis_client = None
+
+_ATOMIC_GETDEL_LUA = """
+local val = redis.call('GET', KEYS[1])
+if val then
+    redis.call('DEL', KEYS[1])
+end
+return val
+"""
 
 
 def get_redis_client():
@@ -25,10 +34,12 @@ class OAuthExchangeManager:
     Manages short-lived, single-use authorization exchange codes.
     Implements RFC 6819 / OAuth 2.0 Security Best Current Practice to prevent
     access-token leakage via browser history, proxy logs, and Referer headers.
+    Guarantees strict atomicity via native Redis GETDEL with Lua script EVAL fallback.
     """
 
-    # In-memory fallback with strict TTL enforcement
+    # In-memory fallback with strict TTL enforcement and concurrency lock
     _memory_cache: dict[str, dict[str, Any]] = {}
+    _memory_lock = asyncio.Lock()
 
     def __init__(self, redis_client: Any = None):
         self.redis = redis_client if redis_client is not None else get_redis_client()
@@ -61,7 +72,8 @@ class OAuthExchangeManager:
                 stored_in_redis = False
 
         if not stored_in_redis:
-            self._memory_cache[code_hash] = payload
+            async with self._memory_lock:
+                self._memory_cache[code_hash] = payload
 
         return raw_code
 
@@ -74,8 +86,14 @@ class OAuthExchangeManager:
         if self.redis:
             try:
                 key = f"oauth_exchange:{code_hash}"
-                # Atomic GET and DELETE prevents race conditions and replay attacks
-                val = await self.redis.getdel(key)
+                # 1. Native Redis 6.2+ atomic GETDEL command
+                val = None
+                try:
+                    val = await self.redis.getdel(key)
+                except Exception:
+                    # 2. Lua script atomic EVAL fallback
+                    val = await self.redis.eval(_ATOMIC_GETDEL_LUA, 1, key)
+
                 if val:
                     data = json.loads(val)
                     if time.time() > data.get("expires_at", float("inf")):
@@ -84,11 +102,12 @@ class OAuthExchangeManager:
             except Exception:
                 pass
 
-        # Check memory fallback with atomic pop and TTL validation
-        entry = self._memory_cache.pop(code_hash, None)
-        if entry:
-            if time.time() > entry.get("expires_at", float("inf")):
-                return None
-            return entry
+        # 3. Memory fallback with atomic lock & pop
+        async with self._memory_lock:
+            entry = self._memory_cache.pop(code_hash, None)
+            if entry:
+                if time.time() > entry.get("expires_at", float("inf")):
+                    return None
+                return entry
 
         return None
