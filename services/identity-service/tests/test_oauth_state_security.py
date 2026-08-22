@@ -158,4 +158,37 @@ async def test_pkce_s256_challenge_generation_and_parameters(oauth_client):
     assert "oauth_verifier=" in response.headers.get("set-cookie", "")
 
 
+@pytest.mark.asyncio
+async def test_oauth_login_uses_least_privilege_scopes_by_default(oauth_client):
+    from unittest.mock import MagicMock
+    from starlette.datastructures import URL
+    from urllib.parse import unquote
+
+    mock_request = MagicMock()
+    mock_request.url = URL("https://app.synapse.local/api/v1/oauth/google/login")
+
+    # Default login without drive requested
+    response = await oauth_client.login_redirect(mock_request, "https://app.synapse.local/api/v1/oauth/google/callback", include_drive=False)
+    location = unquote(response.headers.get("location", ""))
+
+    assert "scope=openid email profile" in location
+    assert "drive.file" not in location
+
+
+@pytest.mark.asyncio
+async def test_oauth_login_supports_incremental_consent_drive_scope(oauth_client):
+    from unittest.mock import MagicMock
+    from starlette.datastructures import URL
+    from urllib.parse import unquote
+
+    mock_request = MagicMock()
+    mock_request.url = URL("https://app.synapse.local/api/v1/oauth/google/login?drive=true")
+
+    # Step-up / Incremental authorization login
+    response = await oauth_client.login_redirect(mock_request, "https://app.synapse.local/api/v1/oauth/google/callback", include_drive=True)
+    location = unquote(response.headers.get("location", ""))
+
+    assert "scope=openid email profile https://www.googleapis.com/auth/drive.file" in location
+
+
 

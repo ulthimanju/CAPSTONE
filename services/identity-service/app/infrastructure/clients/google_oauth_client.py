@@ -188,7 +188,7 @@ class GoogleOAuthClient(OAuthClientInterface):
         except Exception:
             return False
 
-    async def login_redirect(self, request: Any, redirect_uri: str) -> RedirectResponse:
+    async def login_redirect(self, request: Any, redirect_uri: str, include_drive: bool = False) -> RedirectResponse:
         state, csrf_token = self._create_signed_state()
         verifier, challenge = self._generate_pkce_pair()
 
@@ -202,11 +202,17 @@ class GoogleOAuthClient(OAuthClientInterface):
                 pass
         self._pkce_verifiers_memory[nonce] = verifier
 
+        # Standard login requests ONLY identity scopes (Least Privilege).
+        # Google Drive synchronization uses step-up consent (Incremental Authorization).
+        scope = "openid email profile"
+        if include_drive:
+            scope += " https://www.googleapis.com/auth/drive.file"
+
         params = {
             "response_type": "code",
             "client_id": settings.google_client_id,
             "redirect_uri": redirect_uri,
-            "scope": "openid email profile https://www.googleapis.com/auth/drive.file",
+            "scope": scope,
             "state": state,
             "code_challenge": challenge,
             "code_challenge_method": "S256",

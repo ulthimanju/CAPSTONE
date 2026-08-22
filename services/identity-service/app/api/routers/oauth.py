@@ -42,10 +42,13 @@ class OAuthExchangeResponse(BaseModel):
 @router.get("/login")
 async def google_login(
     request: Request,
+    scope: str | None = None,
+    drive: bool = False,
     oauth_client: OAuthClientInterface = Depends(get_oauth_client),
 ):
     redirect_uri = settings.google_redirect_uri
-    return await oauth_client.login_redirect(request, redirect_uri)
+    include_drive = drive or (scope is not None and "drive" in scope.lower())
+    return await oauth_client.login_redirect(request, redirect_uri, include_drive=bool(include_drive))
 
 
 @router.get("/callback")
